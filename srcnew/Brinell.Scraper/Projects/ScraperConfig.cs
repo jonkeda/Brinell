@@ -5,8 +5,8 @@ using Brinell.Scraper.Html;
 namespace Brinell.Scraper.Projects;
 
 /// <summary>
-/// A scraped project's settings, from its <c>scraper.config.md</c>: the <c>## App</c> field table, and
-/// tables for URL aliases, test-id attributes and text masks.
+/// A scraped project's settings, from its <c>scraper.config.md</c>: the <c>## App</c> field table,
+/// tables for URL aliases, test-id attributes and text masks, and Explore's (<see cref="ExploreSettings"/>).
 /// </summary>
 public sealed record ScraperConfig
 {
@@ -40,6 +40,9 @@ public sealed record ScraperConfig
     /// <summary>Text masked before anything is written.</summary>
     public IReadOnlyList<TextMask> Masks { get; init; } = [];
 
+    /// <summary>How Explore may go through the app: its budget and guards.</summary>
+    public ExploreSettings Explore { get; init; } = new();
+
     /// <summary>Reads a config file's text.</summary>
     /// <exception cref="FormatException">A field's value is not valid; the message names its line.</exception>
     public static ScraperConfig Parse(string markdown)
@@ -69,7 +72,7 @@ public sealed record ScraperConfig
             config = config with { TestIds = testIds.Rows.Select(r => r.Cells.GetValueOrDefault("Attribute", "")).Where(a => a.Length > 0).ToArray() };
         if (sections.TryGetValue("Masks", out var masks))
             config = config with { Masks = masks.Rows.Select(Mask).ToArray() };
-        return config;
+        return config with { Explore = ExploreSettings.Read(sections) };
     }
 
     /// <summary>Reads a config file.</summary>
