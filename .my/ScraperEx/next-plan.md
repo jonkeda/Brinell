@@ -82,9 +82,9 @@ One commit per step.
 | 4 | The manual test plan run in VS Code and Visual Studio | the results recorded in it |
 | 5 | AD-027 amended (Playwright in the extensions; the browser installed on demand); the guide's install section | links valid |
 
-## 5. Questions
+## 5. Decisions
 
-| # | Question | Proposal |
+| # | Question | Decided (2026-09-30) |
 | --- | --- | --- |
-| Q1 | Which browsers? | Chromium only, as now |
-| Q2 | Who runs the manual test plan, and when? | Once now for both IDEs, then before each extension release |
+| Q1 | Which browsers? | Chromium only |
+| Q2 | Who runs the manual test plan? | Split. Claude runs what needs no IDE window: the recording browser (driven by a script as a person would), the view's page through a stand-in host, MCP, masks, refresh, Install browser. The owner runs what needs Visual Studio or VS Code on screen: the commands, the tool window and webview, Open file, Compare, Generate, themes, and Pick with a real click. The test plan marks each check with who runs it. Before each extension release, the owner's part again |
