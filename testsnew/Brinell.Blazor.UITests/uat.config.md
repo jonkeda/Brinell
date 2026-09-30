@@ -12,7 +12,7 @@
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | Brinell.Blazor.Uat.Tests.dll |
+| Pages | Brinell.Blazor.UITests.dll |
 
 ## Discovery
 

@@ -1,4 +1,4 @@
-namespace Brinell.Blazor.Uat.Tests.Runtime;
+namespace Brinell.Blazor.UITests.Uat;
 
 [Trait("Category", "UAT")]
 [Trait("Target", "BLAZOR")]

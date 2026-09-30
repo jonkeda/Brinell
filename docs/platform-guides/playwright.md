@@ -11,7 +11,7 @@ modern browser automation.
 - `testsnew/Brinell.Blazor.Tests`
 - `testsnew/Brinell.Html.UITests`
 - `testsnew/Brinell.Blazor.UITests`
-- `testsnew/Brinell.Html.UITests`, `testsnew/Brinell.Blazor.Uat.Tests`
+- `testsnew/Brinell.Html.UITests`, `testsnew/Brinell.Blazor.UITests`
 - `samples/Todo/tests/Brinell.Samples.Todo.Web.UITests`, `samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`
 
 ## Rules

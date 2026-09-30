@@ -53,7 +53,7 @@ running instead. The Todo web head has its own UI tests:
 
 ```powershell
 dotnet test testsnew\Brinell.Html.UITests\Brinell.Html.UITests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.Uat.Tests\Brinell.Blazor.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Blazor.UITests\Brinell.Blazor.UITests.csproj -v:minimal /nr:false
 dotnet test samples\Todo\tests\Brinell.Samples.Todo.Web.Uat -v:minimal /nr:false
 ```
 

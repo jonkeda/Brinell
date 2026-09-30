@@ -1,4 +1,4 @@
-namespace Brinell.Blazor.Uat.Tests.Runtime;
+namespace Brinell.Blazor.UITests.Uat;
 
 using Brinell.Core.Configuration;
 using Brinell.Html.Testing;
