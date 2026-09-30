@@ -7,7 +7,7 @@ public class WinFormsSampleFixture : WinFormsTestFixtureBase
 {
     protected override string GetDefaultAppPath()
     {
-        // From this assembly's folder, not the host's: Presenter runs the suite in its own process (AD-025).
+        // From this assembly's folder, wherever the suite runs (AD-025).
         var testDir = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(WinFormsSampleFixture).Assembly);
         var appPath = Path.GetFullPath(Path.Combine(
             testDir, "..", "..", "..", "..", "..",

@@ -43,7 +43,7 @@ How this differs from the other trees:
 - [AD-022: The IDEs run the gate's engine](decisions/ad-022-the-ides-run-the-gates-engine.md)
 - [AD-023: A feature file is Markdown; Gherkin is fenced](decisions/ad-023-a-feature-file-is-markdown.md)
 - [AD-024: A recording is a paced gate run](decisions/ad-024-a-recording-is-a-paced-gate-run.md)
-- [AD-025: A suite runs in a host's process](decisions/ad-025-a-suite-runs-in-a-hosts-process.md)
+- [AD-025: A suite runs in a process of its own](decisions/ad-025-a-suite-runs-in-a-process-of-its-own.md)
 
 ## Contracts
 

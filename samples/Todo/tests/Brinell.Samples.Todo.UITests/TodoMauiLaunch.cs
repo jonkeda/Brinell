@@ -95,7 +95,7 @@ public static class TodoMauiLaunch
             _ => throw new NotSupportedException($"The Todo UI tests run on Windows and Android, not {platform}."),
         };
 
-        // From this assembly, not the host: Presenter loads the suite into its own process.
+        // From this assembly, wherever the suite runs (AD-025).
         var start = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(TodoMauiLaunch).Assembly);
         var root = new DirectoryInfo(start);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "Brinell.Samples.Todo.slnx")))

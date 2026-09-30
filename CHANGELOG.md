@@ -357,6 +357,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- Presenter runs a suite in a runner process of its own (AD-025): `Brinell.Uat.dll` has an entry
+  point and is started in the suite's output with the suite's `runtimeconfig.json` and `deps.json`,
+  so a scenario runs from Presenter as under `dotnet test`. Presenter drives it a step at a time
+  over a named pipe (`Brinell.Bdd.Runner`); the runner paces and records. The process ends with
+  the run: Presenter no longer grows with every run of a suite with a mock server or a database,
+  and the suite can be rebuilt while Presenter is open. `AssemblyFile.Record` and `PathOf` are gone.
 - **Breaking: `Uat` names are only for `Brinell.Uat`.** Bdd is the main and Uat a specialization
   of it (AD-021), so everything outside `Brinell.Uat` takes `Bdd` names. No old names are kept.
   - The 111 `Uat*` types of `Brinell.Bdd` and `Brinell.Core` are `Bdd*`: `BddBinder`,

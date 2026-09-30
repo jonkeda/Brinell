@@ -16,7 +16,7 @@ gate runs. It is served by one .NET process, `Brinell.Bdd.LanguageServer`:
 for its `ILanguageClient`, so a failing editor client never takes the preview down. VS Code runs
 one. Both are the same server, in messages. The Presenter checks its files with `BddFileAnalysis`
 in its own process, against the suite's catalogs from `Brinell.Bdd.Workspace`. A Presenter *run*
-still loads the build into its own session context, as the xUnit gate loads its own at run time.
+loads nothing into Presenter: the suite's runner process runs it, in messages (AD-025).
 
 **Why:** the gate is the truth about a scenario. An IDE that checked files its own way would pass
 what the gate fails, and the reverse. Evidence (at ea9513e):

@@ -53,13 +53,15 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
   xUnit runners take the fixture as a type argument and only check the name, so a suite can pass
   in xUnit and still name a fixture Presenter cannot find.
 - **AppPath** is an optional override. The fixture finds its own app.
-- **The suite runs in Presenter's process**, not in a test host. A fixture finds its files (the
-  config, the app, its solution) from its own assembly, with
-  `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)` (`Brinell.Core.Composition`): never from
-  `AppContext.BaseDirectory`, which is Presenter's folder here, and not from `Assembly.Location`,
-  which is empty here. Presenter reads the assemblies a suite builds into memory, so the suite
-  can be rebuilt while Presenter is open; it resolves the suite's other assemblies, its native
-  libraries (`runtimes\<rid>\native`) and ASP.NET Core for it.
+- **The suite runs in a process of its own**, started in the suite's output folder as a test host
+  is: a scenario runs from Presenter as it does under `dotnet test`. The Pages assembly has to
+  be the suite's test project (its `runtimeconfig.json` is used) and the suite has to reference
+  `Brinell.Uat`, which is the runner. The process ends with the run, so the suite can be rebuilt
+  while Presenter is open, and a long session does not grow Presenter. A fixture still finds its
+  files from its own assembly, with `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)`
+  (`Brinell.Core.Composition`).
+- **A suite built with an older Brinell** than Presenter says so when it is run ("Rebuild the
+  suite"): the two talk in versioned messages.
 - **A fixture that implements `IUatScenarioLifecycle`** has its `BeforeFile` and `BeforeScenario`
   called by Presenter as by the suite's test class: a scenario starts on its file's `TestData`.
 
@@ -208,9 +210,6 @@ a time.
   so a draft can be watched.
 - **Watch** plays the stitched video; the play button on a recorded scene plays that scene alone.
   **Open folder** opens the Recordings folder.
-
-A suite with a mock server or a database cannot be unloaded from Presenter, so each run stays in
-memory until Presenter closes: a long recording session is a reason to restart it now and then.
 
 ## Supported Targets
 

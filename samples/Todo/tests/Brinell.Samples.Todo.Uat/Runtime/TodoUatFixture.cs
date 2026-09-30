@@ -86,7 +86,7 @@ public sealed class TodoUatFixture : TodoAppFixture, IUatScenarioLifecycle
 
     private static string ReadDefaultTestData()
     {
-        // Beside this assembly, not the host's: Presenter loads the suite into its own process.
+        // Beside this assembly, wherever the suite runs (AD-025).
         var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(AssemblyFile.FolderOf(typeof(TodoUatFixture).Assembly)));
         return config.Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var name) && name.Length > 0
             ? name

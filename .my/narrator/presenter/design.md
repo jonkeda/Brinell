@@ -138,6 +138,9 @@ A **Narrator** section on the Settings page, holding Presenter's recording setti
 
 ## Before this mode: Presenter must run a suite in its own process
 
+**Superseded the same day:** a suite now runs in a runner process of its own (AD-025), so the
+loading fixes below are gone; the fixtures' own fixes and `IUatScenarioLifecycle` stay.
+
 Running the Todo suite from Presenter on 2026-09-29 failed four times over, each for a suite
 loaded into Presenter's process instead of a test host. Step 0 (built 2026-09-30) fixed these:
 
@@ -153,8 +156,8 @@ loaded into Presenter's process instead of a test host. Step 0 (built 2026-09-30
 The rule, in the Presenter guide: **a suite finds its files with `AssemblyFile.FolderOf`, never
 from `AppContext.BaseDirectory` or `Assembly.Location`**.
 
-Known, not fixed: a session whose context cannot unload stays in memory until Presenter closes
-(Presenter held about 620 MB after seven Todo runs).
+That a session whose context cannot unload stayed in memory is what AD-025's runner process
+fixed (it was about 4 MB of private memory a run; the 620 MB seen was working set).
 
 ## Build order
 
