@@ -32,6 +32,14 @@ public sealed class SnapshotOutlineTests
     }
 
     [Fact]
+    public void A_wrapper_asked_for_is_shown()
+    {
+        var snapshot = Snapshot(Node(1, 0, "div"), Node(2, 1, "div"), Node(3, 2, "button", "Save"));
+
+        Assert.Equal("#2 div\n  #3 button \"Save\"\n", SnapshotOutline.Render(snapshot, focus: 2));
+    }
+
+    [Fact]
     public void Children_are_indented_under_what_is_shown()
     {
         var snapshot = Snapshot(

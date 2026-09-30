@@ -18,7 +18,11 @@ public static class SnapshotOutline
     };
 
     /// <summary>The outline of the subtree at <paramref name="root"/> (the whole page when 0), at most <paramref name="maxLines"/> lines.</summary>
-    public static string Render(ScrapeSnapshot snapshot, int root = 0, int maxLines = 400)
+    /// <param name="snapshot">The capture.</param>
+    /// <param name="root">The subtree's node, or 0.</param>
+    /// <param name="maxLines">The most lines.</param>
+    /// <param name="focus">A node shown even when it is a wrapper: the one the reader asked for.</param>
+    public static string Render(ScrapeSnapshot snapshot, int root = 0, int maxLines = 400, int focus = 0)
     {
         var children = snapshot.Nodes.ToLookup(n => n.Parent);
         var builder = new StringBuilder();
@@ -28,7 +32,7 @@ public static class SnapshotOutline
         void Visit(ScrapeNode node, int depth)
         {
             if (cut) return;
-            var shown = Matters(node, children[node.Number].Count());
+            var shown = node.Number == focus || Matters(node, children[node.Number].Count());
             if (shown)
             {
                 if (lines == maxLines)

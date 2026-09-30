@@ -21,12 +21,25 @@ public static partial class ControlAdvisor
     {
         var within = root == 0 ? null : new HashSet<int>(Subtree(snapshot, root));
         var documents = Documents(snapshot);
-        return snapshot.Nodes
+        var suggestions = snapshot.Nodes
             .Where(n => within is null || within.Contains(n.Number))
             // An option is its select's: SelectControl picks it by text or value.
             .Where(n => n.Type != "option" && ControlOf(snapshot, n, blazor) is not null && (IsActedOn(n) || HasTestId(n, testIds) || Headings.Contains(n.Type) || n.Frame is not null))
             .Select(n => Suggest(snapshot, n, testIds, blazor, documents))
-            .ToArray();
+            .ToList();
+
+        // One page object holds them all: a name used twice gets a number (Search, Search2).
+        var used = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < suggestions.Count; i++)
+        {
+            var name = suggestions[i].Name;
+            used[name] = used.TryGetValue(name, out var count) ? count + 1 : 1;
+            if (used[name] > 1) suggestions[i] = suggestions[i] with { Name = name + used[name] };
+        }
+
+        // A node in a frame is declared on the frame's scope: its member names the frame's.
+        var names = suggestions.ToDictionary(x => x.Node, x => x.Name);
+        return suggestions.Select(x => x.Frame is { } host && names.TryGetValue(host, out var scope) ? x with { Scope = scope } : x).ToArray();
     }
 
     /// <summary>The suggestion for one node.</summary>
@@ -37,7 +50,12 @@ public static partial class ControlAdvisor
     {
         var (control, ns) = ControlOf(snapshot, node, blazor) ?? ("LabelControl", "Brinell.Html.Controls.Display");
         var (locator, stable, why) = LocatorOf(snapshot, node, testIds, documents);
-        return new ControlSuggestion(node.Number, Name(node, testIds, TextOf(snapshot, node)), control, ns, locator, stable, why);
+        var frame = documents[node.Number];
+        return new ControlSuggestion(node.Number, Name(node, testIds, TextOf(snapshot, node)), control, ns, locator, stable, why)
+        {
+            Frame = frame == 0 ? null : frame,
+            Scope = frame == 0 ? null : Name(snapshot[frame], testIds, null),
+        };
     }
 
     private static (string Control, string Namespace)? ControlOf(ScrapeSnapshot snapshot, ScrapeNode node, bool blazor)
@@ -126,10 +144,18 @@ public static partial class ControlAdvisor
     // The app's own test id says what the element is best; then what the user sees.
     private static string Name(ScrapeNode node, IReadOnlyList<string> testIds, string? text)
     {
-        var source = testIds.Select(node.Attribute).FirstOrDefault(v => v is { Length: > 0 }) ?? node.Name ?? text ?? node.Attribute("placeholder") ?? node.Attribute("name") ?? node.Attribute("id") ?? node.Type;
-        var words = Words().Matches(source).Select(m => char.ToUpperInvariant(m.Value[0]) + m.Value[1..].ToLowerInvariant()).Take(4);
-        var name = string.Concat(words);
-        return name.Length == 0 || char.IsDigit(name[0]) ? "Element" + name : name;
+        // The first source with a word in it: a button's text can be only "+" (then its data-action says it).
+        var sources = testIds.Select(node.Attribute)
+            .Append(node.Name).Append(text).Append(node.Attribute("placeholder")).Append(node.Attribute("name")).Append(node.Attribute("id")).Append(node.Attribute("title"))
+            .Concat(node.Attributes.Where(a => a.Key.StartsWith("data-", StringComparison.Ordinal)).OrderBy(a => a.Key, StringComparer.Ordinal).Select(a => (string?)a.Value))
+            .Append(node.Type);
+        foreach (var source in sources)
+        {
+            if (string.IsNullOrEmpty(source)) continue;
+            var name = string.Concat(Words().Matches(source).Select(m => char.ToUpperInvariant(m.Value[0]) + m.Value[1..].ToLowerInvariant()).Take(4));
+            if (name.Length > 0) return char.IsDigit(name[0]) ? "Element" + name : name;
+        }
+        return "Element";
     }
 
     private static bool IsActedOn(ScrapeNode node) =>
@@ -209,4 +235,11 @@ public static partial class ControlAdvisor
 }
 
 /// <summary>A node's suggested member: its node, a name, the control type and namespace, the locator expression, and whether that locator is stable and why.</summary>
-public sealed record ControlSuggestion(int Node, string Name, string Control, string Namespace, string Locator, bool Stable, string Why);
+public sealed record ControlSuggestion(int Node, string Name, string Control, string Namespace, string Locator, bool Stable, string Why)
+{
+    /// <summary>For a node in a frame: the frame's host node (its <c>iframe</c>).</summary>
+    public int? Frame { get; init; }
+
+    /// <summary>For a node in a frame: the frame's member, the scope to declare this one on (<c>new(Frame, …)</c>).</summary>
+    public string? Scope { get; init; }
+}

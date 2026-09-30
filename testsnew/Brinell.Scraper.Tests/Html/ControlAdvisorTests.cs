@@ -104,6 +104,30 @@ public sealed class ControlAdvisorTests
     }
 
         [Fact]
+    public void Names_are_unique_on_a_page_and_a_symbol_s_button_is_named_by_its_data_attribute()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "button", "-", null, ("data-action", "minus")), N(3, 1, "button", "+", null, ("data-action", "plus")),
+            N(4, 1, "button", "Go"), N(5, 1, "button", "Go"));
+
+        var names = ControlAdvisor.Suggest(page, TestIds, blazor: false).Select(s => s.Name);
+
+        Assert.Equal(["Minus", "Plus", "Go", "Go2"], names);
+    }
+
+    [Fact]
+    public void A_node_in_a_frame_is_declared_on_the_frame_s_member()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "iframe", null, null, ("data-testid", "profile-frame")) with { Frame = "https://x/profile" },
+            N(3, 2, "html"), N(4, 3, "input", null, null, ("data-testid", "profile-id")));
+
+        var input = ControlAdvisor.Suggest(page, TestIds, blazor: false).Single(s => s.Node == 4);
+
+        Assert.Equal((2, "ProfileFrame"), (input.Frame, input.Scope));
+    }
+
+        [Fact]
     public void Uniqueness_is_counted_per_frame_document()
     {
         var page = Page(N(1, 0, "body"),

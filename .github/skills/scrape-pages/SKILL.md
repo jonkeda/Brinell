@@ -39,7 +39,8 @@ read them first.
    page). Its first line is `scraped_header` for the page. `suggest_controls` gives a member per
    thing a test acts on or reads, with the control that fits (the `Brinell.Blazor.Controls` one in
    a Blazor project) and a locator: start from it, rename for what the user sees, drop what the
-   page object does not need.
+   page object does not need. A member with a `scope` is in a frame: declare it on that frame's
+   member, `TextInputControl<FrameScope<CatalogPage>> CustomerId => new(ProfileFrame, …)`.
 6. **Locators.** `suggest_controls` already follows this order, and says when it could not:
    `data-testid` (or the config's test-id attributes), the accessible name or label text, a
    stable `id`, a stable class. Never a generated class

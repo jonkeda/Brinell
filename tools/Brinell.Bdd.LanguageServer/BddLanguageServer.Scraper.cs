@@ -101,7 +101,7 @@ public sealed partial class BddLanguageServer
     /// <summary><c>brinell/scraper/outline</c>: a capture as an outline, or a node's subtree of it.</summary>
     [JsonRpcMethod("brinell/scraper/outline")]
     public ScraperResult<string> ScraperOutline(ScraperOutlineParams request)
-        => Answer(() => SnapshotOutline.Render(Scraper.Snapshot(request.Project, request.Page, request.Session, request.Number).Snapshot, request.Node ?? 0, request.MaxLines ?? 400));
+        => Answer(() => SnapshotOutline.Render(Scraper.Snapshot(request.Project, request.Page, request.Session, request.Number).Snapshot, request.Node ?? 0, request.MaxLines ?? 400, request.Focus ?? 0));
 
     /// <summary><c>brinell/scraper/highlight</c>: outlines a node of the last capture in the browser, or removes the outline.</summary>
     [JsonRpcMethod("brinell/scraper/highlight")]
@@ -199,7 +199,8 @@ public sealed record ScraperCaptureParams(string? Name);
 public sealed record ScraperProjectParams(string? Project);
 
 /// <summary><c>brinell/scraper/outline</c>'s parameters: the page's newest capture unless a session (and number) is given.</summary>
-public sealed record ScraperOutlineParams(string? Project, string Page, string? Session, int? Number, int? Node, int? MaxLines);
+/// <param name="Focus">A node shown even when it is a wrapper.</param>
+public sealed record ScraperOutlineParams(string? Project, string Page, string? Session, int? Number, int? Node, int? MaxLines, int? Focus = null);
 
 /// <summary>A page's newest capture, and a node on it.</summary>
 public sealed record ScraperPageNodeParams(string? Project, string Page, int? Node);

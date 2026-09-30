@@ -116,8 +116,18 @@ internal static class ScraperPage
             if (message.type === "changed") { onChanged(message); }
           });
 
+          // A recording's state only moves forward: the server's notices can arrive out of order (a
+          // capture's before the start's), and the start's answer can come after both.
+          const stopped = new Set();
+          function setRecording(recording) {
+            if (recording && stopped.has(recording.session)) return;
+            const current = state.recording;
+            if (recording && current && recording.session === current.session && recording.captures < current.captures) return;
+            state.recording = recording;
+          }
+
           async function onChanged(change) {
-            state.recording = change.kind === "Stopped" ? null : change.recording;
+            if (change.kind === "Stopped") { if (change.recording) stopped.add(change.recording.session); state.recording = null; } else setRecording(change.recording);
             if (change.kind === "Failed") showProblem(change.message);
             if (change.kind === "Captured" && change.captured && change.recording) {
               // The newest capture of the live session is what Highlight and Pick number by.
@@ -184,7 +194,7 @@ internal static class ScraperPage
             state.page = key;
             state.capture = capture;
             state.node = node || null;
-            const text = await answer("outline", { project: state.project, page: key, session: capture.session, number: capture.number, maxLines: 2000 });
+            const text = await answer("outline", { project: state.project, page: key, session: capture.session, number: capture.number, maxLines: 2000, focus: node || 0 });
             if (text === undefined) return;
             const page = state.pages.find(p => p.key === key);
             const older = page ? page.captures.filter(c => c !== capture) : [];
@@ -223,7 +233,7 @@ internal static class ScraperPage
             $("sc-node").replaceChildren(el("div", { class: "sc-node" },
               el("div", {}, current ? current.textContent.trim() : `#${number}`),
               el("div", { class: "sc-muted" }, `The same kind of node: ${similar.length} on ${new Set(similar.map(s => s.page)).size} page(s).`),
-              suggested ? el("div", {}, el("code", {}, `${suggested.control}<…> ${suggested.name} => new(this, ${suggested.locator});`), el("span", { class: "sc-muted" }, `  by ${suggested.why}`)) : null,
+              suggested ? el("div", {}, el("code", {}, `${suggested.control}<…> ${suggested.name} => new(${suggested.scope || "this"}, ${suggested.locator});`), el("span", { class: "sc-muted" }, `  by ${suggested.why}`)) : null,
               el("div", { class: "sc-actions" },
                 el("button", { type: "button", class: "sc-small", onclick: () => chat(`Make a control for the node #${number} of the recorded page ${state.page} of ${state.project} (it occurs ${similar.length} times). Its header: ${header || ""}`) }, "Make a control"))));
           }
@@ -257,7 +267,7 @@ internal static class ScraperPage
               el("div", { class: "sc-muted" }, p.signature),
               p.control ? el("p", {}, `Stood for by ${p.control}.`) : el("div", { class: "sc-actions" },
                 el("button", { type: "button", class: "sc-small", onclick: () => chat(`Make a control for the ${p.kind} pattern '${p.signature}' of ${state.project}, seen on ${p.pages} page(s) ${p.occurrences} times, e.g. node #${p.examples[0].node} of ${p.examples[0].page}.`) }, "Make a control")),
-              ...p.examples.map(x => el("div", { class: "sc-item", onclick: async () => { state.tab = "pages"; await show(); const page = state.pages.find(pg => pg.key === x.page); if (page) await openCapture(page.key, page.captures[0], x.node); } }, `${x.page}  ${x.line}`)));
+              ...p.examples.map(x => el("div", { class: "sc-item", onclick: async () => { state.tab = "pages"; state.capture = null; await show(); const page = state.pages.find(pg => pg.key === x.page); if (page) await openCapture(page.key, page.captures[0], x.node); } }, `${x.page}  ${x.line}`)));
           }
 
           async function loadCode() {
@@ -277,7 +287,9 @@ internal static class ScraperPage
           $("sc-start").addEventListener("click", async () => {
             $("sc-start").disabled = true;
             const started = await answer("start", { project: state.project, session: $("sc-session").value || "recording", url: $("sc-url").value || null });
-            if (!started) $("sc-start").disabled = false;
+            if (!started) { $("sc-start").disabled = false; return; }
+            setRecording(started);
+            showRecording();
           });
           $("sc-capture").addEventListener("click", () => answer("capture", {}));
           $("sc-stop").addEventListener("click", () => answer("stop"));
@@ -286,7 +298,9 @@ internal static class ScraperPage
             const picked = await answer("pick");
             showRecording();
             if (!picked || !picked.capture || !picked.node) return;
+            // Not the capture open before: loadPages would open that one again, after this one.
             state.tab = "pages";
+            state.capture = null;
             await show();
             const page = state.pages.find(p => p.captures.some(c => c.session === state.recording.session && c.number === picked.capture.number));
             const capture = page && page.captures.find(c => c.session === state.recording.session && c.number === picked.capture.number);

@@ -53,7 +53,7 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
             {
                 Headless = !start.Visible,
                 ViewportSize = start.Visible ? ViewportSize.NoViewport : new ViewportSize { Width = 1280, Height = 800 },
-                Args = start.Visible ? ["--start-maximized"] : [],
+                Args = [.. start.Visible ? ["--start-maximized"] : Array.Empty<string>(), .. DebugPortArguments()],
             }).ConfigureAwait(false);
         }
         catch (PlaywrightException e) when (e.Message.Contains("Executable doesn't exist", StringComparison.Ordinal))
@@ -159,7 +159,18 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
         _page = null;
     }
 
-    private IPage Started() => _page ?? throw new InvalidOperationException("The source is not started.");
+    /// <summary>
+    /// Set to a port, the recording browser also listens for DevTools there, so a scripted check can act
+    /// in it as a person would (the manual test plan's Claude part). Unset in normal use.
+    /// </summary>
+    public const string DebugPortVariable = "BRINELL_SCRAPER_DEBUG_PORT";
+
+    private static string[] DebugPortArguments() =>
+        int.TryParse(Environment.GetEnvironmentVariable(DebugPortVariable), out var port) && port > 0
+            ? [$"--remote-debugging-port={port}"]
+            : [];
+
+        private IPage Started() => _page ?? throw new InvalidOperationException("The source is not started.");
 
     private void OnFrameNavigated(object? sender, IFrame frame)
     {
