@@ -1,6 +1,6 @@
 # The Scraper, restarted in the IDE extensions: plan
 
-Status: **steps 0 and 1 done** (the spike, section 11; the engine project), 2026-09-30. Q1 to Q7 decided.
+Status: **steps 0 to 2 done** (the spike, section 11; the engine project), 2026-09-30. Q1 to Q7 decided.
 No backward compatibility: not with the old corpora, and the WPF tool need not keep working.
 Supersedes [uat/tools/scraper-in-extension.md](../uat/tools/scraper-in-extension.md) (the
 proposal of 2026-09-27) and the roadmap in [Scraper/](../Scraper/roadmap.md) (dormant since
@@ -168,7 +168,7 @@ One commit per step. Unit tests with each step; UI checks only where a step name
 | --- | --- | --- | --- |
 | 0 | Spike | The language server starts a headed Chromium, injects today's capture script, and writes one snapshot of the test site into a project folder. Frames included | The snapshot of `frames/` holds the frame content (RCA 025 to 027) |
 | 1 | Engine project | The WPF project renamed; `srcnew/Brinell.Scraper` with the services and models of section 2, and their tests moved. The WPF app leaves the solution if it no longer builds | **Done.** `tools/Brinell.Scraper.Wpf` (+ `.Wpf.Tests`) references `srcnew/Brinell.Scraper` and still builds; 9 services and 9 models moved, 36 tests to `testsnew/Brinell.Scraper.Tests`, 170 stay: 206 pass, as before |
-| 2 | Snapshot model | The neutral node tree and `IScrapeSource` in `Brinell.Core`; the Html attribute bag; stable JSON | Round-trip and ordering tests |
+| 2 | Snapshot model | The neutral node tree and `IScrapeSource` in `Brinell.Core`; the Html attribute bag; stable JSON | **Done.** `Brinell.Core.Scraping`: `ScrapeSnapshot`, `ScrapeNode` (number, parent, kind, type, role, name, text, bounds, frame, attributes), `IScrapeSource`; `SnapshotFile` writes `*.nodes.jsonl`; `HtmlAttributes` says what Html keeps (never `value`). 14 tests. The moved services still work on the old `DomElement`: they move to `ScrapeNode` in step 6, where they are used |
 | 3 | Store | `scraper.config.md`, `Recordings/`, the in-memory index, redaction | Tests on a temp project |
 | 4 | Html source | Record with transitions, manual capture, frames, highlight and pick, the profile per project | Tests against the test site, headless |
 | 5 | Server surface | MCP tools and view requests: `start_recording`, `capture_page`, `stop_recording`, `list_recorded_pages`, `get_page_snapshot`, `find_similar_elements`, `search_recordings`, `list_controls`, `detect_patterns`, `match_controls` | Server tests; one run from an agent |
