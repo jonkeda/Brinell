@@ -4,7 +4,7 @@
 
 The `Shell<TScope>` control object provides a high-level abstraction for interacting with MAUI Shell containers, particularly those using TabBar navigation.
 
-**Location:** `srcnew/Brinell.Maui.Extensions/Controls/Navigation/Shell.cs`
+**Location:** `srcnew/Brinell.Maui/Controls/Navigation/Shell.cs`
 
 ## Features
 
@@ -19,7 +19,7 @@ The `Shell<TScope>` control object provides a high-level abstraction for interac
 ### Page Object Setup
 
 ```csharp
-using Brinell.Maui.Extensions.Controls.Navigation;
+using Brinell.Maui.Controls.Navigation;
 
 public class AppShellPage : PageObjectBase<AppShellPage>
 {

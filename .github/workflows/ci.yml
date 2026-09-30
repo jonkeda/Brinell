@@ -99,7 +99,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Brinell.Maui.Extensions/Brinell.Maui.Extensions.csproj srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh

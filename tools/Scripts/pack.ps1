@@ -25,7 +25,6 @@ $libraries = @(
     'Brinell.Html.Playwright',
     'Brinell.Stride',
     'Brinell.Maui',
-    'Brinell.Maui.Extensions',
     'Brinell.Maui.CommunityToolkit',
     'Brinell.Maui.FlaUI',
     'Brinell.Uia.Contracts'
