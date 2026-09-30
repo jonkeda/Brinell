@@ -1,4 +1,4 @@
-namespace Brinell.Wpf.Uat.Tests.Runtime;
+namespace Brinell.Wpf.UITests.Uat;
 
 [Trait("Category", "UAT")]
 [Trait("Target", "WPF")]

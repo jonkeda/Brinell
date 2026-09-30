@@ -7,8 +7,8 @@ public class WpfSampleFixture : WpfTestFixtureBase
 {
     protected override string GetDefaultAppPath()
     {
-        // Navigate from test output to app output
-        var testDir = AppContext.BaseDirectory;
+        // From this assembly's folder to the app's output, not the host's: Presenter runs the suite in its own process (AD-025).
+        var testDir = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(WpfSampleFixture).Assembly);
         var appPath = Path.GetFullPath(Path.Combine(
             testDir, "..", "..", "..", "..", "..",
             "samples", "Brinell.Samples.Wpf.App", "bin",

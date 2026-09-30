@@ -1,4 +1,4 @@
-namespace Brinell.Wpf.Uat.Tests.Runtime;
+namespace Brinell.Wpf.UITests.Uat;
 
 [TestModuleScan(typeof(ShellPage), NamespacePrefix = "Brinell.Wpf.UITests.PageObjects")]
 public sealed class WpfUatFixture : WpfSampleFixture

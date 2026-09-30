@@ -13,7 +13,7 @@
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | Brinell.Wpf.Uat.Tests.dll |
+| Pages | Brinell.Wpf.UITests.dll |
 
 ## Discovery
 

@@ -17,13 +17,13 @@ the page objects. The WPF workspace is the cheapest: no Appium, no MAUI workload
 ```powershell
 # Working directory: Brinell root
 dotnet build samples\Brinell.Samples.Wpf.App\Brinell.Samples.Wpf.App.csproj
-dotnet build testsnew\Brinell.Wpf.Uat.Tests\Brinell.Wpf.Uat.Tests.csproj
+dotnet build testsnew\Brinell.Wpf.UITests\Brinell.Wpf.UITests.csproj
 dotnet run --project srcnew\Brinell.Presenter\Brinell.Presenter.csproj -f net10.0-windows10.0.19041.0
 ```
 
 Then, in Presenter (the toolbar is icon-only; hover for tooltips):
 
-1. **Open** `testsnew\Brinell.Wpf.Uat.Tests`.
+1. **Open** `testsnew\Brinell.Wpf.UITests`.
 2. **Validate**, and fix anything the Diagnostics tab reports.
 3. Select a scenario in the tree, for example *Home page is visible*.
 4. **Run**, or **Next** to go one step at a time.
