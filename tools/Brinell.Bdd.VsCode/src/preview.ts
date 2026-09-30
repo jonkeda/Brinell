@@ -235,7 +235,7 @@ export async function deleteResults(client: LanguageClient, target: { scope: "sc
 }
 
 // VS Code's own theme colours, as the preview's variables.
-function theme(): { type: string; kind: string; vars: Record<string, string> } {
+export function theme(): { type: string; kind: string; vars: Record<string, string> } {
   const kind = vscode.window.activeColorTheme.kind;
   return {
     type: "theme",

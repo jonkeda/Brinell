@@ -29,7 +29,21 @@ public sealed partial class BddLanguageServer
         }
     }
 
-    /// <summary><c>brinell/scraper/projects</c>: the scraped projects and what each has recorded.</summary>
+    /// <summary><c>brinell/scraper/host</c>: the Scraper view's page, which an IDE loads once and relays for.</summary>
+    [JsonRpcMethod("brinell/scraper/host")]
+    public PreviewHostResult ScraperHost() => new(ScraperPage.Html);
+
+    /// <summary><c>brinell/scraper/similar</c>: the nodes of the same kind as a node, on every page's newest capture.</summary>
+    [JsonRpcMethod("brinell/scraper/similar")]
+    public ScraperResult<IReadOnlyList<SimilarNode>> ScraperSimilar(ScraperPageNodeParams request)
+        => Answer(() => Scraper.Similar(request.Project, request.Page, request.Node ?? 0));
+
+    /// <summary><c>brinell/scraper/header</c>: the first line of a file made from a page, or from one of its nodes.</summary>
+    [JsonRpcMethod("brinell/scraper/header")]
+    public ScraperResult<string> ScraperHeader(ScraperPageNodeParams request)
+        => Answer(() => Scraper.Header(request.Project, request.Page, request.Node));
+
+        /// <summary><c>brinell/scraper/projects</c>: the scraped projects and what each has recorded.</summary>
     [JsonRpcMethod("brinell/scraper/projects")]
     public IReadOnlyList<ScraperProjectInfo> ScraperProjects()
         => Scraper.Projects().Select(project => new ScraperProjectInfo(
@@ -138,8 +152,10 @@ public sealed partial class BddLanguageServer
     }
 }
 
-/// <summary>An answer, or the reason there is none.</summary>
-public sealed record ScraperResult<T>(T? Value, string? Problem);
+/// <summary>An answer, or the reason there is none. Both are always sent, null or not: the view tells a result by them.</summary>
+public sealed record ScraperResult<T>(
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.Never)] T? Value,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.Never)] string? Problem);
 
 /// <summary>A scraped project.</summary>
 public sealed record ScraperProjectInfo(string Name, string Folder, string Platform, string StartUrl, IReadOnlyList<string> Sessions);
@@ -164,6 +180,9 @@ public sealed record ScraperProjectParams(string? Project);
 
 /// <summary><c>brinell/scraper/outline</c>'s parameters: the page's newest capture unless a session (and number) is given.</summary>
 public sealed record ScraperOutlineParams(string? Project, string Page, string? Session, int? Number, int? Node, int? MaxLines);
+
+/// <summary>A page's newest capture, and a node on it.</summary>
+public sealed record ScraperPageNodeParams(string? Project, string Page, int? Node);
 
 /// <summary>A node of the last capture; none to clear.</summary>
 public sealed record ScraperNodeParams(int? Node);

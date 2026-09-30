@@ -1,7 +1,7 @@
 {
   "name": "brinell-bdd",
   "displayName": "Brinell BDD",
-  "description": "Brinell feature and step files: the gate's diagnostics as you type, completion, navigation, a Scenario Preview, and running and debugging scenarios from Test Explorer.",
+  "description": "Brinell feature and step files: the gate's diagnostics as you type, completion, navigation, a Scenario Preview, and running and debugging scenarios from Test Explorer, and the Scraper: record an app's pages into a UI test project for page objects.",
   "version": "0.1.0",
   "publisher": "brinell",
   "license": "MIT",
@@ -15,7 +15,8 @@
   ],
   "activationEvents": [
     "workspaceContains:**/uat.config.md",
-    "workspaceContains:**/bdd.config.md"
+    "workspaceContains:**/bdd.config.md",
+    "workspaceContains:**/scraper.config.md"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -25,6 +26,12 @@
         "title": "Open Scenario Preview to the Side",
         "category": "Brinell BDD",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "brinellBdd.openScraper",
+        "title": "Open Scraper",
+        "category": "Brinell BDD",
+        "icon": "$(record)"
       },
       {
         "command": "brinellBdd.toggleStepBreakpoint",
@@ -65,6 +72,11 @@
         {
           "command": "brinellBdd.openPreview",
           "when": "resourceFilename =~ /\\.(feature|steps|video)\\.md$/",
+          "group": "navigation"
+        },
+        {
+          "command": "brinellBdd.openScraper",
+          "when": "resourceFilename == scraper.config.md",
           "group": "navigation"
         }
       ],

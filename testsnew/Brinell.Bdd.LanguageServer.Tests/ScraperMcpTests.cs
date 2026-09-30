@@ -75,6 +75,14 @@ public sealed class ScraperMcpTests : IDisposable
         var pages = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/pages", new { project = "Shop.UITests" });
         var outline = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/outline", new { page = "/archive" });
         var capture = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/capture", new { });
+        var host = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/host", new { });
+        var similar = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/similar", new { page = "/orders", node = 2 });
+        var header = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/header", new { page = "/orders" });
+
+        Assert.Contains("<title>Scraper</title>", (string?)host["html"]);
+        Assert.Equal(3, similar["value"]!.AsArray().Count);
+        Assert.True(similar.AsObject().ContainsKey("problem")); // sent even as null: the view tells a result by it
+        Assert.StartsWith("// <scraped page=\"/orders\"", (string?)header["value"]);
 
         Assert.Equal("Shop.UITests", (string?)projects[0]!["name"]);
         Assert.Equal(["/archive", "/orders"], pages["value"]!.AsArray().Select(page => (string?)page!["key"]));

@@ -1,12 +1,14 @@
 // The Brinell BDD extension for VS Code: the same language server as Visual Studio's
 // (Brinell.Bdd.LanguageServer) for diagnostics, completion and navigation, the same Scenario Preview,
-// Test Explorer on the scenarios' addresses, and step breakpoints shared with Visual Studio.
+// Test Explorer on the scenarios' addresses, step breakpoints shared with Visual Studio, and the
+// Scraper view, which records an app's pages into a UI test project.
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 import * as breakpoints from "./breakpoints";
 import { deleteResults, ScenarioPreview } from "./preview";
+import { ScraperView } from "./scraper";
 import { BddStepping, Move } from "./stepping";
 import { ScenarioTests } from "./tests";
 
@@ -45,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     move: (move) => void stepping.move(move as Move),
   });
   const stepping = new BddStepping(preview);
+  const scraper = new ScraperView(client);
   const gutter = vscode.window.createTextEditorDecorationType({
     gutterIconPath: context.asAbsolutePath(path.join("media", "breakpoint.svg")),
     gutterIconSize: "70%",
@@ -60,7 +63,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     tests,
     preview,
     stepping,
+    scraper,
     gutter,
+    vscode.commands.registerCommand("brinellBdd.openScraper", () => scraper.open()),
     vscode.commands.registerCommand("brinellBdd.stepOver", () => stepping.move("over")),
     vscode.commands.registerCommand("brinellBdd.stepInto", () => stepping.move("into")),
     vscode.commands.registerCommand("brinellBdd.stepOut", () => stepping.move("out")),
