@@ -3,14 +3,15 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 
-namespace Brinell.Scraper.Tests.Html;
+namespace Brinell.Scraper.TestSite;
 
 /// <summary>
 /// Serves the test site (copied beside the tests) on a free port, on <c>localhost</c> and on
 /// <c>127.0.0.1</c>: two origins, for cross-origin frames. Every request is logged; <c>/api/…</c>
 /// answers any method, so a test can prove which requests reached the site; <c>pages/account.html</c>
 /// sends each harmful action to <c>/api/counter/&lt;category&gt;</c>, and <c>/ws</c> counts the messages
-/// <c>pages/live.html</c> sends over its websocket.
+/// <c>pages/live.html</c> sends over its websocket. <c>/_counters</c> gives the counters as JSON, for the
+/// loop (<c>tools/Scripts/scrape-loop.ps1</c>), which runs the site on its own.
 /// </summary>
 public sealed class TestSiteServer : IDisposable
 {
@@ -19,9 +20,10 @@ public sealed class TestSiteServer : IDisposable
     private readonly ConcurrentQueue<(string Method, string Path)> _requests = new();
     private int _socketMessages;
 
-    public TestSiteServer()
+    /// <summary>Serves on <paramref name="port"/>, or a free one when 0.</summary>
+    public TestSiteServer(int port = 0)
     {
-        Port = FreePort();
+        Port = port > 0 ? port : FreePort();
         _listener.Prefixes.Add($"http://localhost:{Port}/");
         _listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
         _listener.Start();
@@ -38,6 +40,15 @@ public sealed class TestSiteServer : IDisposable
 
     /// <summary>How many times the dangerous page's actions of a category (sign-out, delete, update, send, pay, approve, bulk) reached the site, by any method.</summary>
     public int Counter(string category) => Requests.Count(r => r.Path.StartsWith($"/api/counter/{category}", StringComparison.Ordinal));
+
+    /// <summary>Every category's counter and the websocket messages, as JSON: <c>{"sign-out":0,…,"websocket":0}</c>.</summary>
+    public string CountersJson()
+    {
+        string[] categories = ["sign-out", "delete", "update", "send", "pay", "approve", "bulk"];
+        var counts = categories.ToDictionary(c => c, Counter);
+        counts["websocket"] = SocketMessages;
+        return System.Text.Json.JsonSerializer.Serialize(counts);
+    }
 
     /// <summary>How many messages the live page sent over its websocket.</summary>
     public int SocketMessages => Volatile.Read(ref _socketMessages);
@@ -56,10 +67,18 @@ public sealed class TestSiteServer : IDisposable
         {
             var context = await TryNextAsync();
             if (context is null) return;
-            _requests.Enqueue((context.Request.HttpMethod, context.Request.Url!.PathAndQuery));
+            if (context.Request.Url!.AbsolutePath != "/_counters")
+                _requests.Enqueue((context.Request.HttpMethod, context.Request.Url!.PathAndQuery));
             if (context.Request.IsWebSocketRequest)
             {
                 _ = CountMessagesAsync(context);
+                continue;
+            }
+            if (context.Request.Url!.AbsolutePath == "/_counters")
+            {
+                context.Response.ContentType = "application/json";
+                await context.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(CountersJson()));
+                context.Response.Close();
                 continue;
             }
             if (context.Request.Url!.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal))

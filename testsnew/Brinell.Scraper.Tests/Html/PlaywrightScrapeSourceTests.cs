@@ -1,6 +1,7 @@
 using Brinell.Core.Scraping;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
+using Brinell.Scraper.TestSite;
 
 namespace Brinell.Scraper.Tests.Html;
 

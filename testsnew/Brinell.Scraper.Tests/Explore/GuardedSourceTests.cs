@@ -2,7 +2,7 @@ using Brinell.Core.Scraping;
 using Brinell.Scraper.Explore;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
-using Brinell.Scraper.Tests.Html;
+using Brinell.Scraper.TestSite;
 using Microsoft.Playwright;
 
 namespace Brinell.Scraper.Tests.Explore;

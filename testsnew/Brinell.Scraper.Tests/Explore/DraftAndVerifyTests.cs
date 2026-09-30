@@ -3,7 +3,7 @@ using Brinell.Scraper.Explore;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Service;
-using Brinell.Scraper.Tests.Html;
+using Brinell.Scraper.TestSite;
 
 namespace Brinell.Scraper.Tests.Explore;
 

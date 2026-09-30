@@ -6,11 +6,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Scraper\Brinell.Scraper.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The site the Html source is tested on, served by TestSiteServer. -->
-    <None Update="TestSite\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The site the Html source is tested on, served by TestSiteServer; its files come along. -->
+    <ProjectReference Include="..\Brinell.Scraper.TestSite\Brinell.Scraper.TestSite.csproj" />
   </ItemGroup>
 
   <ItemGroup>
