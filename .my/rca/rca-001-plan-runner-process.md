@@ -1,6 +1,6 @@
 # Plan: a suite runs in a process of its own (RCA-001, option 2)
 
-Status: **being built** (step 1 done), 2026-09-30. Decided: option 2 of
+Status: **being built** (steps 1 to 5 done), 2026-09-30. Decided: option 2 of
 [RCA-001](rca-001-presenter-memory-grows-per-run.md), and Q1 to Q4 below.
 
 ## Goal
@@ -105,6 +105,19 @@ with a spike `Main` in `Brinell.Uat` that made the fixture, bound one scenario a
   library reference for every suite.
 - The process itself costs about 70 ms. The rest of "to the first step" is the fixture starting
   the app, which a run pays today as well. Q2 (one runner per run) stands.
+
+## What building it found (steps 2 to 5)
+
+| Step | Found |
+| --- | --- |
+| 3 | A step method does not get the run's cancellation token, so a canceled step ends when the step does; what a cancel stops at once is the pacer's wait. As before, in the engine |
+| 3 | Speak aloud: the runner only says which line it waits for (`say`); Presenter plays it. A suite need not have the Windows voice's player |
+| 4 | **No temporary setting.** The plan had a switch between the old and the new service for steps 4 and 5. The session's shape had to change for the runner anyway (no engine types), so the in-process service and its load context went in step 4, and the recorder's messages with it. Step 5 is the live check and its tests |
+| 4 | "One runner per run" is `IBddExecutionService.BeginRun()`: inside it, a session that ends leaves its runner for the next scenario; outside it (a single paused run), the runner ends with its session |
+| 4 | A session's `Dispose` does not wait: the close request is put in line, and the runner answers it before it answers the next scenario's open |
+| 4 | Runners are in a Windows job that ends them, the app and the mock server when Presenter ends, however it ends |
+| 4 | Todo, TOD.01.1, eight runs through `BddExecutionService` (the RCA's loop): **81 assemblies after every run and private memory flat** (17 to 24 MB), against 277, 379, 481... and +4 MB a run before. 5 to 6 s from Run to the first step, the app's own start |
+| 5 | From Presenter, Narrator mode, the short Todo script: three scenes recorded by the runner and stitched (40 s); Stop dropped a scene; recording it again replaced it; a rehearsal with Speak aloud was paced by its lines; Present mode's Record made its video. After each: no runner, no Todo app, the suite's DLL free. Presenter's private memory: 220 MB before, 229 MB after six runs |
 
 ## What can go wrong
 

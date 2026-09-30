@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Brinell.Bdd.Runner;
 using Brinell.Presenter.Services;
 
 namespace Brinell.Presenter.Bdd.Tests.Services;
@@ -76,6 +77,28 @@ public sealed class RunnerSessionTests : IDisposable
 
         run.Dispose();
         await runner.WaitForExitAsync();
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task ASession_HasItsRunnerPaceAndRecordTheScenario()
+    {
+        Config(nameof(UnloadProbeFixture));
+        using var service = new BddExecutionService();
+        using var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
+        List<string> said = [];
+        session.Said = say => said.Add(say.Wav);
+        var folder = Path.Combine(_root, "scene-01");
+        var clips = new BddRunnerClips(new BddRunnerClip("Hello.", "intro.wav", 0.01), new Dictionary<int, BddRunnerClip>(), null);
+
+        await session.RecordAsync(new BddRunnerRecord(1, "Probe", "probe.feature.md#The-probe-is-ready", folder, "hash-1", clips, 0, SpeakAloud: true));
+        await session.RunNextAsync(CancellationToken.None);
+        var recorded = await session.FinishRecordingAsync(CancellationToken.None);
+
+        // The probe shows nothing to record: the scene still gets its timeline, and says why it has no video.
+        var timeline = Brinell.Narrator.BddSceneTimeline.Load(recorded.Timeline!);
+        Assert.Equal(("Probe", "hash-1", BddStepResultStatus.Passed), (timeline.Name, timeline.Hash, timeline.Status));
+        Assert.Contains(recorded.Warnings, warning => warning.Contains("IRecordable"));
+        Assert.Equal(["intro.wav"], said);
     }
 
     [Fact(Timeout = 120000)]
