@@ -12,20 +12,29 @@ namespace Brinell.Scraper.Service;
 public static class ScrapeCommand
 {
     /// <summary>How to call it.</summary>
-    public const string Usage =
-        "usage: scrape explore --project <name> [--solution <folder>] [--url <start>] [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--delay-ms N] [--headless] [--yes] [--json]";
+    public const string Usage = """
+        usage: scrape explore --project <name> [--solution <folder>] [--url <start>] [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--delay-ms N] [--headless] [--yes] [--json]
+               scrape draft --project <name> [--solution <folder>] [--page <key>] [--json]
+               scrape verify --project <name> [--solution <folder>] [--headless] [--json]
+        """;
 
     /// <summary>Runs one command; <paramref name="input"/> answers the question before a run, and a sign-in when the browser shows.</summary>
     public static async Task<int> RunAsync(string[] args, TextReader input, TextWriter output, TextWriter errors, Func<string, IScrapeSource>? sourceFor = null, CancellationToken cancellationToken = default)
     {
-        if (args.Length == 0 || args[0] != "explore")
-        {
-            await errors.WriteLineAsync(Usage).ConfigureAwait(false);
-            return 2;
-        }
         try
         {
-            return await ExploreAsync(args[1..], input, output, errors, sourceFor, cancellationToken).ConfigureAwait(false);
+            switch (args.FirstOrDefault())
+            {
+                case "explore":
+                    return await ExploreAsync(args[1..], input, output, errors, sourceFor, cancellationToken).ConfigureAwait(false);
+                case "draft":
+                    return await DraftAsync(args[1..], output, sourceFor, cancellationToken).ConfigureAwait(false);
+                case "verify":
+                    return await VerifyAsync(args[1..], output, sourceFor, cancellationToken).ConfigureAwait(false);
+                default:
+                    await errors.WriteLineAsync(Usage).ConfigureAwait(false);
+                    return 2;
+            }
         }
         catch (Exception e) when (e is ScraperProblem or FormatException or FileNotFoundException or ArgumentException or InvalidOperationException)
         {
@@ -74,7 +83,7 @@ public static class ScrapeCommand
         var result = await service.ExploreAsync(project, options, cancellationToken).ConfigureAwait(false);
         if (args.Contains("--json"))
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(result, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true })).ConfigureAwait(false);
+            await output.WriteLineAsync(Json(result)).ConfigureAwait(false);
         }
         else
         {
@@ -84,6 +93,58 @@ public static class ScrapeCommand
         }
         return result.WithinGuards ? 0 : 1;
     }
+
+    // 0 when every draft is written or unchanged, 1 when one was put back.
+    private static async Task<int> DraftAsync(string[] args, TextWriter output, Func<string, IScrapeSource>? sourceFor, CancellationToken cancellationToken)
+    {
+        await using var service = new ScraperService(Option(args, "--solution") ?? Environment.CurrentDirectory, sourceFor);
+        var result = await service.DraftAsync(Option(args, "--project"), Option(args, "--page"), cancellationToken).ConfigureAwait(false);
+        if (args.Contains("--json"))
+        {
+            await output.WriteLineAsync(Json(result)).ConfigureAwait(false);
+        }
+        else
+        {
+            foreach (var page in result.Pages)
+            {
+                await output.WriteLineAsync(string.Create(CultureInfo.InvariantCulture, $"{page.Outcome,-9} {page.ClassName} ({page.Key}): {page.Members} members, {page.Unstable.Count} left out{(page.Reason is { } why ? $"; {why}" : "")}")).ConfigureAwait(false);
+                foreach (var removed in page.Removed)
+                    await output.WriteLineAsync($"          removed {removed.Name}, last drafted from {removed.LastSeenIn}").ConfigureAwait(false);
+                foreach (var problem in page.Problems.Take(5))
+                    await output.WriteLineAsync($"          line {problem.Line}: {problem.Code} {problem.Message}").ConfigureAwait(false);
+            }
+            foreach (var pattern in result.MakeControls)
+                await output.WriteLineAsync($"Make a control: {pattern.Signature} ({pattern.Occurrences} times on {pattern.Pages} pages)").ConfigureAwait(false);
+        }
+        return result.Pages.Any(p => p.Outcome == Code.DraftOutcome.Reverted) ? 1 : 0;
+    }
+
+    // 0 when every member of every page object is found once, 1 otherwise.
+    private static async Task<int> VerifyAsync(string[] args, TextWriter output, Func<string, IScrapeSource>? sourceFor, CancellationToken cancellationToken)
+    {
+        await using var service = new ScraperService(Option(args, "--solution") ?? Environment.CurrentDirectory, sourceFor);
+        var result = await service.VerifyAsync(Option(args, "--project"), visible: !args.Contains("--headless"), cancellationToken).ConfigureAwait(false);
+        if (args.Contains("--json"))
+        {
+            await output.WriteLineAsync(Json(result)).ConfigureAwait(false);
+        }
+        else
+        {
+            foreach (var page in result.Pages)
+            {
+                var failed = page.Members.Where(m => m.Verdict is Html.MemberVerdict.NotFound or Html.MemberVerdict.Several).ToArray();
+                await output.WriteLineAsync(page.Problem is { } problem
+                    ? $"FAIL {page.ClassName} ({page.Key}): {problem}"
+                    : string.Create(CultureInfo.InvariantCulture, $"{(failed.Length == 0 ? "ok  " : "FAIL")} {page.ClassName} ({page.Key}): {page.Members.Count - failed.Length} of {page.Members.Count} found once")).ConfigureAwait(false);
+                foreach (var member in failed)
+                    await output.WriteLineAsync(string.Create(CultureInfo.InvariantCulture, $"     {member.Name}: {member.Locator} found {member.Count} times")).ConfigureAwait(false);
+            }
+        }
+        return result.Passed ? 0 : 1;
+    }
+
+    private static string Json(object value) =>
+        JsonSerializer.Serialize(value, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
 
     private static string? Option(string[] args, string name)
     {

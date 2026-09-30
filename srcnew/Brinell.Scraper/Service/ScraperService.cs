@@ -417,6 +417,45 @@ public sealed class ScraperService : IAsyncDisposable
             StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// Drafts a page object for every recorded page, or one (see <see cref="DraftRun"/>), from rules and no
+    /// model; a draft the project does not build with is put back. Also names the repeated patterns that
+    /// have no control yet: controls need a judgement, so they are the agent's or a person's.
+    /// </summary>
+    public async Task<DraftResult> DraftAsync(string? projectName, string? page = null, CancellationToken cancellationToken = default)
+    {
+        var project = Project(projectName);
+        DraftResult result;
+        try
+        {
+            result = await DraftRun.RunAsync(project, page, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ArgumentException e)
+        {
+            throw new ScraperProblem(e.Message);
+        }
+        return result with { MakeControls = Patterns(project.Name).Where(p => p.Control is null && p.Pages >= 2).ToArray() };
+    }
+
+    /// <summary>
+    /// Checks the project's page objects against the running app (see <see cref="PageVerifier"/>), in a
+    /// browser of its own with the project's profile, under the Explore guards.
+    /// </summary>
+    public async Task<VerifyResult> VerifyAsync(string? projectName, bool visible = false, CancellationToken cancellationToken = default)
+    {
+        var project = Project(projectName);
+        if (_recording is not null)
+            throw new ScraperProblem("A recording is in progress, and it holds the project's browser profile: stop it first.");
+        if (_sourceFor(project.Config.Platform) is not PlaywrightScrapeSource source)
+            throw new ScraperProblem($"{project.Config.Platform} page objects cannot be verified yet: html and blazor can.");
+        await using (source.ConfigureAwait(false))
+        {
+            await source.StartAsync(new ScrapeStart("about:blank", project.ProfileFolder, visible), cancellationToken).ConfigureAwait(false);
+            await source.GuardAsync(new RequestGuard(project.Config.Explore)).ConfigureAwait(false);
+            return await PageVerifier.RunAsync(project, source.Page!, () => source.CaptureAsync(cancellationToken)).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
     public WriteResult WriteCode(string? projectName, string path, string code) => CodeGate.Write(Project(projectName), path, code);
 

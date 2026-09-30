@@ -7,7 +7,7 @@ if (args.Length > 0 && args[0] == "--preview")
     return PreviewCommand.Run(args[1..], Console.Out, Console.Error);
 }
 
-// scrape: the Scraper from a command line (explore), for a person, the loop and CI; exit 0, 1 (a guard stopped it) or 2:
+// scrape: the Scraper from a command line (explore, draft, verify), for a person, the loop and CI; exit 0, 1 (a guard stopped it) or 2:
 //   Brinell.Bdd.LanguageServer scrape explore --project <name> [--solution <folder>] [--dry-run] [--headless] [--yes] ...
 if (args.Length > 0 && args[0] == "scrape")
 {
