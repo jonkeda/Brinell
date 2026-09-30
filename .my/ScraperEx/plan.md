@@ -192,7 +192,7 @@ Step 5 already pays off without a view: an agent can record and generate through
 | Q5 | Visible text in snapshots | Stored as it is; mask rules in the config |
 | Q6 | Old SQLite corpora | Not migrated |
 | Q7 | First real target | `testsnew/Brinell.Blazor.UITests` |
-| Q8 | The VSIX carries Playwright's driver, 102 MB (step 8) | Playwright gets a separate updater: it updates often ([next-plan.md](next-plan.md), section 1) |
+| Q8 | The VSIX carries Playwright's driver, 102 MB (step 8) | Ship the driver in the extensions (about 100 MB) for now; a separate updater later ([next-plan.md](next-plan.md), section 1) |
 
 ## 10. Test sites
 
@@ -288,7 +288,7 @@ dominated by its navigation. A real app with test ids does far better (the Blazo
 | Item | From | Status |
 | --- | --- | --- |
 | The views tried inside VS Code and Visual Studio (the page was tried through a stand-in host; both relays build); Pick needs a person's click | steps 7, 8 | to try |
-| Q8: the language server carries Playwright's driver (102 MB), and Playwright releases about monthly | step 8 | decided: an updater of its own; see [next-plan.md](next-plan.md) |
+| Q8: the language server carries Playwright's driver (102 MB), and Playwright releases about monthly | step 8 | decided: ship it in the extensions for now; an updater later ([next-plan.md](next-plan.md)) |
 | Record actions (clicks, typing) into `recording.json` and draft UI tests or UAT scenarios from them, phrases from the catalog only | section 7 | later |
 | A UI Automation source (MAUI, WPF) behind `IScrapeSource`; then the Html source moves to a project of its own | section 5 (AD-026, R3) | later |
 | On a docs site without test ids most suggestions are positions (MudBlazor: 254 of 364) | section 12 | to improve |
