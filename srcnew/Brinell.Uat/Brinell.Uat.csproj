@@ -5,6 +5,11 @@
     <Description>Markdown-driven UAT parsing and execution core for Brinell.</Description>
     <PackageId>Brinell.Uat</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- A library with an entry point: a host starts a suite's copy of this assembly as the runner
+         process (Runner/, AD-025). No app host: it is only ever started through dotnet exec. -->
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <StartupObject>Brinell.Uat.Runner.BddRunnerProgram</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

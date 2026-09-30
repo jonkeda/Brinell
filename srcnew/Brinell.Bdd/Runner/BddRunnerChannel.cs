@@ -49,7 +49,7 @@ public sealed class BddRunnerChannel : IDisposable
     {
         var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         _reader = new StreamReader(input, encoding);
-        _writer = new StreamWriter(output, encoding) { AutoFlush = true, NewLine = "\n" };
+        _writer = new StreamWriter(output, encoding) { NewLine = "\n" };
     }
 
     /// <summary>A message as its line.</summary>
@@ -81,6 +81,7 @@ public sealed class BddRunnerChannel : IDisposable
         try
         {
             await _writer.WriteLineAsync(Write(message).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await _writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -114,9 +115,9 @@ public sealed class BddRunnerChannel : IDisposable
         {
             _writer.Dispose();
         }
-        catch (IOException)
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
         {
-            // The other side is gone; there is nothing left to flush to.
+            // The other side is gone, or never came; there is nothing left to flush to.
         }
 
         _sending.Dispose();
