@@ -221,7 +221,7 @@ public sealed class BddRunnerHost
 
     // The host plays the line: it has the voice's player, and a suite need not.
     private Task SayAsync(SpeechClip clip, CancellationToken cancellationToken)
-        => clip.WavPath is { } wav ? _channel.SendAsync(new BddRunnerSay(wav), cancellationToken) : Task.CompletedTask;
+        => clip.WavPath is { } wav ? _channel.SendAsync(new BddRunnerSay(wav, clip.Duration.TotalSeconds), cancellationToken) : Task.CompletedTask;
 
     private static BddSceneClips Clips(BddRunnerClips clips)
     {

@@ -75,7 +75,7 @@ public sealed class BddExecutionServiceTargetTests
                 Assert.Equal(BddStepResultStatus.Passed, result.Status);
             }
 
-            Assert.True(session.ToResult().Passed);
+            Assert.True(session.Passed);
         }
         finally
         {

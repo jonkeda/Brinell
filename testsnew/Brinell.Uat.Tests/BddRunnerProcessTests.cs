@@ -171,7 +171,7 @@ public sealed class BddRunnerProcessTests : IDisposable
     {
         await using var runner = await StartAsync();
         List<string> said = [];
-        runner.Said = said.Add;
+        runner.Said = say => said.Add(say.Wav);
         await runner.RequestAsync(Open("Counts to two"));
         var clips = new BddRunnerClips(new BddRunnerClip("Hello.", "intro.wav", 0.3), new Dictionary<int, BddRunnerClip>(), new BddRunnerClip("Bye.", "outro.wav", 0.01));
 

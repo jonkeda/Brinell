@@ -216,8 +216,8 @@ public sealed class NarratorRunTests : IDisposable
 
         public Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken) => Task.FromResult<PresenterRecorded?>(null);
 
-        public Task<BddNarrationPacer?> RehearseAsync(BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
-            => Task.FromResult<BddNarrationPacer?>(null);
+        public Task<bool> RehearseAsync(PresenterUatExecutionSession session, BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
+            => Task.FromResult(false);
 
         public Task StartSceneAsync(PresenterUatExecutionSession session, PresenterSceneRequest scene, CancellationToken cancellationToken) => Task.CompletedTask;
 

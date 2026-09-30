@@ -47,6 +47,8 @@ public sealed partial class PresenterShellViewModel
         StatusSummary = $"Starting: {options.SelectedNodeName}";
         RefreshSelectedNodeDetails();
 
+        // One runner process for the scenarios of the run; it ends with the run.
+        using var run = _executionService.BeginRun();
         var passed = 0;
         foreach (var scenario in scenarios)
         {
@@ -259,7 +261,7 @@ public sealed partial class PresenterShellViewModel
             while (session.HasNext && session.CompletedStepCount < from.FirstStep)
             {
                 var index = session.CompletedStepCount;
-                session.SkipNext("Skipped by Run from here.");
+                await session.SkipNextAsync("Skipped by Run from here.").ConfigureAwait(true);
                 SetStepStatus(index, "skip");
             }
 
@@ -507,7 +509,7 @@ public sealed partial class PresenterShellViewModel
         Stopped,
     }
 
-    private async Task<BddStepResult> RunNextStepAsync(
+    private async Task<Brinell.Bdd.Runner.BddRunnerStep> RunNextStepAsync(
         PresenterUatExecutionSession session,
         BddScenarioViewModel scenario)
     {

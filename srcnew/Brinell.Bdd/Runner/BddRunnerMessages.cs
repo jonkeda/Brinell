@@ -101,7 +101,8 @@ public sealed record BddRunnerRecorded(string? Timeline, IReadOnlyList<string> W
 
 /// <summary>From the runner, while a step waits for its line: the host plays it. Not answered.</summary>
 /// <param name="Wav">The line's sound file.</param>
-public sealed record BddRunnerSay(string Wav) : BddRunnerMessage;
+/// <param name="Seconds">How long it takes.</param>
+public sealed record BddRunnerSay(string Wav, double Seconds) : BddRunnerMessage;
 
 /// <summary>Closes the open scenario: its fixture and app. Answered by <see cref="BddRunnerDone"/>.</summary>
 public sealed record BddRunnerClose : BddRunnerMessage;

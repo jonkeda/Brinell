@@ -103,8 +103,8 @@ public sealed class BddRunnerClient : IAsyncDisposable
     /// <summary>The runner process.</summary>
     public Process Process => _process;
 
-    /// <summary>Called when the runner announces a spoken line (<see cref="BddRunnerSay"/>), with its sound file.</summary>
-    public Action<string>? Said { get; set; }
+    /// <summary>Called when the runner announces a spoken line, for the host to play.</summary>
+    public Action<BddRunnerSay>? Said { get; set; }
 
     /// <summary>The last lines the runner wrote to its console.</summary>
     public string Log
@@ -209,7 +209,7 @@ public sealed class BddRunnerClient : IAsyncDisposable
                     case null:
                         throw new BddRunnerException(Ended("The runner ended in the middle of a run."));
                     case BddRunnerSay say:
-                        Said?.Invoke(say.Wav);
+                        Said?.Invoke(say);
                         break;
                     default:
                         return answer;

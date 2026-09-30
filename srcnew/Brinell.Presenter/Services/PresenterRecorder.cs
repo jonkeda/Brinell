@@ -1,5 +1,5 @@
 using System.Globalization;
-using Brinell.Core.Recording;
+using Brinell.Bdd.Runner;
 using Brinell.Narrator;
 using Brinell.Narrator.Windows;
 using Brinell.Recording;
@@ -36,7 +36,7 @@ public interface IPresenterRecorder
     string? Unavailable { get; }
 
     /// <summary>
-    /// Starts recording a session's scenario: its pacer is set, and the recorder starts at the
+    /// Starts recording a session's scenario: its runner paces it, and records from the
     /// first step. The scene a video script has for the scenario narrates it; without one it runs
     /// silently, with its beats.
     /// </summary>
@@ -53,25 +53,26 @@ public interface IPresenterRecorder
     Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// A rehearsal's pacer for a scene: each line is spoken and played before its step, nothing is
-    /// recorded. Null when this machine has no voice.
+    /// Rehearses a scene: each line is spoken and played before its step, nothing is recorded.
+    /// False when this machine has no voice. <see cref="FinishSceneAsync"/> plays its outro.
     /// </summary>
+    /// <param name="session">The session, before its first step.</param>
     /// <param name="scene">The scene.</param>
     /// <param name="voice">The voice, by (part of) its name; null for the default.</param>
     /// <param name="beat">The wait after a step.</param>
     /// <param name="cancellationToken">Cancels the speech.</param>
-    Task<BddNarrationPacer?> RehearseAsync(BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken);
+    Task<bool> RehearseAsync(PresenterUatExecutionSession session, BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Starts recording one scene of a script into its kept folder: its lines are spoken, the
-    /// session's pacer is set, and the recorder starts at the first step. Nothing is composed.
+    /// Starts recording one scene of a script into its kept folder: its lines are spoken, and the
+    /// session's runner paces it and records from the first step. Nothing is composed.
     /// </summary>
     /// <param name="session">The session, before its first step.</param>
     /// <param name="scene">The scene.</param>
     /// <param name="cancellationToken">Cancels the speech.</param>
     Task StartSceneAsync(PresenterUatExecutionSession session, PresenterSceneRequest scene, CancellationToken cancellationToken);
 
-    /// <summary>After the scene's last step: the outro, then its video and timeline are finished. Null when no scene was being recorded.</summary>
+    /// <summary>After the scene's last step: the outro, then its video and timeline are finished. Null for a rehearsal, or when no scene was being recorded.</summary>
     /// <param name="cancellationToken">Cancels the outro.</param>
     Task<BddSceneTimeline?> FinishSceneAsync(CancellationToken cancellationToken);
 
@@ -96,9 +97,10 @@ public interface IPresenterRecorder
 /// <inheritdoc />
 public sealed class PresenterRecorder : IPresenterRecorder
 {
-    private static readonly Lazy<ScreenRecorders> Recorders = new(ScreenRecorders.Discover);
-    private BddSceneRecording? _recording;
-    private BddSceneRecording? _scene;
+    private PresenterUatExecutionSession? _recording;
+    private string? _recordingFolder;
+    private PresenterUatExecutionSession? _scene;
+    private string? _sceneFolder;
     private string? _title;
     private bool _narrated;
 
@@ -133,23 +135,29 @@ public sealed class PresenterRecorder : IPresenterRecorder
 
         _narrated = !ReferenceEquals(clips, BddSceneClips.Silent);
         _title = name;
-        var request = new BddSceneRequest(1, name, address, sceneFolder, clips, beat);
-        _recording = new BddSceneRecording(request, session.RecordingTarget, Recorders.Value, settings.SpeakAloud ? WindowsSpeech.PlayAsync : null);
-        session.Runner.Context.Pacer = _recording;
+        session.Said = Play;
+        await session.RecordAsync(new BddRunnerRecord(1, name, address, sceneFolder, null, Clips(clips), beat.TotalMilliseconds, settings.SpeakAloud)).ConfigureAwait(false);
+        _recording = session;
+        _recordingFolder = sceneFolder;
     }
 
     /// <inheritdoc />
-    public async Task<BddNarrationPacer?> RehearseAsync(BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
+    public async Task<bool> RehearseAsync(PresenterUatExecutionSession session, BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(session);
         var speech = new WindowsSpeech();
         if (!speech.IsAvailable)
         {
-            return null;
+            return false;
         }
 
         var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
         var clips = await BddSceneClips.SpeakAsync(scene, speech, voice, folder, cancellationToken).ConfigureAwait(false);
-        return new BddNarrationPacer(clips, beat, WindowsSpeech.PlayAsync);
+        session.Said = Play;
+        await session.RehearseAsync(new BddRunnerRehearse(Clips(clips), beat.TotalMilliseconds, SpeakAloud: true)).ConfigureAwait(false);
+        _scene = session;
+        _sceneFolder = null;
+        return true;
     }
 
     /// <inheritdoc />
@@ -166,37 +174,50 @@ public sealed class PresenterRecorder : IPresenterRecorder
         TryDelete(scene.Folder);
         var speech = new WindowsSpeech();
         var clips = await BddSceneClips.SpeakAsync(scene.Plan, speech.IsAvailable ? speech : null, scene.Voice, scene.Folder, cancellationToken).ConfigureAwait(false);
-        var request = new BddSceneRequest(scene.Number, scene.Plan.Scene.Name, scene.Plan.Address, scene.Folder, clips, scene.Beat) { Hash = scene.Hash };
-        _scene = new BddSceneRecording(request, session.RecordingTarget, Recorders.Value, scene.SpeakAloud ? WindowsSpeech.PlayAsync : null);
-        session.Runner.Context.Pacer = _scene;
+        session.Said = Play;
+        await session.RecordAsync(new BddRunnerRecord(scene.Number, scene.Plan.Scene.Name, scene.Plan.Address, scene.Folder, scene.Hash, Clips(clips), scene.Beat.TotalMilliseconds, scene.SpeakAloud)).ConfigureAwait(false);
+        _scene = session;
+        _sceneFolder = scene.Folder;
     }
 
     /// <inheritdoc />
     public async Task<BddSceneTimeline?> FinishSceneAsync(CancellationToken cancellationToken)
     {
-        if (_scene is not { } recording)
+        if (_scene is not { } session)
         {
             return null;
         }
 
         _scene = null;
-        await using (recording.ConfigureAwait(false))
-        {
-            return await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
-        }
+        _sceneFolder = null;
+        var recorded = await session.FinishRecordingAsync(cancellationToken).ConfigureAwait(false);
+        return recorded.Timeline is { } timeline ? BddSceneTimeline.Load(timeline) : null;
     }
 
     /// <inheritdoc />
     public async Task DropSceneAsync()
     {
-        if (_scene is not { } recording)
+        if (_scene is not { } session)
         {
             return;
         }
 
+        var folder = _sceneFolder;
         _scene = null;
-        await recording.DisposeAsync().ConfigureAwait(false);
-        TryDelete(recording.Request.Folder);
+        _sceneFolder = null;
+        try
+        {
+            await session.DropRecordingAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is BddRunnerException or ObjectDisposedException or InvalidOperationException)
+        {
+            // The runner ended with its run: there is no recording left to give up.
+        }
+
+        if (folder is not null)
+        {
+            TryDelete(folder);
+        }
     }
 
     /// <inheritdoc />
@@ -222,6 +243,43 @@ public sealed class PresenterRecorder : IPresenterRecorder
         return true;
     }
 
+    /// <inheritdoc />
+    public async Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken)
+    {
+        if (_recording is not { } session || _recordingFolder is not { } folder)
+        {
+            return null;
+        }
+
+        _recording = null;
+        _recordingFolder = null;
+        var recorded = await session.FinishRecordingAsync(cancellationToken).ConfigureAwait(false);
+        var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken).ConfigureAwait(false);
+        return new PresenterRecorded(video.Video, _narrated, [.. recorded.Warnings, .. video.Warnings]);
+    }
+
+    // The runner waits for a line and says so; the voice's player is Presenter's.
+    private static void Play(BddRunnerSay say)
+        => _ = PlayAsync(new SpeechClip(string.Empty, say.Wav, TimeSpan.FromSeconds(say.Seconds)));
+
+    private static async Task PlayAsync(SpeechClip clip)
+    {
+        try
+        {
+            await WindowsSpeech.PlayAsync(clip, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException)
+        {
+            // A line that cannot be played is not heard; the run and its recording go on.
+        }
+    }
+
+    private static BddRunnerClips Clips(BddSceneClips clips)
+    {
+        static BddRunnerClip? Clip(SpeechClip? clip) => clip is null ? null : new BddRunnerClip(clip.Text, clip.WavPath, clip.Duration.TotalSeconds);
+        return new BddRunnerClips(Clip(clips.Intro), clips.Says.ToDictionary(pair => pair.Key, pair => Clip(pair.Value)!), Clip(clips.Outro));
+    }
+
     // False when a file of the folder is still held: the scene then reads as it did, until it is recorded again.
     private static bool TryDelete(string folder)
     {
@@ -237,23 +295,6 @@ public sealed class PresenterRecorder : IPresenterRecorder
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             return false;
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken)
-    {
-        if (_recording is not { } recording)
-        {
-            return null;
-        }
-
-        _recording = null;
-        await using (recording.ConfigureAwait(false))
-        {
-            var scene = await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
-            var video = await BddVideoComposer.ComposeAsync(_title ?? scene.Name, Path.GetDirectoryName(recording.Request.Folder)!, cancellationToken).ConfigureAwait(false);
-            return new PresenterRecorded(video.Video, _narrated, [.. scene.Warnings, .. video.Warnings]);
         }
     }
 }

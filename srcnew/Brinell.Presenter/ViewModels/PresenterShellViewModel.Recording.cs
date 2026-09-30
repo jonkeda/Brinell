@@ -209,10 +209,11 @@ public sealed partial class PresenterShellViewModel
     // next run may already start.
     private void FinishRecording()
     {
-        if (_sceneRecording)
+        if (_sceneRecording || _sceneRehearsal)
         {
             // The run ended before its scene did (Stop, or it could not start): the scene is dropped.
             _sceneRecording = false;
+            _sceneRehearsal = false;
             _ = _recorder.DropSceneAsync();
             return;
         }

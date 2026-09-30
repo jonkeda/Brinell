@@ -25,7 +25,7 @@ public sealed class BddRunnerChannelTests
         new BddRunnerFinishRecording(),
         new BddRunnerDropRecording(),
         new BddRunnerRecorded(@"C:\rec\scene-02\timeline.json", ["No recorder here."]),
-        new BddRunnerSay(@"C:\scene\intro.wav"),
+        new BddRunnerSay(@"C:\scene\intro.wav", 1.5),
         new BddRunnerClose(),
         new BddRunnerCancel(),
         new BddRunnerExit(),

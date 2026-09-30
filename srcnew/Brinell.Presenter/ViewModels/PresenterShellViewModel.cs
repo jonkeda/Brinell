@@ -365,6 +365,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     {
         StopActiveSession();
         ReleaseEndedSession();
+        (_executionService as IDisposable)?.Dispose();
     }
 
     private void SaveWindowSettings()
@@ -1981,7 +1982,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         var options = _activeRunOptions;
         List<string> lines =
         [
-            .. BddDiagnosticsFormatter.FormatSteps(session.StepSession.Results),
+            .. session.StepsReport,
             "Runtime trace:"
         ];
         if (!string.IsNullOrWhiteSpace(session.AutPlacementReport))
@@ -1989,7 +1990,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             lines.Add(session.AutPlacementReport);
         }
 
-        lines.AddRange(session.Runner.Context.Diagnostics);
+        lines.AddRange(session.Diagnostics);
         if (options is not null)
         {
             lines.Add("Run scope:");

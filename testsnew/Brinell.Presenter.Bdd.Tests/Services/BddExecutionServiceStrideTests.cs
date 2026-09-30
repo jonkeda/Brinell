@@ -62,7 +62,7 @@ public sealed class BddExecutionServiceStrideTests
                 Assert.Equal(BddStepResultStatus.Passed, result.Status);
             }
 
-            Assert.True(session.ToResult().Passed);
+            Assert.True(session.Passed);
             Assert.Contains("Result: not supported", session.AutPlacementReport, StringComparison.Ordinal);
         }
         finally

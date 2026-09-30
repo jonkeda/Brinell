@@ -1,11 +1,11 @@
-using Brinell.Uat;
+using Brinell.Bdd.Runner;
 
 namespace Brinell.Presenter.Services;
 
 public interface IBddExecutionService
 {
     /// <summary>
-    /// Variables set while a session's app is started: how its window is shown
+    /// Variables set for a session's runner, and so for the app it starts: how its window is shown
     /// (<c>BRINELL_AUT_WINDOW</c>) and where (<c>BRINELL_AUT_BOUNDS</c>).
     /// </summary>
     IReadOnlyDictionary<string, string> WindowEnvironment
@@ -19,84 +19,105 @@ public interface IBddExecutionService
         string scenarioFilePath,
         string scenarioName,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A run of several scenarios: until the returned scope is disposed, a session that ends
+    /// leaves its runner process for the next one. Outside a run, a runner ends with its session.
+    /// </summary>
+    IDisposable BeginRun() => NoRun.Instance;
+
+    private sealed class NoRun : IDisposable
+    {
+        public static readonly NoRun Instance = new();
+
+        public void Dispose()
+        {
+        }
+    }
 }
 
+/// <summary>
+/// One scenario, open in a runner process (AD-025): Presenter asks for a step at a time and holds
+/// only what the runner answers, as text.
+/// </summary>
 public sealed class PresenterUatExecutionSession : IDisposable
 {
-    private readonly IDisposable? _environment;
-    private readonly IDisposable? _executionScope;
-    private readonly IDisposable? _fixture;
-    private readonly IDisposable? _resolver;
-    private Func<Brinell.Core.Recording.RecordingTarget?> _recordingTarget = () => null;
+    private readonly BddRunnerClient _runner;
+    private readonly Action<BddRunnerClient, Task> _release;
+    private readonly List<BddRunnerStep> _steps = [];
     private bool _disposed;
 
-    public PresenterUatExecutionSession(
-        BddStepExecutionSession stepSession,
-        BddScenarioRunner runner,
-        BddBoundScenario scenario,
-        BddCommandCatalog catalog,
-        string discoveryReport,
-        string commandCatalogReport,
-        string autPlacementReport,
-        IDisposable? executionScope,
-        IDisposable? fixture,
-        IDisposable? resolver,
-        IDisposable? environment)
+    /// <summary>Creates the session for a scenario the runner has opened.</summary>
+    /// <param name="runner">The runner.</param>
+    /// <param name="opened">Its answer to the open request.</param>
+    /// <param name="release">Called once when the session ends, with the runner and its closing of the scenario.</param>
+    public PresenterUatExecutionSession(BddRunnerClient runner, BddRunnerOpened opened, Action<BddRunnerClient, Task> release)
     {
-        StepSession = stepSession;
-        Runner = runner;
-        Scenario = scenario;
-        Catalog = catalog;
-        DiscoveryReport = discoveryReport;
-        CommandCatalogReport = commandCatalogReport;
-        AutPlacementReport = autPlacementReport;
-        _executionScope = executionScope;
-        _fixture = fixture;
-        _resolver = resolver;
-        _environment = environment;
+        _runner = runner ?? throw new ArgumentNullException(nameof(runner));
+        _release = release ?? throw new ArgumentNullException(nameof(release));
+        ArgumentNullException.ThrowIfNull(opened);
+        RunnerProcessId = runner.Process.Id;
+        StepCount = opened.Steps;
+        DiscoveryReport = opened.Discovery;
+        CommandCatalogReport = opened.Catalog;
     }
-
-    public BddStepExecutionSession StepSession { get; private set; }
-
-    public BddScenarioRunner Runner { get; private set; }
-
-    public BddBoundScenario Scenario { get; private set; }
-
-    public BddCommandCatalog Catalog { get; private set; }
 
     public string DiscoveryReport { get; }
 
     public string CommandCatalogReport { get; }
 
-    public string AutPlacementReport { get; }
+    /// <summary>The session does not place the app; Presenter does, once its window is open.</summary>
+    public string AutPlacementReport { get; } = "AUT placement:" + Environment.NewLine + "Result: not supported";
 
-    /// <summary>What the session's app shows, for a recording; asked when the recording starts.</summary>
-    public Func<Brinell.Core.Recording.RecordingTarget?> RecordingTarget
+    /// <summary>The runner process the scenario is open in.</summary>
+    public int RunnerProcessId { get; }
+
+    /// <summary>How many steps the scenario runs.</summary>
+    public int StepCount { get; }
+
+    public int CompletedStepCount => _steps.Count;
+
+    public bool HasNext => _steps.Count < StepCount;
+
+    /// <summary>Whether every step ran and passed.</summary>
+    public bool Passed => !HasNext && _steps.Count > 0 && _steps.All(step => step.Status == BddStepResultStatus.Passed);
+
+    /// <summary>Every step so far, as the diagnostics show them.</summary>
+    public IReadOnlyList<string> StepsReport => _steps.Count == 0 ? [] : _steps[^1].Report;
+
+    /// <summary>The runner's runtime trace so far.</summary>
+    public IReadOnlyList<string> Diagnostics => _steps.Count == 0 ? [] : _steps[^1].Diagnostics;
+
+    /// <summary>Called when the runner announces a spoken line, for Presenter to play.</summary>
+    public Action<BddRunnerSay>? Said
     {
-        get => _recordingTarget;
-        init => _recordingTarget = value;
+        get => _runner.Said;
+        set => _runner.Said = value;
     }
 
-    public int CompletedStepCount => StepSession.Results.Count;
-
-    public bool HasNext => StepSession.HasNext;
-
-    public Task<BddStepResult> RunNextAsync(CancellationToken cancellationToken)
-    {
-        return StepSession.RunNextAsync(cancellationToken);
-    }
+    public Task<BddRunnerStep> RunNextAsync(CancellationToken cancellationToken)
+        => StepAsync(new BddRunnerNext(), cancellationToken);
 
     /// <summary>Passes over the next step without running it (Run from here).</summary>
     /// <param name="message">Why it was skipped.</param>
-    public BddStepResult SkipNext(string? message = null)
-    {
-        return StepSession.SkipNext(message);
-    }
+    public Task<BddRunnerStep> SkipNextAsync(string? message = null)
+        => StepAsync(new BddRunnerSkip(message), CancellationToken.None);
 
-    public BddScenarioRunResult ToResult()
-    {
-        return StepSession.ToResult();
-    }
+    /// <summary>Records the scenario as a scene, from its next step.</summary>
+    /// <param name="scene">The scene.</param>
+    public Task RecordAsync(BddRunnerRecord scene) => DoneAsync(scene);
+
+    /// <summary>Paces the scenario by its spoken lines, without recording it.</summary>
+    /// <param name="rehearsal">The lines and the beat.</param>
+    public Task RehearseAsync(BddRunnerRehearse rehearsal) => DoneAsync(rehearsal);
+
+    /// <summary>After the last step: the outro, and a recording's video and timeline are finished.</summary>
+    /// <param name="cancellationToken">Cancels the outro.</param>
+    public async Task<BddRunnerRecorded> FinishRecordingAsync(CancellationToken cancellationToken)
+        => Expect<BddRunnerRecorded>(await _runner.RequestAsync(new BddRunnerFinishRecording(), cancellationToken).ConfigureAwait(false));
+
+    /// <summary>Gives up the recording or rehearsal.</summary>
+    public Task DropRecordingAsync() => DoneAsync(new BddRunnerDropRecording());
 
     public void Dispose()
     {
@@ -105,21 +126,38 @@ public sealed class PresenterUatExecutionSession : IDisposable
             return;
         }
 
-        _executionScope?.Dispose();
-        _fixture?.Dispose();
-        _environment?.Dispose();
-
-        // Dropped before the resolver unloads its load context. These hold the fixture and the
-        // bound steps, whose types live in that context: while anything here is reachable the
-        // context cannot be collected, the Pages assembly stays mapped, and the next build of
-        // the workspace fails. Reading them after Dispose is not valid.
-        StepSession = null!;
-        Runner = null!;
-        _recordingTarget = () => null;
-        Scenario = null!;
-        Catalog = null!;
-
-        _resolver?.Dispose();
         _disposed = true;
+
+        // The request is in line before this returns, so the scenario is closed (its fixture and
+        // app) before the runner answers whatever a next session asks of it.
+        _release(_runner, _runner.RequestAsync(new BddRunnerClose(), CancellationToken.None));
     }
+
+    private async Task<BddRunnerStep> StepAsync(BddRunnerMessage request, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!HasNext)
+        {
+            throw new InvalidOperationException("No BDD steps remain in this execution session.");
+        }
+
+        var step = Expect<BddRunnerStep>(await _runner.RequestAsync(request, cancellationToken).ConfigureAwait(false));
+        _steps.Add(step);
+        return step;
+    }
+
+    private async Task DoneAsync(BddRunnerMessage request)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Expect<BddRunnerDone>(await _runner.RequestAsync(request, CancellationToken.None).ConfigureAwait(false));
+    }
+
+    private static T Expect<T>(BddRunnerMessage answer)
+        where T : BddRunnerMessage
+        => answer switch
+        {
+            T expected => expected,
+            BddRunnerFailed failed => throw new InvalidOperationException(failed.Message),
+            _ => throw new BddRunnerException($"The runner answered '{answer.GetType().Name}' where a '{typeof(T).Name}' was due."),
+        };
 }

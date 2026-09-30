@@ -9,7 +9,7 @@ namespace Brinell.Presenter.ViewModels;
 public sealed partial class PresenterShellViewModel
 {
     private bool _isNarratorMode;
-    private BddNarrationPacer? _scenePacer;
+    private bool _sceneRehearsal;
     private bool _recordingScenes;
     private bool _sceneRecording;
 
@@ -273,7 +273,7 @@ public sealed partial class PresenterShellViewModel
     // a pacer that plays each line before its step.
     private async Task StartSceneAsync(PresenterUatExecutionSession session, BddScenarioViewModel scenario)
     {
-        _scenePacer = null;
+        _sceneRehearsal = false;
         if (_recordingScenes)
         {
             if (Narrator.SceneOf(scenario) is { Plan: { } recordedPlan } scene && ScenesFolder() is { } folder && Narrator.Check?.Script is { } recordedScript)
@@ -309,10 +309,9 @@ public sealed partial class PresenterShellViewModel
 
         try
         {
-            _scenePacer = await _recorder
-                .RehearseAsync(plan, script.Voice ?? _voice, script.Beat ?? TimeSpan.FromMilliseconds(_beat), _executionCancellation?.Token ?? CancellationToken.None)
+            _sceneRehearsal = await _recorder
+                .RehearseAsync(session, plan, script.Voice ?? _voice, script.Beat ?? TimeSpan.FromMilliseconds(_beat), _executionCancellation?.Token ?? CancellationToken.None)
                 .ConfigureAwait(true);
-            session.Runner.Context.Pacer = _scenePacer;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -338,17 +337,17 @@ public sealed partial class PresenterShellViewModel
             return;
         }
 
-        if (_scenePacer is not { } pacer)
+        if (!_sceneRehearsal)
         {
             return;
         }
 
-        _scenePacer = null;
+        _sceneRehearsal = false;
         try
         {
-            await pacer.FinishAsync(_executionCancellation?.Token ?? CancellationToken.None).ConfigureAwait(true);
+            await _recorder.FinishSceneAsync(_executionCancellation?.Token ?? CancellationToken.None).ConfigureAwait(true);
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is OperationCanceledException or Brinell.Bdd.Runner.BddRunnerException)
         {
             // Stopped while the outro played.
         }

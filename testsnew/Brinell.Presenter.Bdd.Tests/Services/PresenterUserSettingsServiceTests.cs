@@ -392,8 +392,8 @@ public sealed class PresenterUserSettingsServiceTests
 
         public Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken) => Task.FromResult<PresenterRecorded?>(null);
 
-        public Task<Brinell.Narrator.BddNarrationPacer?> RehearseAsync(Brinell.Narrator.BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
-            => Task.FromResult<Brinell.Narrator.BddNarrationPacer?>(null);
+        public Task<bool> RehearseAsync(PresenterUatExecutionSession session, Brinell.Narrator.BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
+            => Task.FromResult(false);
 
         public Task StartSceneAsync(PresenterUatExecutionSession session, PresenterSceneRequest scene, CancellationToken cancellationToken) => Task.CompletedTask;
 
