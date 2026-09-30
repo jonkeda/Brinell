@@ -5,7 +5,7 @@ the tool that asks for it:
 
 | Decision | What holds |
 | --- | --- |
-| **The runner records** | A gate run with `BRINELL_RECORD` records its scenes (`Brinell.Uat` through `Brinell.Narrator`). Visual Studio, VS Code, the MCP tool `record_video` and CI only set the variables and run `dotnet test`; Presenter sets the same pacer on its own session. One engine, so a recording shows what the gate does. |
+| **The runner records** | A gate run with `BRINELL_RECORD` records its scenes (`Brinell.Uat` through `Brinell.Narrator`). Visual Studio, VS Code, the MCP tool `record_video` and CI only set the variables and run `dotnet test`; Presenter asks its suite's runner process for the same pacer and recorder (AD-025). One engine, so a recording shows what the gate does. |
 | **Timing is a seam, not a wait** | `BddExecutionContext.Pacer` (`IBddStepPacer`) is waited on before and after each step; it is null unless something records. The voice is made before the run, so each line's length is known; the run only takes as long as the speech, and the voice is laid in afterwards at its recorded time. |
 | **Narration lives in a video script** | `*.video.md`: scenes, each a scenario address, an intro, `Step | Say` rows and an outro. A feature file stays a test. The script is checked like a feature file (AD-022's one checker, `VID0xx`). |
 | **Capture is not input** (AD-005) | A recorder reads what is already drawn: Windows.Graphics.Capture for a window (it records a covered one), Chromium's screencast for a page, `adb screenrecord` for a device. It never focuses, activates or moves the app. The screen-region recorder, which records whatever covers the area, is only the last resort. |
@@ -16,7 +16,8 @@ the tool that asks for it:
 **Why:** a video made by another runner would show a run the gate never did, and delays tuned by
 hand drift from the speech and slow every test run. Evidence (at 9f27d29d):
 [design.md](https://github.com/exact-mobile-apps/test-tooling/blob/9f27d29d/.my/narrator/design.md),
-[screen-capture.md](https://github.com/exact-mobile-apps/test-tooling/blob/9f27d29d/.my/narrator/screen-capture.md).
+[screen-capture.md](https://github.com/exact-mobile-apps/test-tooling/blob/9f27d29d/.my/narrator/screen-capture.md),
+[the Narrator mode](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/presenter/design.md) (at a8b3fc75).
 
 **Ruled out:**
 - a host recording the screen itself, or a separate runner for videos;
