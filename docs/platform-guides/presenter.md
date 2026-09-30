@@ -54,10 +54,14 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
   in xUnit and still name a fixture Presenter cannot find.
 - **AppPath** is an optional override. The fixture finds its own app.
 - **The suite runs in Presenter's process**, not in a test host. A fixture finds its files (the
-  config, the app, its solution) from its own assembly
-  (`Path.GetDirectoryName(typeof(MyFixture).Assembly.Location)`), never from
-  `AppContext.BaseDirectory`: that is Presenter's folder here. Presenter resolves the suite's
-  assemblies, its native libraries (`runtimes\<rid>\native`) and ASP.NET Core for it.
+  config, the app, its solution) from its own assembly, with
+  `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)` (`Brinell.Core.Composition`): never from
+  `AppContext.BaseDirectory`, which is Presenter's folder here, and not from `Assembly.Location`,
+  which is empty here. Presenter reads the assemblies a suite builds into memory, so the suite
+  can be rebuilt while Presenter is open; it resolves the suite's other assemblies, its native
+  libraries (`runtimes\<rid>\native`) and ASP.NET Core for it.
+- **A fixture that implements `IUatScenarioLifecycle`** has its `BeforeFile` and `BeforeScenario`
+  called by Presenter as by the suite's test class: a scenario starts on its file's `TestData`.
 
 The **Config** tab edits the file in place: the project, a fixture picker that lists every
 candidate with the reason an unusable one is unusable ("abstract", "no parameterless

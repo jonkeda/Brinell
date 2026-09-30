@@ -81,6 +81,78 @@ public sealed class SessionLoadContextTests
         }
     }
 
+    /// <summary>
+    /// An assembly built here (its symbols beside it) is read into memory, so its file is free
+    /// for the next build even while the session runs, and even when the context cannot unload.
+    /// </summary>
+    [Fact(Timeout = 120000)]
+    public async Task Session_NeverLocksAPagesAssemblyThatHasSymbols()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellSessionUnload", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var source = typeof(SessionLoadContextTests).Assembly.Location;
+        var pages = Path.Combine(root, "Brinell.Probe.Pages.dll");
+        File.Copy(source, pages);
+        File.Copy(Path.ChangeExtension(source, ".pdb"), Path.ChangeExtension(pages, ".pdb"));
+
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "uat.config.md"),
+                $$"""
+                # UAT Config
+
+                ## Runtime
+
+                | Field | Value |
+                | --- | --- |
+                | Target | WPF |
+                | Fixture | LocationProbeFixture |
+
+                ## Assemblies
+
+                | Kind | Assembly |
+                | --- | --- |
+                | Pages | {{Path.GetFileName(pages)}} |
+                """);
+
+            var scenarioPath = Path.Combine(root, "unload.feature.md");
+            File.WriteAllText(
+                scenarioPath,
+                $$"""
+                # Feature: Unload
+
+                ## Scenario: Session loads the pages assembly
+
+                ```gherkin
+                Given the probe was built into "{{root}}"
+                ```
+                """);
+
+            var session = await new BddExecutionService().CreateSessionAsync(
+                root,
+                scenarioPath,
+                "Session loads the pages assembly",
+                CancellationToken.None);
+            try
+            {
+                Assert.True(CanOpenForWrite(pages), "The Pages assembly is locked while the session runs.");
+
+                // The suite still finds its folder: AssemblyFile has the path the file was read from.
+                var result = await session.RunNextAsync(CancellationToken.None);
+                Assert.True(result.Status == BddStepResultStatus.Passed, result.Message);
+            }
+            finally
+            {
+                session.Dispose();
+            }
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
     [Fact(Timeout = 120000)]
     public async Task Session_ReleasesThePagesAssemblyWhenItFailsToStart()
     {
@@ -196,4 +268,14 @@ public sealed class FailingProbeFixture
     public string Read => Setting;
 
     private static string Fail() => throw new InvalidOperationException(Reason);
+}
+
+/// <summary>A fixture that says where its assembly was built, as a suite that looks for its files does.</summary>
+public sealed class LocationProbeFixture
+{
+    /// <summary>Passes when <c>AssemblyFile</c> gives the folder the assembly was read from.</summary>
+    /// <param name="folder">The folder expected.</param>
+    [BddGiven("the probe was built into {folder}")]
+    public void BuiltInto(string folder)
+        => Assert.Equal(folder, Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(LocationProbeFixture).Assembly));
 }

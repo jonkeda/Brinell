@@ -42,7 +42,29 @@ internal sealed class BddSessionLoadContext(Func<string, string?> resolvePath)
         }
 
         var path = resolvePath(assemblyName.Name + ".dll");
-        return path is null ? null : LoadFromAssemblyPath(path);
+        return path is null ? null : LoadSuiteAssembly(path);
+    }
+
+    /// <summary>
+    /// Loads a suite's assembly. One built here (its symbols are beside it) is read into memory:
+    /// its file stays free, so the next build can overwrite it even when the context cannot
+    /// unload (ASP.NET Core and SQLite leave timers and handlers behind that hold it). Anything
+    /// else is loaded from its path, which libraries that look beside themselves need.
+    /// </summary>
+    /// <param name="path">The assembly file.</param>
+    internal Assembly LoadSuiteAssembly(string path)
+    {
+        var symbols = Path.ChangeExtension(path, ".pdb");
+        if (!File.Exists(symbols))
+        {
+            return LoadFromAssemblyPath(path);
+        }
+
+        using var image = new MemoryStream(File.ReadAllBytes(path));
+        using var debug = new MemoryStream(File.ReadAllBytes(symbols));
+        var assembly = LoadFromStream(image, debug);
+        Brinell.Core.Composition.AssemblyFile.Record(assembly, path);
+        return assembly;
     }
 
     // What the host ships: the framework and Presenter's own folder, or what it has loaded. Not

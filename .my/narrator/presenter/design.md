@@ -139,19 +139,22 @@ A **Narrator** section on the Settings page, holding Presenter's recording setti
 ## Before this mode: Presenter must run a suite in its own process
 
 Running the Todo suite from Presenter on 2026-09-29 failed four times over, each for a suite
-loaded into Presenter's process instead of a test host. Fixed then, not yet committed:
+loaded into Presenter's process instead of a test host. Step 0 (built 2026-09-30) fixed these:
 
 | Failed with | Fix |
 | --- | --- |
-| `uat.config.md` not found | `TodoUatFixture` reads the config beside its assembly |
+| `uat.config.md` and `Brinell.Samples.Todo.slnx` not found | The Todo fixtures and `TodoMauiLaunch` find their files from their own assembly (`AssemblyFile.FolderOf`) |
 | `e_sqlite3` not found | Presenter resolves native libraries from the suite's `runtimes\<rid>\native` |
-| Kestrel not found | Presenter references `Microsoft.AspNetCore.App` |
-| `Brinell.Samples.Todo.slnx` not found | `TodoMauiLaunch` walks up from its assembly |
+| Kestrel not found; then `Method not found` in WireMock on a second run | ASP.NET Core is probed from the shared framework folder into the session's context (the lookup went up one folder too few). Not referenced by Presenter itself: in the host it loads a second copy of the suite's WireMock by name |
+| TOD.01.1 never shows Loading | Presenter did not run the suite's `BeforeFile` (the file's `TestData`) and `BeforeScenario`: `IUatScenarioLifecycle` on the fixture, called by `UatScenarioTestBase` and by Presenter |
+| The suite's DLLs locked after a failed start | The session's context is unloaded only once the failure's frames are gone |
+| The suite's DLLs locked after any Todo run | The context cannot unload: SQLite leaves a timer and `AppDomain` handlers, ASP.NET Core its event sources and more. Assemblies built here (a `.pdb` beside them) are read into memory instead, so a build can always overwrite them |
 
-Still open: a run that fails while the fixture starts keeps the suite's DLLs locked until Presenter
-closes; and `TodoWebUatFixture` reads its config from `AppContext.BaseDirectory` too. Step 0 fixes
-both and adds the rule to the fixture guidance: **a suite finds its files from its own assembly,
-never from `AppContext.BaseDirectory`**.
+The rule, in the Presenter guide: **a suite finds its files with `AssemblyFile.FolderOf`, never
+from `AppContext.BaseDirectory` or `Assembly.Location`**.
+
+Known, not fixed: a session whose context cannot unload stays in memory until Presenter closes
+(Presenter held about 620 MB after seven Todo runs).
 
 ## Build order
 

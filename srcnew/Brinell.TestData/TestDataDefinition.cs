@@ -81,7 +81,7 @@ public abstract class TestDataDefinition<TSet> : ITestDataDefinition
                 return Path.GetFullPath(nextToSource);
             }
 
-            var assemblyDirectory = Path.GetDirectoryName(GetType().Assembly.Location) ?? AppContext.BaseDirectory;
+            var assemblyDirectory = AssemblyDirectory;
             if (ProjectDirectoryOf(GetType().Assembly.GetName().Name!, assemblyDirectory) is { } project &&
                 Path.Combine(project, RelativeFolder) is var inProject && Directory.Exists(inProject))
             {
@@ -94,7 +94,21 @@ public abstract class TestDataDefinition<TSet> : ITestDataDefinition
 
     /// <inheritdoc />
     public string? ProjectDirectory
-        => ProjectDirectoryOf(GetType().Assembly.GetName().Name!, Path.GetDirectoryName(GetType().Assembly.Location) ?? AppContext.BaseDirectory);
+        => ProjectDirectoryOf(GetType().Assembly.GetName().Name!, AssemblyDirectory);
+
+    // The folder this definition's assembly was built into. A host that loads it from memory
+    // records the path (Brinell.Core's AssemblyFile; this project does not reference it).
+    private string AssemblyDirectory
+    {
+        get
+        {
+            var assembly = GetType().Assembly;
+            var path = assembly.Location is { Length: > 0 } location
+                ? location
+                : AppContext.GetData("Brinell.AssemblyFile:" + assembly.GetName().Name) as string;
+            return Path.GetDirectoryName(path) is { Length: > 0 } folder ? folder : AppContext.BaseDirectory;
+        }
+    }
 
     /// <inheritdoc />
     public virtual JsonSerializerOptions JsonOptions => TestDataJson.StrictOptions;

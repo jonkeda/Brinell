@@ -304,6 +304,7 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
     private readonly Func<Assembly, string, IntPtr> _nativeHandler;
     private readonly IReadOnlyList<string> _probeDirectories;
     private readonly BddSessionLoadContext _sessionContext;
+    private string? _suiteDirectory;
     private bool _disposed;
 
     public BddRuntimeAssemblyResolver(string workspacePath, BddConfig config, string? workingDirectory)
@@ -347,7 +348,9 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
         // Into the session's own collectible context, so the file is released when the session
         // ends and the next build can overwrite it. The default context can never unload, and
         // a workspace that has been run once would otherwise be unbuildable until restart.
-        return _sessionContext.LoadFromAssemblyPath(path);
+        // What the Pages assembly needs is beside it; the search below could pick another project's copy.
+        _suiteDirectory = Path.GetDirectoryName(Path.GetFullPath(path));
+        return _sessionContext.LoadSuiteAssembly(path);
     }
 
     public void Dispose()
@@ -383,9 +386,7 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
     {
         var fileName = name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? name : name + ".dll";
         var native = Path.Combine("runtimes", "win-" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), "native");
-        var directories = string.IsNullOrEmpty(assembly.Location)
-            ? _probeDirectories
-            : _probeDirectories.Prepend(Path.GetDirectoryName(assembly.Location)!);
+        var directories = _probeDirectories.Prepend(_suiteDirectory ?? AppContext.BaseDirectory).Prepend(Brinell.Core.Composition.AssemblyFile.FolderOf(assembly));
         foreach (var directory in directories)
         {
             foreach (var candidate in new[] { Path.Combine(directory, native, fileName), Path.Combine(directory, fileName) })
@@ -402,7 +403,7 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
 
     private string? ResolveAssemblyPath(string fileName)
     {
-        foreach (var directory in _probeDirectories)
+        foreach (var directory in _suiteDirectory is null ? _probeDirectories : _probeDirectories.Prepend(_suiteDirectory))
         {
             var candidate = Path.Combine(directory, fileName);
             if (File.Exists(candidate))

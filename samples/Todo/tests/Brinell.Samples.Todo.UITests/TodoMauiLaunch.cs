@@ -96,7 +96,7 @@ public static class TodoMauiLaunch
         };
 
         // From this assembly, not the host: Presenter loads the suite into its own process.
-        var start = Path.GetDirectoryName(typeof(TodoMauiLaunch).Assembly.Location)!;
+        var start = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(TodoMauiLaunch).Assembly);
         var root = new DirectoryInfo(start);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "Brinell.Samples.Todo.slnx")))
         {

@@ -134,7 +134,7 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
 
     // Beside this assembly, not the host's: Presenter loads the suite into its own process.
     private static BddConfig ReadConfig()
-        => BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(Path.GetDirectoryName(typeof(TodoWebUatFixture).Assembly.Location)));
+        => BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(TodoWebUatFixture).Assembly)));
 }
 
 /// <summary>Binds every UAT scenario class to the one <see cref="TodoWebUatFixture"/> (one app per run).</summary>
