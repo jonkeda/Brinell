@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Live orders</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <!-- A page whose clicks go over a websocket, as in Blazor Server: the request guard cannot see them.
+       The test site counts the messages. -->
+  <header>
+    <h1 data-testid="live-title">Live orders</h1>
+    <nav><a href="account.html" data-testid="nav-account">Account</a></nav>
+  </header>
+  <main>
+    <p data-testid="live-status">Connecting</p>
+    <button type="button" data-testid="live-refresh">Refresh</button>
+  </main>
+  <script>
+    const socket = new WebSocket(location.origin.replace('http', 'ws') + '/ws');
+    socket.addEventListener('open', () => document.querySelector('[data-testid=live-status]').textContent = 'Connected');
+    // Looks harmless; on the server it deletes.
+    document.querySelector('[data-testid=live-refresh]').addEventListener('click', () => socket.send('delete'));
+  </script>
+</body>
+</html>

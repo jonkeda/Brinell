@@ -139,9 +139,16 @@ public static class ClickJudge
         if (node.Type == "th" || node.Attributes.ContainsKey("aria-sort")) return "sorts a table";
         if (node.Attribute("aria-controls") is not null && node.Role is "button" or "tab") return "shows a part";
         if (IsPager(snapshot, node)) return "a pager";
-        if (node.Attribute("aria-label") is "Close" or "close" || node.Attribute("data-dismiss") is not null || node.Attribute("data-bs-dismiss") is not null)
+        if (IsClose(node) || node.Attribute("data-dismiss") is not null || node.Attribute("data-bs-dismiss") is not null)
             return "closes";
         return null;
+    }
+
+    private static bool IsClose(ScrapeNode node)
+    {
+        string[] closes = ["close", "sluiten", "schliessen", "schließen", "fermer"];
+        var says = string.Join(' ', node.Name, node.Attribute("title"), node.Attribute("data-testid"));
+        return closes.Any(c => DangerWords.Contains(says, c));
     }
 
     // A pager says so itself (Next, Previous, a pager class) or sits in a pagination list.

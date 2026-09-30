@@ -206,6 +206,17 @@ public sealed class ClickJudgeTests
         Assert.Equal((Verdict.Safe, JudgedAction.Click, reason), (judgement.Verdict, judgement.Action, judgement.Reason));
     }
 
+    [Theory]
+    [InlineData("Close")]
+    [InlineData("Sluiten")]
+    [InlineData("Fermer")]
+    public void A_close_button_named_so_is_safe(string name)
+    {
+        var page = Page(N(2, 1, "button", "×", name, attributes: ("type", "button")));
+
+        Assert.Equal((Verdict.Safe, "closes"), (Judge(page, 2).Verdict, Judge(page, 2).Reason));
+    }
+
     [Fact]
     public void An_expander_and_a_page_number_in_a_pagination_list_are_safe()
     {
