@@ -11,7 +11,8 @@
 
 Narrator mode, the third beside Present and Workspace, opens a video script (`*.video.md`) as a
 tree: its scenes, each with a checkbox, the lines said and the steps run. The sample workspace has
-one script, `Features/sample-tour.video.md`, which the mode opens when none is open yet.
+one script, `Features/sample-tour.video.md`, which the mode opens when none is open yet. A scene
+that has a current recording opens unchecked, so a scenario that counts checks them all first.
 
 @presenter @narrator
 ## Scenario: Narrator mode shows the script's scenes and their lines
@@ -21,6 +22,7 @@ Given I am on the Presenter page
 When I tap Reload
 Then Status Summary should contain "Ready"
 When I tap Narrator Mode
+And I check All Scenes
 Then Narrator Script should contain "sample-tour.video.md"
 And Narrator Summary should contain "2 scenes, 2 checked"
 And Narrator Tree should contain "A tour of the sample app"
@@ -38,11 +40,12 @@ And Narrator Tree should contain "And I tap Greet  - Tap Greet without a name,"
 ```gherkin
 Given I am on the Presenter page
 When I tap Narrator Mode
+And I check All Scenes
 Then Narrator Summary should contain "2 scenes, 2 checked"
 And Scene 2 should be checked
 When I uncheck Scene 2
 Then Narrator Summary should contain "2 scenes, 1 checked"
-And Narrator Tree should contain "[ ] ○ 2 Filling in the form"
+And Scene 2 should be unchecked
 When I check All Scenes
 Then Narrator Summary should contain "2 scenes, 2 checked"
 And Scene 2 should be checked
@@ -67,6 +70,7 @@ Then Narrator Script should contain "sample-tour.video.md"
 ```gherkin
 Given I am on the Presenter page
 When I tap Narrator Mode
+And I check All Scenes
 Then Narrator Summary should contain "2 scenes, 2 checked"
 When I tap Run
 Then Status Summary should contain "Passed: 2/2 scenarios"
@@ -80,9 +84,10 @@ And Narrator Tree should contain "[x] ✓ 2 Filling in the form"
 ```gherkin
 Given I am on the Presenter page
 When I tap Narrator Mode
+And I check All Scenes
 And I uncheck Scene 2
 And I tap Run
 Then Status Summary should contain "Passed: 1/1 scenarios"
 And Narrator Tree should contain "[x] ✓ 1 A name is needed"
-And Narrator Tree should contain "[ ] ○ 2 Filling in the form"
+And Scene 2 should be unchecked
 ```

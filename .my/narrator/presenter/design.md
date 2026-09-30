@@ -165,7 +165,7 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | 2 | The Narrator mode button; open a script, walk up to the config; the tree with its lines and diagnostics (**done**) | UAT `narrator-mode.feature.md`: the script loads, its scenes and lines show, a checkbox takes a scene out. Unit tests: a bad address shows `VID012`, a bad step `VID013`, no config `VID010` |
 | 3 | Run and the step buttons over the checked scenes; a failure goes on (D6); a rehearsal speaks the lines when Speak aloud is on (**done**) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is not run. Unit tests: a failed scene does not stop the next; Present mode still stops at the first |
 | 4 | The engine: a kept scenes folder (`BddKeptScenes`), the scene hash in `timeline.json`, the recording states, `StitchAsync`, `BRINELL_RECORD_KEEP` (**done**) | Unit tests: a changed line makes its scene out of date, and only that one; the voice and the beat are every scene's; the four states from the files |
-| 5 | Record the checked scenes; Stitch; Watch, Open folder | UAT: two scenes recorded and stitched, two chapters; redo one, stitch again. Manual: the Todo video |
+| 5 | Record the checked scenes; Stitch; Watch, the play icon on a recorded scene, Open folder (**done**) | UAT `narrator-record.feature.md`: two scenes recorded and stitched; one recorded again, stitched again. By hand on the sample: one video, two chapters, voice and captions; a changed line leaves only its scene checked. The Todo video: still to record |
 | 6 | Settings: the Narrator section, Try | UAT: the voice list; manual: the voice is heard |
 | 7 | Docs: the guide gets a "From Presenter" section; the manual plan gets M16 | |
 
@@ -177,3 +177,5 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | A `*.video.md` in the Workspace tree gets **Open in Narrator** | Not yet: Narrator mode opens the workspace's last or first script; **Open script** picks another |
 | The script is reloaded when the file changes on disk | **Reload** reads it again; no file watcher |
 | The script's checkbox has three states | Two: checked when every scene is |
+| The status line says *2 scenes newer* when scenes were redone since the last stitch | Not shown: the status line says what the last Record or Stitch did |
+| A scene's icon is its recording state (four glyphs) | The status glyphs the tree has: a check for recorded, a cross for failed, an arrow for out of date, a circle for not recorded; while a run is on, the run's status |

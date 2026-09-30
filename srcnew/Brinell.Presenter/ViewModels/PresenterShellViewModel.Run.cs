@@ -320,7 +320,8 @@ public sealed partial class PresenterShellViewModel
         while (session.HasNext && session.CompletedStepCount < plan.Until)
         {
             var step = session.CompletedStepCount;
-            if (plan.CheckBreaks && (checkFirst || !first) && PresenterStepping.BreakBefore(StepRows, step) is { } breakRow)
+            // A recording does not stop at a breakpoint: a rehearsal does.
+            if (plan.CheckBreaks && !_recordingScenes && (checkFirst || !first) && PresenterStepping.BreakBefore(StepRows, step) is { } breakRow)
             {
                 Pause(breakRow, "Breakpoint");
                 return RunOutcome.Paused;
@@ -381,7 +382,7 @@ public sealed partial class PresenterShellViewModel
     private void RaiseStepping()
     {
         OnPropertyChanged(nameof(IsPaused));
-        foreach (var command in new[] { RunCommand, NextStepCommand, StepIntoCommand, StepOutCommand, RestartCommand })
+        foreach (var command in new[] { RunCommand, NextStepCommand, StepIntoCommand, StepOutCommand, RestartCommand, RecordCommand, StitchCommand })
         {
             (command as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         }

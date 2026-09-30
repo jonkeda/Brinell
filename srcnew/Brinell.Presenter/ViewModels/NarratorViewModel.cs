@@ -33,6 +33,12 @@ public sealed class NarratorSceneViewModel
     /// <summary>The workspace's scenario the scene runs; null until the workspace has it.</summary>
     public BddScenarioViewModel? Scenario => _scenario;
 
+    /// <summary>What the scene's kept recording is worth.</summary>
+    public BddSceneState State { get; internal set; }
+
+    /// <summary>What a recording of the scene is made from now (<see cref="BddKeptScenes.Hash"/>).</summary>
+    public string Hash { get; internal set; } = string.Empty;
+
     /// <summary>Whether the scene can run: the script has it right and the workspace has its scenario.</summary>
     public bool CanRun => Plan is not null && _scenario is not null;
 
@@ -81,6 +87,16 @@ public sealed class NarratorSceneViewModel
         }
     }
 
+    // The scene's row: how its run goes while it runs or has run, else what its recording is worth.
+    internal void RefreshStatus()
+        => Node.Status = _scenario is { Status: not "wait" } scenario ? scenario.Status : State switch
+        {
+            BddSceneState.Recorded => "pass",
+            BddSceneState.Failed => "fail",
+            BddSceneState.OutOfDate => "skip",
+            _ => "wait",
+        };
+
     private void Refresh()
     {
         if (_scenario is not { } scenario)
@@ -88,7 +104,7 @@ public sealed class NarratorSceneViewModel
             return;
         }
 
-        Node.Status = scenario.Status;
+        RefreshStatus();
         foreach (var (row, line) in _steps)
         {
             // A call's steps share its line: the row fails with any of them, passes with all.
@@ -177,6 +193,52 @@ public sealed class NarratorViewModel : ViewModelBase
     {
         get => _treeText;
         private set => SetProperty(ref _treeText, value);
+    }
+
+    /// <summary>Opens a scene's recording; the shell sets it (the system's player).</summary>
+    public Action<string>? OpenVideo { get; set; }
+
+    /// <summary>Whether the script's scenes can be stitched: every scene has a recording, of whatever worth.</summary>
+    public bool CanStitch => Scenes.Count > 0 && Scenes.All(scene => scene.State != BddSceneState.NotRecorded);
+
+    /// <summary>
+    /// Reads each scene's kept recording: its state beside its name, its video to watch. With
+    /// <paramref name="resetChecks"/>, the scenes that need recording are the ones checked.
+    /// </summary>
+    /// <param name="scenesFolder">The script's scenes folder; null when there is none yet.</param>
+    /// <param name="voice">The voice setting; the script's own wins.</param>
+    /// <param name="beat">The beat setting; the script's own wins.</param>
+    /// <param name="resetChecks">Whether to check exactly the scenes that are not recorded and current.</param>
+    public void RefreshStates(string? scenesFolder, string? voice, TimeSpan beat, bool resetChecks)
+    {
+        foreach (var scene in Scenes)
+        {
+            if (scene.Plan is not { } plan || Check?.Script is not { } script)
+            {
+                continue;
+            }
+
+            scene.Hash = BddKeptScenes.Hash(plan, script.Voice ?? voice, script.Beat ?? beat);
+            scene.State = scenesFolder is null ? BddSceneState.NotRecorded : BddKeptScenes.State(scenesFolder, scene.Number, scene.Hash);
+            var recorded = scenesFolder is null || scene.State == BddSceneState.NotRecorded ? null : BddKeptScenes.Recorded(scenesFolder, scene.Number);
+            scene.Node.Video = recorded?.Video is { } video ? Path.Combine(BddKeptScenes.SceneFolder(scenesFolder!, scene.Number), video) : null;
+            var length = recorded is null ? string.Empty : $" {TimeSpan.FromSeconds(recorded.Duration):m\\:ss}";
+            scene.Node.Detail = scene.State switch
+            {
+                BddSceneState.Recorded => "recorded" + length,
+                BddSceneState.Failed => "failed" + length,
+                BddSceneState.OutOfDate => "out of date",
+                _ => "not recorded",
+            } + $", {plan.Scenario.Name}";
+            scene.RefreshStatus();
+            if (resetChecks && scene.CanRun)
+            {
+                scene.Node.SetChecked(scene.State != BddSceneState.Recorded);
+            }
+        }
+
+        OnPropertyChanged(nameof(CanStitch));
+        RefreshChecks();
     }
 
     /// <summary>The scenes whose checkbox is on and that can run, in the script's order.</summary>
@@ -291,8 +353,16 @@ public sealed class NarratorViewModel : ViewModelBase
                 .Where(diagnostic => diagnostic.Location.LineNumber >= written.Line && diagnostic.Location.LineNumber < next)
                 .ToList();
             var number = index + 1;
-            var node = new NarratorNodeViewModel(NarratorNodeKind.Scene, $"{number} {written.Name}", number.ToString(System.Globalization.CultureInfo.InvariantCulture), OnChecked)
+            NarratorNodeViewModel node = null!;
+            node = new NarratorNodeViewModel(NarratorNodeKind.Scene, $"{number} {written.Name}", number.ToString(System.Globalization.CultureInfo.InvariantCulture), OnChecked)
             {
+                WatchCommand = new Commands.RelayCommand(() =>
+                {
+                    if (node.Video is { } video)
+                    {
+                        OpenVideo?.Invoke(video);
+                    }
+                }),
                 Problem = string.Join("; ", wrong.Where(diagnostic => !IsOfALine(written, diagnostic.Location.LineNumber)).Select(diagnostic => $"{diagnostic.Code} {diagnostic.Message}")),
             };
             node.Detail = plan?.Scenario.Name ?? "no scenario";
@@ -402,7 +472,10 @@ public sealed class NarratorViewModel : ViewModelBase
         }
 
         var problems = Check?.Diagnostics.Count(diagnostic => diagnostic.Severity == BddDiagnosticSeverity.Error) ?? 0;
-        Summary = $"{Scenes.Count} scenes, {CheckedScenes.Count} checked" + (problems > 0 ? $", {problems} problems" : string.Empty);
+        var recordedCount = Scenes.Count(scene => scene.State == BddSceneState.Recorded);
+        Summary = $"{Scenes.Count} scenes, {CheckedScenes.Count} checked"
+            + (recordedCount > 0 ? $", {recordedCount} recorded" : string.Empty)
+            + (problems > 0 ? $", {problems} problems" : string.Empty);
         RefreshTreeText();
     }
 

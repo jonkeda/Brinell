@@ -107,6 +107,14 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Scene 2")]
     public CheckBox<PresenterPage> Scene2 => new(this, "NarratorSceneCheck_2");
 
+    /// <summary>Narrator mode: joins the latest recording of every scene into the video.</summary>
+    [UatName("Stitch")]
+    public Button<PresenterPage> StitchButton => new(this, "StitchButton");
+
+    /// <summary>Opens the first scene's own recording; there only once the scene has one.</summary>
+    [UatName("Scene 1 Watch")]
+    public Button<PresenterPage> Scene1Watch => new(this, "NarratorSceneWatch_1");
+
     [UatName("Next")]
     public Button<PresenterPage> NextButton => new(this,"NextButton");
 

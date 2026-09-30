@@ -29,6 +29,7 @@ public sealed class NarratorNodeViewModel : ViewModelBase
     private bool _isCheckEnabled = true;
     private string _status = "wait";
     private string _detail = string.Empty;
+    private string? _video;
 
     /// <summary>Creates a row.</summary>
     /// <param name="kind">What the row is.</param>
@@ -76,6 +77,28 @@ public sealed class NarratorNodeViewModel : ViewModelBase
             }
         }
     }
+
+    /// <summary>A scene's own recording, to watch before any stitch; null when it has none.</summary>
+    public string? Video
+    {
+        get => _video;
+        set
+        {
+            if (SetProperty(ref _video, value))
+            {
+                OnPropertyChanged(nameof(CanWatch));
+            }
+        }
+    }
+
+    /// <summary>Whether the row has a recording to watch.</summary>
+    public bool CanWatch => Video is not null;
+
+    /// <summary>Opens the scene's recording.</summary>
+    public ICommand? WatchCommand { get; init; }
+
+    /// <summary>The id of the row's watch button.</summary>
+    public string WatchAutomationId => AutomationId.Replace(Kind.ToString() + "_", Kind + "Watch_", StringComparison.Ordinal);
 
     /// <summary>The row's id for UI Automation.</summary>
     public string AutomationId { get; }

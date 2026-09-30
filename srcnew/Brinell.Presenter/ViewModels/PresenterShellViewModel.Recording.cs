@@ -37,9 +37,11 @@ public sealed partial class PresenterShellViewModel
     }
 
     /// <summary>The Record button's tooltip.</summary>
-    public string RecordDescription => IsRecording
-        ? "Recording is on: each run is recorded on video. Click to stop recording."
-        : "Record: record the next runs on video, with the voice of a video script's scene when it has one.";
+    public string RecordDescription => IsNarratorMode
+        ? $"Record the checked scenes ({Narrator.CheckedScenes.Count}), each into its own kept recording; then Stitch joins them."
+        : IsRecording
+            ? "Recording is on: each run is recorded on video. Click to stop recording."
+            : "Record: record the next runs on video, with the voice of a video script's scene when it has one.";
 
     /// <summary>Turns recording on and off.</summary>
     public ICommand ToggleRecordCommand { get; private set; } = null!;
@@ -169,7 +171,18 @@ public sealed partial class PresenterShellViewModel
 
     // When the run ends, however it ends: the outro plays and the video is composed, while the
     // next run may already start.
-    private void FinishRecording() => _ = FinishRecordingAsync();
+    private void FinishRecording()
+    {
+        if (_sceneRecording)
+        {
+            // The run ended before its scene did (Stop, or it could not start): the scene is dropped.
+            _sceneRecording = false;
+            _ = _recorder.DropSceneAsync();
+            return;
+        }
+
+        _ = FinishRecordingAsync();
+    }
 
     private async Task FinishRecordingAsync()
     {
@@ -218,5 +231,8 @@ public sealed partial class PresenterShellViewModel
         {
             DiagnosticsText = $"Could not save the recording settings: {ex.Message}";
         }
+
+        // The voice and the beat are part of what a scene is recorded from; the folder is where its recording is.
+        RefreshSceneStates(resetChecks: true);
     }
 }

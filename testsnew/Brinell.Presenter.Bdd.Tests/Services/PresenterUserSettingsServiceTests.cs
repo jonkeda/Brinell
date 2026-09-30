@@ -394,6 +394,15 @@ public sealed class PresenterUserSettingsServiceTests
 
         public Task<Brinell.Narrator.BddNarrationPacer?> RehearseAsync(Brinell.Narrator.BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
             => Task.FromResult<Brinell.Narrator.BddNarrationPacer?>(null);
+
+        public Task StartSceneAsync(PresenterUatExecutionSession session, PresenterSceneRequest scene, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<Brinell.Narrator.BddSceneTimeline?> FinishSceneAsync(CancellationToken cancellationToken) => Task.FromResult<Brinell.Narrator.BddSceneTimeline?>(null);
+
+        public Task DropSceneAsync() => Task.CompletedTask;
+
+        public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
+            => Task.FromResult(new PresenterRecorded(video, true, []));
     }
 
     [Fact]

@@ -378,7 +378,7 @@
                                 <!-- The checkbox column is as wide on a row without one, so a scene's
                                      rows line up under it. A Windows CheckBox asks for 120 px: the
                                      negative margin gives back what its empty label takes. -->
-                                <Grid ColumnDefinitions="22,26,20,*"
+                                <Grid ColumnDefinitions="22,26,20,Auto,*"
                                       ColumnSpacing="4">
                                     <Button Grid.Column="0"
                                             Text="{Binding ExpansionGlyph}"
@@ -403,7 +403,17 @@
                                            Style="{StaticResource PresenterGlyphLabel}"
                                            FontSize="12"
                                            SemanticProperties.Description="{Binding StatusDescription}" />
-                                    <VerticalStackLayout Grid.Column="3"
+                                    <!-- A recorded scene can be watched on its own, before any stitch. Before the
+                                         text: a row is as wide as its text, so a column after it is cut off. -->
+                                    <Button Grid.Column="3"
+                                            Text="&#xE768;"
+                                            AutomationId="{Binding WatchAutomationId}"
+                                            Style="{StaticResource PresenterRowGlyphButton}"
+                                            Command="{Binding WatchCommand}"
+                                            IsVisible="{Binding CanWatch}"
+                                            SemanticProperties.Description="Watch this scene's recording"
+                                            ToolTipProperties.Text="Watch this scene's recording" />
+                                    <VerticalStackLayout Grid.Column="4"
                                                          Spacing="0"
                                                          VerticalOptions="Center">
                                         <Label Text="{Binding Name}"
@@ -657,7 +667,7 @@
                             AutomationId="RecordButton"
                             Style="{StaticResource PresenterIconButton}"
                             Margin="0,0,6,6"
-                            Command="{Binding ToggleRecordCommand}"
+                            Command="{Binding RecordCommand}"
                             SemanticProperties.Description="{Binding RecordDescription}"
                             ToolTipProperties.Text="{Binding RecordDescription}">
                         <Button.Triggers>
@@ -674,6 +684,23 @@
                             IsVisible="{Binding HasRecording}"
                             SemanticProperties.Description="Watch the last recording"
                             ToolTipProperties.Text="Watch the last recording" />
+                    <!-- Narrator mode: join the latest recording of every scene; open where they are. -->
+                    <Button Text="&#xE71B;"
+                            AutomationId="StitchButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
+                            Command="{Binding StitchCommand}"
+                            IsVisible="{Binding IsNarratorMode}"
+                            SemanticProperties.Description="Stitch the scenes into the video"
+                            ToolTipProperties.Text="Stitch: join the latest recording of every scene into the video" />
+                    <Button Text="&#xE838;"
+                            AutomationId="OpenRecordingsButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
+                            Command="{Binding OpenRecordingsFolderCommand}"
+                            IsVisible="{Binding IsNarratorMode}"
+                            SemanticProperties.Description="Open the Recordings folder"
+                            ToolTipProperties.Text="Open the Recordings folder" />
                 </FlexLayout>
                 <VerticalStackLayout Grid.Row="6"
                                      Spacing="2">

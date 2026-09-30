@@ -172,6 +172,63 @@ public sealed class NarratorViewModelTests : IDisposable
         Assert.Equal("wait", narrator.Scenes[0].Node.Children[2].Status);
     }
 
+    [Fact]
+    public void RefreshStates_ShowsWhatEachRecordingIsWorth_AndChecksTheScenesToRecord()
+    {
+        var script = Write(Path.Combine("Features", "two.video.md"),
+            """
+            # Video: Two
+
+            ## Scene: First
+
+            Scenario: Features/greeting.feature.md#A-greeting-appears
+
+            ## Scene: Second
+
+            Scenario: Features/greeting.feature.md#A-name-is-needed
+            """);
+        var scenes = Path.Combine(_root, "recordings", "two.scenes");
+        var beat = TimeSpan.FromMilliseconds(600);
+        var narrator = new NarratorViewModel();
+        narrator.Open(script);
+        narrator.Link([Scenario("A greeting appears", 6, 7, 8), Scenario("A name is needed", 14, 15)]);
+
+        narrator.RefreshStates(scenes, null, beat, resetChecks: true);
+
+        Assert.All(narrator.Scenes, scene => Assert.Equal(Brinell.Narrator.BddSceneState.NotRecorded, scene.State));
+        Assert.Equal(2, narrator.CheckedScenes.Count);
+        Assert.False(narrator.CanStitch);
+        Assert.Equal("not recorded, A greeting appears", narrator.Scenes[0].Node.Detail);
+
+        // The first scene is recorded from what it is now; the second from another text.
+        Record(scenes, 1, narrator.Scenes[0].Hash);
+        Record(scenes, 2, "another text");
+        narrator.RefreshStates(scenes, null, beat, resetChecks: true);
+
+        Assert.Equal(Brinell.Narrator.BddSceneState.Recorded, narrator.Scenes[0].State);
+        Assert.Equal(Brinell.Narrator.BddSceneState.OutOfDate, narrator.Scenes[1].State);
+        Assert.Equal([2], narrator.CheckedScenes.Select(scene => scene.Number));
+        Assert.True(narrator.CanStitch);
+        Assert.Equal("recorded 0:05, A greeting appears", narrator.Scenes[0].Node.Detail);
+        Assert.Equal("pass", narrator.Scenes[0].Node.Status);
+        Assert.True(narrator.Scenes[0].Node.CanWatch);
+        Assert.Equal("2 scenes, 1 checked, 1 recorded", narrator.Summary);
+
+        // Another voice is another recording: every scene is out of date.
+        narrator.RefreshStates(scenes, "Microsoft Jenny", beat, resetChecks: true);
+        Assert.All(narrator.Scenes, scene => Assert.Equal(Brinell.Narrator.BddSceneState.OutOfDate, scene.State));
+        Assert.Equal(2, narrator.CheckedScenes.Count);
+    }
+
+    private static void Record(string scenes, int number, string hash)
+    {
+        var folder = Brinell.Narrator.BddKeptScenes.SceneFolder(scenes, number);
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "video.mp4"), "not a video");
+        new Brinell.Narrator.BddSceneTimeline(number, "Scene", null, "video.mp4", 5, BddStepResultStatus.Passed, [], [], [], Hash: hash)
+            .Save(Path.Combine(folder, Brinell.Narrator.BddSceneTimeline.FileName));
+    }
+
     private string Write(string relative, string text)
     {
         var path = Path.Combine(_root, relative);
