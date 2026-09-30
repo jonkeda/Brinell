@@ -80,11 +80,23 @@ public sealed partial class BddLanguageServer
     /// <summary><c>brinell/scraper/pages</c>: a project's recorded pages, by key.</summary>
     [JsonRpcMethod("brinell/scraper/pages")]
     public ScraperResult<IReadOnlyList<ScraperPageInfo>> ScraperPages(ScraperProjectParams request)
-        => Answer(() => (IReadOnlyList<ScraperPageInfo>)Scraper.Pages(request.Project).Select(page => new ScraperPageInfo(
-            page.Key,
-            page.Latest.Event.DisplayName,
-            page.Latest.Event.Location,
-            page.Captures.Select(capture => new ScraperCaptureInfo(capture.Session, capture.Event.Number, capture.Event.At, capture.Event.Nodes, Path.Combine(Scraper.Project(request.Project).RecordingsFolder, capture.Session, capture.Event.Snapshot ?? ""))).ToList())).ToList());
+        => Answer(() =>
+        {
+            var folder = Scraper.Project(request.Project).RecordingsFolder;
+            var made = Scraper.PageObjects(request.Project);
+            return (IReadOnlyList<ScraperPageInfo>)Scraper.Pages(request.Project).Select(page => new ScraperPageInfo(
+                page.Key,
+                page.Latest.Event.DisplayName,
+                page.Latest.Event.Location,
+                made.TryGetValue(page.Key, out var code) ? code.PageObject : null,
+                made.TryGetValue(page.Key, out code) ? code.Changed : null,
+                page.Captures.Select(capture => new ScraperCaptureInfo(capture.Session, capture.Event.Number, capture.Event.At, capture.Event.Nodes, Path.Combine(folder, capture.Session, capture.Event.Snapshot ?? ""))).ToList())).ToList();
+        });
+
+    /// <summary><c>brinell/scraper/diff</c>: what changed on a page between two captures.</summary>
+    [JsonRpcMethod("brinell/scraper/diff")]
+    public ScraperResult<PageDiff> ScraperDiff(ScraperDiffParams request)
+        => Answer(() => Scraper.Diff(request.Project, request.Page, request.FromSession, request.FromNumber, request.ToSession, request.ToNumber));
 
     /// <summary><c>brinell/scraper/outline</c>: a capture as an outline, or a node's subtree of it.</summary>
     [JsonRpcMethod("brinell/scraper/outline")]
@@ -165,8 +177,11 @@ public sealed record ScraperResult<T>(
 /// <summary>A scraped project.</summary>
 public sealed record ScraperProjectInfo(string Name, string Folder, string Platform, string StartUrl, IReadOnlyList<string> Sessions);
 
-/// <summary>A recorded page and its captures, newest first.</summary>
-public sealed record ScraperPageInfo(string Key, string Name, string Location, IReadOnlyList<ScraperCaptureInfo> Captures);
+/// <summary>A recorded page, the page object made for it and whether the page changed since, and its captures, newest first.</summary>
+public sealed record ScraperPageInfo(string Key, string Name, string Location, string? PageObject, bool? ChangedSinceGenerated, IReadOnlyList<ScraperCaptureInfo> Captures);
+
+/// <summary><c>brinell/scraper/diff</c>'s parameters: the page, and the captures to compare (the defaults are ScraperService.Diff's).</summary>
+public sealed record ScraperDiffParams(string? Project, string Page, string? FromSession, int? FromNumber, string? ToSession, int? ToNumber);
 
 /// <summary>One capture of a page.</summary>
 public sealed record ScraperCaptureInfo(string Session, int Number, DateTimeOffset At, int Nodes, string File);

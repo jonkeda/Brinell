@@ -39,8 +39,9 @@ read them first.
    thing a test acts on or reads, with the control that fits (the `Brinell.Blazor.Controls` one in
    a Blazor project) and a locator: start from it, rename for what the user sees, drop what the
    page object does not need.
-6. **Locators.** `suggest_controls` already follows this order and says when it could not: `data-testid` (or the config's test-id attributes), the
-   accessible name or label text, a stable `id`, a stable class. Never a generated class
+6. **Locators.** `suggest_controls` already follows this order, and says when it could not:
+   `data-testid` (or the config's test-id attributes), the accessible name or label text, a
+   stable `id`, a stable class. Never a generated class
    (`css-1x2y3z`, `jss12`, `sc-…`), a number in an id, or a position (`:nth-child`) unless
    nothing else is there, and then say so in the summary. Inside a frame, the frame is a
    `FrameScope`.

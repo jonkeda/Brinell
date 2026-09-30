@@ -164,8 +164,11 @@ internal static class ScraperPage
             const left = $("sc-left");
             left.replaceChildren(...(state.pages.length ? [] : [el("p", { class: "sc-muted" }, "Nothing recorded yet: Record opens a browser; each page you go to is captured.")]));
             for (const page of state.pages) {
-              left.append(el("div", { class: "sc-item", title: page.location, "aria-current": String(page.key === state.page), onclick: () => openCapture(page.key, page.captures[0]) },
-                page.key, el("span", { class: "sc-muted" }, ` ${page.name}`)));
+              const made = page.pageObject
+                ? el("span", { class: "sc-muted", title: page.changedSinceGenerated ? "The page changed since its page object was made: Changes shows what" : "Its page object" }, page.changedSinceGenerated ? `  ${page.pageObject}: changed` : `  ${page.pageObject}`)
+                : null;
+              left.append(el("div", { class: "sc-item", title: page.location, onclick: () => openCapture(page.key, page.captures[0]) },
+                page.key, el("span", { class: "sc-muted" }, ` ${page.name}`), made));
               for (const c of page.captures) {
                 left.append(el("div", { class: "sc-item sc-sub", onclick: () => openCapture(page.key, c) }, `${c.session} #${c.number}, ${c.nodes} nodes, ${new Date(c.at).toLocaleString()}`));
               }
@@ -191,6 +194,7 @@ internal static class ScraperPage
               el("button", { type: "button", class: "sc-small", onclick: () => host.post({ type: "open", path: capture.file }) }, "Open file"),
               older.length ? el("button", { type: "button", class: "sc-small", title: "Compare with the capture before it", onclick: () => host.post({ type: "diff", left: older[0].file, right: capture.file, title: `${key}: ${older[0].session} #${older[0].number} ↔ ${capture.session} #${capture.number}` }) }, "Compare") : null,
               el("button", { type: "button", class: "sc-small", onclick: () => chat(`Make or update the page object for the recorded page ${key} of ${state.project}.`) }, "Generate page object"),
+              page && (page.pageObject || older.length) ? el("button", { type: "button", class: "sc-small", title: "What changed: since the page object was made, or since the capture before", onclick: () => showDiff(key) }, "Changes") : null,
               el("span", { class: "sc-muted" }, live ? "Live: click a line to show it in the browser." : ""));
             const pre = el("pre", { class: "sc-outline" });
             for (const line of text.split("\n")) {
@@ -222,6 +226,18 @@ internal static class ScraperPage
               suggested ? el("div", {}, el("code", {}, `${suggested.control}<…> ${suggested.name} => new(this, ${suggested.locator});`), el("span", { class: "sc-muted" }, `  by ${suggested.why}`)) : null,
               el("div", { class: "sc-actions" },
                 el("button", { type: "button", class: "sc-small", onclick: () => chat(`Make a control for the node #${number} of the recorded page ${state.page} of ${state.project} (it occurs ${similar.length} times). Its header: ${header || ""}`) }, "Make a control"))));
+          }
+
+          async function showDiff(key) {
+            const diff = await answer("diff", { project: state.project, page: key });
+            if (!diff) return;
+            const list = (title, lines) => lines.length ? [el("h4", {}, title), el("pre", { class: "sc-outline" }, lines.join("\n"))] : [];
+            $("sc-node").replaceChildren(el("div", { class: "sc-node" },
+              el("div", {}, `${diff.addedCount} added, ${diff.removedCount} removed, ${diff.changedCount} changed`),
+              ...list("Added", diff.added),
+              ...list("Removed", diff.removed),
+              ...list("Changed", diff.changed.map(c => `${c.before}\n  → ${c.after}`)),
+              el("div", { class: "sc-actions" }, el("button", { type: "button", class: "sc-small", onclick: () => chat(`The recorded page ${key} of ${state.project} changed since its page object was made: update the page object (diff_page).`) }, "Update page object"))));
           }
 
           async function loadPatterns() {

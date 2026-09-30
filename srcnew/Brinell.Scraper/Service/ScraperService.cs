@@ -240,6 +240,50 @@ public sealed class ScraperService : IAsyncDisposable
         return ControlAdvisor.Suggest(snapshot, project.Config.TestIds, project.Config.Platform == "blazor", node ?? 0);
     }
 
+    /// <summary>
+    /// What changed on a page between two captures: by default from the capture its page object was
+    /// made from (its header) or else the one before the newest, to the newest.
+    /// </summary>
+    public PageDiff Diff(string? projectName, string page, string? fromSession = null, int? fromNumber = null, string? toSession = null, int? toNumber = null)
+    {
+        var project = Project(projectName);
+        var index = project.Index();
+        var recorded = index.Page(page) ?? throw new ScraperProblem($"No recorded page '{page}'.");
+        PageCapture Pick(string session, int? number) =>
+            recorded.Captures.FirstOrDefault(c => c.Session == session && (number is null || c.Event.Number == number))
+            ?? throw new ScraperProblem($"Page '{page}' has no capture in session '{session}'{(number is null ? "" : $" numbered {number}")}.");
+        var to = toSession is null ? recorded.Latest : Pick(toSession, toNumber);
+        PageCapture from;
+        if (fromSession is not null)
+        {
+            from = Pick(fromSession, fromNumber);
+        }
+        else if (ProjectCode.Read(project).FirstOrDefault(c => c.Header?.Page == page)?.Header?.From is { } made
+                 && recorded.Captures.FirstOrDefault(c => $"{c.Session}/{c.Event.Snapshot}" == made) is { } source)
+        {
+            from = source;
+        }
+        else
+        {
+            from = recorded.Captures.Count > 1 ? recorded.Captures[1] : throw new ScraperProblem($"Page '{page}' has one capture: record it again to compare.");
+        }
+        return SnapshotDiff.Compare(index.Read(from), index.Read(to));
+    }
+
+    /// <summary>For each recorded page: the page object made for it, and whether the page changed since (null: no page object, or no hash).</summary>
+    public IReadOnlyDictionary<string, (string? PageObject, bool? Changed)> PageObjects(string? projectName)
+    {
+        var project = Project(projectName);
+        var index = project.Index();
+        var made = ProjectCode.Read(project).Where(c => c.Header?.Page is not null).GroupBy(c => c.Header!.Page!, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        return index.Pages.ToDictionary(
+            p => p.Key,
+            p => made.TryGetValue(p.Key, out var code)
+                ? ((string?)code.Name, code.Header!.Hash is { } hash ? hash != SnapshotFile.ContentHash(index.Read(p.Latest)) : (bool?)null)
+                : ((string?)null, (bool?)null),
+            StringComparer.Ordinal);
+    }
+
     /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
     public WriteResult WriteCode(string? projectName, string path, string code) => CodeGate.Write(Project(projectName), path, code);
 

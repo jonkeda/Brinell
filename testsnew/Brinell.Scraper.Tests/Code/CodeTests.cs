@@ -207,6 +207,43 @@ public sealed class CodeTests : IDisposable
     }
 
     [Fact]
+    public void A_diff_gives_what_was_added_removed_and_changed_by_the_nodes_path()
+    {
+        var before = Page("https://x/",
+            N(1, 0, "body"), N(2, 1, "h1", "Orders"), N(3, 1, "button", "New") with { Attributes = new Dictionary<string, string> { ["data-testid"] = "new" } },
+            N(4, 1, "p", "Old note"));
+        var after = Page("https://x/",
+            N(1, 0, "body"), N(2, 1, "h1", "All orders"), N(3, 1, "button", "New") with { Attributes = new Dictionary<string, string> { ["data-testid"] = "new" }, Bounds = new(1, 2, 3, 4) },
+            N(4, 1, "input") with { Attributes = new Dictionary<string, string> { ["data-testid"] = "search" } });
+
+        var diff = SnapshotDiff.Compare(before, after);
+
+        Assert.Equal((1, 1, 1), (diff.AddedCount, diff.RemovedCount, diff.ChangedCount));
+        Assert.Equal(["#4 input [data-testid=search]"], diff.Added);
+        Assert.Equal(["#4 p \"Old note\""], diff.Removed);
+        Assert.Equal(new NodeChange("#2 h1 \"Orders\"", "#2 h1 \"All orders\""), Assert.Single(diff.Changed));
+    }
+
+    [Fact]
+    public async Task The_diff_of_a_page_with_a_page_object_starts_from_the_capture_it_was_made_from()
+    {
+        var project = MakeProject("Shop.UITests");
+        project.StartSession("One", DateTimeOffset.UnixEpoch).AddPage(Cards("https://shop.example/cards", 1) with { CapturedAt = DateTimeOffset.UnixEpoch });
+        await using var service = new ScraperService(_root);
+        File.WriteAllText(Path.Combine(project.Folder, "CardsPage.cs"), service.Header(null, "/cards") + "\nclass CardsPage : HtmlPageObjectBase<CardsPage> { }");
+        project.StartSession("Two", DateTimeOffset.UnixEpoch.AddDays(1)).AddPage(Cards("https://shop.example/cards", 2) with { CapturedAt = DateTimeOffset.UnixEpoch.AddDays(1) });
+        project.StartSession("Three", DateTimeOffset.UnixEpoch.AddDays(2)).AddPage(Cards("https://shop.example/cards", 3) with { CapturedAt = DateTimeOffset.UnixEpoch.AddDays(2) });
+
+        var sinceMade = service.Diff(null, "/cards");
+        var sinceTwo = service.Diff(null, "/cards", fromSession: "1970-01-02-two");
+        var status = service.PageObjects(null)["/cards"];
+
+        Assert.Equal(10, sinceMade.AddedCount); // two cards of five nodes
+        Assert.Equal(5, sinceTwo.AddedCount);
+        Assert.Equal(("CardsPage", true), (status.PageObject, status.Changed));
+    }
+
+    [Fact]
     public async Task A_page_object_made_from_a_capture_is_matched_and_known_to_be_current_until_the_page_changes()
     {
         var project = MakeProject("Shop.UITests");
