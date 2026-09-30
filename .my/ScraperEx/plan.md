@@ -1,6 +1,6 @@
 # The Scraper, restarted in the IDE extensions: plan
 
-Status: **plan, decided** (Q1 to Q7, 2026-09-30). Nothing is built.
+Status: **step 0 done** (the spike, section 11), 2026-09-30. Q1 to Q7 decided.
 No backward compatibility: not with the old corpora, and the WPF tool need not keep working.
 Supersedes [uat/tools/scraper-in-extension.md](../uat/tools/scraper-in-extension.md) (the
 proposal of 2026-09-27) and the roadmap in [Scraper/](../Scraper/roadmap.md) (dormant since
@@ -99,16 +99,16 @@ MyApp.UITests/
   Recordings/
     2026-09-30-invoices/     one folder per recording session
       recording.json         the ordered events: pages captured now, actions later (section 7)
-      001-invoice-list.snapshot.json
+      001-invoice-list.nodes.jsonl
       001-invoice-list.png
-      002-invoice-edit.snapshot.json
+      002-invoice-edit.nodes.jsonl
   Pages/                     generated PageObjects
   Controls/                  generated ControlObjects
 ```
 
 | Decision | What holds |
 | --- | --- |
-| **Text files, not a database** | A snapshot is formatted JSON with a stable element order, so a re-recorded page gives a readable diff. The index the tools need (frequencies, signatures) is built in memory when a project is opened |
+| **Text files, not a database** | A snapshot is one node per line (JSON Lines: its number, its parent's number, its fields, no nulls), in document order, so a re-recorded page gives a readable diff and no parser meets a depth limit (section 11). The index the tools need (frequencies, signatures) is built in memory when a project is opened |
 | **The code is the control registry** | "Which controls exist" is read from the project and the projects it references (Roslyn), not from a table. A control that was edited or deleted by hand is seen as it is |
 | **Generation state is in the code too** | A generated file names the snapshot it came from and that snapshot's hash in a header line. "Changed since generation" is a recording whose hash differs |
 | **One project per app, or several** | A module's project references the shared project; the matcher offers the shared project's controls first. A new shared control is proposed for the project that owns the pattern's first page, and the user can move it |
@@ -227,3 +227,30 @@ What these sites ask of the design, before step 0:
 - **Hash routes** (vue-element-admin): a transition with no path change.
 - **Generated class names** (MUI): a signature cannot lean on classes alone.
 - Public sites are recorded into a scratch project, not into the repo: their content is not ours to commit.
+
+## 11. Step 0: what the spike found
+
+The spike is [spike0/](spike0/Program.cs): a console with Playwright 1.62 that serves the test
+site, starts Chromium, runs the Scraper's capture script (changed as below) in every frame, hangs
+each frame's tree under its `<iframe>` node, and writes a snapshot per page. It ran headless and
+headed on 2026-09-30. It ran as a console, not in the language server: hosting is step 5, and the
+server is a plain `net10.0` process like the console.
+
+| Checked | Result |
+| --- | --- |
+| Test site, 4 pages | 54 to 88 nodes each, 20 to 70 ms a capture |
+| Same-origin, nested and **cross-origin** frames (RCA 025 to 027) | All filled. Each frame is captured on its own with `frame.EvaluateAsync`; the parent's script puts every iframe element in a `WeakMap` with an id, and `FrameElementAsync()` evaluated in the parent gives that id back. No DOM change, no guessing by order or name as the WebView2 code did. The cross-origin case was an iframe to `127.0.0.1` in a page on `localhost` |
+| Open shadow roots | Captured as a node of kind `shadow-root`: the test site (1), the-internet `/shadowdom` (2), Fluent UI Blazor (25) |
+| Page transitions | `FrameNavigated` on the main frame saw all 4 navigations |
+| The framework per public site | Read in the page: jQuery (the-internet, UI Testing Playground); React (Sauce Demo, react-admin, DemoQA); **Vue 2** 2.6.10 (vue-element-admin), 2.7.8 (Vuetify 2), 2.5.21 (Element UI); Blazor WebAssembly (MudBlazor); Blazor Web (Fluent UI Blazor). Hash routes on react-admin, vue-element-admin and Element UI |
+
+What it changes in the design:
+
+| Finding | Change |
+| --- | --- |
+| Nested, indented JSON is huge: MudBlazor's table page, 17,995 elements, is 26 MB; Vuetify's 6.9 MB. Most of it is indentation | One node per line with parent numbers and no nulls: 1.9 MB and 367 KB. Still large for docs sites; the capture also drops `head`, `script`, `style`, `template` and the inside of `svg`, and a capture of a selected region stays possible |
+| The tree is deeper than `System.Text.Json`'s default of 64 (Radzen) | The script emits the flat list itself; nothing parses a nested tree |
+| "Network idle" is too early for Blazor: Fluent UI Blazor had 17 elements at idle, 586 once rendered | A capture waits for a stable DOM: the element count unchanged over 1 s (took 1.3 to 4.1 s on these sites), at most a named limit. This is the transition detector's job anyway |
+| Radzen answers headless Chromium with **403 Forbidden**, and loads headed | Recording is headed (as planned); a headless capture over a URL list (for tests) is only for our own sites |
+| MudBlazor's docs page is 18k elements | Docs sites are for trying components one by one; the admin demos are the sites for pattern detection across pages |
+| `data-test` (Sauce Demo) next to `data-testid` | The attribute bag keeps every `data-*` attribute; the config names which ones are test ids |
