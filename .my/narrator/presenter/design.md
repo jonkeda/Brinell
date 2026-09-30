@@ -1,6 +1,6 @@
 # Design: the Narrator mode in Presenter
 
-Status: **design, decided**, 2026-09-30 (reviewed twice: D1 and D5 changed, scene checkboxes added, Q1-Q4 answered); not built. Builds on
+Status: **built**, 2026-09-30 (steps 0 to 7; what differs from the design is at the end). The decisions are in AD-024 and AD-025. Builds on
 [../design.md](../design.md) (one recording engine, video scripts) and Presenter's run toolbar.
 Today Presenter's Record makes **one clip per run**; a whole video script (the 11-scene Todo video)
 can only be made with `dotnet test` and `BRINELL_RECORD`. This mode makes the whole video from
@@ -167,7 +167,7 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | 4 | The engine: a kept scenes folder (`BddKeptScenes`), the scene hash in `timeline.json`, the recording states, `StitchAsync`, `BRINELL_RECORD_KEEP` (**done**) | Unit tests: a changed line makes its scene out of date, and only that one; the voice and the beat are every scene's; the four states from the files |
 | 5 | Record the checked scenes; Stitch; Watch, the play icon on a recorded scene, Open folder (**done**) | UAT `narrator-record.feature.md`: two scenes recorded and stitched; one recorded again, stitched again. By hand on the sample: one video, two chapters, voice and captions; a changed line leaves only its scene checked. The Todo video: still to record |
 | 6 | Settings: the Narrator section, Try, the note when the script names its own voice (**done**) | UAT: the voice list and Try are there. Unit test: Try says what spoke; the script's voice is named. By hand: the voice is heard |
-| 7 | Docs: the guide gets a "From Presenter" section; the manual plan gets M16 | |
+| 7 | Docs: the Presenter guide's Narrator mode, the recordings guide, AD-024 and AD-025, the manual plan's M16 to M19 (**done**) | The Todo video recorded from Narrator mode: 11/11 scenes, 3:40 |
 
 ## Built differently, or not yet
 

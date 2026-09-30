@@ -62,7 +62,8 @@ Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/
 | From | How |
 | --- | --- |
 | Visual Studio, VS Code | **Record** on a video script's title in the Scenario Preview, or beside **Run** on a scenario heading. It builds, runs, and offers **Watch** when the video is made. The preview lists a file's recordings to watch |
-| Presenter | **Record** (the dot) in the run toolbar: each run is recorded while it is on, narrated by the scene a video script has for the scenario. **Watch** opens the last one |
+| Presenter, a whole script | **Narrator mode** (the video camera): open the script, **Record** the checked scenes, **Stitch**. Scene by scene: a scene recorded again replaces that scene only ([Presenter](../platform-guides/presenter.md#narrator-mode)) |
+| Presenter, one run | **Record** (the dot) in Present mode's run toolbar: each run is recorded while it is on, narrated by the scene a video script has for the scenario. **Watch** opens the last one |
 | An agent | MCP `record_video` (a script or a scenario), then `review_page`; the `narrated-review` skill |
 | `dotnet test` | the variables below, with a filter on the scenes' addresses |
 
@@ -78,6 +79,7 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRINELL_RECORD` | a video script (full, or relative to the suite's folder) records its scenes; `1` records every scenario, silently |
 | `BRINELL_RECORD_DIR` | the Recordings folder; `TestResults\<run>` when not set (the IDEs and Presenter: `TestResults\recordings`) |
 | `BRINELL_RECORD_OUT` | the scenes folder, for a host that names the video |
+| `BRINELL_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
 | `BRINELL_VOICE`, `BRINELL_BEAT` | the voice and the beat (ms), when the script does not say |
 | `BRINELL_RECORDERS` | a folder with `Brinell.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
@@ -94,6 +96,10 @@ In the Recordings folder, for a script `how-todo-works.video.md`:
 
 The video is made when the last scene of the script has run; a failed scene is recorded as it
 happened and marked in the timeline. A scenario recorded on its own is named after it.
+
+Kept scenes (Narrator mode, or `BRINELL_RECORD_KEEP`) stay in `<script>.scenes\scene-NN`: the
+scene's `video.mp4`, its spoken lines and its `timeline.json`, which holds what the scene was
+recorded from. A scene whose lines, steps, voice or beat changed since is out of date.
 
 ## Recorders
 

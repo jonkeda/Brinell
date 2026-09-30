@@ -87,16 +87,18 @@ referencing it:
 
 ## The Shell
 
-The top row starts with **Open** (a workspace folder), in both modes. Then the two modes, a pair of
-buttons:
+The top row starts with **Open** (a workspace folder; in Narrator mode, a video script). Then the
+three modes, a button each:
 
 - **Present**: the scenarios, the steps and the moves, nothing else. A workspace that loads cleanly
   opens in it.
 - **Workspace**: adds the recent folders, the build choices and
   **Build**, the tabs and the Selection panel. A workspace with problems opens in it, and says
   "Not built yet" above **Build** when the suite has no build.
+- **Narrator** (the video camera): a video script's scenes and steps in a tree, run and recorded
+  scene by scene ([Narrator mode](#narrator-mode)).
 
-**Reload** (both modes) reloads and checks the workspace. At the top right, **Dock** moves the bar
+**Reload** (every mode) reloads and checks the workspace. At the top right, **Dock** moves the bar
 to the other side of the screen (remembered), and **Settings** opens the Settings page (the same
 button closes it): the pause between steps of each speed, the App window, When a run ends, and the
 theme. The run toolbar is under the
@@ -174,9 +176,41 @@ suite has a scene for is narrated by it: its intro, each step's line, its outro;
 silently, with its beats. The video is made when the run ends, however it ends, and **Watch**
 opens the last one. It needs ffmpeg; without it, Record says how to get it and stays off.
 
-On the Settings page, **Recording**: the Recordings folder (the suite's `TestResults\recordings`
-when empty), the voice when the script names none, the beat after a step, and **Speak aloud**,
-which also plays each line while the run waits for it.
+On the Settings page, **Narrator**: the Recordings folder (the suite's `TestResults\recordings`
+when empty), the voice when the script names none, with **Try** to hear it, the beat after a step,
+and **Speak aloud**, which also plays each line while the run waits for it.
+
+### Narrator mode
+
+Narrator mode makes a whole video script (`*.video.md`) into its video from Presenter, a scene at
+a time.
+
+- **Open**: the mode opens the workspace's last script, or its first. **Open script** picks
+  another; its suite is found by walking up from the script to `uat.config.md`, and loaded as the
+  workspace when it is not the one open.
+- **The tree**: the script, then its scenes. Under a scene: its intro, each step of its scenario
+  with what is said before it (or *silent*), and its outro. What the script has wrong (`VID0xx`)
+  shows on its scene or row, and that scene cannot be checked.
+- **The checkboxes**: a scene's checkbox puts it in the run; the script's checks or clears them
+  all. Beside a scene is what its recording is worth: *not recorded*, *failed*, *out of date* (its
+  lines, its scenario's steps, the voice or the beat changed since) or *recorded* with its
+  length. Opening a script checks exactly the scenes that need recording.
+- **Run** rehearses the checked scenes, in the script's order, recording nothing: paced by
+  **Speed**, or by the spoken lines when **Speak aloud** is on. The other moves step through the
+  scene shown. A scene that fails does not stop the ones after it.
+- **Record** records the checked scenes, each into its own kept folder
+  (`<Recordings>\<script>.scenes\scene-NN`); a scene that passes is unchecked. A scene recorded
+  again replaces that scene only. **Stop** drops the scene being recorded and keeps the finished
+  ones.
+- **Stitch** (the link) joins the latest recording of every scene into
+  `<Recordings>\<script>-<stamp>.mp4`, with its captions and timeline. It runs by itself when a
+  Record leaves every scene recorded; a failed or out-of-date scene is stitched too, and named,
+  so a draft can be watched.
+- **Watch** plays the stitched video; the play button on a recorded scene plays that scene alone.
+  **Open folder** opens the Recordings folder.
+
+A suite with a mock server or a database cannot be unloaded from Presenter, so each run stays in
+memory until Presenter closes: a long recording session is a reason to restart it now and then.
 
 ## Supported Targets
 
@@ -217,8 +251,8 @@ back after the step. A placement that fails does not fail the run; Diagnostics s
 
 ## User Settings
 
-`PresenterUserSettingsService` stores `LastOpenedFolder`, up to 10 `RecentFolders`, and the
-per-workspace session choices. On start Presenter opens the last folder, then the first recent
+`PresenterUserSettingsService` stores `LastOpenedFolder`, up to 10 `RecentFolders`, `LastScript`
+(the video script Narrator mode reopens), and the per-workspace session choices. On start Presenter opens the last folder, then the first recent
 folder that still exists, then the default sample workspace.
 
 ```text
