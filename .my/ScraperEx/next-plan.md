@@ -79,7 +79,7 @@ One commit per step.
 | 1 | The manual test plan written (section 2) | **Done:** [manual-test-plan.md](manual-test-plan.md), each check marked O (owner, in the IDE), C (Claude, scripted) or both |
 | 2 | The help in the view and the guide's walkthrough and troubleshooting (section 3) | screenshots of the view's help in both themes; the walkthrough followed once from scratch |
 | 3 | Install browser: the view's button and `install_browser`, when Record finds no Chromium | the automated check above; the manual check in the test plan |
-| 4 | The manual test plan run in VS Code and Visual Studio | the results recorded in it |
+| 4 | The manual test plan run in VS Code and Visual Studio | **Claude's part done** (run 1: 20 checks pass after four fixes; see the plan's section 11); the owner's part waits |
 | 5 | AD-027 amended (Playwright in the extensions; the browser installed on demand); the guide's install section | links valid |
 
 ## 5. Decisions
