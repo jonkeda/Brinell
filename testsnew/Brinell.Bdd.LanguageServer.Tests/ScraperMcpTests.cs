@@ -91,6 +91,37 @@ public sealed class ScraperMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task The_view_reads_and_edits_the_explore_settings_over_json_rpc()
+    {
+        Directory.CreateDirectory(Path.Combine(_solution, "Admin.UITests"));
+        File.WriteAllText(Path.Combine(_solution, "Admin.UITests", "Admin.UITests.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        await using var harness = await ServerHarness.StartAsync(_solution);
+        Task<JsonNode> Call(string method, object parameters) => harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/" + method, parameters);
+
+        var before = await Call("config", new { });
+        var said = await Call("configEdit", new { action = "set", section = "Danger words", values = new[] { "delete", "false" } });
+        var after = await Call("config", new { });
+        var summary = await Call("exploreSummary", new { dryRun = true });
+        var match = await Call("elementMatch", new { page = "/orders", node = 1 });
+        var candidates = await Call("configCandidates", new { });
+        var created = await Call("createConfig", new { folder = Path.Combine(_solution, "Admin.UITests"), startUrl = "http://localhost:5000/" });
+        var refused = await Call("explore", new { project = "Admin.UITests", url = "https://elsewhere.example/" });
+
+        Assert.Equal("safe", (string?)before["value"]!["clickPolicy"]);
+        Assert.True((bool)before["value"]!["dangerWords"]!["delete"]!);
+        Assert.Equal("Set delete to false in ## Danger words.", (string?)said["value"]);
+        Assert.False((bool)after["value"]!["dangerWords"]!["delete"]!);
+        Assert.Contains("danger words off: delete", (string?)summary["value"]);
+        Assert.Contains("shop.example: REFUSED", (string?)summary["value"]);
+        Assert.Equal("selector: [data-testid='orders']", (string?)match["value"]);
+        Assert.Equal([Path.Combine(_solution, "Admin.UITests")], candidates.AsArray().Select(c => (string?)c));
+        Assert.Equal("Admin.UITests", (string?)created["value"]);
+        Assert.True(File.Exists(Path.Combine(_solution, "Admin.UITests", ScraperConfig.FileName)));
+        // Explore starts in the background: a start that is refused comes back as its Explored change, not here.
+        Assert.True((bool)refused["value"]!);
+    }
+
+    [Fact]
     public void What_cannot_be_done_is_a_tool_error_saying_why()
     {
         Assert.Contains("No recording is in progress", ErrorText("capture_page", []));

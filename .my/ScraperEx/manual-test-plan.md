@@ -115,6 +115,27 @@ you are done (`git clean -fd testsnew\Brinell.Blazor.UITests\Recordings`, after 
 | B-1 | C | *(after step 3)* **Record** with no Chromium installed (Playwright's browsers folder pointed at an empty one). | The view offers **Install browser** and says why. | ☐ |
 | B-2 | O/C | *(after step 3)* **Install browser**. | Progress in the view; Record works after it. | ☐ |
 
+## 10a. Explore, its settings, Draft and Verify (auto plan, step 9)
+
+The project for these is a scratch one on the Scraper's test site (`testsnew\Brinell.Scraper.TestSite`,
+run with `dotnet run --project testsnew\Brinell.Scraper.TestSite -- --port 8767`), with `StartUrl`
+`http://localhost:8767/index.html`: its counters (`http://localhost:8767/_counters`) say what Explore did.
+
+| ID | Who | Do | You should see | Result |
+| --- | --- | --- | --- | --- |
+| E-1 | O/C | **Explore** tab, the first time for a project. | **Dry run** is ticked; the summary shows the host (an Explore host), the click policy, the danger words off, the blocked methods and the budget. | Pass (C, 2026-10-01) |
+| E-2 | O/C | Untick **Dry run**, **Start Explore**. | The browser opens and goes through the site; the status line counts captures, clicks, skipped, blocked; at the end the run's captures, skipped (with why) and blocked show, and every counter is 0. | Pass (C, 2026-10-01: 9 captures, counters 0) |
+| E-3 | O | During a run, **Stop**. | It stops; what it captured is in the Pages tab. | ☐ |
+| E-4 | O | A `LoginUrl` of `/pages/support.html`, then Explore. | It waits at the support page: **Continue** shows; after it, it goes on (and stops again, as nobody signed in). | ☐ |
+| E-5 | O/C | **Explore settings**: untick `delete`, add `/admin` to Never visit. | Each change says what it wrote; `scraper.config.md` has one new row each and the rest as it was. | Pass (C, 2026-10-01) |
+| E-6 | O | ClickPolicy `all`. | The summary says so and **Start Explore** stays off until the throwaway box is ticked. | ☐ |
+| E-7 | O | A skipped line's **Always click this**, a blocked request's **Allow this request**, a node's **Never click this**. | One row each in Always click, Allow requests, Never click. | ☐ |
+| E-8 | O | While recording, **This page…** > each of its four. | A row in Explore hosts, Aliases, Never visit; StartUrl set. | ☐ |
+| E-9 | O/C | **Draft page objects** (Pages tab, or after a run). | A line per page (Written), "The project builds with them", the patterns to make controls of; the files are `Pages\<Name>.scraped.cs`. | Pass (C, 2026-10-01: 4 written, builds) |
+| E-10 | O/C | **Verify**. | Every member found once, per page. | Pass (C, 2026-10-01: 78 of 78) |
+| E-11 | O | **Improve with the agent**. | The chat opens with `/brinell-scrape-pages` and the drafts named. | ☐ |
+| E-12 | O | A solution with no `scraper.config.md`: open the view. | **Create config** with the UI test projects and a start URL; after it the project is in the picker. | ☐ |
+
 ## 11. Results
 
 | Run | By | Build | Result |

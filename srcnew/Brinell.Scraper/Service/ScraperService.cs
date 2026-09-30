@@ -143,7 +143,16 @@ public sealed class ScraperService : IAsyncDisposable
 
         using var exploring = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _exploring = exploring;
-        var run = options with { WaitForSignIn = options.StopAtSignIn ? null : options.WaitForSignIn ?? (options.Visible ? WaitForSignInAsync : null) };
+        var run = options with
+        {
+            WaitForSignIn = options.StopAtSignIn ? null : options.WaitForSignIn ?? (options.Visible ? WaitForSignInAsync : null),
+            // The view follows along through Changed; the caller's own progress too.
+            Progress = new Relay(p =>
+            {
+                options.Progress?.Report(p);
+                Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.Exploring, _recording?.State, null, p.Doing) { Progress = p });
+            }),
+        };
         ExploreResult result;
         try
         {
@@ -159,7 +168,9 @@ public sealed class ScraperService : IAsyncDisposable
         var report = Path.Combine(recording.Session.Folder, ExploreReport.FileName);
         await File.WriteAllTextAsync(report, ExploreReport.Markdown(result, project.Name, start), CancellationToken.None).ConfigureAwait(false);
         await StopRecordingAsync(CancellationToken.None).ConfigureAwait(false);
-        return result with { Folder = recording.Session.Folder, Report = report };
+        result = result with { Folder = recording.Session.Folder, Report = report };
+        Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.Explored, null, null, $"{result.Stop}: {result.StopDetail}") { Explored = result });
+        return result;
     }
 
     /// <summary>
@@ -186,11 +197,67 @@ public sealed class ScraperService : IAsyncDisposable
         return edit;
     }
 
+    /// <summary>The UI test projects under the solution with no <c>scraper.config.md</c> yet: where Create config can write one.</summary>
+    public IReadOnlyList<string> ConfigCandidates()
+    {
+        var scraped = Projects().Select(p => p.Folder).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var found = new List<string>();
+        var pending = new Stack<string>([_solutionDir]);
+        while (pending.Count > 0)
+        {
+            var folder = pending.Pop();
+            if (!scraped.Contains(folder) && Directory.EnumerateFiles(folder, "*.csproj").Any(f => Path.GetFileNameWithoutExtension(f).EndsWith("Tests", StringComparison.OrdinalIgnoreCase)))
+                found.Add(folder);
+            foreach (var child in Directory.EnumerateDirectories(folder))
+            {
+                var name = Path.GetFileName(child);
+                if (name is "bin" or "obj" or "node_modules" or ScrapeProject.RecordingsFolderName || name.StartsWith('.')) continue;
+                pending.Push(child);
+            }
+        }
+        return found.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    /// <summary>Writes a <c>scraper.config.md</c> into a UI test project with its start URL; the rest keeps the defaults.</summary>
+    /// <exception cref="ScraperProblem">The folder is not under the solution, has no project, or has a config already.</exception>
+    public ScrapeProject CreateConfig(string folder, string startUrl)
+    {
+        var full = Path.GetFullPath(folder);
+        if (!full.StartsWith(_solutionDir, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(full) || !Directory.EnumerateFiles(full, "*.csproj").Any())
+            throw new ScraperProblem($"{folder} is not a project folder under {_solutionDir}.");
+        var path = Path.Combine(full, ScraperConfig.FileName);
+        if (File.Exists(path)) throw new ScraperProblem($"{path} is there already.");
+        if (!Uri.TryCreate(startUrl, UriKind.Absolute, out _)) throw new ScraperProblem($"'{startUrl}' is not an address to start at.");
+        File.WriteAllText(path, ScraperConfigWriter.New(startUrl));
+        return ScrapeProject.Open(full);
+    }
+
     /// <summary>What Explore would run with: the project, where it starts, and its budget and guards, to show a person before it starts.</summary>
     public string ExploreSummary(string? projectName, ExploreOptions options)
     {
         var project = Project(projectName);
         return ExploreReport.Summary(project.Name, options.Url ?? project.Config.StartUrl, options.Apply(project.Config.Explore), options.DryRun);
+    }
+
+    /// <summary>Where the recording browser is, or null when nothing is recorded.</summary>
+    public string? CurrentLocation => _recording?.Source is IExploreSource source ? source.Location : null;
+
+    /// <summary>
+    /// How the config names a node of a page's newest capture for <c>Never click</c> or <c>Always click</c>:
+    /// by a selector when it has a test id or a stable id, else by its text.
+    /// </summary>
+    public string ElementMatchFor(string? projectName, string page, int node)
+    {
+        var project = Project(projectName);
+        var (_, snapshot) = Snapshot(project.Name, page);
+        if (node < 1 || node > snapshot.Nodes.Count) throw new ScraperProblem($"Page '{page}' has nodes 1 to {snapshot.Nodes.Count}, not {node}.");
+        var n = snapshot[node];
+        foreach (var testId in project.Config.TestIds)
+            if (n.Attribute(testId) is { Length: > 0 } value) return $"selector: [{testId}='{value}']";
+        var text = n.Name ?? n.Text ?? snapshot.ChildrenOf(node).Select(c => c.Text).FirstOrDefault(t => t is { Length: > 0 });
+        if (text is { Length: > 0 }) return $"text: {text}";
+        if (n.Attribute("id") is { Length: > 0 } id) return $"selector: #{id}";
+        throw new ScraperProblem($"Node #{node} has no test id, text or id to name it by: name it in the config by hand.");
     }
 
     /// <summary>True while Explore runs.</summary>
@@ -553,10 +620,29 @@ public enum ScraperChangeKind
 
     /// <summary>Explore reached a sign-in page and waits for the person to sign in and continue.</summary>
     SignIn,
+
+    /// <summary>Explore took a step: the progress says where it is.</summary>
+    Exploring,
+
+    /// <summary>Explore ended: the result says why and what it did.</summary>
+    Explored,
 }
 
 /// <summary>A change: its kind, the recording, the captured page if any, and a message for a failure.</summary>
-public sealed record ScraperChange(ScraperChangeKind Kind, RecordingState? Recording, RecordingEvent? Captured, string? Message = null);
+public sealed record ScraperChange(ScraperChangeKind Kind, RecordingState? Recording, RecordingEvent? Captured, string? Message = null)
+{
+    /// <summary>For <see cref="ScraperChangeKind.Exploring"/>: where Explore is.</summary>
+    public ExploreProgress? Progress { get; init; }
+
+    /// <summary>For <see cref="ScraperChangeKind.Explored"/>: what it did.</summary>
+    public ExploreResult? Explored { get; init; }
+}
+
+// Reports on the thread that reports: a view's progress line keeps up with the run.
+internal sealed class Relay(Action<ExploreProgress> report) : IProgress<ExploreProgress>
+{
+    public void Report(ExploreProgress value) => report(value);
+}
 
 /// <summary>A request the Scraper cannot answer; the message says why and what to do.</summary>
 public sealed class ScraperProblem(string message) : Exception(message);
