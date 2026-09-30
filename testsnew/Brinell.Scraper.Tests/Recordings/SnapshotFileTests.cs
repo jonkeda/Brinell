@@ -117,6 +117,7 @@ public sealed class SnapshotFileTests
     [InlineData("data-anything", true)]
     [InlineData("aria-expanded", true)]
     [InlineData("aria-label", false)] // it is the node's Name
+    [InlineData("data-v-09f01a64", false)] // Vue's scoped style
     [InlineData("value", false)]
     [InlineData("style", false)]
     public void Html_keeps_the_attributes_a_locator_or_a_pattern_needs(string name, bool kept)

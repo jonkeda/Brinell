@@ -33,8 +33,9 @@ read them first.
    is `scraped_header` for the page and the pattern's example node. Show the code, then
    `write_code`.
 5. **Pages second.** One page object per recorded page the user wants, in the `Pages` folder:
-   `HtmlPageObjectBase<TSelf>`, or `BlazorPageObjectBase<TSelf>` in a Blazor project (it waits
-   until the app is interactive). It uses the controls (`match_controls` says which occur on the
+   `HtmlPageObjectBase<TSelf>`, or `BlazorPageObjectBase<TSelf>` for a Blazor app that sets
+   Brinell's busy signal (`data-busy` on `<body>`, as the Blazor sample does): it waits until the
+   app is interactive. A Blazor app without it (a third party's) takes `HtmlPageObjectBase`. It uses the controls (`match_controls` says which occur on the
    page). Its first line is `scraped_header` for the page. `suggest_controls` gives a member per
    thing a test acts on or reads, with the control that fits (the `Brinell.Blazor.Controls` one in
    a Blazor project) and a locator: start from it, rename for what the user sees, drop what the

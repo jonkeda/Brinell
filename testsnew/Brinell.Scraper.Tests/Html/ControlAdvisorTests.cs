@@ -70,6 +70,17 @@ public sealed class ControlAdvisorTests
     }
 
     [Fact]
+    public void A_button_s_text_in_a_child_names_and_finds_it()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "button", null, null, ("class", "el-button el-button--primary")), N(3, 2, "span", "Login"));
+
+        var suggestion = Of(page, 2);
+
+        Assert.Equal("Login", suggestion.Name);
+        Assert.Equal("Locator.ByCss(\"button:has-text('Login')\")", suggestion.Locator);
+    }
+
+        [Fact]
     public void With_nothing_stable_the_position_is_given_and_said_to_be_unstable()
     {
         var page = Page(N(1, 0, "body"), N(2, 1, "div"), N(3, 2, "button", "Go"), N(4, 2, "button", "Go"));
@@ -82,6 +93,17 @@ public sealed class ControlAdvisorTests
     }
 
     [Fact]
+    public void A_position_starts_at_the_nearest_ancestor_with_an_id_of_its_own()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "div"), N(3, 2, "nav", null, null, ("id", "side")), N(4, 3, "ul"),
+            N(5, 4, "li"), N(6, 5, "a", "Go", null, ("href", "/a")), N(7, 4, "li"), N(8, 7, "a", "Go", null, ("href", "/b")),
+            N(9, 1, "input", null, null, ("id", "mudinputfmqznq5c")));
+
+        Assert.Equal("Locator.ByCss(\"#side > ul > li:nth-of-type(2) > a\")", Of(page, 8).Locator);
+        Assert.False(Of(page, 9).Stable); // a UI library's numbered id is not an id to find it by
+    }
+
+        [Fact]
     public void Uniqueness_is_counted_per_frame_document()
     {
         var page = Page(N(1, 0, "body"),

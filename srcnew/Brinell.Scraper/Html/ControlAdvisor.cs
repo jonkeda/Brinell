@@ -37,7 +37,7 @@ public static partial class ControlAdvisor
     {
         var (control, ns) = ControlOf(snapshot, node, blazor) ?? ("LabelControl", "Brinell.Html.Controls.Display");
         var (locator, stable, why) = LocatorOf(snapshot, node, testIds, documents);
-        return new ControlSuggestion(node.Number, Name(node, testIds), control, ns, locator, stable, why);
+        return new ControlSuggestion(node.Number, Name(node, testIds, TextOf(snapshot, node)), control, ns, locator, stable, why);
     }
 
     private static (string Control, string Namespace)? ControlOf(ScrapeSnapshot snapshot, ScrapeNode node, bool blazor)
@@ -96,9 +96,9 @@ public static partial class ControlAdvisor
             return ($"Locator.ByCss({Quote($"{node.Type}[aria-label='{name}']")})", true, "its accessible name");
         if (node.Attribute("name") is { Length: > 0 } formName && Unique(n => n.Attribute("name") == formName))
             return ($"Locator.ByName({Quote(formName)})", true, "its name attribute");
-        if (node.Type == "a" && node.Text is { Length: > 0 } linkText && Unique(n => n.Type == "a" && n.Text == linkText))
+        if (node.Type == "a" && TextOf(snapshot, node) is { Length: > 0 } linkText && Unique(n => n.Type == "a" && TextOf(snapshot, n) == linkText))
             return ($"Locator.ByLinkText({Quote(linkText)})", true, "its link text");
-        if (node.Type is "button" && node.Text is { Length: > 0 } buttonText && Unique(n => n.Type == "button" && n.Text == buttonText))
+        if (node.Type is "button" && TextOf(snapshot, node) is { Length: > 0 } buttonText && Unique(n => n.Type == "button" && TextOf(snapshot, n) == buttonText))
             return ($"Locator.ByCss({Quote($"button:has-text('{buttonText}')")})", true, "its text");
         if (node.Attribute("placeholder") is { Length: > 0 } placeholder && Unique(n => n.Attribute("placeholder") == placeholder))
             return ($"Locator.ByCss({Quote($"{node.Type}[placeholder='{placeholder}']")})", true, "its placeholder");
@@ -107,13 +107,26 @@ public static partial class ControlAdvisor
         var stableClass = node.Attribute("class")?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(c => IsStableClass(c) && Unique(n => HasClass(n, c) && n.Type == node.Type));
         if (stableClass is not null)
             return ($"Locator.ByCss({Quote($"{node.Type}.{stableClass}")})", true, "a class only it has");
-        return ($"Locator.ByCss({Quote(Path(snapshot, node))})", false, "nothing stable: its position; ask for a test id in the app");
+        return ($"Locator.ByCss({Quote(Path(snapshot, node, testIds, documents))})", false, "nothing stable: its position; ask for a test id in the app");
+    }
+
+    // A button's or link's text is often in a child (a span in a UI library's button).
+    private static string? TextOf(ScrapeSnapshot snapshot, ScrapeNode node)
+    {
+        if (node.Text is { Length: > 0 } || node.Type is not ("button" or "a")) return node.Text;
+        foreach (var child in snapshot.ChildrenOf(node.Number))
+        {
+            if (child.Text is { Length: > 0 } text) return text;
+            foreach (var grandchild in snapshot.ChildrenOf(child.Number))
+                if (grandchild.Text is { Length: > 0 } deeper) return deeper;
+        }
+        return null;
     }
 
     // The app's own test id says what the element is best; then what the user sees.
-    private static string Name(ScrapeNode node, IReadOnlyList<string> testIds)
+    private static string Name(ScrapeNode node, IReadOnlyList<string> testIds, string? text)
     {
-        var source = testIds.Select(node.Attribute).FirstOrDefault(v => v is { Length: > 0 }) ?? node.Name ?? node.Text ?? node.Attribute("placeholder") ?? node.Attribute("name") ?? node.Attribute("id") ?? node.Type;
+        var source = testIds.Select(node.Attribute).FirstOrDefault(v => v is { Length: > 0 }) ?? node.Name ?? text ?? node.Attribute("placeholder") ?? node.Attribute("name") ?? node.Attribute("id") ?? node.Type;
         var words = Words().Matches(source).Select(m => char.ToUpperInvariant(m.Value[0]) + m.Value[1..].ToLowerInvariant()).Take(4);
         var name = string.Concat(words);
         return name.Length == 0 || char.IsDigit(name[0]) ? "Element" + name : name;
@@ -143,16 +156,35 @@ public static partial class ControlAdvisor
         return documents;
     }
 
-    private static string Path(ScrapeSnapshot snapshot, ScrapeNode node)
+    // The node's position, from its nearest ancestor that has a test id or a stable id of its own,
+    // so a position is as short, and as local, as the page allows.
+    private static string Path(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, int[] documents)
     {
         var parts = new List<string>();
         for (var n = node; n.Parent != 0 && snapshot[n.Parent].Frame is null && n.Type is not "body"; n = snapshot[n.Parent])
         {
             var siblings = snapshot.ChildrenOf(n.Parent).Where(s => s.Type == n.Type).ToList();
             parts.Add(siblings.Count > 1 ? $"{n.Type}:nth-of-type({siblings.IndexOf(n) + 1})" : n.Type);
+            var parent = snapshot[n.Parent];
+            if (Anchor(snapshot, parent, testIds, documents) is { } anchor)
+            {
+                parts.Add(anchor);
+                break;
+            }
         }
         parts.Reverse();
         return string.Join(" > ", parts);
+    }
+
+    private static string? Anchor(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, int[] documents)
+    {
+        bool Unique(Func<ScrapeNode, bool> match) => snapshot.Nodes.Count(n => documents[n.Number] == documents[node.Number] && match(n)) == 1;
+        foreach (var attribute in testIds)
+            if (node.Attribute(attribute) is { Length: > 0 } id && Unique(n => n.Attribute(attribute) == id))
+                return $"[{attribute}='{id}']";
+        return node.Attribute("id") is { Length: > 0 } elementId && IsStableId(elementId) && Unique(n => n.Attribute("id") == elementId)
+            ? $"#{elementId}"
+            : null;
     }
 
     private static IEnumerable<int> Subtree(ScrapeSnapshot snapshot, int root)
@@ -165,7 +197,8 @@ public static partial class ControlAdvisor
 
     private static string Quote(string value) => "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
 
-    [GeneratedRegex(@"\d{3,}|[0-9a-f]{8}-[0-9a-f]{4}|^(react|ng|ember|mui|radix)-|^:r")]
+    // Ids made per render: long numbers, GUIDs, and the prefixes UI libraries number their ids with.
+    [GeneratedRegex(@"\d{3,}|[0-9a-f]{8}-[0-9a-f]{4}|^(react|ng|ember|mui|radix|mat-input|el-id)-|^v-\d|^:r|^(mudinput|popovercontent)")]
     private static partial Regex UnstableId();
 
     [GeneratedRegex(@"^(css|jss|sc|emotion)-|^_|\d{3,}|^(ng|is|has)-|active|selected|open|hover|focus|disabled")]

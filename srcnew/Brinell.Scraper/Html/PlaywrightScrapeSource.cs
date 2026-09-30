@@ -193,13 +193,28 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
     private static async Task SettleAsync(IPage page, CancellationToken cancellationToken)
     {
         await page.WaitForLoadStateAsync(LoadState.Load).ConfigureAwait(false);
+        // An app still fetching its script bundle changes nothing in the page, so the page can look
+        // quiet before it renders (react-admin's demo, step 10): the network first.
+        await TryWaitForNetworkIdleAsync(page).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         // Not settled within the limit (an animation that never stops): capture what is there.
         await TryEvaluateAsync<bool>(page.MainFrame, SettleScript, new { quiet = (int)Quiet.TotalMilliseconds, max = (int)SettleLimit.TotalMilliseconds })
             .ConfigureAwait(false);
     }
 
-    private static async Task<FrameCapture?> TryCaptureFrameAsync(IFrame frame)
+    private static async Task TryWaitForNetworkIdleAsync(IPage page)
+    {
+        try
+        {
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = (float)SettleLimit.TotalMilliseconds }).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // A page that polls or streams is never idle: the quiet DOM decides alone.
+        }
+    }
+
+        private static async Task<FrameCapture?> TryCaptureFrameAsync(IFrame frame)
     {
         var json = await TryEvaluateAsync<string>(frame, CaptureScript, new { kept = HtmlAttributes.Kept, maxText = MaxText }).ConfigureAwait(false);
         return json is null ? null : JsonSerializer.Deserialize<FrameCapture>(json, FrameCapture.Json);

@@ -16,9 +16,13 @@ public static class HtmlAttributes
     /// <summary>The test-id attributes in the order a locator prefers them, when the config names none.</summary>
     public static readonly IReadOnlyList<string> TestIds = ["data-testid", "data-test", "data-test-id", "data-qa", "data-cy"];
 
-    /// <summary>True when an attribute of this name is kept.</summary>
+    /// <summary>True when an attribute of this name is kept; the capture script holds the same rule.</summary>
     public static bool IsKept(string name) =>
-        name.StartsWith("data-", StringComparison.Ordinal)
+        (name.StartsWith("data-", StringComparison.Ordinal) && !IsVueScope(name))
         || (name.StartsWith("aria-", StringComparison.Ordinal) && name != "aria-label")
         || Kept.Contains(name);
+
+    // Vue's scoped-style markers (data-v-1a2b3c4d) change with every build and say nothing about the element.
+    private static bool IsVueScope(string name) =>
+        name.Length == 15 && name.StartsWith("data-v-", StringComparison.Ordinal) && name[7..].All(char.IsAsciiHexDigitLower);
 }

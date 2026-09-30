@@ -9,8 +9,11 @@
     const elements = window.__brinellScrapeNodes = [];
     const nodes = [];
 
+    // Vue's scoped-style markers (data-v-1a2b3c4d) change with every build and say nothing about the element.
+    const scoped = /^data-v-[0-9a-f]{8}$/;
+
     function kept(name) {
-        return name.startsWith('data-') || (name.startsWith('aria-') && name !== 'aria-label') || keptNames.has(name);
+        return (name.startsWith('data-') && !scoped.test(name)) || (name.startsWith('aria-') && name !== 'aria-label') || keptNames.has(name);
     }
 
     function ownText(el) {

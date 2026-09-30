@@ -1,6 +1,6 @@
 # The Scraper, restarted in the IDE extensions: plan
 
-Status: **steps 0 to 9 done** (the spike, section 11; the engine project), 2026-09-30. Q1 to Q7 decided.
+Status: **steps 0 to 10 done** (the spike, section 11; the engine project), 2026-09-30. Q1 to Q7 decided.
 No backward compatibility: not with the old corpora, and the WPF tool need not keep working.
 Supersedes [uat/tools/scraper-in-extension.md](../uat/tools/scraper-in-extension.md) (the
 proposal of 2026-09-27) and the roadmap in [Scraper/](../Scraper/roadmap.md) (dormant since
@@ -176,7 +176,7 @@ One commit per step. Unit tests with each step; UI checks only where a step name
 | 7 | VS Code view | Record, the recordings tree, the DOM tree, the commands | **Done.** The view is the server's page (`ScraperPage`, `brinell/scraper/host`): Record, Capture, Pick, Stop; tabs Pages (each page and its captures, a capture as an outline, a node's details: highlight in the live browser, how often its kind occurs, Make a control), Patterns, Code (opens the file); Compare (two captures in the IDE's diff), Generate (the agent chat with `/brinell-scrape-pages`). New requests `similar`, `header`; a `ScraperResult` always sends `value` and `problem`. An IDE only relays: VS Code's `src/scraper.ts` and the command **Brinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar). Tried in a browser through a stand-in host that relays to the real server: the pages, an outline, a node, a recording started, captured, stopped, the patterns and code tabs, and the open and chat messages all worked. **Not tried inside VS Code** (the relay compiles), and Pick needs a person's click in the recording browser |
 | 8 | Visual Studio view | The same page in a tool window | **Done, not run in Visual Studio.** View, Other Windows, **Scraper** (`ScraperWindow`, `ScraperController`): the same page in WebView2; requests relayed through `BddServerClient.RequestAsync`, `brinell/scraper/changed` forwarded; open (a document), diff (`IVsDifferenceService`), and the Generate prompt on the clipboard with a status bar line, since Copilot Chat takes no prompt from a command. Compiles with `dotnet build -p:DeployExtension=false`. **Found:** the language server now carries Playwright's driver (`.playwright`, 102 MB for win-x64), so the VSIX's server folder grows from about 50 to 152 MB; see Q8 |
 | 9 | Blazor | The `Brinell.Blazor` controls in the matcher and the prompt | **Done.** `ControlAdvisor`: for a node, or every node a page object would name (acted on, read, a test id, a heading, a frame; not an option), the control that fits (the `Brinell.Blazor.Controls` one in a Blazor project), a name (the app's test id first), and a locator in the skill's order, unique within its frame document, with whether it is stable and why. MCP `suggest_controls`, `brinell/scraper/suggest`, and the view's node details. `BlazorPageObjectBase` is a page base for `ProjectCode`. 8 tests. **Acceptance:** `testsnew/Brinell.Blazor.UITests` got a `scraper.config.md` (test ids `data-testid`, `data-automation-id`); the sample's 13 pages recorded into its `Recordings/` (217 KB); acting as the agent, `UserFormPage` written from `suggest_controls` and `check_code` passed; `UserFormPageTests` (2) drive it against the sample and pass, and so does the rest of the project (35) |
-| 10 | Refresh and acceptance | `diff_page`, "changed since generation" in the tree; the demo-site walkthrough run in both IDEs; one public site per framework recorded and generated (section 10) | The results recorded here |
+| 10 | Refresh and acceptance | `diff_page`, "changed since generation" in the tree; the demo-site walkthrough run in both IDEs; one public site per framework recorded and generated (section 10) | **Done, except the IDE walkthrough** (no IDE here; section 12). `SnapshotDiff` (nodes matched by path: type, test id or id, which like sibling), `diff_page` (from the capture the page object was made from, else the one before, to the newest), the pages list says which page object a page has and whether it changed since, and the view's **Changes** and **Update page object**. **Public sites** (section 12): the-internet, react-admin demo, vue-element-admin and MudBlazor docs recorded, one page object each written from `suggest_controls`, each project built by `check_code`, and all 18 locators found exactly one element on the live sites |
 | 11 | Remove and close | `tools/Brinell.Scraper.Wpf` deleted with its solution, task and launch entries; an AD and a guide in `docs/`; `.my/Scraper/`, the proposal and this folder deleted (docs-upkeep) | The solution builds; no link into the deleted folders |
 
 Step 5 already pays off without a view: an agent can record and generate through MCP.
@@ -255,3 +255,31 @@ What it changes in the design:
 | Radzen answers headless Chromium with **403 Forbidden**, and loads headed | Recording is headed (as planned); a headless capture over a URL list (for tests) is only for our own sites |
 | MudBlazor's docs page is 18k elements | Docs sites are for trying components one by one; the admin demos are the sites for pattern detection across pages |
 | `data-test` (Sauce Demo) next to `data-testid` | The attribute bag keeps every `data-*` attribute; the config names which ones are test ids |
+
+## 12. Step 10: the public sites
+
+Each site was recorded into a scratch project of its own (outside the repo, with `Brinell.Html` and
+`Brinell.Blazor` referenced), over MCP as an agent would, on 2026-09-30.
+
+| Site | Recorded | Page object | Built | Locators live |
+| --- | --- | --- | --- | --- |
+| [the-internet](https://the-internet.herokuapp.com/) | `/login` (29 nodes), `/tables` (124) | `LoginPage`: heading, username, password, login | yes | 4 of 4 unique |
+| [react-admin demo](https://marmelab.com/react-admin-demo/) | `#/login` (31) | `LoginPage`: username, password, show password, sign in | yes | 4 of 4 |
+| [vue-element-admin](https://panjiachen.github.io/vue-element-admin/) | `#/login` (56) | `LoginPage`: title, username, password, login, third-party sign-in | yes | 5 of 5 |
+| [MudBlazor docs](https://mudblazor.com/components/button) | `/components/button` (2,400), `/components/textfield` (4,231) | `ButtonDocsPage`: search button and field, three links | yes | 5 of 5 |
+
+What they found, fixed in this step:
+
+| Found | Fix |
+| --- | --- |
+| react-admin was captured as `Loading...` (5 nodes): the page is quiet while the script bundle downloads | A capture waits for the network to be idle first (bounded by the settle limit), then for the quiet DOM |
+| Vue's scoped-style attributes (`data-v-09f01a64`) in every node | Not kept: they change with every build |
+| A button's text in a child span (Element UI, MUI) gave no name and a position | The text of a button or link is looked for two levels down |
+| MudBlazor's ids are made per render (`mudinputfmqznq5c`, `popovercontent-<guid>`) | UI libraries' numbered id prefixes are not stable ids |
+| A position was a path from `body`, 10 steps long | It starts at the nearest ancestor with a test id or stable id of its own |
+| A third-party Blazor app sets no Brinell busy signal | The skill says: `BlazorPageObjectBase` only for an app that sets it |
+
+Still rough: on MudBlazor's docs 254 of 364 suggestions have only a position (the drawer's items
+and icon buttons have no test id, and the same text twice); the pattern list of a docs site is
+dominated by its navigation. A real app with test ids does far better (the Blazor sample: 0 of 62).
+
