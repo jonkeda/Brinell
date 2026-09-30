@@ -91,3 +91,16 @@ Then Status Summary should contain "Passed: 1/1 scenarios"
 And Narrator Tree should contain "[x] ✓ 1 A name is needed"
 And Scene 2 should be unchecked
 ```
+
+@presenter @narrator @settings
+## Scenario: The settings have the narrator's voice, with a way to try it
+
+```gherkin
+Given I am on the Presenter page
+When I tap Settings
+Then Voice should exist
+And Voice should have selected "Default voice"
+And Try Voice should exist
+When I tap Settings
+Then Status Summary should contain "Ready"
+```

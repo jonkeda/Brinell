@@ -166,7 +166,7 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | 3 | Run and the step buttons over the checked scenes; a failure goes on (D6); a rehearsal speaks the lines when Speak aloud is on (**done**) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is not run. Unit tests: a failed scene does not stop the next; Present mode still stops at the first |
 | 4 | The engine: a kept scenes folder (`BddKeptScenes`), the scene hash in `timeline.json`, the recording states, `StitchAsync`, `BRINELL_RECORD_KEEP` (**done**) | Unit tests: a changed line makes its scene out of date, and only that one; the voice and the beat are every scene's; the four states from the files |
 | 5 | Record the checked scenes; Stitch; Watch, the play icon on a recorded scene, Open folder (**done**) | UAT `narrator-record.feature.md`: two scenes recorded and stitched; one recorded again, stitched again. By hand on the sample: one video, two chapters, voice and captions; a changed line leaves only its scene checked. The Todo video: still to record |
-| 6 | Settings: the Narrator section, Try | UAT: the voice list; manual: the voice is heard |
+| 6 | Settings: the Narrator section, Try, the note when the script names its own voice (**done**) | UAT: the voice list and Try are there. Unit test: Try says what spoke; the script's voice is named. By hand: the voice is heard |
 | 7 | Docs: the guide gets a "From Presenter" section; the manual plan gets M16 | |
 
 ## Built differently, or not yet

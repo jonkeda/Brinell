@@ -22,6 +22,7 @@ public sealed partial class PresenterShellViewModel
     private bool _speakAloud;
     private string? _lastRecording;
     private string _recordingStatus = string.Empty;
+    private string _voiceStatus = string.Empty;
 
     /// <summary>Whether runs are recorded on video; the Record button turns it on and off.</summary>
     public bool IsRecording
@@ -91,6 +92,40 @@ public sealed partial class PresenterShellViewModel
         }
     }
 
+    /// <summary>Speaks a sample line in the chosen voice.</summary>
+    public ICommand TryVoiceCommand { get; private set; } = null!;
+
+    /// <summary>What Try did: the voice that spoke, or that this machine has none.</summary>
+    public string VoiceStatus
+    {
+        get => _voiceStatus;
+        private set => SetProperty(ref _voiceStatus, value);
+    }
+
+    /// <summary>Says so when the open video script names a voice of its own: that one is used, not the setting.</summary>
+    public string ScriptVoiceNote => Narrator.Check?.Script?.Voice is { Length: > 0 } voice
+        ? $"The open script asks for {voice}: that voice is used for it."
+        : string.Empty;
+
+    /// <summary>Whether <see cref="ScriptVoiceNote"/> has anything to show.</summary>
+    public bool HasScriptVoiceNote => ScriptVoiceNote.Length > 0;
+
+    private async Task TryVoiceAsync()
+    {
+        VoiceStatus = "Speaking...";
+        try
+        {
+            var spoke = await _recorder.TryVoiceAsync("This is the voice of your video.", _voice, CancellationToken.None).ConfigureAwait(true);
+            VoiceStatus = spoke
+                ? $"Spoken in {VoiceChoice}."
+                : "This machine has no voice: add one in Settings, Time and language, Speech.";
+        }
+        catch (Exception ex)
+        {
+            VoiceStatus = $"The voice could not be tried: {ex.Message}";
+        }
+    }
+
     /// <summary>The beat setting in milliseconds, as the Settings page edits it.</summary>
     public string BeatText
     {
@@ -128,6 +163,7 @@ public sealed partial class PresenterShellViewModel
         _speakAloud = settings.SpeakAloud;
         ToggleRecordCommand = new RelayCommand(ToggleRecord);
         WatchRecordingCommand = new RelayCommand(WatchRecording, () => HasRecording);
+        TryVoiceCommand = new AsyncRelayCommand(TryVoiceAsync);
     }
 
     private void ToggleRecord()

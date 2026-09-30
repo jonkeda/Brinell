@@ -85,6 +85,12 @@ public interface IPresenterRecorder
     /// <param name="sceneCount">The script's scene count.</param>
     /// <param name="cancellationToken">Cancels ffmpeg.</param>
     Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken);
+
+    /// <summary>Speaks a line aloud in a voice, to hear it before choosing it. False when this machine has no voice.</summary>
+    /// <param name="text">What to say.</param>
+    /// <param name="voice">The voice, by (part of) its name; null for the default.</param>
+    /// <param name="cancellationToken">Stops it.</param>
+    Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken);
 }
 
 /// <inheritdoc />
@@ -198,6 +204,22 @@ public sealed class PresenterRecorder : IPresenterRecorder
     {
         var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken).ConfigureAwait(false);
         return new PresenterRecorded(stitched.Video, true, stitched.Warnings);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken)
+    {
+        var speech = new WindowsSpeech();
+        if (!speech.IsAvailable)
+        {
+            return false;
+        }
+
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
+        Directory.CreateDirectory(folder);
+        var clip = await Speech.ClipAsync(speech, text, voice, Path.Combine(folder, "try.wav"), cancellationToken).ConfigureAwait(false);
+        await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     // False when a file of the folder is still held: the scene then reads as it did, until it is recorded again.

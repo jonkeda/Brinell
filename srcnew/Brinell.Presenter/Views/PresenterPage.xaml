@@ -809,7 +809,8 @@
                         <Label Text="Keep it open: the app stays until the next run, Stop, or closing Presenter."
                                FontSize="11"
                                Style="{StaticResource PresenterMutedLabel}" />
-                        <Label Text="Recording" FontAttributes="Bold" />
+                        <!-- The narrator: what a recording and a rehearsal use, in Present mode and in Narrator mode. -->
+                        <Label Text="Narrator" FontAttributes="Bold" AutomationId="NarratorSettingsLabel" />
                         <Label Text="Recordings folder (empty: the suite's TestResults\recordings)" />
                         <Entry AutomationId="RecordingsFolderInput"
                                Text="{Binding RecordingsFolderText}"
@@ -820,6 +821,26 @@
                                 SelectedItem="{Binding VoiceChoice, Mode=TwoWay}"
                                 SemanticProperties.Description="Voice" />
                         <HorizontalStackLayout Spacing="6">
+                            <Button Text="Try"
+                                    AutomationId="TryVoiceButton"
+                                    Command="{Binding TryVoiceCommand}"
+                                    SemanticProperties.Description="Try the voice"
+                                    ToolTipProperties.Text="Speak a sample line in this voice" />
+                            <Label Text="{Binding VoiceStatus}"
+                                   AutomationId="VoiceStatusLabel"
+                                   FontSize="11"
+                                   VerticalTextAlignment="Center"
+                                   Style="{StaticResource PresenterMutedLabel}" />
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding ScriptVoiceNote}"
+                               AutomationId="ScriptVoiceNoteLabel"
+                               IsVisible="{Binding HasScriptVoiceNote}"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="Another voice or beat is another recording: the recorded scenes become out of date."
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <HorizontalStackLayout Spacing="6">
                             <Label Text="Beat after a step" VerticalTextAlignment="Center" />
                             <Entry AutomationId="BeatInput"
                                    Keyboard="Numeric"
@@ -829,7 +850,7 @@
                             <Label Text="ms" VerticalTextAlignment="Center" />
                         </HorizontalStackLayout>
                         <HorizontalStackLayout Spacing="6">
-                            <Label Text="Speak aloud while recording" VerticalTextAlignment="Center" />
+                            <Label Text="Speak aloud while recording, and in a rehearsal" VerticalTextAlignment="Center" />
                             <CheckBox AutomationId="SpeakAloudCheckBox"
                                       IsChecked="{Binding SpeakAloud}" />
                         </HorizontalStackLayout>

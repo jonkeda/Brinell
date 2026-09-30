@@ -107,6 +107,14 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Scene 2")]
     public CheckBox<PresenterPage> Scene2 => new(this, "NarratorSceneCheck_2");
 
+    /// <summary>Settings: speaks a sample line in the chosen voice.</summary>
+    [UatName("Try Voice")]
+    public Button<PresenterPage> TryVoiceButton => new(this, "TryVoiceButton");
+
+    /// <summary>Settings: the narrator's voice.</summary>
+    [UatName("Voice")]
+    public Picker<PresenterPage> VoicePicker => new(this, "VoicePicker");
+
     /// <summary>Narrator mode: joins the latest recording of every scene into the video.</summary>
     [UatName("Stitch")]
     public Button<PresenterPage> StitchButton => new(this, "StitchButton");

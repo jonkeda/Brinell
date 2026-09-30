@@ -91,6 +91,8 @@ public sealed partial class PresenterShellViewModel
 
         Narrator.RefreshStates(ScenesFolder(), _voice, TimeSpan.FromMilliseconds(_beat), resetChecks);
         OnPropertyChanged(nameof(RecordDescription));
+        OnPropertyChanged(nameof(ScriptVoiceNote));
+        OnPropertyChanged(nameof(HasScriptVoiceNote));
     }
 
     private static void ResetSceneRows(IReadOnlyList<NarratorSceneViewModel> scenes)

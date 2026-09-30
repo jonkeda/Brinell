@@ -132,6 +132,24 @@ public sealed class NarratorRunTests : IDisposable
         Assert.True(shell.IsPresentMode);
     }
 
+    [Fact]
+    public void Settings_TryTheVoice_AndSayWhenTheScriptNamesItsOwn()
+    {
+        var shell = Shell(new FailingExecutionService());
+        Assert.False(shell.HasScriptVoiceNote);
+
+        shell.TryVoiceCommand.Execute(null);
+        Assert.Equal("Spoken in Default voice.", shell.VoiceStatus);
+
+        File.WriteAllText(_script, File.ReadAllText(_script).Replace(
+            "# Video: A tour",
+            "# Video: A tour\n\n| Field | Value |\n| --- | --- |\n| Voice | Microsoft Jenny |",
+            StringComparison.Ordinal));
+        shell.OpenScript(_script);
+
+        Assert.Equal("The open script asks for Microsoft Jenny: that voice is used for it.", shell.ScriptVoiceNote);
+    }
+
     private PresenterShellViewModel Shell(IBddExecutionService execution)
         => new(new Workspace(_root, _feature), execution, new NoPicker(), new MemorySettings(), recorder: new NoRecorder());
 
@@ -209,5 +227,13 @@ public sealed class NarratorRunTests : IDisposable
 
         public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
             => Task.FromResult(new PresenterRecorded(video, true, []));
+
+        public Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken)
+        {
+            Tried.Add(voice);
+            return Task.FromResult(true);
+        }
+
+        public List<string?> Tried { get; } = [];
     }
 }
