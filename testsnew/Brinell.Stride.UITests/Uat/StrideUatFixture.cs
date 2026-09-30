@@ -1,4 +1,4 @@
-namespace Brinell.Stride.Uat.Tests.Runtime;
+namespace Brinell.Stride.UITests.Uat;
 
 [TestModuleScan(typeof(MainPage), NamespacePrefix = "Brinell.Stride.UITests.PageObjects")]
 public sealed class StrideUatFixture : StrideTestFixtureBase

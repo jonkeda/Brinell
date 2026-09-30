@@ -13,7 +13,7 @@
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | Brinell.Stride.Uat.Tests.dll |
+| Pages | Brinell.Stride.UITests.dll |
 
 ## Discovery
 

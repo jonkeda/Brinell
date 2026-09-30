@@ -1,4 +1,4 @@
-namespace Brinell.Stride.Uat.Tests.Runtime;
+namespace Brinell.Stride.UITests.Uat;
 
 [Trait("Category", "UAT")]
 [Trait("Target", "STRIDE")]

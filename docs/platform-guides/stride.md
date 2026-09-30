@@ -9,7 +9,7 @@ Brinell supports Stride game/UI testing through `Brinell.Stride` and
 - `srcnew/Brinell.Stride.Automation`
 - `testsnew/Brinell.Stride.Automation.Tests`
 - `testsnew/Brinell.Stride.UITests`
-- `testsnew/Brinell.Stride.Uat.Tests`
+- `testsnew/Brinell.Stride.UITests`
 - `samples/Brinell.Samples.Stride.App`
 
 ## Rules
