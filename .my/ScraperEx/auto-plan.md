@@ -1,6 +1,6 @@
 # The Scraper, automatic: explore an app and draft its page objects
 
-Status: **plan, decided** (Q1-Q7, 2026-09-30; section 8). Nothing is built.
+Status: **plan, decided** (Q1-Q8, 2026-09-30; section 8); the loop (section 9) added, Q9-Q11 open. Nothing is built.
 Builds on [plan.md](plan.md) (the Scraper as built, AD-027) and [next-plan.md](next-plan.md).
 
 ## 1. What we want
@@ -203,7 +203,8 @@ A test tenant where deleting and saving are fine, and websocket clicks too:
 
 ## 7. Steps
 
-One commit per step, tests with each.
+One commit per step, tests with each. From step 6 on, each step ends with a run of the loop
+(section 9) on the test site, and its report goes in the commit message.
 
 | # | Step | Verify |
 | --- | --- | --- |
@@ -212,11 +213,12 @@ One commit per step, tests with each.
 | 3 | The request guard (guard 2, `BlockMethods`, `AllowRequests`) and the host guard (guard 4) in the Html source | browser tests on the test site: a POST blocked by default and let through when unblocked; a host outside `ExploreHosts` refused |
 | 4 | The test site gets a dangerous page: logout link, delete buttons, a submit form, a POST that would delete, a websocket; each counted by the site, so a test can prove what happened | the site itself |
 | 5 | Explore: links, then clicks by policy; state dedup; budget; sign-in detection with Continue; the websocket guard; the report; dry run | browser tests on the test site: all pages found; with the defaults the dangerous page's counters stay 0; with `delete` off and `BlockMethods` without DELETE, the delete counter moves and nothing else does |
-| 6 | The command line (`scrape explore`, `scrape draft`) and the MCP tools, `update_scraper_config` too | a run on the test site from the command line, exit codes |
-| 7 | Draft: `.scraped.cs` partials, names, unstable members as a comment, the gate with revert | unit tests; the test site drafted and building; a second draft replaces only the `.scraped.cs` |
-| 8 | The view: Explore with the guard summary, progress, Stop, Continue; Explore settings; the add-to-config actions and Create config; Draft page objects; Improve with the agent | the manual test plan's new checks (Claude's part scripted as before) |
-| 9 | The Blazor sample explored (links, then `WebsocketApps: warn`) and drafted | its pages found; the drafts build; `UserFormPage` compared with the hand-checked one |
-| 10 | AD-027 amended (Explore and its guards as settings, drafts from rules); the guide's "Explore and draft" section | links valid |
+| 6 | The command line (`scrape explore`, `scrape draft`, `scrape verify`) and the MCP tools, `update_scraper_config` too | a run on the test site from the command line, exit codes |
+| 7 | Draft: `.scraped.cs` partials, names, unstable members as a comment, the gate with revert; **Verify**: every member's locator resolved against the running app (section 9, stage 6) | unit tests; the test site drafted, building and verified; a second draft replaces only the `.scraped.cs` |
+| 8 | **The loop** (section 9): the script, the targets, the report; the agent stage with Copilot CLI and with Claude Code | a full loop on the test site, with each agent and with none; a guard broken on purpose (a danger word taken out of the list) makes the loop fail |
+| 9 | The view: Explore with the guard summary, progress, Stop, Continue; Explore settings; the add-to-config actions and Create config; Draft page objects; Improve with the agent | the manual test plan's new checks (Claude's part scripted as before) |
+| 10 | The Blazor sample in the loop (links, then `WebsocketApps: warn`) | its pages found; the drafts build and verify; `UserFormPage` compared with the hand-checked one |
+| 11 | AD-027 amended (Explore and its guards as settings, drafts from rules, the agent from its own CLI); the guide's "Explore and draft" and "The loop" sections | links valid |
 
 ## 8. Decisions
 
@@ -230,3 +232,54 @@ One commit per step, tests with each.
 | Q6 | The `.scraped.cs` partial split? | Yes |
 | Q7 | A nightly Explore of the samples? | Later |
 | Q8 | Can the extension add a URL to the config? | Yes: section 5's add-to-config actions and Create config, through `brinell/scraper/configEdit` |
+| Q9 | Does Brinell's command line use Copilot? | No, it stays model-free (AD-027). An agent's own command line (Copilot CLI, Claude Code) runs with the Brinell MCP server, as the loop's agent stage does |
+
+## 9. The loop: explore, draft, improve, check, verify, report, unattended
+
+One command runs everything end to end against an app, with no person in it, so that Claude (or CI,
+or the owner) can run it after every change and read one report:
+
+```text
+scrape-loop.ps1 -Target test-site|blazor-sample|<project> [-Agent copilot|claude|none] [-Profile careful|test-tenant] [-Repeat N]
+```
+
+| Stage | Does | Fails the loop when |
+| --- | --- | --- |
+| 1. App | starts the target app (the test site with its dangerous page, or the Blazor sample) on a free port, into a copy of its project | it does not start |
+| 2. Explore | `Brinell.Bdd.LanguageServer scrape explore --project … --headless` with the profile's settings (`careful`: the defaults; `test-tenant`: `delete` and `update` off, `BlockMethods` empty) | a guard stopped it for a reason the profile does not expect; fewer pages than the target's known minimum |
+| 3. Guards | reads the dangerous page's counters from the test site | `careful`: any counter above 0. `test-tenant`: sign-out, pay or send above 0, or delete and update not reached |
+| 4. Draft | `scrape draft --project …` | a draft does not build (it is reverted and named) |
+| 5. Agent | the agent's own command line, non-interactive, with only the Brinell MCP server's tools allowed and its shell and file writes denied (code goes through `write_code`, the build through `check_code`), and the `/brinell-scrape-pages` prompt: controls for the repeated patterns, better names | `check_code` fails at the end; the agent wrote outside the project; the agent exceeded its budget (time, and credits where the CLI reports them) |
+| 6. Verify | `scrape verify`: opens each recorded page in the running app and resolves every page object member's locator (read from the source, mapped as `Brinell.Html.Playwright` maps it, a frame member on its frame): found once, found several times, not found | a member not found; a member found several times where one is expected |
+| 7. Report | `loop-report.md` and `loop-report.json` in the run's folder: each stage's result and time, pages, captures, skipped and blocked with reasons, counters, drafts, the agent's changes (a diff), verify per member, the agent's cost | never: the report is written even when a stage fails |
+
+**How the agent stage is run** (checked 2026-09-30 on this machine, Copilot CLI 1.0.69 and Claude
+Code 2.0.1 installed):
+
+```text
+copilot -p "<the prompt>" --additional-mcp-config '{"mcpServers":{"brinell-bdd":{"type":"local","command":"dotnet","args":["<server dll>","--mcp","--solution","<copy>"],"tools":["*"]}}}' --allow-tool brinell-bdd --deny-tool shell --deny-tool write
+claude -p "<the prompt>" --mcp-config <file> --strict-mcp-config --allowed-tools "mcp__brinell-bdd" --output-format json
+```
+
+A first try with Copilot CLI called `list_scraped_projects` and `list_recorded_pages` on a scratch
+project and answered from them: about 9 AI credits for that short run. An improve pass reads
+many pages and writes several files, so it costs more; the report shows it, and `-Agent none` runs
+the loop without one.
+
+**Who runs it:**
+- **Claude**, after each step of this plan and whenever the Scraper changes: the loop is how "test
+  everything" is done without a person, and its report is the evidence in the commit. With
+  `-Repeat N` (or the `/loop` command) it runs again and again to catch what fails only sometimes.
+- **The owner**, with `-Agent copilot` to see what Copilot makes of an app.
+- **CI**, later (Q7): the loop on the samples with `-Agent none` every night; `diff_page` against
+  the last night says what changed in the UI.
+
+**Where it lives:** `tools/Scripts/scrape-loop.ps1` (a script beside the others there), the test
+site's dangerous page in `testsnew/Brinell.Scraper.Tests/TestSite`, and the runs in
+`TestResults/scrape-loop/<date>-<target>/` (ignored by git), each on a copy of the target project
+so a run never changes the repository.
+
+| # | Question | Proposal |
+| --- | --- | --- |
+| Q10 | Which agent does the loop use by default? | `none` when Claude runs it after a step (free, deterministic); `copilot` in a run asked for by name. Both CLIs are supported |
+| Q11 | A budget for the agent stage? | 10 minutes and the CLI's own limits; the loop stops the agent after that and fails the stage |
