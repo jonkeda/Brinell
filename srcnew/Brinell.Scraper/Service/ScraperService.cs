@@ -143,7 +143,7 @@ public sealed class ScraperService : IAsyncDisposable
 
         using var exploring = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _exploring = exploring;
-        var run = options with { WaitForSignIn = options.WaitForSignIn ?? (options.Visible ? WaitForSignInAsync : null) };
+        var run = options with { WaitForSignIn = options.StopAtSignIn ? null : options.WaitForSignIn ?? (options.Visible ? WaitForSignInAsync : null) };
         ExploreResult result;
         try
         {
@@ -160,6 +160,37 @@ public sealed class ScraperService : IAsyncDisposable
         await File.WriteAllTextAsync(report, ExploreReport.Markdown(result, project.Name, start), CancellationToken.None).ConfigureAwait(false);
         await StopRecordingAsync(CancellationToken.None).ConfigureAwait(false);
         return result with { Folder = recording.Session.Folder, Report = report };
+    }
+
+    /// <summary>
+    /// Makes one change to a project's <c>scraper.config.md</c> (see <see cref="ScraperConfigWriter.Apply"/>),
+    /// keeping the rest of the file; written only when <paramref name="write"/> and the result still reads.
+    /// </summary>
+    /// <exception cref="ScraperProblem">The change is not one, or the config would not read after it.</exception>
+    public ConfigEdit EditConfig(string? projectName, ConfigChange change, bool write = true)
+    {
+        var project = Project(projectName);
+        var path = Path.Combine(project.Folder, ScraperConfig.FileName);
+        var text = File.ReadAllText(path);
+        ConfigEdit edit;
+        try
+        {
+            edit = ScraperConfigWriter.Apply(text, change);
+            ScraperConfig.Parse(edit.Text);
+        }
+        catch (Exception e) when (e is ArgumentException or FormatException)
+        {
+            throw new ScraperProblem($"{project.Name}'s config was not changed: {e.Message}");
+        }
+        if (write && edit.Changed) File.WriteAllText(path, edit.Text);
+        return edit;
+    }
+
+    /// <summary>What Explore would run with: the project, where it starts, and its budget and guards, to show a person before it starts.</summary>
+    public string ExploreSummary(string? projectName, ExploreOptions options)
+    {
+        var project = Project(projectName);
+        return ExploreReport.Summary(project.Name, options.Url ?? project.Config.StartUrl, options.Apply(project.Config.Explore), options.DryRun);
     }
 
     /// <summary>True while Explore runs.</summary>

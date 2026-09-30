@@ -7,6 +7,13 @@ if (args.Length > 0 && args[0] == "--preview")
     return PreviewCommand.Run(args[1..], Console.Out, Console.Error);
 }
 
+// scrape: the Scraper from a command line (explore), for a person, the loop and CI; exit 0, 1 (a guard stopped it) or 2:
+//   Brinell.Bdd.LanguageServer scrape explore --project <name> [--solution <folder>] [--dry-run] [--headless] [--yes] ...
+if (args.Length > 0 && args[0] == "scrape")
+{
+    return await Brinell.Scraper.Service.ScrapeCommand.RunAsync(args[1..], Console.In, Console.Out, Console.Error);
+}
+
 // With --mcp, the Brinell MCP server for Copilot and other agents, over stdio:
 //   Brinell.Bdd.LanguageServer --mcp [--solution <folder>]   (the current folder by default)
 if (args.Length > 0 && args[0] == "--mcp")

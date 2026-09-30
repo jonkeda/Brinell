@@ -98,6 +98,51 @@ public sealed class ScraperMcpTests : IDisposable
         Assert.Contains("'session' is required", ErrorText("start_recording", []));
     }
 
+    [Fact]
+    public void Explore_asks_first_with_the_host_guards_and_budget_and_refuses_a_host_that_is_not_an_explore_host()
+    {
+        var asked = JsonNode.Parse(CallText("explore_app", []))!;
+        var refused = JsonNode.Parse(CallText("explore_app", new JsonObject { ["confirm"] = true }))!;
+
+        Assert.False((bool)asked["started"]!);
+        var summary = (string)asked["summary"]!;
+        Assert.Contains("Explore Shop.UITests (dry run: links only, nothing clicked) from https://shop.example/", summary);
+        Assert.Contains("shop.example: REFUSED", summary);
+        Assert.Contains("ClickPolicy safe; danger words off: none", summary);
+        Assert.Equal("HostRefused", (string?)refused["stop"]);
+        Assert.False((bool)refused["withinGuards"]!);
+    }
+
+    [Fact]
+    public void A_config_change_is_said_first_and_written_once_confirmed_keeping_the_rest_of_the_file()
+    {
+        var config = Path.Combine(_solution, "Shop.UITests", ScraperConfig.FileName);
+        var before = File.ReadAllText(config);
+        var arguments = new JsonObject { ["action"] = "add", ["section"] = "Explore hosts", ["values"] = new JsonArray("shop.example") };
+
+        var said = JsonNode.Parse(CallText("update_scraper_config", (JsonObject)arguments.DeepClone()))!;
+        Assert.Equal(before, File.ReadAllText(config));
+        arguments["confirm"] = true;
+        var written = JsonNode.Parse(CallText("update_scraper_config", arguments))!;
+
+        Assert.Equal(("Added ## Explore hosts with shop.example.", false), ((string?)said["description"], (bool)said["written"]!));
+        Assert.True((bool)written["written"]!);
+        Assert.Equal(before.TrimEnd() + "\n\n## Explore hosts\n\n| Host |\n| --- |\n| shop.example |\n", File.ReadAllText(config));
+        Assert.DoesNotContain("REFUSED", (string)JsonNode.Parse(CallText("explore_app", []))!["summary"]!);
+    }
+
+    [Fact]
+    public void A_config_change_that_would_not_read_is_not_written()
+    {
+        var config = Path.Combine(_solution, "Shop.UITests", ScraperConfig.FileName);
+        var before = File.ReadAllText(config);
+
+        var error = ErrorText("update_scraper_config", new JsonObject { ["action"] = "set", ["section"] = "Explore", ["values"] = new JsonArray("ClickPolicy", "everything"), ["confirm"] = true });
+
+        Assert.Contains("ClickPolicy is links, safe, not-unsafe or all, not 'everything'", error);
+        Assert.Equal(before, File.ReadAllText(config));
+    }
+
     private string CallText(string tool, JsonObject arguments)
     {
         var result = Call(tool, arguments);

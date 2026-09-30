@@ -341,7 +341,10 @@ public sealed record ExploreOptions
     /// <summary>Shows the browser; headless when false (our own apps in CI: a sign-in needs the window).</summary>
     public bool Visible { get; init; } = true;
 
-    /// <summary>At a sign-in page, waits for the person to sign in and continue; null stops there.</summary>
+    /// <summary>Stops at a sign-in page, whoever could sign in: an unattended run.</summary>
+    public bool StopAtSignIn { get; init; }
+
+    /// <summary>At a sign-in page, waits for the person to sign in and continue; null: the service's Continue when the browser shows.</summary>
     public Func<CancellationToken, Task>? WaitForSignIn { get; init; }
 
     /// <summary>Told what Explore is doing, after each step.</summary>

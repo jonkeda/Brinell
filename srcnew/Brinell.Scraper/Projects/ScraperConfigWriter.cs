@@ -61,6 +61,44 @@ public static class ScraperConfigWriter
         return new(doc.Text, true, $"Removed {first} from ## {section}.");
     }
 
+    /// <summary>The columns of each section that holds rows; a <c>| Field | Value |</c> section is set with <see cref="SetField"/>.</summary>
+    public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RowSections = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+    {
+        ["Aliases"] = ["Url"],
+        ["Danger words"] = ["Category", "On"],
+        ["Explore hosts"] = ["Host"],
+        ["Never click"] = ["Match"],
+        ["Always click"] = ["Match"],
+        ["Never visit"] = ["Url"],
+        ["Allow requests"] = ["Method", "Url"],
+    };
+
+    /// <summary>
+    /// Makes one change: <c>set</c> a field (values: field, value; for <c>Danger words</c>: category, true or
+    /// false), <c>add</c> a row (values: its cells, in the section's columns) or <c>remove</c> one (values: its first cell).
+    /// </summary>
+    public static ConfigEdit Apply(string markdown, ConfigChange change)
+    {
+        var values = change.Values;
+        switch (change.Action)
+        {
+            case "set" when values.Count == 2 && change.Section == "Danger words":
+                // One row per category: the old one goes and the new one comes.
+                var removed = RemoveRow(markdown, change.Section, values[0]);
+                var added = AddRow(removed.Text, change.Section, RowSections[change.Section], values);
+                return new(added.Text, added.Text != markdown, $"Set {values[0]} to {values[1]} in ## Danger words.");
+            case "set" when values.Count == 2:
+                return SetField(markdown, change.Section, values[0], values[1]);
+            case "add" when RowSections.TryGetValue(change.Section, out var columns) && values.Count == columns.Count:
+                return AddRow(markdown, change.Section, columns, values);
+            case "remove" when values.Count == 1:
+                return RemoveRow(markdown, change.Section, values[0]);
+            default:
+                throw new ArgumentException(
+                    $"'{change.Action}' in ## {change.Section} with {values.Count} value(s) is not a change: set takes field and value, add takes {(RowSections.TryGetValue(change.Section, out var c) ? string.Join(" and ", c) : "a section's cells")}, remove takes the first cell.");
+        }
+    }
+
     /// <summary>A new config for a project: <c>## App</c> with the start URL, and the rest left to the defaults.</summary>
     public static string New(string startUrl, string platform = "html") =>
         "# Scraper Config\n\n## App\n\n| Field | Value |\n| --- | --- |\n" + Row(["Platform", platform]) + "\n" + Row(["StartUrl", startUrl]) + "\n";
@@ -111,6 +149,9 @@ public static class ScraperConfigWriter
         }
     }
 }
+
+/// <summary>One change to a config: <c>set</c>, <c>add</c> or <c>remove</c>, in a section, with its values.</summary>
+public sealed record ConfigChange(string Action, string Section, IReadOnlyList<string> Values);
 
 /// <summary>What a change did: the new text, whether anything changed, and a sentence saying what.</summary>
 public sealed record ConfigEdit(string Text, bool Changed, string Description);

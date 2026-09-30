@@ -45,6 +45,21 @@ public static class ExploreReport
         return md.ToString();
     }
 
+    /// <summary>What a run will do, in a few lines, for a person to agree to before it starts.</summary>
+    public static string Summary(string project, string start, Projects.ExploreSettings s, bool dryRun)
+    {
+        var host = Uri.TryCreate(start, UriKind.Absolute, out var uri) ? uri.Authority : start;
+        var off = ExploreSettingsCategoriesOff(s);
+        var refused = uri is null ? "the start is not an address" : RequestGuard.RefuseHost(uri, s);
+        return string.Join(Environment.NewLine,
+            $"Explore {project}{(dryRun ? " (dry run: links only, nothing clicked)" : "")} from {start}",
+            $"  host        {host}{(refused is null ? " (an Explore host)" : $": REFUSED, {refused}")}",
+            $"  clicks      ClickPolicy {Explorer.Policy(s.ClickPolicy)}; danger words off: {(off.Length == 0 ? "none" : string.Join(", ", off))}",
+            $"  requests    blocked: {(s.BlockMethods.Count == 0 ? "none" : string.Join(", ", s.BlockMethods))}{(s.AllowRequests.Count > 0 ? $"; allowed anyway: {string.Join(", ", s.AllowRequests.Select(a => $"{a.Method} {a.Url}".Trim()))}" : "")}",
+            $"  websockets  {s.WebsocketApps.ToString().ToLowerInvariant()}",
+            $"  budget      {s.MaxPages} captures, {s.MaxDepth} steps deep, {s.MaxMinutes} min, {s.DelayMs} ms between steps");
+    }
+
     private static string[] ExploreSettingsCategoriesOff(Projects.ExploreSettings s) =>
         Projects.ExploreSettings.Categories.Where(c => !s.IsOn(c)).ToArray();
 

@@ -58,6 +58,8 @@ public sealed class BddMcpServer : IDisposable
         ("scraped_header", "The first line a generated file must have, saying what it was made from: for a page object give the page, for a control also the node it was made from. Put it above the usings.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("node", "integer", "For a control: the node on the page's newest capture."))),
         ("write_code", "Writes a C# file (a page object or control) into the scraped project, at a path relative to it, when its syntax is valid; otherwise gives the syntax errors and writes nothing. Show the user the code first.", Schema(("project", "string", "The project; the only one when left out."), ("path", "string", "The file, relative to the project, e.g. Pages/InvoicePage.cs; required."), ("code", "string", "The whole file; required."))),
         ("check_code", "Builds the scraped project with its analyzers and gives the errors and warnings. Generated code is done only when this passes: fix what it reports and call it again.", Schema(("project", "string", "The project; the only one when left out."))),
+        ("explore_app", "Explores a scraped project's app by itself: visits its pages and the states safe clicks show, and captures each into a new recording session, within the project's Explore guards (which clicks, which requests, which hosts) and budget. Asks first: without 'confirm' it only gives the summary of host, guards and budget; show it to the person and call again with confirm: true once they agree. A dry run (the default) follows links only and lists what it would click. Gives why it stopped, the counts and the report (explore.md).", Schema(("project", "string", "The project; the only one when left out."), ("url", "string", "Where to start; the config's StartUrl when left out."), ("dryRun", "boolean", "Links only, nothing clicked; true when left out."), ("maxPages", "integer", "Overrides MaxPages."), ("maxDepth", "integer", "Overrides MaxDepth."), ("maxMinutes", "integer", "Overrides MaxMinutes."), ("headless", "boolean", "No browser window; false when left out. A sign-in page stops the run either way."), ("confirm", "boolean", "The person agreed to the summary; false when left out."))),
+        ("update_scraper_config", "Makes one change to a scraped project's scraper.config.md, keeping the rest of the file: 'set' a field (values: field, value; in 'Danger words': category, true or false), 'add' a row (values: its cells: Explore hosts [Host], Never click and Always click [Match: 'text: ...' or 'selector: ...'], Never visit [Url], Allow requests [Method, Url], Aliases [Url]) or 'remove' one (values: its first cell). Asks first: without 'confirm' it says what it would write; call again with confirm: true once the person agrees.", Schema(("project", "string", "The project; the only one when left out."), ("action", "string", "set, add or remove; required."), ("section", "string", "The section without ##, e.g. Explore, Never click; required."), ("values", "array", "The values, as strings; required."), ("confirm", "boolean", "The person agreed; false when left out."))),
         ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
@@ -165,6 +167,8 @@ public sealed class BddMcpServer : IDisposable
                 "scraped_header" => Scraper(() => _server.Scraper.Header((string?)arguments["project"], Required(arguments, "page"), (int?)arguments["node"])),
                 "write_code" => Scraper(() => WriteCode(arguments)),
                 "check_code" => Scraper(() => _server.Scraper.CheckCodeAsync((string?)arguments["project"]).GetAwaiter().GetResult()),
+                "explore_app" => Scraper(() => ExploreApp(arguments)),
+                "update_scraper_config" => Scraper(() => UpdateConfig(arguments)),
                 "search_recordings" => Scraper(() => _server.Scraper.Search((string?)arguments["project"], Required(arguments, "text"))),
                 _ => throw new McpException(-32602, $"No tool '{name}'. The tools are {string.Join(", ", Tools.Select(tool => tool.Name))}."),
             };
@@ -190,7 +194,55 @@ public sealed class BddMcpServer : IDisposable
         }
     }
 
-    // A file that is not written is a tool error with the reason and each syntax error's place.
+    // Asks first: the summary until the person agreed, then the run.
+    private object ExploreApp(JsonObject arguments)
+    {
+        var options = new Brinell.Scraper.Explore.ExploreOptions
+        {
+            DryRun = (bool?)arguments["dryRun"] ?? true,
+            Url = (string?)arguments["url"],
+            MaxPages = (int?)arguments["maxPages"],
+            MaxDepth = (int?)arguments["maxDepth"],
+            MaxMinutes = (int?)arguments["maxMinutes"],
+            Visible = !((bool?)arguments["headless"] ?? false),
+            StopAtSignIn = true,
+        };
+        var project = (string?)arguments["project"];
+        var summary = _server.Scraper.ExploreSummary(project, options);
+        if ((bool?)arguments["confirm"] != true)
+            return new { Started = false, Summary = summary, Next = "Show the summary to the person. Call again with confirm: true once they agree." };
+        var result = _server.Scraper.ExploreAsync(project, options).GetAwaiter().GetResult();
+        return new
+        {
+            result.Stop,
+            result.StopDetail,
+            result.WithinGuards,
+            result.DryRun,
+            Captures = result.Captures.Count,
+            result.Clicks,
+            Skipped = result.Skipped.Count,
+            Blocked = result.Blocked.Count,
+            result.Report,
+            Session = result.Folder is null ? null : Path.GetFileName(result.Folder),
+        };
+    }
+
+    private object UpdateConfig(JsonObject arguments)
+    {
+        var values = arguments["values"] as JsonArray ?? throw new ToolProblem("'values' is required: an array of strings.");
+        var change = new Brinell.Scraper.Projects.ConfigChange(Required(arguments, "action"), Required(arguments, "section"), [.. values.Select(v => (string?)v ?? "")]);
+        var confirmed = (bool?)arguments["confirm"] == true;
+        var edit = _server.Scraper.EditConfig((string?)arguments["project"], change, write: confirmed);
+        return new
+        {
+            edit.Changed,
+            edit.Description,
+            Written = confirmed && edit.Changed,
+            Next = confirmed || !edit.Changed ? null : "Tell the person what would change. Call again with confirm: true once they agree.",
+        };
+    }
+
+    // A file that is not written is a tool error    // A file that is not written is a tool error with the reason and each syntax error's place.
     private object WriteCode(JsonObject arguments)
     {
         var result = _server.Scraper.WriteCode((string?)arguments["project"], Required(arguments, "path"), Required(arguments, "code"));
