@@ -1,8 +1,8 @@
-using Brinell.Automation.Communication;
+using Brinell.Stride.Automation.Communication;
 using System.IO.Pipes;
 using System.Text.Json;
 
-namespace Brinell.Automation;
+namespace Brinell.Stride.Automation;
 
 /// <summary>
 /// Options for the automation server.

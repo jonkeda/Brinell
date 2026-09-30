@@ -1,6 +1,6 @@
-using Brinell.Automation.Communication;
+using Brinell.Stride.Automation.Communication;
 
-namespace Brinell.Automation;
+namespace Brinell.Stride.Automation;
 
 /// <summary>
 /// Handles automation commands received from the test process.

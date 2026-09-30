@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Brinell.Automation.Communication;
+namespace Brinell.Stride.Automation.Communication;
 
 /// <summary>
 /// Command sent from test process to game for automation.

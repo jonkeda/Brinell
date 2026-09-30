@@ -3,7 +3,7 @@ using Stride.UI;
 using Brinell.Core.Configuration;
 using Brinell.Stride;
 
-namespace Brinell.Automation;
+namespace Brinell.Stride.Automation;
 
 /// <summary>
 /// Extension methods for integrating Brinell automation into Stride games.

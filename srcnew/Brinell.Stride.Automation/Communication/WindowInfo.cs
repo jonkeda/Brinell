@@ -1,4 +1,4 @@
-namespace Brinell.Automation.Communication;
+namespace Brinell.Stride.Automation.Communication;
 
 /// <summary>
 /// Information about the game window position and size.

@@ -10,7 +10,7 @@ using Stride.UI.Panels;
 using Stride.CommunityToolkit.Bepu;
 
 #if AUTOMATION_ENABLED
-using Brinell.Automation;
+using Brinell.Stride.Automation;
 #endif
 
 namespace Brinell.Samples.Stride.App;

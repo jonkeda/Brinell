@@ -3,9 +3,9 @@
   <PropertyGroup>
     <!-- Stride packages only support net10.0 -->
     <TargetFrameworks>net10.0</TargetFrameworks>
-    <RootNamespace>Brinell.Automation</RootNamespace>
+    <RootNamespace>Brinell.Stride.Automation</RootNamespace>
     <Description>In-game automation server for Stride applications. Embeds into game to handle UI automation requests from Brinell.Stride test client.</Description>
-    <PackageId>Brinell.Automation</PackageId>
+    <PackageId>Brinell.Stride.Automation</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 

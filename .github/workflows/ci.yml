@@ -59,7 +59,7 @@ jobs:
             'Brinell.WinForms.Tests',
             'Brinell.Blazor.Tests',
             'Brinell.Html.Tests',
-            'Brinell.Automation.Tests',
+            'Brinell.Stride.Automation.Tests',
             'Brinell.Mocking.Tests',
             'Brinell.Uat.Tests',
             'Brinell.TestData.Tests',

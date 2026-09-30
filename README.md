@@ -52,7 +52,7 @@ MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio
 | `Brinell.Html.Playwright` | Playwright-backed web automation |
 | `Brinell.Blazor` | Blazor-focused testing helpers |
 | `Brinell.Stride` | Stride UI testing integration |
-| `Brinell.Automation` | In-app automation hooks used by Stride-style tests |
+| `Brinell.Stride.Automation` | In-app automation hooks used by Stride-style tests |
 | `Brinell.Mocking` | WireMock and mock sensor helpers |
 | `Brinell.NativeAndroid` | Native Android automation helpers |
 | `Brinell.Uat` | Markdown-driven UAT scenario runtime |

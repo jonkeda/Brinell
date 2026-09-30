@@ -1,4 +1,4 @@
-using Brinell.Automation.Communication;
+using Brinell.Stride.Automation.Communication;
 using Stride.Core;
 using Stride.Engine;
 using Stride.Games;
@@ -7,7 +7,7 @@ using Stride.UI;
 using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace Brinell.Automation;
+namespace Brinell.Stride.Automation;
 
 /// <summary>
 /// Stride GameSystem that integrates automation into the game loop.

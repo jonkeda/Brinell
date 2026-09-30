@@ -9,11 +9,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Core", "Brinell.Cor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Core.Tests", "..\testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj", "{62344FAB-A7D9-4398-98C5-1EDCA0FC5C31}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Automation", "Brinell.Automation\Brinell.Automation.csproj", "{B0FE4CC7-DE2C-414A-8B7F-FD5E6337AE0B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Stride.Automation", "Brinell.Stride.Automation\Brinell.Stride.Automation.csproj", "{B0FE4CC7-DE2C-414A-8B7F-FD5E6337AE0B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Stride", "Brinell.Stride\Brinell.Stride.csproj", "{BFF07A87-A6FC-4916-8D48-116314001462}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Automation.Tests", "..\testsnew\Brinell.Automation.Tests\Brinell.Automation.Tests.csproj", "{76B7A5A3-9E00-4D1F-A251-F6B6C6218D76}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Stride.Automation.Tests", "..\testsnew\Brinell.Stride.Automation.Tests\Brinell.Stride.Automation.Tests.csproj", "{76B7A5A3-9E00-4D1F-A251-F6B6C6218D76}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Uia.Contracts", "Brinell.Uia.Contracts\Brinell.Uia.Contracts.csproj", "{FBC15703-43FE-4599-80A8-5949F028EB00}"
 EndProject

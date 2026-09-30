@@ -1,4 +1,4 @@
-using Brinell.Automation.Communication;
+using Brinell.Stride.Automation.Communication;
 using Stride.Core.Mathematics;
 using Stride.Engine;
 using Stride.Games;
@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.Json;
 
-namespace Brinell.Automation;
+namespace Brinell.Stride.Automation;
 
 /// <summary>
 /// Default handler for Stride UI automation commands.

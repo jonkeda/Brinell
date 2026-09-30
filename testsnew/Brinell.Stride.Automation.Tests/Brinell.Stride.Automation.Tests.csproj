@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>Brinell.Automation.Tests</RootNamespace>
+    <RootNamespace>Brinell.Stride.Automation.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Brinell.Automation\Brinell.Automation.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Stride.Automation\Brinell.Stride.Automation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

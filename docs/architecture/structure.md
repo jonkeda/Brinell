@@ -23,7 +23,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 `srcnew/` contains package-producing projects:
 
-- `Brinell.Automation`
+- `Brinell.Stride.Automation`
 - `Brinell.Bdd` - feature files without a UI: parse, bind, values, tables, callable steps, namespaces, run
 - `Brinell.Blazor`
 - `Brinell.Core`

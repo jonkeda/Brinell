@@ -15,7 +15,7 @@ $ErrorActionPreference = 'Stop'
 
 $libraries = @(
     'Brinell.Core',
-    'Brinell.Automation',
+    'Brinell.Stride.Automation',
     'Brinell.Mocking',
     'Brinell.Uat',
     'Brinell.Wpf',

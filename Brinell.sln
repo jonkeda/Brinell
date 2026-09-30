@@ -52,7 +52,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.NativeAndroid", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.NativeAndroid.Tests", "testsnew\Brinell.NativeAndroid.Tests\Brinell.NativeAndroid.Tests.csproj", "{6F131E83-B039-41F9-8C4C-EC9FD83D8807}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Automation", "srcnew\Brinell.Automation\Brinell.Automation.csproj", "{D3D30D25-F9A9-ED8B-D5B9-9E3538E3296A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Stride.Automation", "srcnew\Brinell.Stride.Automation\Brinell.Stride.Automation.csproj", "{D3D30D25-F9A9-ED8B-D5B9-9E3538E3296A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Blazor", "srcnew\Brinell.Blazor\Brinell.Blazor.csproj", "{4F7DD658-3D40-D63A-01A0-78CEDF7397A3}"
 EndProject
@@ -62,7 +62,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.WinForms", "srcnew\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Wpf", "srcnew\Brinell.Wpf\Brinell.Wpf.csproj", "{97857CF8-2671-0CF3-A1CD-08E4AC9858BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Automation.Tests", "testsnew\Brinell.Automation.Tests\Brinell.Automation.Tests.csproj", "{F7935C72-9290-B3F8-1C2F-CD66A16FBB9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Stride.Automation.Tests", "testsnew\Brinell.Stride.Automation.Tests\Brinell.Stride.Automation.Tests.csproj", "{F7935C72-9290-B3F8-1C2F-CD66A16FBB9F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Blazor.Tests", "testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj", "{F5C3DFEC-532C-7BC3-5EA4-8AEF8B928CF0}"
 EndProject

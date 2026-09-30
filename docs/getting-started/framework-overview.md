@@ -27,7 +27,7 @@ Tests and UAT scenarios
 | `Brinell.Html` | HTML/web abstractions, control objects, pages, containers and collections |
 | `Brinell.Html.Playwright` | Playwright-backed web driver |
 | `Brinell.Blazor` | Blazor-focused web testing helpers |
-| `Brinell.Stride` and `Brinell.Automation` | Stride UI automation and in-game hooks |
+| `Brinell.Stride` and `Brinell.Stride.Automation` | Stride UI automation and in-game hooks |
 | `Brinell.Mocking` | WireMock and mock sensor helpers |
 | `Brinell.NativeAndroid` | Native Android automation helpers |
 | `Brinell.Uat` | Markdown-driven UAT scenario runtime |

@@ -1,4 +1,4 @@
-namespace Brinell.Automation.Tests;
+namespace Brinell.Stride.Automation.Tests;
 
 public sealed class AutomationServerOptionsTests
 {
