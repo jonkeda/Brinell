@@ -1,7 +1,8 @@
 <UserControl x:Class="Brinell.Scraper.Views.Tabs.PageObjectsTabView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="clr-namespace:Brinell.Scraper.Models">
+             xmlns:models="clr-namespace:Brinell.Scraper.Models"
+             xmlns:engine="clr-namespace:Brinell.Scraper.Models;assembly=Brinell.Scraper">
     <DockPanel LastChildFill="True">
         <!-- Toolbar -->
         <Border DockPanel.Dock="Top"
@@ -274,7 +275,7 @@
                                    FontWeight="SemiBold" Margin="0,0,0,4"/>
                         <ItemsControl ItemsSource="{Binding UsedControlObjects}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:ControlObjectReference}">
+                                <DataTemplate DataType="{x:Type engine:ControlObjectReference}">
                                     <Border BorderBrush="#E2E2E6" BorderThickness="1"
                                             CornerRadius="3" Padding="6,4" Margin="0,2">
                                         <Grid>

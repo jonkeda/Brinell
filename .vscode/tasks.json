@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/tools/Brinell.Scraper/Brinell.Scraper.csproj",
+                "${workspaceFolder}/tools/Brinell.Scraper.Wpf/Brinell.Scraper.Wpf.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],

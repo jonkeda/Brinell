@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Brinell.Scraper\Brinell.Scraper.csproj" />
+    <ProjectReference Include="..\Brinell.Scraper.Wpf\Brinell.Scraper.Wpf.csproj" />
   </ItemGroup>
 
 </Project>

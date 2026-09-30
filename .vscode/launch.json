@@ -6,9 +6,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-scraper",
-            "program": "${workspaceFolder}/tools/Brinell.Scraper/bin/Debug/net10.0-windows/Brinell.Scraper.dll",
+            "program": "${workspaceFolder}/tools/Brinell.Scraper.Wpf/bin/Debug/net10.0-windows/Brinell.Scraper.Wpf.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/tools/Brinell.Scraper",
+            "cwd": "${workspaceFolder}/tools/Brinell.Scraper.Wpf",
             "stopAtEntry": false,
             "console": "internalConsole"
         }

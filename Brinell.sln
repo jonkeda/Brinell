@@ -38,7 +38,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.UITests", "tes
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Scraper", "tools\Brinell.Scraper\Brinell.Scraper.csproj", "{7F5F7F32-0B6C-4428-9339-403C9D957E87}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Scraper.Wpf", "tools\Brinell.Scraper.Wpf\Brinell.Scraper.Wpf.csproj", "{7F5F7F32-0B6C-4428-9339-403C9D957E87}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Uat", "srcnew\Brinell.Uat\Brinell.Uat.csproj", "{F6956EDB-F0D0-4C28-A046-CC7773437F48}"
 EndProject

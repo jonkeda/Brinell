@@ -1,7 +1,8 @@
 <UserControl x:Class="Brinell.Scraper.Views.DomTreePanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="clr-namespace:Brinell.Scraper.Models">
+             xmlns:models="clr-namespace:Brinell.Scraper.Models"
+             xmlns:engine="clr-namespace:Brinell.Scraper.Models;assembly=Brinell.Scraper">
     <DockPanel>
         <!-- Filter bar -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
@@ -25,7 +26,7 @@
                 </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate DataType="{x:Type models:DomElement}"
+                <HierarchicalDataTemplate DataType="{x:Type engine:DomElement}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal">
                         <CheckBox IsChecked="{Binding DataContext.IsSelected, RelativeSource={RelativeSource Self}}"
