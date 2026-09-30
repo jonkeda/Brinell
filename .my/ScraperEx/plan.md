@@ -1,6 +1,7 @@
 # The Scraper, restarted in the IDE extensions: plan
 
-Status: **plan**, 2026-09-30. Nothing is built. Questions in section 9 wait for the owner.
+Status: **plan, decided** (Q1 to Q7, 2026-09-30). Nothing is built.
+No backward compatibility: not with the old corpora, and the WPF tool need not keep working.
 Supersedes [uat/tools/scraper-in-extension.md](../uat/tools/scraper-in-extension.md) (the
 proposal of 2026-09-27) and the roadmap in [Scraper/](../Scraper/roadmap.md) (dormant since
 2026-05).
@@ -13,7 +14,7 @@ inside Visual Studio or VS Code.
 | # | Requirement | How this plan meets it |
 | --- | --- | --- |
 | 1 | Move it to the extension | The Scraper becomes a headless engine behind the language server both extensions already start; its UI is a view in those extensions (sections 3, 6) |
-| 2 | Remove the WPF version at the end | Step 11. Until then it stays, frozen, and still builds |
+| 2 | Remove the WPF version at the end | Step 11. Until then it stays, frozen; it need not keep working |
 | 3 | Reuse what the Scraper docs and the proposal hold | Section 2 |
 | 4 | Visual Studio and VS Code | Yes, both. One engine, one server, one UI page shown in a VS Code webview and a Visual Studio tool window, as the scenario preview is today (section 6) |
 | 5 | The target is a C# UI test project: one per app, or several per app for a large one | A project is the unit: it holds its config, its recordings and the generated code. Several projects share controls through project references (section 4) |
@@ -77,14 +78,16 @@ Visual Studio / VS Code
 
 | Part | What | Where |
 | --- | --- | --- |
-| Engine | The snapshot model, the recording store, detection, matching, diff, code output, the compile gate. No UI, no model call | `srcnew/Brinell.Scraper`, `net10.0` |
-| Html capture source | Starts the browser, injects the capture and highlight scripts, reports page transitions | In the engine at first (Q2) |
+| Contracts | `IScrapeSource` and the snapshot node model: no platform type in them | `srcnew/Brinell.Core` (Q2) |
+| Engine | The recording store, detection, matching, diff, code output, the compile gate. No UI, no model call | `srcnew/Brinell.Scraper`, `net10.0` |
+| Html capture source | Starts the browser, injects the capture and highlight scripts, reports page transitions | In the engine until a second source exists (Q2) |
 | Server surface | MCP tools for an agent, and requests for the view, over the same engine calls | `tools/Brinell.Bdd.LanguageServer` |
 | View | Record, the recordings tree, the DOM tree, generate commands | One page, hosted by both extensions |
 | Prompts | `.github/prompts/brinell-scrape-*.prompt.md`, which name the skills and make the compile gate mandatory | The repo that uses the Scraper |
 
 The WPF project is named `Brinell.Scraper` today. Step 1 renames it to `Brinell.Scraper.Wpf`
-so the engine can take the name; nothing else in it changes.
+so the engine can take the name. Its services move out in the same step; if it no longer
+builds after that it leaves the solution until step 11 deletes it.
 
 ## 4. The project is the unit
 
@@ -164,8 +167,8 @@ One commit per step. Unit tests with each step; UI checks only where a step name
 | # | Step | Delivers | Verify |
 | --- | --- | --- | --- |
 | 0 | Spike | The language server starts a headed Chromium, injects today's capture script, and writes one snapshot of the test site into a project folder. Frames included | The snapshot of `frames/` holds the frame content (RCA 025 to 027) |
-| 1 | Engine project | The WPF project renamed; `srcnew/Brinell.Scraper` with the services and models of section 2, and their tests moved. The WPF app references it and still builds | The moved tests pass identically |
-| 2 | Snapshot model | The neutral node tree and `IScrapeSource`; the Html attribute bag; stable JSON | Round-trip and ordering tests |
+| 1 | Engine project | The WPF project renamed; `srcnew/Brinell.Scraper` with the services and models of section 2, and their tests moved. The WPF app leaves the solution if it no longer builds | The moved tests pass identically |
+| 2 | Snapshot model | The neutral node tree and `IScrapeSource` in `Brinell.Core`; the Html attribute bag; stable JSON | Round-trip and ordering tests |
 | 3 | Store | `scraper.config.md`, `Recordings/`, the in-memory index, redaction | Tests on a temp project |
 | 4 | Html source | Record with transitions, manual capture, frames, highlight and pick, the profile per project | Tests against the test site, headless |
 | 5 | Server surface | MCP tools and view requests: `start_recording`, `capture_page`, `stop_recording`, `list_recorded_pages`, `get_page_snapshot`, `find_similar_elements`, `search_recordings`, `list_controls`, `detect_patterns`, `match_controls` | Server tests; one run from an agent |
@@ -173,19 +176,54 @@ One commit per step. Unit tests with each step; UI checks only where a step name
 | 7 | VS Code view | Record, the recordings tree, the DOM tree, the commands | By hand, on the test site |
 | 8 | Visual Studio view | The same page in a tool window | By hand |
 | 9 | Blazor | The `Brinell.Blazor` controls in the matcher and the prompt | The Blazor sample's pages generated, building |
-| 10 | Refresh and acceptance | `diff_page`, "changed since generation" in the tree; the demo-site walkthrough run in both IDEs | The walkthrough's result recorded here |
+| 10 | Refresh and acceptance | `diff_page`, "changed since generation" in the tree; the demo-site walkthrough run in both IDEs; one public site per framework recorded and generated (section 10) | The results recorded here |
 | 11 | Remove and close | `tools/Brinell.Scraper.Wpf` deleted with its solution, task and launch entries; an AD and a guide in `docs/`; `.my/Scraper/`, the proposal and this folder deleted (docs-upkeep) | The solution builds; no link into the deleted folders |
 
 Step 5 already pays off without a view: an agent can record and generate through MCP.
 
-## 9. Questions
+## 9. Decisions
 
-| # | Question | Proposal |
+| # | Question | Decided (2026-09-30) |
 | --- | --- | --- |
-| Q1 | The Scraper inside the Brinell BDD extensions, or an extension of its own per IDE? | Inside. One install and one language server; an extension of its own would be two more projects with no reason in AD-026 |
-| Q2 | The Html capture source in the engine, or a project of its own (`Brinell.Scraper.Html`)? | In the engine until a second source exists. Then Playwright is a dependency a Maui user should not get (AD-026, R3) and it splits |
-| Q3 | Drop the Copilot SDK and the headless CLI? | Yes. One route, MCP, which also serves Claude. Bulk runs are an agent calling the tools |
-| Q4 | Are recordings committed? | Yes, that is what makes regeneration reproducible for a team. Screenshots are optional in the config, since they are the large part |
-| Q5 | Visible text in snapshots: stored as it is, or masked by default? | Stored, with mask rules in the config, and a warning in the guide to record on a test tenant. Masked by default makes text-first locators impossible |
-| Q6 | Old SQLite corpora: migrate? | No. They are per user, from the dormant tool; re-record |
-| Q7 | Which project is the first real target? | `testsnew/Brinell.Blazor.UITests` for step 9, then a Construction web module if there is one |
+| Q1 | Inside the Brinell BDD extensions, or an extension of its own? | Inside |
+| Q2 | Where is the Html capture source? | In the engine until a second source exists. The interfaces (`IScrapeSource`, the snapshot model) are in `Brinell.Core` |
+| Q3 | The Copilot SDK and the headless CLI | Dropped; MCP only |
+| Q4 | Are recordings committed? | Yes; screenshots optional in the config |
+| Q5 | Visible text in snapshots | Stored as it is; mask rules in the config |
+| Q6 | Old SQLite corpora | Not migrated |
+| Q7 | First real target | `testsnew/Brinell.Blazor.UITests` |
+
+## 10. Test sites
+
+Two kinds. **Ours** run locally and are what automated tests use: a test never depends on a
+public site. **Public** sites are for the acceptance runs by hand (step 10): real frameworks,
+real component libraries, markup we did not write.
+
+Each public site answered on 2026-09-30. The framework column is from what is known about the
+site, not read from its markup: step 0 confirms it.
+
+| Kind | Site | Framework | Good for |
+| --- | --- | --- | --- |
+| Html, ours | `tools/Brinell.Scraper.TestSite` | plain | Frames, forms; every automated capture test |
+| Html | [the-internet](https://the-internet.herokuapp.com/) | plain, server-rendered | One feature per page: iframes, nested frames, dynamic loading, tables, new windows, shadow DOM, a login |
+| Html | [UI Testing Playground](http://uitestingplayground.com/) | plain with Bootstrap | Locator traps: dynamic ids, changing class order, hidden layers, late-loading content |
+| React | [Sauce Demo](https://www.saucedemo.com/) | React | A small shop with a login (public test users), `data-test` attributes, a list of repeated cards, a checkout flow over several pages |
+| React | [react-admin demo](https://marmelab.com/react-admin-demo/) | React, MUI | A real admin app: data grids, filters, edit forms, dialogs, generated class names. The pattern-detection test |
+| React | [DemoQA](https://demoqa.com/) | React | A page per widget: date picker, autocomplete, modal, tabs, frames |
+| Vue 2 | [vue-element-admin](https://panjiachen.github.io/vue-element-admin/) | Vue 2, Element UI | A real admin app with a login, tables, forms, a tabbed SPA whose URL is a hash route. The closest to an Exact-style back office |
+| Vue 2 | [Vuetify 2 docs](https://v2.vuetifyjs.com/en/components/data-tables/) | Vue 2, Vuetify | Component pages: data tables, selects, dialogs with teleported overlays |
+| Vue 2 | [Element UI docs](https://element.eleme.io/#/en-US/component/form) | Vue 2, Element UI | The same components as the admin app, one per page |
+| Blazor, ours | `samples/Brinell.Samples.Blazor.App`, the Todo web head | Blazor | Automated tests; has page objects to compare the generated ones with |
+| Blazor | [MudBlazor docs](https://mudblazor.com/components/table) | Blazor WebAssembly, MudBlazor | The most used Blazor component library: tables, dialogs, pickers |
+| Blazor | [Radzen Blazor demos](https://blazor.radzen.com/) | Blazor, Radzen | Data grid, scheduler, forms; another library's markup |
+| Blazor | [Fluent UI Blazor](https://www.fluentui-blazor.net/) | Blazor, web components | Shadow DOM: the capture script has to look into it |
+
+One per framework for step 10: the-internet, react-admin demo, vue-element-admin, MudBlazor docs.
+
+What these sites ask of the design, before step 0:
+
+- **Shadow DOM** (Fluent UI Blazor, the-internet): the snapshot needs a node kind for a shadow root.
+- **Overlays outside the page's tree** (MUI, Vuetify, Element, MudBlazor put dialogs and menus at the end of `body`): a capture while one is open, and the matcher has to tie it to the control that opened it.
+- **Hash routes** (vue-element-admin): a transition with no path change.
+- **Generated class names** (MUI): a signature cannot lean on classes alone.
+- Public sites are recorded into a scratch project, not into the repo: their content is not ours to commit.

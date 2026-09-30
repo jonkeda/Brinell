@@ -29,7 +29,7 @@ Deleted topics stay in git history; the last full tree is at
 | [uat/reqnroll-comparison.md](uat/reqnroll-comparison.md) | Reqnroll/SpecFlow vs Brinell.Uat: what to add (hooks, Examples blocks, set diff, Cucumber Messages) and what Brinell has extra | analysis | 2026-09-27 |
 | [uat/rethinking-uat.md](uat/rethinking-uat.md) | UAT for Construction, from user journeys | discussion | 2026-09-20 |
 | [Scraper/](Scraper/) | `tools/Brinell.Scraper`: roadmap, steps, RCAs, UAT runs | the WPF tool; restarted as [ScraperEx/](ScraperEx/plan.md), which deletes this at its end | 2026-09-30 |
-| [ScraperEx/](ScraperEx/plan.md) | The Scraper restarted in the IDE extensions: a headless engine behind the language server, recordings as files in the UI test project, Html and Blazor first, both IDEs; the WPF tool removed at the end | plan; Q1-Q7 open | 2026-09-30 |
+| [ScraperEx/](ScraperEx/plan.md) | The Scraper restarted in the IDE extensions: a headless engine behind the language server, recordings as files in the UI test project, Html and Blazor first, both IDEs; the WPF tool removed at the end | plan, Q1-Q7 decided | 2026-09-30 |
 
 ## Open items without a topic
 
