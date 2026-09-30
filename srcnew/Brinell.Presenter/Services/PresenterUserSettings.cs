@@ -8,6 +8,9 @@ public sealed class PresenterUserSettings
 
     public List<string> RecentFolders { get; set; } = [];
 
+    /// <summary>The video script last opened in Narrator mode.</summary>
+    public string? LastScript { get; set; }
+
     /// <summary>
     /// Serialized by name so the settings file stays readable. A file written before
     /// this member existed has no "Theme" property and loads as <see cref="PresenterTheme.System" />.

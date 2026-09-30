@@ -37,6 +37,8 @@ public sealed class PresenterUatScenarioTests(PresenterFixture fixture)
             return;
         }
 
+        // Back to Present mode: a scenario may have left Narrator mode on.
+        presenterPage.PresentModeButton.Click();
         presenterPage.StopButton.Click();
         presenterPage.ReloadButton.Click();
         presenterPage.StatusSummary.AssertTextContains("Ready", timeoutMs: 30000);

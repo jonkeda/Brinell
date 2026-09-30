@@ -439,6 +439,11 @@ public sealed class PresenterUserSettingsServiceTests
         {
             return Task.FromResult<string?>(null);
         }
+
+        public Task<string?> PickScriptAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<string?>(null);
+        }
     }
 
     private sealed class FakeExecutionService : IBddExecutionService

@@ -51,7 +51,8 @@ public partial class PresenterPage : ContentPage
     // section gives its row no height, and the open one takes the room.
     private void SizeSections()
     {
-        TreeTab.RowDefinitions[ScenariosRow].Height = _viewModel.IsScenariosExpanded ? GridLength.Star : new GridLength(0);
+        // Narrator mode shows the script's tree in the Scenarios row, whatever that section's state.
+        TreeTab.RowDefinitions[ScenariosRow].Height = _viewModel.IsScenariosExpanded || _viewModel.IsNarratorMode ? GridLength.Star : new GridLength(0);
         TreeTab.RowDefinitions[StepsRow].Height = _viewModel.IsStepsExpanded ? GridLength.Star : new GridLength(0);
     }
 
@@ -61,6 +62,7 @@ public partial class PresenterPage : ContentPage
         {
             case nameof(PresenterShellViewModel.IsScenariosExpanded):
             case nameof(PresenterShellViewModel.IsStepsExpanded):
+            case nameof(PresenterShellViewModel.IsNarratorMode):
                 SizeSections();
                 break;
             case nameof(PresenterShellViewModel.CurrentRow) when _viewModel.CurrentRow is { } row:

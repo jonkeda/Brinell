@@ -13,6 +13,7 @@
   <ItemGroup>
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\**\*.video.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="ExpectedFailures\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

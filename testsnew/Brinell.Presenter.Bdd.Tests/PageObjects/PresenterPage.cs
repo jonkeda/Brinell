@@ -3,6 +3,7 @@ using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Display;
 using Brinell.Maui.Controls.Selection;
 using Brinell.Maui.Controls.Text;
+using Brinell.Maui.Controls.Toggle;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.Pages;
 using Brinell.Presenter.ViewModels;
@@ -73,6 +74,38 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     /// <summary>Workspace mode: open, build, config, diagnostics and the tabs.</summary>
     [UatName("Workspace Mode")]
     public Button<PresenterPage> WorkspaceModeButton => new(this, "WorkspaceModeButton");
+
+    /// <summary>Narrator mode: a video script's scenes, run and recorded.</summary>
+    [UatName("Narrator Mode")]
+    public Button<PresenterPage> NarratorModeButton => new(this, "NarratorModeButton");
+
+    /// <summary>The open video script's file name.</summary>
+    [UatName("Narrator Script")]
+    public Label<PresenterPage> NarratorScript => new(this, "NarratorScriptLabel");
+
+    /// <summary>The open script's scenes, how many are checked, and its problems.</summary>
+    [UatName("Narrator Summary")]
+    public Label<PresenterPage> NarratorSummary => new(this, "NarratorSummaryLabel");
+
+    /// <summary>The Narrator tree as text, a row a line: <c>[x]</c> for a checked scene, its status, its name.</summary>
+    [UatName("Narrator Tree")]
+    public Label<PresenterPage> NarratorTree => new(this, "NarratorTreeText");
+
+    /// <summary>The script's checkbox: every scene at once.</summary>
+    [UatName("All Scenes")]
+    public CheckBox<PresenterPage> AllScenes => new(this, "NarratorScriptCheck_Root");
+
+    /// <summary>Expands and collapses the first scene.</summary>
+    [UatName("Scene 1 Toggle")]
+    public Button<PresenterPage> Scene1Toggle => new(this, "NarratorSceneToggle_1");
+
+    /// <summary>Whether the first scene is run and recorded.</summary>
+    [UatName("Scene 1")]
+    public CheckBox<PresenterPage> Scene1 => new(this, "NarratorSceneCheck_1");
+
+    /// <summary>Whether the second scene is run and recorded.</summary>
+    [UatName("Scene 2")]
+    public CheckBox<PresenterPage> Scene2 => new(this, "NarratorSceneCheck_2");
 
     [UatName("Next")]
     public Button<PresenterPage> NextButton => new(this,"NextButton");

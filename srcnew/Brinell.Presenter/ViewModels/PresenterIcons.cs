@@ -44,6 +44,11 @@ internal static class PresenterIcons
     public const string TabDiscovery = ""; // search
     public const string TabCommandCatalog = ""; // bulleted list
 
+    // Narrator mode
+    public const string ModeNarrator = ""; // video camera
+    public const string OpenScript = "";   // open file
+    public const string Say = "";          // message: a spoken line
+
     // Chevrons
     public const string ChevronDown = "";
     public const string ChevronUp = "";

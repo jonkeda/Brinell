@@ -146,6 +146,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         _speed = settings.Speed;
         ExecutionDelayMilliseconds = _speeds.Of(_speed);
         InitializeRecording(settings, recorder);
+        InitializeNarrator();
         ApplyTheme();
 
         if (Application.Current is { } application)
@@ -201,6 +202,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             if (SetProperty(ref _isScenariosExpanded, value))
             {
                 OnPropertyChanged(nameof(ScenariosExpanderGlyph));
+                OnPropertyChanged(nameof(IsScenarioTreeVisible));
             }
         }
     }
@@ -234,6 +236,8 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         get => _isPresentMode;
         set
         {
+            // Present or Workspace: either leaves Narrator mode.
+            SetNarratorMode(false);
             if (SetProperty(ref _isPresentMode, value))
             {
                 OnPropertyChanged(nameof(IsWorkspaceMode));
@@ -245,7 +249,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         }
     }
 
-    public bool IsWorkspaceMode => !IsPresentMode;
+    public bool IsWorkspaceMode => !IsPresentMode && !IsNarratorMode;
 
     public ICommand ShowPresentModeCommand { get; }
 
@@ -1183,6 +1187,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         }
 
         RunProgress = 0;
+        OnWorkspaceLoaded();
     }
 
     private void BuildWorkspaceTree(BddWorkspaceLoadResult result)

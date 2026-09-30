@@ -162,9 +162,18 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | --- | --- | --- |
 | 0 | The fixes above (**done**) | TOD.01.1 runs from Presenter, again and again; the suite rebuilds while Presenter is open |
 | 1 | The run engine in `PresenterShellViewModel.Run.cs`, with `RunScenariosAsync`; Present mode unchanged (**done**) | Presenter's test project, identical: 73 passed |
-| 2 | The Narrator mode button; open a script, walk up to the config; the tree with its lines and diagnostics | UAT: a script loads, its scenes and lines show; a bad address shows `VID0xx` |
+| 2 | The Narrator mode button; open a script, walk up to the config; the tree with its lines and diagnostics (**done**) | UAT `narrator-mode.feature.md`: the script loads, its scenes and lines show, a checkbox takes a scene out. Unit tests: a bad address shows `VID012`, a bad step `VID013`, no config `VID010` |
 | 3 | Run and the step buttons over the checked scenes; a failure goes on (D6) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is skipped |
 | 4 | The engine: a kept scenes folder, the scene hash, recording states | Unit tests: a changed line makes its scene out of date, and only that one |
 | 5 | Record the checked scenes; Stitch; Watch, Open folder | UAT: two scenes recorded and stitched, two chapters; redo one, stitch again. Manual: the Todo video |
 | 6 | Settings: the Narrator section, Try | UAT: the voice list; manual: the voice is heard |
 | 7 | Docs: the guide gets a "From Presenter" section; the manual plan gets M16 | |
+
+## Built differently, or not yet
+
+| Design said | Built |
+| --- | --- |
+| The last five scripts are kept, like the recent folders | The last script is reopened (`LastScript` in the settings); no list yet |
+| A `*.video.md` in the Workspace tree gets **Open in Narrator** | Not yet: Narrator mode opens the workspace's last or first script; **Open script** picks another |
+| The script is reloaded when the file changes on disk | **Reload** reads it again; no file watcher |
+| The script's checkbox has three states | Two: checked when every scene is |
