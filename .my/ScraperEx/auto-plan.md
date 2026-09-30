@@ -1,6 +1,6 @@
 # The Scraper, automatic: explore an app and draft its page objects
 
-Status: **plan**, 2026-09-30. Nothing is built. Questions in section 8 wait for the owner.
+Status: **plan, decided** (Q1-Q7, 2026-09-30; section 8). Nothing is built.
 Builds on [plan.md](plan.md) (the Scraper as built, AD-027) and [next-plan.md](next-plan.md).
 
 ## 1. What we want
@@ -12,7 +12,9 @@ Today a person browses and the Scraper captures; an agent writes the page object
 | **Explore** | the view's **Explore** button, or a command line | opens the app, and visits its pages and states by itself: links, tabs, menus, expanders, dialogs. Each new page or state is captured as if a person had gone there |
 | **Draft** | the view's **Draft page objects** button, the same command with `--draft`, or at the end of Explore | writes a page object per recorded page from the suggestions, without a model, and builds it |
 
-And it must never do harm: no logout, no delete, no submit, no payment, nothing that changes data.
+And it must do no harm the project did not allow: by default no logout, no delete, no submit, no
+payment, nothing that changes data. How careful it is, is the project's setting (section 3): on a
+test tenant a delete or an update can be fine.
 
 ## 2. Exploring
 
@@ -31,44 +33,61 @@ start URL ──► capture ──► find what can be clicked ──► judge e
 | **The person can take over** | **Stop** ends it; the recording so far stays. A capture the person makes during Explore is kept like any other |
 | **The login is the person's** | Explore uses the project's browser profile. When it reaches a sign-in page (the config's `LoginUrl`, a page with a password field, or a host that is not the app's), it stops, says so, and asks the person to sign in in the window and press **Continue**. It never types a credential |
 
-## 3. Never doing harm
+## 3. The guards, as settings
 
-Four guards, each on its own enough to stop most harm; together they are the rule.
+Four guards. Each is a setting of the project, in `scraper.config.md` and editable in the view's
+**Explore settings** (section 5). The defaults are the careful ones; a project loosens what it
+knows is harmless for its app and its tenant.
 
-**Guard 1: judge every click before it happens.** An element is clicked only when it is judged
-safe. Everything not known to be safe is skipped and listed in the report.
+**Guard 1: which clicks.** Before a click, the element is judged:
 
 | Judged | When |
 | --- | --- |
-| **Safe** | a link (`a[href]`) to the app's own host that is a plain GET page (no `download`, no `javascript:`, not in `NeverVisit`); a tab, menu toggle, expander, sort header or pager (by role and ARIA state, above); an element in the config's `AlwaysClick` |
-| **Unsafe, never clicked** | anything that submits (`type=submit`, a button inside a `form` without `type=button`, `form[method=post]`); anything whose text, name, title, test id, class or icon (`aria-label`, `title`, an icon's name) matches a danger word (below) or `NeverClick`; links whose URL matches a danger path (`/logout`, `/signout`, `/delete`, `/remove`, `?action=delete`) or `NeverVisit`; `mailto:`, `tel:`, downloads, other hosts |
-| **Unknown, not clicked** | any other button or clickable (`onclick`, `role=button`) that is neither: an explorer that only clicks what it understands |
+| **Safe** | a link (`a[href]`) to the app's own host that is a plain GET page (no `download`, no `javascript:`, not in `NeverVisit`); a tab, menu toggle, expander, sort header or pager (by role and ARIA state, section 2); an element in `AlwaysClick` |
+| **Unsafe** | anything that submits (`type=submit`, a button in a `form` without `type=button`, `form[method=post]`); anything whose text, name, title, test id, class or icon (`aria-label`, `title`, an icon's name) matches a danger word of an **enabled** category or `NeverClick`; links whose URL matches a danger path of an enabled category (`/logout`, `/delete`, `?action=delete`) or `NeverVisit`; `mailto:`, `tel:`, downloads, other hosts |
+| **Unknown** | any other button or clickable (`onclick`, `role=button`) |
 
-**Danger words**, in English, Dutch, German and French to start with (the apps are Exact's), matched
-as whole words, case-insensitive: *log out, logout, sign out, afmelden, uitloggen, abmelden, se
-déconnecter; delete, remove, verwijderen, wissen, löschen, supprimer; submit, save, opslaan,
-speichern, enregistrer, send, verzenden, senden, envoyer; pay, betalen, bezahlen, payer; confirm,
-bevestigen, bestätigen, confirmer; approve, goedkeuren, reject, afwijzen; archive, archiveren;
-cancel order, annuleren; reset, clear all; import, upload, sync, publish, invite, deactivate,
-close account*. The list is in the engine, the config adds to it (`NeverClick`) and can take a word
-out for one app (`AlwaysClick` wins over a danger word only for the exact element it names).
+The setting **`ClickPolicy`** says what is clicked:
 
-**Guard 2: no request that changes data leaves the browser.** While exploring, the Html source
-routes every request: `GET`, `HEAD` and `OPTIONS` go through; `POST`, `PUT`, `PATCH` and `DELETE`
-are **blocked** (aborted, listed in the report) unless the config's `AllowRequests` names them
-(a GraphQL endpoint that only reads, a search that posts). A click that needs a blocked request
-simply does nothing, and the state is not captured as new.
+| `ClickPolicy` | Clicks | For |
+| --- | --- | --- |
+| `links` | links only | a first look; an app whose clicks the other guards cannot see (guard 3) |
+| `safe` (default) | safe | most apps: only what is known to show more |
+| `not-unsafe` | safe and unknown | an app on a test tenant, when the report shows too much skipped as unknown |
+| `all` | everything, submits too | a throwaway environment only: the view asks twice, and it is refused for a host that is not in `ExploreHosts` by name |
 
-**Guard 3: the connection that the request guard cannot see.** Blazor Server, SignalR and other
-websockets carry a click to the server without an HTTP request, so guard 2 does not see them. For
-such an app (the config's `Platform: blazor` with a server circuit, or a websocket opened on the
-page) Explore says so before it starts, and runs **links only** (no tabs, menus or dialogs) unless
-the config says `ExploreClicks: true`. Guard 1 still applies.
+**Danger words** are in **categories**, each on or off (all on by default), matched as whole words,
+case-insensitive, in English, Dutch, German and French to start with (the apps are Exact's):
 
-**Guard 4: where it may run at all.** Explore runs only against a host listed in the config's
-`ExploreHosts` (default: `localhost` and `127.0.0.1` only). A test tenant is added there by name;
-a production host is never the default. Before it starts, the view (or the command line) shows the
-host and the guards and asks to go on.
+| Category | Words (a sample) |
+| --- | --- |
+| `sign-out` | log out, logout, sign out, afmelden, uitloggen, abmelden, se déconnecter |
+| `delete` | delete, remove, verwijderen, wissen, löschen, supprimer |
+| `update` | save, submit, opslaan, speichern, enregistrer, update, bijwerken, edit |
+| `send` | send, verzenden, senden, envoyer, invite, publish, share |
+| `pay` | pay, betalen, bezahlen, payer, checkout, order, bestellen |
+| `approve` | confirm, bevestigen, approve, goedkeuren, reject, afwijzen, archive, archiveren |
+| `bulk` | import, upload, sync, reset, clear all, deactivate, close account |
+
+So "deleting is fine here" is `delete` off. `sign-out` stays on unless a project turns it off by
+name: a logout ends the run anyway. `NeverClick` adds words, texts or selectors; `AlwaysClick`
+names elements that are clicked whatever the words say.
+
+**Guard 2: which requests.** While exploring, the Html source routes every request. The setting
+**`BlockMethods`** says which methods are aborted (default `POST, PUT, PATCH, DELETE`); `GET`,
+`HEAD` and `OPTIONS` always go through. So "updates are fine" is `BlockMethods: POST, DELETE`, or
+empty for none. **`AllowRequests`** lets single endpoints through anyway (a read-only GraphQL
+endpoint, a search that posts). A blocked request is listed in the report; the click it belonged to
+does nothing, and nothing new is captured.
+
+**Guard 3: what the request guard cannot see.** Blazor Server, SignalR and other websockets carry a
+click without an HTTP request, so guard 2 does not see them. The setting **`WebsocketApps`** says
+what Explore does when the page opens one: `links` (default: `ClickPolicy` is lowered to `links`,
+and the view says why), `warn` (the policy stands; the view warns before it starts), or `ignore`.
+
+**Guard 4: where.** **`ExploreHosts`**: the hosts Explore may run against (default `localhost` and
+`127.0.0.1`). Every other host is added by name. Before a run the view (or the command line) shows
+the host and the guards as set, and asks to go on.
 
 **Checked after every click:** still on the app's host; still signed in (the page is not a sign-in
 page, and the cookies the start page had are still there); no dialog left open that was not ours;
@@ -76,7 +95,8 @@ no unexpected download. If any fails, Explore stops and reports what happened af
 
 **The report**, `Recordings/<session>/explore.md`: each capture and the click that led to it; each
 element skipped, with why (unsafe: which word or rule; unknown); each request blocked; why it
-stopped. A person reads it to add `AlwaysClick` or `NeverClick` entries and run again.
+stopped. From the report the view offers the same actions as from a node (section 5): never click
+this, always click this, never visit this.
 
 **Dry run** (`--dry-run`, and the view's default the first time): Explore visits only links, clicks
 nothing, and lists what it *would* click and skip on each page. Nothing is captured beyond the pages.
@@ -102,11 +122,14 @@ AD-027 is amended: the Scraper drafts code from rules (no model); the agent impr
 | --- | --- |
 | **Command line** | `Brinell.Bdd.LanguageServer scrape explore --project <name> [--solution <folder>] [--dry-run] [--draft] [--max-pages N] [--max-depth N] [--max-minutes N] [--headless]` and `scrape draft --project <name> [--page <key>]`. The language server already has `--preview` and `--mcp` modes, so no new project (AD-026). Exit code 0 when it ran within its guards, 1 when a guard stopped it, 2 for an error. Headless is for our own apps in CI only; a login needs the window |
 | **The view** | **Explore** (with the budget, the dry-run switch and the guard summary before it starts), a progress line (captures, clicks, skipped, blocked), **Stop**, **Continue** after a sign-in; **Draft page objects** on the Pages tab, for all pages or the one open |
-| **MCP** | `explore_app` (asks first, dry run by default) and `draft_page_objects`: an agent can start them, a person approves |
+| **Explore settings** | A settings panel in the view for everything in section 6: the budget, `ClickPolicy`, the danger categories as switches, `BlockMethods` as checkboxes, `WebsocketApps`, and the lists. It writes `scraper.config.md` |
+| **Adding to the config from the view** | The extension edits the config, so a person never has to find the right table: on the recording browser's current page, **Add this host to Explore hosts**, **Add as an alias**, **Use as start URL**, **Never visit**; on a node or a report line, **Never click this**, **Always click this**; on a blocked request in the report, **Allow this request**. Each writes one row in its table (or one field in `## App`), keeps the rest of the file as it was, and says what it wrote. With no `scraper.config.md` yet, **Create config** writes one for the project, with the current URL as start URL |
+| **MCP** | `explore_app` (asks first, dry run by default) and `draft_page_objects`: an agent can start them, a person approves. `update_scraper_config` (asks first) makes the same one-row changes as the view |
+| **The language server** | `brinell/scraper/config` reads the config as data and `brinell/scraper/configEdit` applies one change (add a row, remove a row, set a field): a writer that keeps the Markdown's other text and order (`ScraperConfigWriter`, beside `ScraperConfig`) |
 
 ## 6. The config
 
-New sections in `scraper.config.md`, all optional:
+New sections in `scraper.config.md`, all optional; each has the default shown:
 
 ```markdown
 ## Explore
@@ -118,14 +141,28 @@ New sections in `scraper.config.md`, all optional:
 | MaxMinutes | 10 |
 | DelayMs | 500 |
 | LoginUrl | /login |
-| ExploreClicks | false |
+| ClickPolicy | safe |
+| BlockMethods | POST, PUT, PATCH, DELETE |
+| WebsocketApps | links |
+
+## Danger words
+
+| Category | On |
+| --- | --- |
+| sign-out | true |
+| delete | true |
+| update | true |
+| send | true |
+| pay | true |
+| approve | true |
+| bulk | true |
 
 ## Explore hosts
 
 | Host |
 | --- |
 | localhost |
-| test.myapp.example |
+| 127.0.0.1 |
 
 ## Never click
 
@@ -153,30 +190,43 @@ New sections in `scraper.config.md`, all optional:
 | POST | /graphql |
 ```
 
+A test tenant where deleting and saving are fine, and websocket clicks too:
+
+```markdown
+| ClickPolicy | not-unsafe |
+| BlockMethods | |
+| WebsocketApps | warn |
+
+| delete | false |
+| update | false |
+```
+
 ## 7. Steps
 
 One commit per step, tests with each.
 
 | # | Step | Verify |
 | --- | --- | --- |
-| 1 | The judge (guard 1): safe, unsafe, unknown for a node, the danger words, the config's lists | unit tests on snapshots: every danger word in four languages, forms, submit buttons, icons, `AlwaysClick` winning only for its element |
-| 2 | The request guard (guard 2) and the host guard (guard 4) in the Html source | browser tests on the test site: a `fetch` POST blocked, a GET through, `AllowRequests` honoured, a host outside `ExploreHosts` refused |
-| 3 | The test site gets a dangerous page: logout link, delete buttons, a submit form, a POST that would delete, a websocket | the site itself; each is counted by the page (a server-side counter) so a test can prove nothing happened |
-| 4 | Explore: breadth first over links, then safe clicks; state dedup; budget; sign-in detection with Continue; the report; dry run | browser tests on the test site: all pages found, the dangerous page's counters stay 0, the report lists every skip with its reason |
-| 5 | The command line (`scrape explore`, `scrape draft`) and the MCP tools | a run on the test site from the command line, exit codes |
-| 6 | Draft: `.scraped.cs` partials, names, unstable members as a comment, the gate with revert | unit tests; the test site drafted and building; a second draft after a change replaces only the `.scraped.cs` |
-| 7 | The view: Explore with the guard summary, progress, Stop, Continue; Draft page objects; Improve with the agent | the manual test plan's new checks (Claude's part scripted as before) |
-| 8 | The Blazor sample explored and drafted, links only (guard 3), and with `ExploreClicks: true` | its pages found; the drafts build; `UserFormPage` compared with the hand-checked one |
-| 9 | AD-027 amended; the guide's "Explore and draft" section | links valid |
+| 1 | The settings (section 6) read and written: `ScraperConfig` for the new sections, `ScraperConfigWriter` for one-row edits that keep the file's other text | round trips; an edit on a hand-written config changes one line |
+| 2 | The judge (guard 1): safe, unsafe, unknown for a node; `ClickPolicy`; the danger categories on and off; `NeverClick`, `AlwaysClick`, `NeverVisit` | unit tests: every category's words in four languages, forms, submit buttons, icons, a category turned off letting its words through, `AlwaysClick` only for its element |
+| 3 | The request guard (guard 2, `BlockMethods`, `AllowRequests`) and the host guard (guard 4) in the Html source | browser tests on the test site: a POST blocked by default and let through when unblocked; a host outside `ExploreHosts` refused |
+| 4 | The test site gets a dangerous page: logout link, delete buttons, a submit form, a POST that would delete, a websocket; each counted by the site, so a test can prove what happened | the site itself |
+| 5 | Explore: links, then clicks by policy; state dedup; budget; sign-in detection with Continue; the websocket guard; the report; dry run | browser tests on the test site: all pages found; with the defaults the dangerous page's counters stay 0; with `delete` off and `BlockMethods` without DELETE, the delete counter moves and nothing else does |
+| 6 | The command line (`scrape explore`, `scrape draft`) and the MCP tools, `update_scraper_config` too | a run on the test site from the command line, exit codes |
+| 7 | Draft: `.scraped.cs` partials, names, unstable members as a comment, the gate with revert | unit tests; the test site drafted and building; a second draft replaces only the `.scraped.cs` |
+| 8 | The view: Explore with the guard summary, progress, Stop, Continue; Explore settings; the add-to-config actions and Create config; Draft page objects; Improve with the agent | the manual test plan's new checks (Claude's part scripted as before) |
+| 9 | The Blazor sample explored (links, then `WebsocketApps: warn`) and drafted | its pages found; the drafts build; `UserFormPage` compared with the hand-checked one |
+| 10 | AD-027 amended (Explore and its guards as settings, drafts from rules); the guide's "Explore and draft" section | links valid |
 
-## 8. Questions
+## 8. Decisions
 
-| # | Question | Proposal |
+| # | Question | Decided (2026-09-30) |
 | --- | --- | --- |
-| Q1 | Only click what is known safe, or click everything not known unsafe? | Only what is known safe (section 3). Missing a menu is cheap; one delete is not |
-| Q2 | Ever type into a field (a search box, a filter) to reach more states? | Not in the first version. Later: only fields the config names, with values from the config |
-| Q3 | Blazor Server and other websocket apps: links only by default? | Yes (guard 3); `ExploreClicks: true` per app when a person has checked the danger words cover it |
-| Q4 | Which hosts by default? | `localhost` and `127.0.0.1` only; every other host by name in `ExploreHosts` |
-| Q5 | Draft: page objects only, or controls too? | Page objects only; controls stay with the agent or a person |
-| Q6 | The `.scraped.cs` partial split: agreed? | Yes; it is how the generator's `.gen.cs` already works for controls |
-| Q7 | Run Explore in CI against our samples, to notice when a page changes? | Later: a nightly Explore of the samples with a `diff_page` report is a cheap UI change detector |
+| Q1 | Click only what is known safe, or everything not known unsafe? | A setting: `ClickPolicy` (`links`, `safe` by default, `not-unsafe`, `all`), with the danger categories and blocked methods as settings too. Sometimes a delete or an update is fine |
+| Q2 | Type into fields to reach more states? | Not in the first version. Later, maybe with the agent: an agent-led Explore where the agent picks the next action and the values from the judge's candidates (MCP: the state, the candidates, click, fill), with the same guards |
+| Q3 | Websocket apps (Blazor Server): links only? | A setting: `WebsocketApps` (`links` by default, `warn`, `ignore`) |
+| Q4 | Which hosts by default? | `localhost` and `127.0.0.1`; every other host by name |
+| Q5 | Draft controls too? | No: controls are the agent's, they need a judgement |
+| Q6 | The `.scraped.cs` partial split? | Yes |
+| Q7 | A nightly Explore of the samples? | Later |
+| Q8 | Can the extension add a URL to the config? | Yes: section 5's add-to-config actions and Create config, through `brinell/scraper/configEdit` |
