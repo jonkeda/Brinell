@@ -5,11 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\tools\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
+    <!-- The suite loader and the preview; the preview's tests load the Todo suites' catalogs as the language server does. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Brinell.Bdd" />
+    <Using Include="Brinell.Uat" />
   </ItemGroup>
 
 </Project>

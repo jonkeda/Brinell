@@ -58,7 +58,7 @@ public sealed class BddPreviewTodoTests : IClassFixture<BddPreviewTodoTests.Todo
         Assert.Empty(result.Diagnostics);
         Assert.Contains("data-kind=\"video\"", html);
         Assert.Equal(11, html.Split("<span class=\"uat-kw\">Scene ").Length - 1);
-        Assert.Contains("<span class=\"uat-kw\">When</span><span class=\"uat-text\">I tap Sync<span class=\"uat-video-say\">You tap Sync to fetch it.</span>", html);
+        Assert.Contains("<span class=\"uat-kw\">When</span><span class=\"uat-text\">I tap Sync<span class=\"uat-video-say\">You tap Sync to fetch it; while the app waits, it tells you it is loading.</span>", html);
         Assert.Contains("<span class=\"uat-video-silent\">silent</span>", html);
     }
 

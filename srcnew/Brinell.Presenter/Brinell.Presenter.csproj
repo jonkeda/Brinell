@@ -40,8 +40,7 @@
     <!-- Record: the window recorder and Windows' voices (the narrator). -->
     <ProjectReference Include="..\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" />
     <!-- The suite and the file check the IDEs use, so Presenter says what the gate says (AD-022). -->
-    <ProjectReference Include="..\..\tools\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
-    <ProjectReference Include="..\..\tools\Brinell.Bdd.Preview\Brinell.Bdd.Preview.csproj" />
+    <ProjectReference Include="..\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -21,7 +21,7 @@ only (and `UatPlatformsAttribute` in Brinell.Maui, for now). Everything else tak
 and projects alike:
 - the engine (`BddBinder`, `BddCatalogSet`, `IBddClock`) and `BddEffectiveStepKeyword` in Brinell.Core;
 - the Presenter's types;
-- the tools `Brinell.Bdd.Workspace`, `Brinell.Bdd.Preview` and `Brinell.Bdd.LanguageServer`;
+- the tooling library `Brinell.Bdd.Workspace` (it holds the preview, namespace `Brinell.Bdd.Preview`) and the tool `Brinell.Bdd.LanguageServer`;
 - the IDE extensions, "Brinell BDD".
 
 A Bdd tool may use `Brinell.Uat`: the workspace builds a UI suite's catalogs through it, as a
