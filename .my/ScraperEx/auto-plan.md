@@ -1,6 +1,6 @@
 # The Scraper, automatic: explore an app and draft its page objects
 
-Status: **plan, decided** (Q1-Q8, 2026-09-30; section 8); the loop (section 9) added, Q9-Q11 open. Nothing is built.
+Status: **plan, decided** (Q1-Q8, 2026-09-30; section 8); the loop (section 9) added, Q9-Q11 decided. Nothing is built.
 Builds on [plan.md](plan.md) (the Scraper as built, AD-027) and [next-plan.md](next-plan.md).
 
 ## 1. What we want
@@ -140,6 +140,7 @@ New sections in `scraper.config.md`, all optional; each has the default shown:
 | MaxDepth | 4 |
 | MaxMinutes | 10 |
 | DelayMs | 500 |
+| AgentMinutes | 10 |
 | LoginUrl | /login |
 | ClickPolicy | safe |
 | BlockMethods | POST, PUT, PATCH, DELETE |
@@ -281,5 +282,5 @@ so a run never changes the repository.
 
 | # | Question | Proposal |
 | --- | --- | --- |
-| Q10 | Which agent does the loop use by default? | `none` when Claude runs it after a step (free, deterministic); `copilot` in a run asked for by name. Both CLIs are supported |
-| Q11 | A budget for the agent stage? | 10 minutes and the CLI's own limits; the loop stops the agent after that and fails the stage |
+| Q10 | Which agent does the loop use by default? | **Decided:** `none` when Claude runs it after a step (free, deterministic); `copilot` in a run asked for by name. Both CLIs are supported |
+| Q11 | A budget for the agent stage? | **Decided:** a setting, `AgentMinutes` in `## Explore` (default 10), overridden by the loop's `-AgentMinutes`; with the CLI's own limits. The loop stops the agent after that and fails the stage |
