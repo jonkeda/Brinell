@@ -238,8 +238,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VS Code", "VS Code", "{0B1E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Recording", "Brinell.Recording\Brinell.Recording.csproj", "{8A1AD1F4-23A7-4623-9BEA-B20413A14026}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Recording.Windows", "Brinell.Recording.Windows\Brinell.Recording.Windows.csproj", "{F7F967E3-AF77-4934-ADC9-7534E1CBD824}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Narrator", "Brinell.Narrator\Brinell.Narrator.csproj", "{28CBE990-11E1-4D27-AA64-B01A08BBC707}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Narrator.Windows", "Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj", "{4C98F5FF-3C58-476E-9110-D538802FB617}"
@@ -1286,18 +1284,6 @@ Global
 		{8A1AD1F4-23A7-4623-9BEA-B20413A14026}.Release|x64.Build.0 = Release|Any CPU
 		{8A1AD1F4-23A7-4623-9BEA-B20413A14026}.Release|x86.ActiveCfg = Release|Any CPU
 		{8A1AD1F4-23A7-4623-9BEA-B20413A14026}.Release|x86.Build.0 = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|x64.Build.0 = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Debug|x86.Build.0 = Debug|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|x64.ActiveCfg = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|x64.Build.0 = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|x86.ActiveCfg = Release|Any CPU
-		{F7F967E3-AF77-4934-ADC9-7534E1CBD824}.Release|x86.Build.0 = Release|Any CPU
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Debug|x64.ActiveCfg = Debug|Any CPU

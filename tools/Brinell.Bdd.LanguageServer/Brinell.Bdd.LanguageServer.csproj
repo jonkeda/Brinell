@@ -38,7 +38,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RecorderFile Include="$(RecordersOutput)Brinell.Narrator.Windows.dll;$(RecordersOutput)Brinell.Recording.Windows.dll;$(RecordersOutput)Microsoft.Windows.SDK.NET.dll;$(RecordersOutput)WinRT.Runtime.dll" />
+    <RecorderFile Include="$(RecordersOutput)Brinell.Narrator.Windows.dll;$(RecordersOutput)Microsoft.Windows.SDK.NET.dll;$(RecordersOutput)WinRT.Runtime.dll" />
   </ItemGroup>
 
   <Target Name="CopyRecorders" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">

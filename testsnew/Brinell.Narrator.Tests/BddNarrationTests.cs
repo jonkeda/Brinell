@@ -248,9 +248,9 @@ public sealed class RecordingPackagesTests
         var folder = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../srcnew/Brinell.Narrator.Windows/bin",
             new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name, "net10.0-windows10.0.19041.0"));
 
-        var loaded = RecordingPackages.Load(["Brinell.Narrator.Windows", "Brinell.Recording.Windows"], name => name == RecordingPackages.Variable ? folder : null);
+        var loaded = RecordingPackages.Load(["Brinell.Narrator.Windows"], name => name == RecordingPackages.Variable ? folder : null);
 
-        Assert.Equal(["Brinell.Narrator.Windows", "Brinell.Recording.Windows"], loaded.Select(assembly => assembly.GetName().Name));
+        Assert.Equal(["Brinell.Narrator.Windows"], loaded.Select(assembly => assembly.GetName().Name));
         Assert.Equal("WindowsSpeech", Speech.Discover()?.GetType().Name);
         Assert.Equal("WindowsCaptureRecorder", ScreenRecorders.Discover().Recorders[0].GetType().Name);
     }
