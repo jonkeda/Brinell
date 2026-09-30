@@ -78,6 +78,22 @@ public static class SnapshotFile
         return Read(reader);
     }
 
+    /// <summary>
+    /// A short hash of what a snapshot shows: its nodes without their boxes, so a page seen in another
+    /// window size, or captured again unchanged, has the same hash.
+    /// </summary>
+    public static string ContentHash(ScrapeSnapshot snapshot)
+    {
+        using var hash = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
+        foreach (var node in snapshot.Nodes)
+        {
+            var json = ToJson(node);
+            json.Remove("box");
+            hash.AppendData(System.Text.Encoding.UTF8.GetBytes(ToLine(json) + '\n'));
+        }
+        return Convert.ToHexString(hash.GetHashAndReset())[..8].ToLowerInvariant();
+    }
+
     private static JsonObject ToJson(ScrapeNode node)
     {
         var o = new JsonObject { ["n"] = node.Number, ["p"] = node.Parent };

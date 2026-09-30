@@ -21,6 +21,17 @@ public sealed record ScrapeSnapshot
     /// <summary>The node with this number.</summary>
     public ScrapeNode this[int number] => Nodes[number - 1];
 
-    /// <summary>A node's children, in document order.</summary>
-    public IEnumerable<ScrapeNode> ChildrenOf(int number) => Nodes.Where(n => n.Parent == number);
+    /// <summary>A node's children, in document order; 0 gives the roots.</summary>
+    public IEnumerable<ScrapeNode> ChildrenOf(int number) => Children()[number];
+
+    // Built once per node list: a page of 18,000 nodes asks for every node's children.
+    private (IReadOnlyList<ScrapeNode> Nodes, ILookup<int, ScrapeNode> Lookup)? _children;
+
+    private ILookup<int, ScrapeNode> Children()
+    {
+        // `with { Nodes = ... }` copies this field too, so it is checked against the list it was built from.
+        if (_children is not { } cached || !ReferenceEquals(cached.Nodes, Nodes))
+            _children = cached = (Nodes, Nodes.ToLookup(n => n.Parent));
+        return cached.Lookup;
+    }
 }

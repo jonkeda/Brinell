@@ -50,6 +50,12 @@ public sealed class BddMcpServer : IDisposable
         ("get_page_snapshot", "A captured page as an outline: one line per node that matters, '#<node> <type> \"text\" name=... role=... #id .class [data-*]', indented by depth; wrappers with nothing of their own are left out. The newest capture unless 'session' is given. Give 'node' for one node's subtree when the page is large.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("session", "string", "A session id, for an older capture."), ("number", "integer", "The capture's number in that session."), ("node", "integer", "A node's number: only its subtree."), ("maxLines", "integer", "At most this many lines; 400 when left out."))),
         ("find_similar_elements", "The nodes, on every recorded page's newest capture, of the same kind as a node: the same type, role, class names (generated ones left out) and child types. A pattern on many pages is a control to make.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("node", "integer", "The node's number on the page's newest capture; required."))),
         ("search_recordings", "The nodes, on every recorded page's newest capture, whose text, accessible name or an attribute value holds the text (ignoring case).", Schema(("project", "string", "The project; the only one when left out."), ("text", "string", "What to look for; required."))),
+        ("list_controls", "The page objects and controls a scraped project has (and the scraped projects it references): name, kind, base, file, the header saying what it was made from, and each control property with its locator. Reuse these before making new ones.", Schema(("project", "string", "The project; the only one when left out."))),
+        ("detect_patterns", "What the recorded pages are built from, found without a model: parts that repeat across pages or within one (controls to make), and forms, tables, lists, navigation and dialogs (structure a page object names). Each with its kind, on how many pages, how often, examples (page, node) and the control that already stands for it.", Schema(("project", "string", "The project; the only one when left out."), ("max", "integer", "At most this many; 30 when left out."))),
+        ("match_controls", "Which of the project's controls occur on a page (by the signature in their header), the page object made for the page, and whether the page changed since it was made.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."))),
+        ("scraped_header", "The first line a generated file must have, saying what it was made from: for a page object give the page, for a control also the node it was made from. Put it above the usings.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("node", "integer", "For a control: the node on the page's newest capture."))),
+        ("write_code", "Writes a C# file (a page object or control) into the scraped project, at a path relative to it, when its syntax is valid; otherwise gives the syntax errors and writes nothing. Show the user the code first.", Schema(("project", "string", "The project; the only one when left out."), ("path", "string", "The file, relative to the project, e.g. Pages/InvoicePage.cs; required."), ("code", "string", "The whole file; required."))),
+        ("check_code", "Builds the scraped project with its analyzers and gives the errors and warnings. Generated code is done only when this passes: fix what it reports and call it again.", Schema(("project", "string", "The project; the only one when left out."))),
         ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
@@ -149,6 +155,12 @@ public sealed class BddMcpServer : IDisposable
                 "list_recorded_pages" => Scraper(() => _server.ScraperPages(new ScraperProjectParams((string?)arguments["project"])) switch { { Problem: { } problem } => throw new ScraperProblem(problem), var pages => pages.Value! }),
                 "get_page_snapshot" => Scraper(() => SnapshotOutline.Render(_server.Scraper.Snapshot((string?)arguments["project"], Required(arguments, "page"), (string?)arguments["session"], (int?)arguments["number"]).Snapshot, (int?)arguments["node"] ?? 0, (int?)arguments["maxLines"] ?? 400)),
                 "find_similar_elements" => Scraper(() => _server.Scraper.Similar((string?)arguments["project"], Required(arguments, "page"), (int?)arguments["node"] ?? throw new ToolProblem("'node' is required."))),
+                "list_controls" => Scraper(() => _server.Scraper.Controls((string?)arguments["project"])),
+                "detect_patterns" => Scraper(() => _server.Scraper.Patterns((string?)arguments["project"], (int?)arguments["max"] ?? 30)),
+                "match_controls" => Scraper(() => _server.Scraper.Match((string?)arguments["project"], Required(arguments, "page"))),
+                "scraped_header" => Scraper(() => _server.Scraper.Header((string?)arguments["project"], Required(arguments, "page"), (int?)arguments["node"])),
+                "write_code" => Scraper(() => WriteCode(arguments)),
+                "check_code" => Scraper(() => _server.Scraper.CheckCodeAsync((string?)arguments["project"]).GetAwaiter().GetResult()),
                 "search_recordings" => Scraper(() => _server.Scraper.Search((string?)arguments["project"], Required(arguments, "text"))),
                 _ => throw new McpException(-32602, $"No tool '{name}'. The tools are {string.Join(", ", Tools.Select(tool => tool.Name))}."),
             };
@@ -174,7 +186,16 @@ public sealed class BddMcpServer : IDisposable
         }
     }
 
-    // An agent is not asked first, so it only counts unless it says dryRun: false.
+    // A file that is not written is a tool error with the reason and each syntax error's place.
+    private object WriteCode(JsonObject arguments)
+    {
+        var result = _server.Scraper.WriteCode((string?)arguments["project"], Required(arguments, "path"), Required(arguments, "code"));
+        return result.Written
+            ? result
+            : throw new ToolProblem(result.Reason + string.Concat(result.Problems.Select(problem => $"{Environment.NewLine}line {problem.Line}, column {problem.Column}: {problem.Code} {problem.Message}")));
+    }
+
+        // An agent is not asked first, so it only counts unless it says dryRun: false.
     private DeleteResultsResult DeleteResults(JsonObject arguments)
     {
         var path = (string?)arguments["path"];

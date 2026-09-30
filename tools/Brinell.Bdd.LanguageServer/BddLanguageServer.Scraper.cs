@@ -90,7 +90,17 @@ public sealed partial class BddLanguageServer
             return new ScraperPickResult(capture, node);
         });
 
-    // A request the Scraper cannot answer comes back as a reason the view shows, not as an RPC error.
+    /// <summary><c>brinell/scraper/patterns</c>: what the recorded pages are built from.</summary>
+    [JsonRpcMethod("brinell/scraper/patterns")]
+    public ScraperResult<IReadOnlyList<Brinell.Scraper.Code.Pattern>> ScraperPatterns(ScraperProjectParams request)
+        => Answer(() => Scraper.Patterns(request.Project));
+
+    /// <summary><c>brinell/scraper/controls</c>: the page objects and controls a project has.</summary>
+    [JsonRpcMethod("brinell/scraper/controls")]
+    public ScraperResult<IReadOnlyList<Brinell.Scraper.Code.CodeClass>> ScraperControls(ScraperProjectParams request)
+        => Answer(() => Scraper.Controls(request.Project));
+
+        // A request the Scraper cannot answer comes back as a reason the view shows, not as an RPC error.
     private static ScraperResult<T> Answer<T>(Func<T> work)
     {
         try

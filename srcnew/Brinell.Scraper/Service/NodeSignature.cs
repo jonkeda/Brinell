@@ -4,7 +4,8 @@ namespace Brinell.Scraper.Service;
 
 /// <summary>
 /// What makes two nodes "the same kind of thing" across pages: the type, the role, the class names that
-/// are not generated ones, and the types of the direct children. Text and ids are left out.
+/// are not generated ones, and the types of the direct children, a run of one type counted once. Text
+/// and ids are left out.
 /// </summary>
 public static class NodeSignature
 {
@@ -14,8 +15,27 @@ public static class NodeSignature
         var classes = node.Attribute("class") is { } c
             ? string.Join('.', c.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(IsStable).Order(StringComparer.Ordinal))
             : "";
-        var children = string.Join(',', snapshot.ChildrenOf(node.Number).Select(n => n.Kind == ScrapeNodeKind.ShadowRoot ? "#shadow" : n.Type));
+        var children = string.Join(',', Runs(snapshot.ChildrenOf(node.Number).Select(n => n.Kind == ScrapeNodeKind.ShadowRoot ? "#shadow" : n.Type)));
         return $"{node.Type}|{node.Role}|{classes}|{children}";
+    }
+
+    // A run of the same type is one entry (li+): a list of three and a list of five are alike.
+    private static IEnumerable<string> Runs(IEnumerable<string> types)
+    {
+        string? last = null;
+        var repeated = false;
+        foreach (var type in types)
+        {
+            if (type == last)
+            {
+                repeated = true;
+                continue;
+            }
+            if (last is not null) yield return repeated ? last + "+" : last;
+            last = type;
+            repeated = false;
+        }
+        if (last is not null) yield return repeated ? last + "+" : last;
     }
 
     // Generated class names (Emotion's css-1x2y3z, JSS's jss123, styled-components' sc-bdVaJa, CSS

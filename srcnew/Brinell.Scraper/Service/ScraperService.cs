@@ -1,4 +1,5 @@
 using Brinell.Core.Scraping;
+using Brinell.Scraper.Code;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Recordings;
@@ -184,6 +185,56 @@ public sealed class ScraperService : IAsyncDisposable
     public IReadOnlyList<SimilarNode> Search(string? projectName, string text, int max = 100) =>
         Project(projectName).Index().Search(text).Take(max).Select(f => new SimilarNode(f.Page.Key, f.Node.Number, SnapshotOutline.Line(f.Node))).ToArray();
 
+    /// <summary>The page objects and controls a project has, and those of the scraped projects it references.</summary>
+    public IReadOnlyList<CodeClass> Controls(string? projectName) => ProjectCode.Read(Project(projectName));
+
+    /// <summary>What the recorded pages are built from: repeated parts and structure, most widespread first.</summary>
+    public IReadOnlyList<Pattern> Patterns(string? projectName, int max = 30)
+    {
+        var project = Project(projectName);
+        var index = project.Index();
+        var pages = index.Pages.Select(p => (p.Key, index.Read(p.Latest))).ToArray();
+        return PatternDetector.Detect(pages, ProjectCode.Read(project), max);
+    }
+
+    /// <summary>The header line a file made from something recorded starts with.</summary>
+    /// <param name="projectName">The project.</param>
+    /// <param name="page">The page key.</param>
+    /// <param name="node">A node on its newest capture, for a control; null for the page object.</param>
+    public string Header(string? projectName, string page, int? node = null)
+    {
+        var (capture, snapshot) = Snapshot(projectName, page);
+        var from = $"{capture.Session}/{capture.Event.Snapshot}";
+        if (node is null) return new ScrapedHeader { Page = page, From = from, Hash = SnapshotFile.ContentHash(snapshot) }.ToString();
+        if (node < 1 || node > snapshot.Nodes.Count) throw new ScraperProblem($"Page '{page}' has nodes 1 to {snapshot.Nodes.Count}, not {node}.");
+        return new ScrapedHeader { Control = NodeSignature.Of(snapshot, snapshot[node.Value]), From = $"{from}#{node}" }.ToString();
+    }
+
+    /// <summary>
+    /// Which of the project's controls occur on a page's newest capture (by their header's signature),
+    /// and the page object made for the page, if there is one.
+    /// </summary>
+    public ControlMatches Match(string? projectName, string page)
+    {
+        var classes = Controls(projectName);
+        var (_, snapshot) = Snapshot(projectName, page);
+        var bySignature = classes.Where(c => c.Header?.Control is not null).ToLookup(c => c.Header!.Control!, StringComparer.Ordinal);
+        var matches = snapshot.Nodes
+            .Select(n => (Node: n, Controls: bySignature[NodeSignature.Of(snapshot, n)].ToArray()))
+            .Where(m => m.Controls.Length > 0)
+            .Select(m => new ControlMatch(m.Node.Number, SnapshotOutline.Line(m.Node), m.Controls.Select(c => c.Name).ToArray()))
+            .ToArray();
+        var pageObject = classes.FirstOrDefault(c => c.Header?.Page == page);
+        return new ControlMatches(page, pageObject?.Name, pageObject?.Header?.Hash is { } hash ? hash != SnapshotFile.ContentHash(snapshot) : null, matches);
+    }
+
+    /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
+    public WriteResult WriteCode(string? projectName, string path, string code) => CodeGate.Write(Project(projectName), path, code);
+
+    /// <summary>Builds the project: the gate every generated file must pass.</summary>
+    public Task<BuildResult> CheckCodeAsync(string? projectName, CancellationToken cancellationToken = default) =>
+        CodeGate.BuildAsync(Project(projectName), cancellationToken);
+
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
@@ -244,6 +295,12 @@ public sealed class ScraperService : IAsyncDisposable
     }
 }
 
+/// <summary>The controls found on a page, the page object made for it, and whether the page changed since.</summary>
+public sealed record ControlMatches(string Page, string? PageObject, bool? ChangedSinceGenerated, IReadOnlyList<ControlMatch> Matches);
+
+/// <summary>A node that one or more of the project's controls stand for.</summary>
+public sealed record ControlMatch(int Node, string Line, IReadOnlyList<string> Controls);
+
 /// <summary>A recording in progress.</summary>
 public sealed record RecordingState(string Project, string Session, string Folder, bool AutoCapture, int Captures);
 
@@ -251,6 +308,7 @@ public sealed record RecordingState(string Project, string Session, string Folde
 public sealed record SimilarNode(string Page, int Node, string Line);
 
 /// <summary>What changed in the service.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ScraperChangeKind>))]
 public enum ScraperChangeKind
 {
     /// <summary>A recording started.</summary>
