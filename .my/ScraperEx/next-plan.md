@@ -1,4 +1,4 @@
-# The Scraper, next: a Playwright updater, a test plan, a help guide
+# The Scraper, next: Playwright in the extensions, a test plan, a help guide
 
 Status: **plan**, 2026-09-30. Nothing is built. Questions in section 5 wait for the owner.
 Follows [plan.md](plan.md), whose open items (section 13) this takes up: Q8, the IDE runs, and
@@ -17,7 +17,7 @@ What that means:
 | Its platform | The release job runs on `windows-latest`, so the driver is win-x64. The VS Code extension on macOS or Linux would have the wrong one; it already needs .NET on Windows for the rest (the narrator's recorders), so this is a known limit, said in the guide |
 | A Playwright update | A version bump of `Microsoft.Playwright` in `srcnew/Directory.Packages.props` and an extension release |
 | The browser | Not in the extensions: Chromium is installed per Playwright version into `%LOCALAPPDATA%\ms-playwright`. Today Record fails with "run `playwright.ps1 install chromium`". **Step 3** makes it a button: the server runs Playwright's own installer (`Microsoft.Playwright.Program.Main(["install", "chromium"])`), with progress in the view, and an MCP tool `install_browser` that asks first |
-| Later | The updater designed on 2026-09-30 (the Html source as a process of its own, installed per version under `%LOCALAPPDATA%\Brinell\scrape-hosts`, with `status`, `install`, `update`, `prune`) is in git at the commit before this change, should the size or the pace start to hurt |
+| Later | The updater designed on 2026-09-30 (the Html source as a process of its own, installed per version under `%LOCALAPPDATA%\Brinell\scrape-hosts`, with `status`, `install`, `update`, `prune`) is in git at a3763989 (`.my/ScraperEx/next-plan.md`), should the size or the pace start to hurt |
 
 ## 2. The test plan
 
