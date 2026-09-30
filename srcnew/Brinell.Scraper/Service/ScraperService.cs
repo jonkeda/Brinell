@@ -1,5 +1,6 @@
 using Brinell.Core.Scraping;
 using Brinell.Scraper.Code;
+using Brinell.Scraper.Explore;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Recordings;
@@ -17,6 +18,8 @@ public sealed class ScraperService : IAsyncDisposable
     private readonly Func<string, IScrapeSource> _sourceFor;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Recording? _recording;
+    private CancellationTokenSource? _exploring;
+    private TaskCompletionSource? _signIn;
 
     /// <summary>A service for the projects under <paramref name="solutionDir"/>.</summary>
     /// <param name="solutionDir">The solution's folder.</param>
@@ -114,6 +117,104 @@ public sealed class ScraperService : IAsyncDisposable
         return added;
     }
 
+    /// <summary>
+    /// Explores a project's app by itself (see <see cref="Explorer"/>): a new session, guarded by the
+    /// project's Explore settings and this run's overrides, with its report as <c>explore.md</c> in the
+    /// session. The recording is stopped at the end.
+    /// </summary>
+    public async Task<ExploreResult> ExploreAsync(string? projectName, ExploreOptions options, CancellationToken cancellationToken = default)
+    {
+        var project = Project(projectName);
+        var settings = options.Apply(project.Config.Explore);
+        var start = options.Url ?? project.Config.StartUrl;
+        if (start.Length == 0)
+            throw new ScraperProblem($"{project.Name} has no StartUrl in its {ScraperConfig.FileName}; give a url.");
+        if (Uri.TryCreate(start, UriKind.Absolute, out var startUri) && RequestGuard.RefuseHost(startUri, settings) is { } refused)
+            return new ExploreResult(ExploreStop.HostRefused, refused, options.DryRun, settings, [], [], [], [], [], [], 0, TimeSpan.Zero);
+
+        // The browser opens blank, so nothing of the app loads before the guards are on.
+        await StartRecordingAsync(project.Name, options.DryRun ? "explore-dry-run" : "explore", "about:blank", autoCapture: false, visible: options.Visible, cancellationToken).ConfigureAwait(false);
+        var recording = _recording!;
+        if (recording.Source is not IExploreSource source)
+        {
+            await StopRecordingAsync(cancellationToken).ConfigureAwait(false);
+            throw new ScraperProblem($"{project.Config.Platform} apps cannot be explored yet: html and blazor can.");
+        }
+
+        using var exploring = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _exploring = exploring;
+        var run = options with { WaitForSignIn = options.WaitForSignIn ?? (options.Visible ? WaitForSignInAsync : null) };
+        ExploreResult result;
+        try
+        {
+            result = await new Explorer(project, source, settings, run, new ExploreIo(ExploreCaptureAsync, ExploreSaveAsync))
+                .RunAsync(start, exploring.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+            _exploring = null;
+            _signIn?.TrySetCanceled();
+            _signIn = null;
+        }
+        var report = Path.Combine(recording.Session.Folder, ExploreReport.FileName);
+        await File.WriteAllTextAsync(report, ExploreReport.Markdown(result, project.Name, start), CancellationToken.None).ConfigureAwait(false);
+        await StopRecordingAsync(CancellationToken.None).ConfigureAwait(false);
+        return result with { Folder = recording.Session.Folder, Report = report };
+    }
+
+    /// <summary>True while Explore runs.</summary>
+    public bool IsExploring => _exploring is not null;
+
+    /// <summary>True while Explore waits at a sign-in page for <see cref="ContinueExploring"/>.</summary>
+    public bool IsWaitingForSignIn => _signIn is { Task.IsCompleted: false };
+
+    /// <summary>Stops Explore; what it recorded stays.</summary>
+    public void StopExploring() => _exploring?.Cancel();
+
+    /// <summary>Goes on after the person signed in, where Explore stopped at a sign-in page.</summary>
+    public void ContinueExploring() => _signIn?.TrySetResult();
+
+    private Task WaitForSignInAsync(CancellationToken cancellationToken)
+    {
+        _signIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.SignIn, _recording?.State, null, "Sign in in the recording browser, then Continue."));
+        return _signIn.Task.WaitAsync(cancellationToken);
+    }
+
+    private async Task<ScrapeSnapshot> ExploreCaptureAsync(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var recording = _recording ?? throw new ScraperProblem("The recording was stopped.");
+            return await recording.Source.CaptureAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task<RecordingEvent> ExploreSaveAsync(ScrapeSnapshot snapshot, string? name, CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        RecordingEvent added;
+        Recording recording;
+        try
+        {
+            recording = _recording ?? throw new ScraperProblem("The recording was stopped.");
+            var screenshot = recording.Project.Config.Screenshots ? await recording.Source.ScreenshotAsync(cancellationToken).ConfigureAwait(false) : null;
+            added = recording.Session.AddPage(snapshot, screenshot, name);
+            recording.Remember(snapshot);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+        Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.Captured, recording.State, added));
+        return added;
+    }
+
     /// <summary>Closes the recording browser; the session stays as it is on disk.</summary>
     public async Task<RecordingState?> StopRecordingAsync(CancellationToken cancellationToken = default)
     {
@@ -121,6 +222,7 @@ public sealed class ScraperService : IAsyncDisposable
         Recording? stopped;
         try
         {
+            _exploring?.Cancel();
             stopped = _recording;
             _recording = null;
             if (stopped is null) return null;
@@ -378,6 +480,9 @@ public enum ScraperChangeKind
 
     /// <summary>A capture on a transition failed.</summary>
     Failed,
+
+    /// <summary>Explore reached a sign-in page and waits for the person to sign in and continue.</summary>
+    SignIn,
 }
 
 /// <summary>A change: its kind, the recording, the captured page if any, and a message for a failure.</summary>

@@ -9,7 +9,7 @@ namespace Brinell.Scraper.Html;
 /// The Html source: a Chromium started through Playwright, with the project's own profile so a login
 /// lasts. Each frame, cross-origin ones too, is captured on its own and hung under its <c>iframe</c>.
 /// </summary>
-public sealed class PlaywrightScrapeSource : IScrapeSource
+public sealed class PlaywrightScrapeSource : IExploreSource
 {
     /// <summary>How long the page must be unchanged to count as settled.</summary>
     public static readonly TimeSpan Quiet = TimeSpan.FromMilliseconds(500);
@@ -40,6 +40,15 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
     /// <inheritdoc/>
     public event EventHandler<ScrapeTransition>? Transitioned;
 
+    /// <inheritdoc/>
+    public event EventHandler<string>? Downloaded;
+
+    /// <inheritdoc/>
+    public event EventHandler<string>? DialogDismissed;
+
+    /// <inheritdoc/>
+    public string Location => _page?.Url ?? "";
+
     /// <summary>The page being recorded; null before <see cref="StartAsync"/>.</summary>
     public IPage? Page => _page;
 
@@ -67,6 +76,13 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
         // A link that opens a new tab is followed in the recorded page: one page is recorded at a time.
         _context.Page += (_, page) => _ = FollowInRecordedPageAsync(page);
         _page.FrameNavigated += OnFrameNavigated;
+        _page.Download += (_, download) => Downloaded?.Invoke(this, download.SuggestedFilename);
+        // With a handler, Playwright no longer dismisses a dialog itself: a confirm is always answered no.
+        _page.Dialog += (_, dialog) =>
+        {
+            DialogDismissed?.Invoke(this, dialog.Message);
+            _ = dialog.DismissAsync();
+        };
         await _page.GotoAsync(start.Location).ConfigureAwait(false);
     }
 
@@ -160,7 +176,7 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
     {
         var page = Started();
         if (_guard is not null) throw new InvalidOperationException("The source is guarded already.");
-        if (Uri.TryCreate(page.Url, UriKind.Absolute, out var location) && RequestGuard.RefuseHost(location, guard.Settings) is { } refused)
+        if (Uri.TryCreate(page.Url, UriKind.Absolute, out var location) && location.Scheme is "http" or "https" && RequestGuard.RefuseHost(location, guard.Settings) is { } refused)
             throw new InvalidOperationException(refused);
         _guard = guard;
         page.WebSocket += OnWebSocket;
@@ -175,6 +191,67 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
         if (_page is not null) _page.WebSocket -= OnWebSocket;
         if (_context is not null) await _context.UnrouteAsync("**/*", RouteAsync).ConfigureAwait(false);
     }
+
+    /// <inheritdoc/>
+    public async Task<bool> GoToAsync(string url, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await Started().GotoAsync(url).ConfigureAwait(false);
+            return true;
+        }
+        catch (PlaywrightException)
+        {
+            return false; // blocked by a guard, or the site did not answer
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<string?> ClickAsync(int node, CancellationToken cancellationToken = default)
+    {
+        if (node < 1 || node > _numbers.Count) return $"node {node} is not in the last capture";
+        var (frame, local) = _numbers[node - 1];
+        try
+        {
+            var handle = await frame.EvaluateHandleAsync("n => window.__brinellScrapeNodes[n - 1]", local).ConfigureAwait(false);
+            if (handle.AsElement() is not { } element) return "the element is gone";
+            await element.ClickAsync(new() { Timeout = (float)ClickLimit.TotalMilliseconds }).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception e) when (e is PlaywrightException or TimeoutException)
+        {
+            return e.Message.ReplaceLineEndings(" ").Split(" Call log:")[0]; // hidden, detached or covered
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlySet<int>> MatchAsync(string selector, CancellationToken cancellationToken = default)
+    {
+        var matched = new HashSet<int>();
+        foreach (var frame in _numbers.Select(n => n.Frame).Distinct())
+        {
+            var locals = await TryEvaluateAsync<int[]>(frame,
+                "s => { try { return [...document.querySelectorAll(s)].map(e => (window.__brinellScrapeNodes || []).indexOf(e) + 1).filter(n => n > 0); } catch { return []; } }",
+                selector).ConfigureAwait(false) ?? [];
+            foreach (var local in locals)
+            {
+                var index = _numbers.FindIndex(n => n.Frame == frame && n.Local == local);
+                if (index >= 0) matched.Add(index + 1);
+            }
+        }
+        return matched;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> CookieNamesAsync(CancellationToken cancellationToken = default)
+    {
+        var page = Started();
+        var cookies = await _context!.CookiesAsync([page.Url]).ConfigureAwait(false);
+        return cookies.Select(c => c.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+    }
+
+    /// <summary>How long a click waits for its element to be visible and still.</summary>
+    public static readonly TimeSpan ClickLimit = TimeSpan.FromSeconds(3);
 
     private async Task RouteAsync(IRoute route)
     {

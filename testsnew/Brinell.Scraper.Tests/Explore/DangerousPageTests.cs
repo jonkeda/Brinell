@@ -102,7 +102,7 @@ public sealed class DangerousPageTests : IAsyncLifetime
 
         await _source.Page!.GotoAsync(_site.Url("pages/live.html"));
         await _source.Page.WaitForSelectorAsync("text=Connected");
-        await _source.Page.ClickAsync("[data-testid=live-refresh]");
+        await _source.Page.ClickAsync("[data-testid=live-details]");
 
         await WaitAsync(() => _site.SocketMessages == 1, "the websocket message");
         Assert.Equal([_site.Url("ws").Replace("http", "ws", StringComparison.Ordinal)], guard.WebSockets);

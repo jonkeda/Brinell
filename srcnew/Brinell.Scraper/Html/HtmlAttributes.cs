@@ -10,7 +10,7 @@ public static class HtmlAttributes
     public static readonly IReadOnlyList<string> Kept =
     [
         "id", "class", "name", "type", "placeholder", "title", "alt", "for", "href",
-        "disabled", "readonly", "checked", "selected", "required", "contenteditable", "tabindex", "download",
+        "disabled", "readonly", "checked", "selected", "required", "contenteditable", "tabindex", "download", "open",
     ];
 
     /// <summary>The test-id attributes in the order a locator prefers them, when the config names none.</summary>
