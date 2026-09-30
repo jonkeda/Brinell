@@ -19,6 +19,9 @@ public interface IScrapeSource : IAsyncDisposable
     /// <summary>Waits until the page or window has settled, then captures it.</summary>
     Task<ScrapeSnapshot> CaptureAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>A PNG of what the app shows now, or null when the source cannot take one.</summary>
+    Task<byte[]?> ScreenshotAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Outlines a node in the app, or removes the outline when <paramref name="number"/> is null.</summary>
     Task HighlightAsync(int? number, CancellationToken cancellationToken = default);
 
