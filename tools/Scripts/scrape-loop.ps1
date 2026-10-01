@@ -19,7 +19,10 @@
     Exit code 0 when every stage passed in every run, 1 otherwise.
 
 .PARAMETER Target
-    test-site (the Scraper's test site, with its dangerous page and counters) or blazor-sample.
+    test-site (the Scraper's test site, with its dangerous page and counters) or blazor-sample; or a
+    public site from Scraper.Sites: plain, react, vue2, blazor; or sites, the four in turn with one
+    summary report. A public site that does not answer is reported as site down, not a failure; its
+    guard check is that no click's label carries a danger word, since it has no counters.
 
 .PARAMETER Agent
     copilot (the default; it costs AI credits), claude, or none (free and deterministic).
@@ -46,9 +49,10 @@
     pwsh tools/Scripts/scrape-loop.ps1 -Target test-site
     pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Profile test-tenant -Repeat 3
     pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Agent copilot
+    pwsh tools/Scripts/scrape-loop.ps1 -Target sites -Agent none
 #>
 param(
-    [ValidateSet('test-site', 'blazor-sample')][string]$Target = 'test-site',
+    [ValidateSet('test-site', 'blazor-sample', 'plain', 'react', 'vue2', 'blazor', 'sites')][string]$Target = 'test-site',
     [ValidateSet('none', 'copilot', 'claude')][string]$Agent = 'copilot',
     [ValidateSet('careful', 'test-tenant')][string]$Profile = 'careful',
     [int]$Repeat = 1,
@@ -67,12 +71,40 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $OutDir = if ($OutDir) { $OutDir } else { Join-Path $root 'TestResults' 'scrape-loop' "$stamp-$Target" }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 
-# What each target is: how to start it, where Explore starts, how many pages it has at least.
+# The four public sites, one after the other, each with its own report, and one summary.
+if ($Target -eq 'sites') {
+    $rows = @()
+    foreach ($site in 'plain', 'react', 'vue2', 'blazor') {
+        $siteOut = Join-Path $OutDir $site
+        & $PSCommandPath -Target $site -Agent $Agent -Repeat $Repeat -AgentMinutes $AgentMinutes -OutDir $siteOut
+        $json = Get-Content (Join-Path $siteOut 'loop-report.json') -Raw | ConvertFrom-Json
+        foreach ($r in $json.Runs) {
+            $stages = ($r.Stages.PSObject.Properties | ForEach-Object { "$($_.Name) $(if ($_.Value.Passed) { 'ok' } else { 'FAIL' })" }) -join ', '
+            $verify = if ($r.Stages.Verify) { $r.Stages.Verify.Detail } else { '' }
+            $rows += "| $site | $($r.Run) | $(if ($r.SiteDown) { 'site down' } elseif ($r.Passed) { 'passed' } else { '**FAILED**' }) | $stages | $($verify -replace '\|', '\|') |"
+        }
+    }
+    $failed = @($rows | Where-Object { $_ -match '\*\*FAILED\*\*' }).Count
+    @("# Scrape loop: sites", '', "Agent $Agent, $Repeat run(s) each: **$(if ($failed) { 'FAILED' } else { 'passed' })**.", '',
+      '| Site | Run | | Stages | Verify |', '| --- | --- | --- | --- | --- |') + $rows -join "`n" | Set-Content (Join-Path $OutDir 'loop-report.md')
+    Write-Host "Report: $(Join-Path $OutDir 'loop-report.md')"
+    exit $(if ($failed) { 1 } else { 0 })
+}
+
+# What each target is: how to start it, where Explore starts, how many pages it has at least. A public
+# site (Site) runs nowhere locally: its project and config are Scraper.Sites/<Project>.
 $targets = @{
     'test-site'     = @{ Project = 'Site.UITests'; Start = 'index.html'; MinPages = 4; Counters = $true; Blazor = $false }
     'blazor-sample' = @{ Project = 'BlazorSample.UITests'; Start = ''; MinPages = 3; Counters = $false; Blazor = $true }
+    'plain'         = @{ Project = 'Brinell.Html.Plain'; Site = $true; MinCaptures = 1 }
+    'react'         = @{ Project = 'Brinell.Html.React'; Site = $true; MinCaptures = 2 }
+    'vue2'          = @{ Project = 'Brinell.Html.Vue2'; Site = $true; MinCaptures = 2 }
+    'blazor'        = @{ Project = 'Brinell.Html.Blazor'; Site = $true; MinCaptures = 2; Blazor = $true }
 }
 $spec = $targets[$Target]
+
+# Words no click on a public site may carry: a check of Explore's judge from outside it.
+$dangerous = '\b(log ?out|sign ?out|delete|remove|save|submit|send|pay|checkout|buy|order|confirm|approve|reject|import|upload|reset)\b'
 
 function Invoke-Build([string]$project) {
     $out = & dotnet build (Join-Path $root $project) -v:q -nologo /nr:false 2>&1
@@ -86,6 +118,13 @@ function Get-FreePort {
 
 # Starts the target app; its process and base URL.
 function Start-App {
+    if ($spec.Site) {
+        $config = Get-Content (Join-Path $root 'Scraper.Sites' $spec.Project 'scraper.config.md') -Raw
+        if ($config -notmatch '\| StartUrl \| (?<url>\S+) \|') { throw "No StartUrl in $($spec.Project)'s scraper.config.md." }
+        $url = $Matches.url
+        try { $status = (Invoke-WebRequest $url -TimeoutSec 20 -SkipHttpErrorCheck).StatusCode } catch { $status = 0 }
+        return @{ Process = $null; Url = $url; Down = ($status -lt 200 -or $status -ge 400); Status = $status }
+    }
     if ($Target -eq 'test-site') {
         $dll = Join-Path $root 'testsnew/Brinell.Scraper.TestSite/bin/Debug/net10.0/Brinell.Scraper.TestSite.dll'
         $info = [System.Diagnostics.ProcessStartInfo]::new('dotnet', "`"$dll`"")
@@ -110,18 +149,12 @@ function Start-App {
 }
 
 function Stop-App($app) {
-    if ($null -eq $app -or $app.Process.HasExited) { return }
+    if ($null -eq $app -or $null -eq $app.Process -or $app.Process.HasExited) { return }
     try { $app.Process.StandardInput.Close() } catch { }
     if (-not $app.Process.WaitForExit(5000)) { $app.Process.Kill($true) }
 }
 
-# A new UI test project for the target in the run's folder, restored from nuget.org as Brinell is.
-function New-TargetProject([string]$folder, [string]$url) {
-    $project = Join-Path $folder 'tests' $spec.Project
-    New-Item -ItemType Directory -Force $project | Out-Null
-    Copy-Item (Join-Path $root 'nuget.config') (Join-Path $folder 'nuget.config')
-    $references = @("<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Html/Brinell.Html.csproj')`" />")
-    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Blazor/Brinell.Blazor.csproj')`" />" }
+function Write-Project([string]$project, [string[]]$references) {
     @"
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -135,6 +168,23 @@ function New-TargetProject([string]$folder, [string]$url) {
   </ItemGroup>
 </Project>
 "@ | Set-Content (Join-Path $project "$($spec.Project).csproj")
+}
+
+# A new UI test project for the target in the run's folder, restored from nuget.org as Brinell is.
+function New-TargetProject([string]$folder, [string]$url) {
+    $project = Join-Path $folder 'tests' $spec.Project
+    New-Item -ItemType Directory -Force $project | Out-Null
+    Copy-Item (Join-Path $root 'nuget.config') (Join-Path $folder 'nuget.config')
+    $references = @("<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Html/Brinell.Html.csproj')`" />")
+    if ($spec.Site) {
+        # The site's own config, as committed: the loop's copy changes nothing in Scraper.Sites.
+        if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Blazor/Brinell.Blazor.csproj')`" />" }
+        Write-Project $project $references
+        Copy-Item (Join-Path $root 'Scraper.Sites' $spec.Project 'scraper.config.md') (Join-Path $project 'scraper.config.md')
+        return $project
+    }
+    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Blazor/Brinell.Blazor.csproj')`" />" }
+    Write-Project $project $references
 
     $explore = @('| DelayMs | 50 |')
     $sections = @()
@@ -215,7 +265,8 @@ function Get-Files([string]$folder) {
 
 Write-Host "scrape-loop: $Target, agent $Agent, profile $Profile, $Repeat run(s) into $OutDir"
 Invoke-Build 'tools/Brinell.Bdd.LanguageServer/Brinell.Bdd.LanguageServer.csproj'
-if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Brinell.Scraper.TestSite/Brinell.Scraper.TestSite.csproj' } else { Invoke-Build 'samples/Brinell.Samples.Blazor.App/Brinell.Samples.Blazor.App.csproj' }
+if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Brinell.Scraper.TestSite/Brinell.Scraper.TestSite.csproj' }
+elseif (-not $spec.Site) { Invoke-Build 'samples/Brinell.Samples.Blazor.App/Brinell.Samples.Blazor.App.csproj' }
 $server = Join-Path $root 'tools/Brinell.Bdd.LanguageServer/bin/Debug/net10.0/Brinell.Bdd.LanguageServer.dll'
 $repoBefore = & git -C $root status --porcelain
 
@@ -227,6 +278,7 @@ for ($run = 1; $run -le $Repeat; $run++) {
     $app = $null
     $explored = $null
     $counters = $null
+    $siteDown = $false
     function Add-Stage([string]$name, [bool]$passed, [string]$detail, [datetime]$started) {
         $stages[$name] = [ordered]@{ Passed = $passed; Detail = $detail; Seconds = [math]::Round(((Get-Date) - $started).TotalSeconds, 1) }
         $mark = if ($passed) { 'ok  ' } else { 'FAIL' }
@@ -235,6 +287,12 @@ for ($run = 1; $run -le $Repeat; $run++) {
     try {
         $t = Get-Date
         $app = Start-App
+        if ($app.Down) {
+            # A public site that does not answer says nothing about the Scraper.
+            $siteDown = $true
+            Add-Stage 'App' $true "site down: $($app.Url) answered $(if ($app.Status) { $app.Status } else { 'nothing' })" $t
+            throw 'stop'
+        }
         $project = New-TargetProject $folder $app.Url
         Add-Stage 'App' $true "$($app.Url)" $t
 
@@ -242,10 +300,22 @@ for ($run = 1; $run -le $Repeat; $run++) {
         $explore = Invoke-Scrape @('explore', '--solution', $folder, '--project', $spec.Project, '--headless', '--yes')
         $explored = $explore.Json
         $pages = if ($explored) { @($explored.captures | ForEach-Object page | Sort-Object -Unique).Count } else { 0 }
-        $ok = $explore.Exit -eq 0 -and $pages -ge $spec.MinPages
-        Add-Stage 'Explore' $ok "$(if ($explored) { "$($explored.stop): $($explored.stopDetail)" } else { $explore.Text }) $pages pages (at least $($spec.MinPages)), $(if ($explored) { "$($explored.captures.Count) captures, $($explored.clicks) clicks, $($explored.skipped.Count) skipped, $($explored.blocked.Count) blocked" })" $t
+        # A public site is one page: what counts is reaching its states (MaxPages and MaxMinutes are its budget, not a failure).
+        $ok = if ($spec.Site) { $explore.Exit -eq 0 -and $explored.captures.Count -ge $spec.MinCaptures }
+              else { $explore.Exit -eq 0 -and $pages -ge $spec.MinPages }
+        $least = if ($spec.Site) { "at least $($spec.MinCaptures) captures" } else { "at least $($spec.MinPages)" }
+        Add-Stage 'Explore' $ok "$(if ($explored) { "$($explored.stop): $($explored.stopDetail)" } else { $explore.Text }) $pages pages ($least), $(if ($explored) { "$($explored.captures.Count) captures, $($explored.clicks) clicks, $($explored.skipped.Count) skipped, $($explored.blocked.Count) blocked" })" $t
         if (-not $ok) { throw 'stop' }
 
+        if ($spec.Site) {
+            # No counters on a public site: every click's label is checked against the danger words here,
+            # outside Explore's judge, and what was blocked is listed.
+            $t = Get-Date
+            $clicked = @($explored.captures | ForEach-Object via | Where-Object { $_ -match "^click '(?<label>.*)' on " } | ForEach-Object { $Matches.label })
+            $bad = @($clicked | Where-Object { $_ -match $dangerous })
+            Add-Stage 'Guards' ($bad.Count -eq 0) "$($clicked.Count) clicked$(if ($bad.Count) { ", with a danger word: $($bad -join ', ')" } else { ', none with a danger word' }); $($explored.blocked.Count) requests blocked" $t
+            if ($bad.Count) { throw 'stop' }
+        }
         if ($spec.Counters) {
             $t = Get-Date
             $counters = Invoke-RestMethod "$($app.Url)_counters"
@@ -293,7 +363,8 @@ for ($run = 1; $run -le $Repeat; $run++) {
         Stop-App $app
     }
     $runs += [ordered]@{
-        Run = $run; Folder = $folder; Passed = -not ($stages.Values | Where-Object { -not $_.Passed }) -and $stages.Contains('Verify')
+        Run = $run; Folder = $folder; SiteDown = $siteDown
+        Passed = $siteDown -or (-not ($stages.Values | Where-Object { -not $_.Passed }) -and $stages.Contains('Verify'))
         Stages = $stages; Counters = $counters
         Explore = if ($explored) { [ordered]@{ Stop = $explored.stop; Captures = @($explored.captures); Skipped = @($explored.skipped); Blocked = @($explored.blocked); Report = $explored.report } } else { $null }
     }
@@ -305,7 +376,7 @@ $report = [ordered]@{ Target = $Target; Agent = $Agent; Profile = $Profile; Turn
 $report | ConvertTo-Json -Depth 12 | Set-Content (Join-Path $OutDir 'loop-report.json')
 $md = @("# Scrape loop: $Target", '', "Agent $Agent, profile $Profile$(if ($TurnOff) { ", $TurnOff turned off on purpose" }), $Repeat run(s): **$(if ($passed) { 'passed' } else { 'FAILED' })**.", '')
 foreach ($r in $runs) {
-    $md += "## Run $($r.Run): $(if ($r.Passed) { 'passed' } else { 'FAILED' })", '', '| Stage | | Seconds | Detail |', '| --- | --- | --- | --- |'
+    $md += "## Run $($r.Run): $(if ($r.SiteDown) { 'site down' } elseif ($r.Passed) { 'passed' } else { 'FAILED' })", '', '| Stage | | Seconds | Detail |', '| --- | --- | --- | --- |'
     foreach ($name in $r.Stages.Keys) {
         $s = $r.Stages[$name]
         $md += "| $name | $(if ($s.Passed) { 'ok' } else { '**fail**' }) | $($s.Seconds) | $(($s.Detail -replace '\|', '\|') -replace "`r?`n", ' ') |"
