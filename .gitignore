@@ -455,3 +455,6 @@ FodyWeavers.xsd
 
 # Local test run output
 test-output.txt
+
+# Public sites' recordings (sites-plan Q1): their content is not ours
+Scraper.Sites/*/Recordings/
