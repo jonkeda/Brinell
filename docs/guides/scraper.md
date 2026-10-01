@@ -222,7 +222,15 @@ pwsh tools/Scripts/scrape-loop.ps1 -Target test-site
 pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Profile test-tenant -Repeat 3
 pwsh tools/Scripts/scrape-loop.ps1 -Target blazor-sample
 pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Agent copilot
+pwsh tools/Scripts/scrape-loop.ps1 -Target sites -Agent none
 ```
+
+The targets: `test-site` and `blazor-sample` run locally. `plain`, `react`, `vue2` and `blazor` are
+one public page each (the-internet, DemoQA, Element UI, MudBlazor), from the projects in
+[Scraper.Sites](../../Scraper.Sites/README.md), and `sites` runs the four with one summary. A public
+site that does not answer is reported as site down, not a failure. It has no counters, so its
+Guards stage checks every clicked element's label against the danger words, outside Explore's
+judge.
 
 | Stage | Does | Fails when |
 | --- | --- | --- |
@@ -231,7 +239,7 @@ pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Agent copilot
 | Guards | reads the test site's counters | `careful`: any counter moved. `test-tenant`: anything but delete and update moved, or those were not reached |
 | Draft | `scrape draft` | a draft does not build |
 | Agent | Copilot CLI or Claude Code with only the Brinell MCP server's tools, to make controls and better names; Copilot CLI by default; skipped for `-Agent none` | `check_code` fails, or it ran past `-AgentMinutes` |
-| Verify | `scrape verify` | a member is not found, or found more than once |
+| Verify | `scrape verify` | a member is not found, or found more than once. A member of the project's own control (`new(this, "Elements")`) is not read: its control makes its locator |
 
 Each run works on a new project under `TestResults/scrape-loop/<date>-<target>/`, never on the
 repository, and writes `loop-report.md` and `loop-report.json` there even when a stage fails.

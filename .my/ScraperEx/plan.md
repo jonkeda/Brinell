@@ -220,6 +220,8 @@ site, not read from its markup: step 0 confirms it.
 | Blazor | [Fluent UI Blazor](https://www.fluentui-blazor.net/) | Blazor, web components | Shadow DOM: the capture script has to look into it |
 
 One per framework for step 10: the-internet, react-admin demo, vue-element-admin, MudBlazor docs.
+Explored and in the loop since 2026-10-01, one page each without a login (the-internet, DemoQA,
+Element UI, MudBlazor): [sites-plan.md](sites-plan.md) and `Scraper.Sites/`.
 
 What these sites ask of the design, before step 0:
 
