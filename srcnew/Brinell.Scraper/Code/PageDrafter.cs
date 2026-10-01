@@ -73,14 +73,15 @@ public static class PageDrafter
             .Select(x => new ShownAfter(x.Suggestion, x.Capture.Event.DisplayName))
             .ToArray();
 
-        var members = Unique(opened.Where(m => m.Stable).ToList(), className);
+        var members = Unique(opened.Where(m => m.Stable && !Containers.Contains(m.Control)).ToList(), className);
         var unstable = opened.Where(m => !m.Stable).ToArray();
+        var containers = opened.Where(m => m.Stable && Containers.Contains(m.Control)).ToArray();
         var header = new ScrapedHeader { Page = page.Key, From = $"{basis.Session}/{basis.Event.Snapshot}", Hash = SnapshotFile.ContentHash(index.Read(basis)) };
         var path = Path.Combine(project.Config.PagesFolder, className + Extension);
-        return new PageDraft(page.Key, className, path, Code(project, className, header, members, unstable, afterClick, blazor), members, unstable) { AfterClick = afterClick };
+        return new PageDraft(page.Key, className, path, Code(project, className, header, members, unstable, containers, afterClick, blazor), members, unstable) { AfterClick = afterClick };
     }
 
-    private static string Code(ScrapeProject project, string className, ScrapedHeader header, IReadOnlyList<ControlSuggestion> members, IReadOnlyList<ControlSuggestion> unstable, IReadOnlyList<ShownAfter> afterClick, bool blazor)
+    private static string Code(ScrapeProject project, string className, ScrapedHeader header, IReadOnlyList<ControlSuggestion> members, IReadOnlyList<ControlSuggestion> unstable, IReadOnlyList<ControlSuggestion> containers, IReadOnlyList<ShownAfter> afterClick, bool blazor)
     {
         var baseClass = blazor ? "BlazorPageObjectBase" : "HtmlPageObjectBase";
         var namespaces = new SortedSet<string>(StringComparer.Ordinal) { "Brinell.Core.Locators", "Brinell.Html.Interfaces", blazor ? "Brinell.Blazor.Pages" : "Brinell.Html.Pages" };
@@ -114,6 +115,13 @@ public static class PageDrafter
             foreach (var m in unstable)
                 code.AppendLine(CultureInfo.InvariantCulture, $"    // {m.Control} {m.Name}: {m.Locator} ({m.Why})");
         }
+        if (containers.Count > 0)
+        {
+            code.AppendLine();
+            code.AppendLine("    // Not drafted: a container is a control of its own. Make one deriving from it (the scrape-pages skill), then add the member.");
+            foreach (var m in containers)
+                code.AppendLine(CultureInfo.InvariantCulture, $"    // {m.Control}<TParent, TScope> {m.Name}: {m.Locator}");
+        }
         if (afterClick.Count > 0)
         {
             code.AppendLine();
@@ -124,6 +132,9 @@ public static class PageDrafter
         code.AppendLine("}");
         return code.ToString();
     }
+
+    // Controls a page cannot use as they are: each is the base of a control made for its app.
+    private static readonly HashSet<string> Containers = new(StringComparer.Ordinal) { "TabContainerControl" };
 
     // What a page object has already: a member of that name would hide it.
     private static readonly string[] Reserved =

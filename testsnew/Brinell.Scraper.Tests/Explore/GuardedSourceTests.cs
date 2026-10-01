@@ -31,6 +31,19 @@ public sealed class GuardedSourceTests : IAsyncLifetime
         _source.Page!.EvaluateAsync<int>("([m, p]) => fetch(p, { method: m }).then(r => r.status, () => -1)", new[] { method, path });
 
     [Fact]
+    public async Task Only_the_server_s_cookies_are_watched_for_a_sign_out_not_a_script_s()
+    {
+        await StartAsync(_site.Url("index.html"));
+        await _source.Page!.Context.AddCookiesAsync(
+        [
+            new Cookie { Name = "session", Value = "1", Url = _site.Url(""), HttpOnly = true },
+            new Cookie { Name = "_gat", Value = "1", Url = _site.Url("") },
+        ]);
+
+        Assert.Equal(["session"], await _source.CookieNamesAsync());
+    }
+
+    [Fact]
     public async Task A_post_is_blocked_by_default_and_never_reaches_the_site()
     {
         await StartAsync(_site.Url("index.html"));

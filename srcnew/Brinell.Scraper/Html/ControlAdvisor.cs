@@ -98,10 +98,17 @@ public static partial class ControlAdvisor
         "RangeInputControl", "SelectControl", "TabContainerControl", "TableControl", "TextAreaControl", "TextInputControl", "TimeInputControl",
     };
 
+    private const int MaxLabel = 50;
+
     private static (string Locator, bool Stable, string Why) LocatorOf(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, int[] documents)
     {
         var document = documents[node.Number];
         bool Unique(Func<ScrapeNode, bool> match) => snapshot.Nodes.Count(n => documents[n.Number] == document && match(n)) == 1;
+        // :has-text, which ByLinkText and the text locators map to, matches a part of the text, any case:
+        // "Links" also finds "Broken Links - Images".
+        static bool Has(string? text, string part) => text?.Contains(part, StringComparison.OrdinalIgnoreCase) == true;
+        // A label is short; a text this long is content (an ad, a teaser) that changes.
+        static bool Label(string? text) => text is { Length: > 0 and <= MaxLabel };
 
         foreach (var attribute in testIds)
         {
@@ -114,13 +121,13 @@ public static partial class ControlAdvisor
             return ($"Locator.ByCss({Quote($"{node.Type}[aria-label='{name}']")})", true, "its accessible name");
         if (node.Attribute("name") is { Length: > 0 } formName && Unique(n => n.Attribute("name") == formName))
             return ($"Locator.ByName({Quote(formName)})", true, "its name attribute");
-        if (node.Type == "a" && TextOf(snapshot, node) is { Length: > 0 } linkText && Unique(n => n.Type == "a" && TextOf(snapshot, n) == linkText))
+        if (node.Type == "a" && TextOf(snapshot, node) is { } linkText && Label(linkText) && Unique(n => n.Type == "a" && Has(TextOf(snapshot, n), linkText)))
             return ($"Locator.ByLinkText({Quote(linkText)})", true, "its link text");
-        if (node.Type is "button" && TextOf(snapshot, node) is { Length: > 0 } buttonText && Unique(n => n.Type == "button" && TextOf(snapshot, n) == buttonText))
+        if (node.Type is "button" && TextOf(snapshot, node) is { } buttonText && Label(buttonText) && Unique(n => n.Type == "button" && Has(TextOf(snapshot, n), buttonText)))
             return ($"Locator.ByCss({Quote($"button:has-text('{buttonText}')")})", true, "its text");
         if (node.Attribute("placeholder") is { Length: > 0 } placeholder && Unique(n => n.Attribute("placeholder") == placeholder))
             return ($"Locator.ByCss({Quote($"{node.Type}[placeholder='{placeholder}']")})", true, "its placeholder");
-        if (Headings.Contains(node.Type) && node.Text is { Length: > 0 } heading && Unique(n => n.Type == node.Type && n.Text == heading))
+        if (Headings.Contains(node.Type) && node.Text is { Length: > 0 } heading && Unique(n => n.Type == node.Type && Has(n.Text, heading)))
             return ($"Locator.ByCss({Quote($"{node.Type}:has-text('{heading}')")})", true, "its text");
         var stableClass = node.Attribute("class")?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(c => IsStableClass(c) && Unique(n => HasClass(n, c) && n.Type == node.Type));
         if (stableClass is not null)

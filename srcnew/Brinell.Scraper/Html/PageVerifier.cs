@@ -32,10 +32,10 @@ public static class PageVerifier
             var location = recorded.Latest.Event.Location;
             try
             {
-                await page.GotoAsync(location).ConfigureAwait(false);
+                await page.GotoAsync(location, PlaywrightScrapeSource.Opening).ConfigureAwait(false);
                 await settle().ConfigureAwait(false);
             }
-            catch (PlaywrightException e)
+            catch (Exception e) when (e is PlaywrightException or TimeoutException)
             {
                 pages.Add(new VerifiedPage(recorded.Key, code.Name, location, [], $"Could not open it: {e.Message.ReplaceLineEndings(" ")}"));
                 continue;

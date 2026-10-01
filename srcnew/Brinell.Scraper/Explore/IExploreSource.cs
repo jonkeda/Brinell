@@ -29,6 +29,9 @@ public interface IExploreSource : IScrapeSource
     /// <summary>The nodes of the last capture a CSS selector matches, in any frame.</summary>
     Task<IReadOnlySet<int>> MatchAsync(string selector, CancellationToken cancellationToken = default);
 
-    /// <summary>The names of the cookies the browser holds for the page.</summary>
+    /// <summary>
+    /// The names of the server's cookies (<c>HttpOnly</c>) the browser holds for the page: a sign-in lives in
+    /// one, while a script's (analytics, a one-minute <c>_gat</c>) come and go.
+    /// </summary>
     Task<IReadOnlyList<string>> CookieNamesAsync(CancellationToken cancellationToken = default);
 }

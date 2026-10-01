@@ -127,6 +127,29 @@ public sealed class ControlAdvisorTests
     }
 
     [Fact]
+    public void A_text_is_unique_only_when_no_other_text_has_it_in_part_as_has_text_matches()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "a", "Links", null, ("href", "/links")), N(3, 1, "a", "Broken Links - Images", null, ("href", "/broken")),
+            N(4, 1, "button", "Save"), N(5, 1, "button", "Save draft"), N(6, 1, "h2", "Orders"), N(7, 1, "h2", "Open orders"));
+
+        Assert.False(Of(page, 2).Stable); // "Links" finds "Broken Links - Images" too
+        Assert.Equal("Locator.ByLinkText(\"Broken Links - Images\")", Of(page, 3).Locator);
+        Assert.False(Of(page, 4).Stable);
+        Assert.Equal("Locator.ByCss(\"button:has-text('Save draft')\")", Of(page, 5).Locator);
+        Assert.False(Of(page, 6).Stable);
+    }
+
+    [Fact]
+    public void A_link_s_long_text_is_content_not_a_label_to_find_it_by()
+    {
+        var ad = "Organise tournaments in CS2, Minecraft and more. With anti-DDoS, no lag.";
+        var page = Page(N(1, 0, "body"), N(2, 1, "a", ad, null, ("href", "https://ads.example/")));
+
+        Assert.False(Of(page, 2).Stable);
+    }
+
+    [Fact]
     public void A_node_in_a_frame_is_declared_on_the_frame_s_member()
     {
         var page = Page(N(1, 0, "body"),

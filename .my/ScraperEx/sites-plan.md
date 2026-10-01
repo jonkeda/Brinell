@@ -76,11 +76,22 @@ One commit per step; each from step 3 on ends with a loop run, its report in the
 | --- | --- | --- |
 | 1 | `Within` in `ExploreSettings`, the config reader and writer, the judge and Explorer (a link outside is skipped, with the reason) | **Done.** `ExploreSettings.Within`, read from `## Explore`; the judge skips a link outside it ("outside Within … (the config)"), a path or a hash route; the summary's `links` line; the server's config data and the settings tab's field. The account page explored `Within: /pages/account.html` stays on it and its states. 2 tests, 1 extended |
 | 2 | The four projects under `Scraper.Sites/` (csproj, config), and `.gitignore` for their sessions | **Done.** Each references `Brinell.Html` (MudBlazor's `Brinell.Blazor` too, with platform `html`: a third-party app sets no Brinell busy signal) and builds empty; a README with the commands; `Scraper.Sites/*/Recordings/` ignored |
-| 3 | Explore over each, by hand (`scrape explore --headless --yes`), then `scrape draft` and `scrape verify` | per site: captures, clicks, skipped (the-internet's `delete` / `edit` among them), blocked; the drafts build; members found once. Fixes found go in this step |
+| 3 | Explore over each, by hand (`scrape explore --headless --yes`), then `scrape draft` and `scrape verify` | **Done.** the-internet: 1 capture, 0 clicks, `edit`/`delete` left (same-page anchors), 6 of 6 found. DemoQA: 4 captures, 3 tabs clicked, the disabled tab left, 8 analytics POSTs blocked, 36 of 36. Element UI: 3 captures, 3 clicks (MaxMinutes), 81 of 81. MudBlazor: 5 captures, 4 clicks (MaxPages), 93 of 93. All drafts build. **Fixed:** `ByLinkText` (and `:has-text`) match part of a text, so a text is unique only when no other has it in part (DemoQA's "Links" found "Broken Links - Images"); `TabContainerControl` is a base to derive from, so a container is listed to make a control of, not drafted (MudBlazor's draft did not build); a page opens at `DOMContentLoaded` and the capture waits for `load` and the network within one `SettleLimit` (Element UI's `load` never fires: it waited 30 s and crashed); a browser that cannot open the app is exit 2 with a message, not a crash; only `HttpOnly` cookies are watched for a sign-out (Google's one-minute `_gat` stopped Element UI as "signed out"); a link or button text over 50 characters is content, not a locator (MudBlazor's rotating ad). 6 tests. The loop on the test site (careful, test tenant) and the Blazor sample passes as before |
 | 4 | The loop's public-site targets and the `sites` target (section 4) | `-Target sites -Agent none` passes; then once with Copilot |
 | 5 | The guide's "The loop" section gets the sites; plan.md section 10 points here | links valid |
 
-## 6. Questions
+## 6. Found, not fixed
+
+| Found | Where | Proposal |
+| --- | --- | --- |
+| A link outside `Within` is reported as "unsafe", which reads as alarming | DemoQA: 33 of 36 skipped | its own verdict, "out of scope", listed apart |
+| A sort header with a script handler only (jQuery tablesorter: no role, no `aria-sort`, no `onclick`) is not seen as clickable, so neither clicked nor listed | the-internet `/tables` | a header in a table's `thead` with `cursor: pointer` (the capture would keep the computed cursor) is a sort header |
+| A table's per-row links are listed one by one as positions | the-internet: 16 of 17 left out | a row control for the agent (Draft already says "make a control" for the repeated pattern) |
+| Element UI takes about 40 s a step (a slow analytics script keeps it from settling, and each click replays from the page) | Element UI | `AllowRequests`-like `IgnoreRequests` for third-party hosts the settle need not wait for; or a shorter settle for public sites |
+| A locale in the route names the page (`EnUsComponentTabsPage`) | Element UI | locale segments (`en-US`) left out of class names, as `pages` is |
+| `ByLinkText` and `ByPartialLinkText` map to the same `a:has-text(...)` in `Brinell.Html.Playwright`, so a "link text" is never exact | the framework | `ByLinkText` exact (a framework change: every Html test using it) |
+
+## 7. Questions
 
 | # | Question | Decided (2026-10-01) |
 | --- | --- | --- |

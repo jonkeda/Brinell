@@ -83,7 +83,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
             DialogDismissed?.Invoke(this, dialog.Message);
             _ = dialog.DismissAsync();
         };
-        await _page.GotoAsync(start.Location).ConfigureAwait(false);
+        await _page.GotoAsync(start.Location, Opening).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -197,10 +197,10 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     {
         try
         {
-            await Started().GotoAsync(url).ConfigureAwait(false);
+            await Started().GotoAsync(url, Opening).ConfigureAwait(false);
             return true;
         }
-        catch (PlaywrightException)
+        catch (Exception e) when (e is PlaywrightException or TimeoutException)
         {
             return false; // blocked by a guard, or the site did not answer
         }
@@ -247,7 +247,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     {
         var page = Started();
         var cookies = await _context!.CookiesAsync([page.Url]).ConfigureAwait(false);
-        return cookies.Select(c => c.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        return cookies.Where(c => c.HttpOnly).Select(c => c.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>How long a click waits for its element to be visible and still.</summary>
@@ -311,7 +311,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
         if (_page is null || opened == _page) return;
         var url = await TryWaitForUrlAsync(opened).ConfigureAwait(false);
         await opened.CloseAsync().ConfigureAwait(false);
-        if (url is not null) await _page.GotoAsync(url).ConfigureAwait(false);
+        if (url is not null) await _page.GotoAsync(url, Opening).ConfigureAwait(false);
     }
 
     private static async Task<string?> TryWaitForUrlAsync(IPage page)
@@ -329,25 +329,36 @@ public sealed class PlaywrightScrapeSource : IExploreSource
 
     private static async Task SettleAsync(IPage page, CancellationToken cancellationToken)
     {
-        await page.WaitForLoadStateAsync(LoadState.Load).ConfigureAwait(false);
         // An app still fetching its script bundle changes nothing in the page, so the page can look
         // quiet before it renders (react-admin's demo does): the network first.
-        await TryWaitForNetworkIdleAsync(page).ConfigureAwait(false);
+        await TryWaitForLoadedAsync(page).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         // Not settled within the limit (an animation that never stops): capture what is there.
         await TryEvaluateAsync<bool>(page.MainFrame, SettleScript, new { quiet = (int)Quiet.TotalMilliseconds, max = (int)SettleLimit.TotalMilliseconds })
             .ConfigureAwait(false);
     }
 
-    private static async Task TryWaitForNetworkIdleAsync(IPage page)
+    // A page is open once its document is: a sub-resource that never finishes (an ad, a font) would
+    // keep "load" from firing. The capture waits for the network and the DOM to settle after.
+    internal static readonly PageGotoOptions Opening = new() { WaitUntil = WaitUntilState.DOMContentLoaded };
+
+    // "load", then the network idle, within one SettleLimit together: a page with a script that never
+    // finishes (a slow analytics script) or that polls reaches neither, and the quiet DOM decides alone.
+    private static async Task TryWaitForLoadedAsync(IPage page)
     {
-        try
+        var deadline = DateTime.UtcNow + SettleLimit;
+        foreach (var state in new[] { LoadState.Load, LoadState.NetworkIdle })
         {
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = (float)SettleLimit.TotalMilliseconds }).ConfigureAwait(false);
-        }
-        catch (TimeoutException)
-        {
-            // A page that polls or streams is never idle: the quiet DOM decides alone.
+            var left = deadline - DateTime.UtcNow;
+            if (left <= TimeSpan.Zero) return;
+            try
+            {
+                await page.WaitForLoadStateAsync(state, new() { Timeout = (float)left.TotalMilliseconds }).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                return;
+            }
         }
     }
 

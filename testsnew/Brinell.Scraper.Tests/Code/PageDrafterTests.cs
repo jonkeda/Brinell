@@ -98,4 +98,25 @@ public sealed class PageDrafterTests : IDisposable
 
         Assert.Equal(["Url2", "UrlPage2", "Name2"], draft.Members.Select(m => m.Name));
     }
+
+    [Fact]
+    public void A_container_is_listed_to_make_a_control_of_not_drafted_as_a_member()
+    {
+        var folder = Path.Combine(_solution, "Shop.UITests");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, ScraperConfig.FileName), "## App\n\n| Field | Value |\n| --- | --- |\n| StartUrl | https://shop.example/ |\n");
+        var project = ScrapeProject.Open(folder);
+        project.StartSession("s", DateTimeOffset.UnixEpoch).AddPage(new ScrapeSnapshot
+        {
+            Platform = "html", Location = "https://shop.example/tabs", Title = "Tabs",
+            Nodes = [N(1, 0, "body"), N(2, 1, "div", null, ("data-testid", "tabs")) with { Role = "tablist" }, N(3, 2, "button", "One", ("data-testid", "one"), ("type", "button"))],
+        });
+        var index = project.Index();
+
+        var draft = PageDrafter.Draft(project, index, index.Pages[0], "TabsPage");
+
+        Assert.Equal(["One"], draft.Members.Select(m => m.Name));
+        Assert.Contains("    // Not drafted: a container is a control of its own.", draft.Code);
+        Assert.Contains("    // TabContainerControl<TParent, TScope> Tabs: Locator.ByDataTestId(\"tabs\")", draft.Code);
+    }
 }

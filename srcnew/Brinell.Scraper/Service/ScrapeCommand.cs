@@ -41,6 +41,12 @@ public static class ScrapeCommand
             await errors.WriteLineAsync(e.Message).ConfigureAwait(false);
             return 2;
         }
+        catch (Exception e) when (e is Microsoft.Playwright.PlaywrightException or TimeoutException)
+        {
+            // The browser could not open the app: a site down or too slow, not a crash.
+            await errors.WriteLineAsync($"The browser could not open the app: {e.Message.ReplaceLineEndings(" ")}").ConfigureAwait(false);
+            return 2;
+        }
     }
 
     private static async Task<int> ExploreAsync(string[] args, TextReader input, TextWriter output, TextWriter errors, Func<string, IScrapeSource>? sourceFor, CancellationToken cancellationToken)
