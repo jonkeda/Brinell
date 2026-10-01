@@ -1,6 +1,6 @@
 # The Scraper, automatic: explore an app and draft its page objects
 
-Status: **built**: steps 1-11 done (2026-10-01; step 8's agent stage built, not yet run with an agent; step 9's owner checks not yet run). Decisions in section 8 and 9.
+Status: **built**: steps 1-11 done (2026-10-01; step 8's agent stage first run with Copilot in [sites-plan.md](sites-plan.md) step 4, not yet with Claude; step 9's owner checks not yet run). Decisions in section 8 and 9.
 Builds on [plan.md](plan.md) (the Scraper as built, AD-027) and [next-plan.md](next-plan.md).
 
 ## 1. What we want

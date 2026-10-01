@@ -338,13 +338,13 @@ for ($run = 1; $run -le $Repeat; $run++) {
             Add-Stage 'Agent' $true 'skipped (-Agent none)' $t
         } else {
             $before = Get-Files $project
-            $agent = Invoke-Agent $folder $project (Join-Path $folder 'agent.log')
+            $agentRun = Invoke-Agent $folder $project (Join-Path $folder 'agent.log')
             $after = Get-Files $project
             $changed = @($after.Keys | Where-Object { $before[$_] -ne $after[$_] }) + @($before.Keys | Where-Object { -not $after.ContainsKey($_) })
             $repoNow = & git -C $root status --porcelain
             $outside = Compare-Object @($repoBefore) @($repoNow) -PassThru
-            $ok = $agent.Passed -and -not $outside
-            Add-Stage 'Agent' $ok "$Agent changed $($changed.Count) file(s): $($changed -join ', '); $($agent.Detail)$(if ($outside) { "; wrote outside the project: $($outside -join ', ')" })" $t
+            $ok = $agentRun.Passed -and -not $outside
+            Add-Stage 'Agent' $ok "$Agent changed $($changed.Count) file(s): $($changed -join ', '); $($agentRun.Detail)$(if ($outside) { "; wrote outside the project: $($outside -join ', ')" })" $t
             if (-not $ok) { throw 'stop' }
             $check = & dotnet build $project -v:q -nologo /nr:false 2>&1
             if ($LASTEXITCODE -ne 0) { Add-Stage 'Agent build' $false (($check | Select-Object -Last 5) -join ' ') $t; throw 'stop' }
@@ -354,7 +354,8 @@ for ($run = 1; $run -le $Repeat; $run++) {
         $verify = Invoke-Scrape @('verify', '--solution', $folder, '--project', $spec.Project, '--headless')
         $members = if ($verify.Json) { @($verify.Json.pages | ForEach-Object { $_.members }) } else { @() }
         $failed = @($verify.Json.pages | ForEach-Object { $page = $_; $_.members | Where-Object { $_.verdict -in 'NotFound', 'Several' } | ForEach-Object { "$($page.className).$($_.name) $($_.verdict)" } })
-        Add-Stage 'Verify' ($verify.Exit -eq 0) "$($members.Count - $failed.Count) of $($members.Count) members found once$(if ($failed.Count) { "; $($failed -join ', ')" })" $t
+        $unread = @($members | Where-Object { $_.verdict -eq 'Unreadable' }).Count
+        Add-Stage 'Verify' ($verify.Exit -eq 0) "$($members.Count - $failed.Count - $unread) of $($members.Count) members found once$(if ($unread) { ", $unread made by the project's own controls, not read" })$(if ($failed.Count) { "; $($failed -join ', ')" })" $t
     }
     catch {
         if ($_.Exception.Message -ne 'stop') { $stages['Error'] = [ordered]@{ Passed = $false; Detail = $_.Exception.Message; Seconds = 0 }; Write-Host "  [$run] FAIL $($_.Exception.Message)" }

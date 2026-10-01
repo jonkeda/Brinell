@@ -21,7 +21,11 @@ public static class PageVerifier
     {
         var index = project.Index();
         var pages = new List<VerifiedPage>();
-        foreach (var code in ProjectCode.Read(project).Where(c => c.Project == project.Name && c.Kind == CodeKind.Page && c.Header?.Page is not null))
+        var all = ProjectCode.Read(project);
+        // The project's own controls: their constructor's arguments mean what the control says (a header's
+        // text), not a selector, so only Brinell's controls' arguments are looked up.
+        var own = all.Where(c => c.Kind != CodeKind.Page).Select(c => BaseName(c.Name)).ToHashSet(StringComparer.Ordinal);
+        foreach (var code in all.Where(c => c.Project == project.Name && c.Kind == CodeKind.Page && c.Header?.Page is not null))
         {
             var recorded = index.Page(code.Header!.Page!);
             if (recorded is null)
@@ -40,18 +44,20 @@ public static class PageVerifier
                 pages.Add(new VerifiedPage(recorded.Key, code.Name, location, [], $"Could not open it: {e.Message.ReplaceLineEndings(" ")}"));
                 continue;
             }
-            pages.Add(new VerifiedPage(recorded.Key, code.Name, location, await MembersAsync(page, code).ConfigureAwait(false), null));
+            pages.Add(new VerifiedPage(recorded.Key, code.Name, location, await MembersAsync(page, code, own).ConfigureAwait(false), null));
         }
         return new VerifyResult(pages);
     }
 
-    private static async Task<IReadOnlyList<VerifiedMember>> MembersAsync(IPage page, CodeClass code)
+    private static string BaseName(string type) => type.Split('<')[0].Split('.')[^1];
+
+    private static async Task<IReadOnlyList<VerifiedMember>> MembersAsync(IPage page, CodeClass code, IReadOnlySet<string> own)
     {
         var byName = code.Members.ToDictionary(m => m.Name, StringComparer.Ordinal);
         var found = new List<VerifiedMember>();
         foreach (var member in code.Members.Where(m => m.Locator is not null))
         {
-            var lookup = Lookup(page, member, byName, 0);
+            var lookup = own.Contains(BaseName(member.Type)) ? null : Lookup(page, member, byName, 0);
             if (lookup is null)
             {
                 found.Add(new VerifiedMember(member.Name, member.Locator!, -1, MemberVerdict.Unreadable));

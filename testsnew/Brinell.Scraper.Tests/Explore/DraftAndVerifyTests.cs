@@ -128,6 +128,39 @@ public sealed class DraftAndVerifyTests : IAsyncLifetime
         Assert.Contains(members, m => m.Name == "AnyTab" && m.Verdict == MemberVerdict.Several && m.Count == 2);
     }
 
+    [Fact]
+    public async Task A_member_of_the_project_s_own_control_is_not_read_as_a_selector()
+    {
+        await _service.DraftAsync(null);
+        File.WriteAllText(Path.Combine(_folder, "TabStrip.cs"), """
+            using Brinell.Core.Locators;
+            using Brinell.Html.Controls;
+            using Brinell.Html.Interfaces;
+
+            namespace Shop.UITests;
+
+            public sealed class TabStrip<TParent>(IHtmlScope<TParent> parent, string label)
+                : ContainerBase<TParent, TabStrip<TParent>>(parent, Locator.ByCss($"[aria-label='{label}']"))
+                where TParent : IHtmlScope<TParent>
+            {
+                public override TabStrip<TParent> Self => this;
+            }
+            """);
+        File.WriteAllText(Pages("AccountPage.cs"), """
+            namespace Shop.UITests.Pages;
+
+            public sealed partial class AccountPage
+            {
+                public TabStrip<AccountPage> Strip => new(this, "Account");
+            }
+            """);
+
+        var verified = await _service.VerifyAsync(null);
+
+        var strip = verified.Pages.Single(p => p.ClassName == "AccountPage").Members.Single(m => m.Name == "Strip");
+        Assert.Equal(MemberVerdict.Unreadable, strip.Verdict);
+    }
+
     private static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
