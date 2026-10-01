@@ -30,10 +30,11 @@ the active docs are rebuilt.
 Working directory: Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
-`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+`Brinell.sln` holds every project in the repository, in folders by area (a copy of
+`srcnew\Brinell.sln`, which the scripts and CI still use). The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
@@ -65,6 +66,8 @@ MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio
 | `srcnew/` | Active source projects |
 | `testsnew/` | Active unit, UI, and UAT tests |
 | `samples/` | Sample applications used by tests and demos |
+| `tools/` | The BDD language server, IDE extensions, and scripts |
+| `Scraper.Sites/` | What the Scraper makes of public sites, one page per technology |
 | `docs/` | Active documentation |
 | `docs2/` | Preserved previous documentation |
 | `.my/` | Plans for work in flight, indexed in `.my/README.md` |
