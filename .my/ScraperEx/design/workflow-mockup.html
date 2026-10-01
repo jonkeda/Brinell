@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scraper workflow mockup</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1e1e1e; --muted: #6b6b6b; --surface: #f3f3f3; --border: #d4d4d4;
+    --accent: #0e639c; --accent-fg: #ffffff; --done: #2e7d32; --attention: #b26a00; --failed: #c62828;
+    --font: "Segoe UI", system-ui, sans-serif; --mono: Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1e1e1e; --fg: #d4d4d4; --muted: #9d9d9d; --surface: #252526; --border: #3c3c3c;
+      --accent: #3794ff; --accent-fg: #0b0b0b; --done: #81c784; --attention: #ffb74d; --failed: #ef9a9a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1e1e; --fg: #d4d4d4; --muted: #9d9d9d; --surface: #252526; --border: #3c3c3c;
+    --accent: #3794ff; --accent-fg: #0b0b0b; --done: #81c784; --attention: #ffb74d; --failed: #ef9a9a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.45 var(--font); }
+  .demo { display: flex; gap: 8px; align-items: center; padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .demo button { font: inherit; }
+  .frame { max-width: 1100px; margin: 12px auto; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .frame.narrow { max-width: 420px; }
+  header { display: flex; gap: 8px; align-items: end; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .field { display: grid; gap: 2px; }
+  .field label { font-size: 11px; color: var(--muted); }
+  select, input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 3px; height: 26px; padding: 0 6px; }
+  button { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--border); border-radius: 3px; height: 26px; padding: 0 10px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+  button.link { background: none; border: none; color: var(--accent); padding: 0; height: auto; }
+  .next { margin-left: auto; display: flex; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 4px 4px 4px 10px; }
+  .next b { font-weight: 600; }
+  .strip { display: none; gap: 8px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); flex-wrap: wrap; }
+  .strip.on { display: flex; }
+  .strip .progress { color: var(--muted); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { opacity: 0.3; } }
+  .body { display: grid; grid-template-columns: 220px 1fr; min-height: 460px; }
+  nav { border-right: 1px solid var(--border); padding: 8px 0; }
+  .step { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; padding: 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .step:hover { background: var(--surface); }
+  .step[aria-current="true"] { background: var(--surface); border-left-color: var(--accent); }
+  .step .mark { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; border: 1px solid var(--border); color: var(--muted); }
+  .step.done .mark { background: var(--done); border-color: var(--done); color: var(--bg); }
+  .step.nextup .mark { border: 2px solid var(--accent); color: var(--accent); font-weight: 700; }
+  .step.attention .mark { background: var(--attention); border-color: var(--attention); color: var(--bg); }
+  .step .sub { grid-column: 2 / 4; font-size: 11px; color: var(--muted); margin-top: -4px; }
+  .badge { font-size: 11px; padding: 0 6px; border-radius: 8px; background: var(--accent); color: var(--accent-fg); }
+  .badge.warn { background: var(--attention); }
+  nav hr { border: none; border-top: 1px solid var(--border); margin: 8px 12px; }
+  nav .aside { padding: 4px 12px 4px 41px; cursor: pointer; color: var(--muted); }
+  nav .aside:hover { color: var(--fg); }
+  main { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+  main h2 { margin: 0; font-size: 16px; }
+  main h2 small { color: var(--muted); font-weight: normal; margin-left: 6px; }
+  .why { color: var(--muted); margin: -6px 0 0; }
+  .facts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fact { border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; min-width: 110px; }
+  .fact b { display: block; font-size: 18px; }
+  .fact span { color: var(--muted); font-size: 11px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--muted); font-weight: 600; }
+  code, pre { font-family: var(--mono); font-size: 12px; }
+  pre.summary { margin: 0; padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); white-space: pre-wrap; }
+  .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  details.more summary { cursor: pointer; color: var(--accent); }
+  details.more div { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+  .ok { color: var(--done); } .warn { color: var(--attention); } .bad { color: var(--failed); }
+  .intro { border: 1px dashed var(--accent); border-radius: 4px; padding: 8px 10px; }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 6px 12px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.on { opacity: 0.92; }
+  /* Narrow: a docked tool window. The step list becomes a row of chips. */
+  .frame.narrow .body { grid-template-columns: 1fr; }
+  .frame.narrow nav { border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+  .frame.narrow .step { grid-template-columns: auto; padding: 2px; border-left: none; }
+  .frame.narrow .step .label, .frame.narrow .step .sub, .frame.narrow .step .badge, .frame.narrow nav hr { display: none; }
+  .frame.narrow .step[aria-current="true"] .mark { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .frame.narrow nav .aside { padding: 2px 6px; }
+  .frame.narrow .next { margin-left: 0; width: 100%; justify-content: space-between; }
+  @media (max-width: 640px) { .body { grid-template-columns: 1fr; } nav { border-right: none; } }
+</style>
+</head>
+<body>
+<div class="demo">
+  <strong>Mockup</strong> (made-up data) ·
+  <label><input type="checkbox" id="narrow"> Narrow (docked tool window)</label> ·
+  <label>Theme <select id="theme"><option value="">system</option><option>light</option><option>dark</option></select></label> ·
+  <label>Project state <select id="scenario">
+    <option value="new">New project</option>
+    <option value="controls" selected>Recorded, controls to make</option>
+    <option value="changed">Verified, then the app changed</option>
+  </select></label>
+</div>
+
+<div class="frame" id="frame">
+  <header>
+    <div class="field">
+      <label for="project">Project</label>
+      <div style="display:flex;gap:4px"><select id="project"><option>Brinell.Html.React</option><option>Brinell.Html.Plain</option><option>Brinell.Blazor.UITests</option></select><button title="New scraped project" aria-label="New scraped project">+</button></div>
+    </div>
+    <div class="next" id="next"></div>
+  </header>
+  <div class="strip" id="strip">
+    <span class="pulse"></span><b>Exploring</b><span class="progress" id="progress">starting…</span>
+    <button>Capture</button><button>Pick</button><button id="stop">Stop</button>
+    <select><option>This page…</option><option>Add its host to Explore hosts</option><option>Never visit it</option></select>
+  </div>
+  <div class="body">
+    <nav id="steps" aria-label="Steps"></nav>
+    <main id="panel"></main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const steps = [
+  { n: 1, name: "Project" }, { n: 2, name: "Connect" }, { n: 3, name: "Collect pages" }, { n: 4, name: "Review" },
+  { n: 5, name: "Controls" }, { n: 6, name: "Page objects" }, { n: 7, name: "Verify" },
+];
+// Each scenario: per step its state (done, next, todo, attention), a sub line and a badge; the header's next action.
+const scenarios = {
+  new: {
+    states: ["done", "next", "todo", "todo", "todo", "todo", "todo"],
+    subs: ["", "", "", "", "", "", ""], badges: {},
+    next: { text: "Check that the Scraper can reach the app", step: 2 }, intro: true,
+  },
+  controls: {
+    states: ["done", "done", "done", "done", "next", "todo", "todo"],
+    subs: ["", "signed in", "1 page, 4 captures", "33 skipped, 5 blocked", "", "", ""], badges: { 5: "3" },
+    next: { text: "Make the 3 controls Draft asked for", step: 5 },
+  },
+  changed: {
+    states: ["done", "done", "attention", "done", "done", "attention", "attention"],
+    subs: ["", "signed in", "1 page changed", "", "1 control", "1 changed since", "6 not found"], badges: { 3: "1", 6: "1", 7: "6" },
+    next: { text: "Re-record the changed page, then update its page object", step: 3 }, warn: { 3: true, 6: true, 7: true },
+  },
+};
+let scenario = "controls", current = 5;
+
+const $ = id => document.getElementById(id);
+function toast(text) { const t = $("toast"); t.textContent = text; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1600); }
+function go(n) { current = n; render(); }
+
+function renderNav() {
+  const s = scenarios[scenario];
+  $("steps").innerHTML = steps.map((st, i) => {
+    const state = s.states[i];
+    const mark = state === "done" ? "✓" : state === "attention" ? "!" : st.n;
+    const badge = s.badges[st.n] ? `<span class="badge ${s.warn && s.warn[st.n] ? "warn" : ""}">${s.badges[st.n]}</span>` : "<span></span>";
+    return `<div class="step ${state === "next" ? "nextup" : state}" id="sc-step-${st.n}" role="button" tabindex="0" aria-current="${st.n === current}" data-step="${st.n}">
+      <span class="mark">${mark}</span><span class="label">${st.name}</span>${badge}
+      ${s.subs[i] ? `<span class="sub">${s.subs[i]}</span>` : ""}</div>`;
+  }).join("") + `<hr><div class="aside" data-aside="settings">Settings</div><div class="aside" data-aside="code">Code</div>`;
+  for (const el of document.querySelectorAll("[data-step]")) el.onclick = () => go(Number(el.dataset.step));
+  for (const el of document.querySelectorAll("[data-aside]")) el.onclick = () => { current = el.dataset.aside; render(); };
+  const n = s.next;
+  $("next").innerHTML = `<span>Next: <b>${n.text}</b></span><button class="primary" id="go">Go</button>`;
+  $("go").onclick = () => go(n.step);
+}
+
+const more = items => `<details class="more"><summary>More</summary><div>${items.map(i => `<button>${i}</button>`).join("")}</div></details>`;
+const footer = (n, skip) => `<div class="footer"><span>${skip ? `<button class="link" data-skip>Skip: ${skip}</button>` : ""}</span>${n < 7 ? `<button data-next>Next: ${steps[n].name} ▸</button>` : "<span></span>"}</div>`;
+
+const panels = {
+  1: () => `<h2>1 Project</h2><p class="why">The UI test project the page objects go into.</p>
+    <table><tr><th>Folder</th><td><code>Scraper.Sites/Brinell.Html.React</code></td></tr><tr><th>Platform</th><td>html</td></tr>
+    <tr><th>Start URL</th><td><code>https://demoqa.com/tabs</code></td></tr><tr><th>Namespace</th><td><code>Brinell.Html.React.Pages</code></td></tr></table>
+    <div class="actions"><button class="primary" id="sc-primary">New project…</button>${more(["Open scraper.config.md", "Add a config to an existing project"])}</div>${footer(1)}`,
+  2: () => `<h2>2 Connect</h2><p class="why">Can the Scraper reach the app, signed in, and may it go there?</p>
+    ${scenarios[scenario].intro ? `<div class="intro"><b>Three steps to page objects:</b> connect to the app, collect its pages, draft page objects. Each step says what to do next.</div>` : ""}
+    <table><tr><th>Start URL</th><td><code>https://demoqa.com/tabs</code></td></tr>
+    ${scenario === "new" ? `<tr><th>Last check</th><td class="warn">Not checked yet</td></tr>` : `<tr><th>Answered</th><td class="ok">200 in 0.3 s</td></tr><tr><th>Signed in</th><td class="ok">no sign-in needed</td></tr><tr><th>Host</th><td class="ok">demoqa.com is an Explore host</td></tr>`}</table>
+    <div class="actions"><button class="primary" id="sc-primary" data-check>Check the app</button>${more(["Open the browser to sign in", "Change the start URL", "Aliases", "Clear the browser profile"])}</div>${footer(2)}`,
+  3: () => `<h2>3 Collect pages</h2><p class="why">Explore visits the app's pages and states by itself, inside the guards below. Or record by hand.</p>
+    <pre class="summary">host        demoqa.com (an Explore host)
+clicks      ClickPolicy safe; danger words off: none
+requests    blocked: POST, PUT, PATCH, DELETE
+links       within /tabs
+budget      5 captures, 1 step deep, 2 min, 2000 ms between steps</pre>
+    ${scenario === "changed" ? `<p class="warn">! /tabs changed since its page object was made (2 nodes added, 1 removed). Explore again, or record it by hand.</p>` : ""}
+    <table><tr><th>Run</th><th>Captures</th><th>Clicks</th><th>Skipped</th><th>Blocked</th><th>Stopped</th></tr>
+    <tr><td>2026-10-01 explore</td><td>4</td><td>3</td><td>33</td><td>5</td><td>everything within reach</td></tr>
+    <tr><td>2026-10-01 dry run</td><td>1</td><td>0</td><td>36</td><td>2</td><td>dry run</td></tr></table>
+    <div class="actions"><label><input type="checkbox"> Dry run</label><button class="primary" id="sc-primary" data-explore>Explore</button>${more(["Record by hand…", "Explore settings", "Open explore.md"])}</div>${footer(3)}`,
+  4: () => `<h2>4 Review</h2><p class="why">What was recorded, and what Explore left alone. Nothing to do here unless something looks wrong.</p>
+    <div class="facts"><div class="fact"><b>1</b><span>page</span></div><div class="fact"><b>4</b><span>captures</span></div><div class="fact"><b>33</b><span>skipped</span></div><div class="fact"><b>5</b><span>requests blocked</span></div></div>
+    <table><tr><th>Page</th><th>Captures</th><th>Page object</th><th></th></tr>
+    <tr><td><code>/tabs</code> Tabs</td><td>start, What, Origin, Use</td><td>TabsPage</td><td><button>Outline</button> <button>Compare</button></td></tr></table>
+    <table><tr><th>Skipped, by reason</th><th></th><th></th></tr>
+    <tr><td>outside Within /tabs</td><td>33 links</td><td><button>Show</button></td></tr>
+    <tr><td>danger word 'send'</td><td>Send feedback</td><td><button>Never click</button> <button>Always click</button></td></tr>
+    <tr><td>another host</td><td>3 ads</td><td><button>Show</button></td></tr></table>${footer(4)}`,
+  5: () => `<h2>5 Controls</h2><p class="why">Parts that repeat become a control first, so page objects use them instead of a member each.</p>
+    <table><tr><th>Pattern</th><th>Where</th><th>Looks like</th><th></th></tr>
+    <tr><td><code>div.element-group</code></td><td>6× on /tabs</td><td>sidebar group</td><td><button>Make a control</button></td></tr>
+    <tr><td><code>li.btn.btn-light</code></td><td>32× on /tabs</td><td>menu item</td><td><button>Make a control</button></td></tr>
+    <tr><td><code>div.ad-slot</code></td><td>3× on /tabs</td><td>advert</td><td><button>Make a control</button></td></tr></table>
+    <p class="why">The project has no controls yet. Forms, tables and navigation are in Review.</p>
+    <div class="actions"><button class="primary" id="sc-primary" data-agent>Make controls with the agent</button>${more(["Show all patterns", "Open the Controls folder"])}</div>${footer(5, "page objects without controls")}`,
+  6: () => `<h2>6 Page objects</h2><p class="why">A page object per page: drafted by rules, then improved by the agent.</p>
+    <table><tr><th>Page</th><th>Page object</th><th>Members</th><th>State</th><th></th></tr>
+    <tr><td><code>/tabs</code></td><td>TabsPage <small>(.scraped.cs + your part)</small></td><td>36, 5 unstable</td>
+    <td>${scenario === "changed" ? `<span class="warn">changed since</span>` : `<span class="ok">builds</span>`}</td><td><button>Open</button> <button>Update</button></td></tr></table>
+    <div class="actions"><button class="primary" id="sc-primary">Draft page objects</button><button>Improve with the agent</button>${more(["Draft this page only", "Generate page object (agent)"])}</div>${footer(6)}`,
+  7: () => `<h2>7 Verify</h2><p class="why">Opens each page in the running app and finds every member's locator.</p>
+    <div class="facts"><div class="fact"><b class="${scenario === "changed" ? "bad" : "ok"}">${scenario === "changed" ? "30" : "36"}</b><span>found once</span></div><div class="fact"><b>6</b><span>${scenario === "changed" ? "not found" : "not read (own controls)"}</span></div><div class="fact"><b>0</b><span>found several times</span></div></div>
+    ${scenario === "changed" ? `<table><tr><th>Member</th><th>Locator</th><th></th></tr><tr><td>TabsPage.Origin</td><td><code>#demo-tab-origin</code></td><td><button>Open</button> <button>Re-record /tabs</button></td></tr></table>` : ""}
+    <p class="why">Last run 2026-10-01 12:46 against https://demoqa.com/tabs.</p>
+    <div class="actions"><button class="primary" id="sc-primary">Verify</button>${more(["Verify headed (watch it)"])}</div>${footer(7)}`,
+  settings: () => `<h2>Settings <small>Explore's budget and guards</small></h2><p class="why">Today's Explore settings tab, unchanged: the budget, ClickPolicy, danger words, blocked methods, hosts and the lists.</p>
+    <table><tr><th>MaxPages</th><td><input value="5"></td></tr><tr><th>MaxDepth</th><td><input value="1"></td></tr><tr><th>Within</th><td><input value="/tabs"></td></tr><tr><th>ClickPolicy</th><td><select><option>safe</option><option>links</option><option>not-unsafe</option></select></td></tr></table>`,
+  code: () => `<h2>Code <small>the project's page objects and controls</small></h2>
+    <table><tr><th>File</th><th>Kind</th><th>Made from</th></tr><tr><td>Pages/TabsPage.scraped.cs</td><td>page</td><td>2026-10-01-explore/001</td></tr><tr><td>Pages/TabsPage.cs</td><td>your part</td><td></td></tr></table>`,
+};
+
+function render() {
+  renderNav();
+  $("panel").innerHTML = panels[current]();
+  const next = document.querySelector("[data-next]");
+  if (next) next.onclick = () => go(current + 1);
+  const skip = document.querySelector("[data-skip]");
+  if (skip) skip.onclick = () => { toast("Controls skipped: remembered for this project"); go(6); };
+  const explore = document.querySelector("[data-explore]");
+  if (explore) explore.onclick = runExplore;
+  const check = document.querySelector("[data-check]");
+  if (check) check.onclick = () => { scenario = scenario === "new" ? "controls" : scenario; toast("The app answered; no sign-in needed"); go(3); };
+  const agent = document.querySelector("[data-agent]");
+  if (agent) agent.onclick = () => toast("The agent's chat opens with /brinell-scrape-pages for the 3 patterns");
+  for (const b of document.querySelectorAll("main button:not([data-next]):not([data-skip]):not([data-explore]):not([data-check]):not([data-agent])"))
+    b.addEventListener("click", () => toast(b.textContent.trim()));
+}
+
+function runExplore() {
+  const strip = $("strip");
+  strip.classList.add("on");
+  let captured = 1, clicked = 0;
+  const timer = setInterval(() => {
+    $("progress").textContent = `captured ${captured}, clicked ${clicked}, skipped ${clicked * 11}, blocked ${clicked + 2}`;
+    if (captured >= 4) { clearInterval(timer); setTimeout(() => { strip.classList.remove("on"); toast("Explore done: 4 captures"); go(4); }, 800); }
+    captured++; clicked++;
+  }, 700);
+  $("stop").onclick = () => { clearInterval(timer); strip.classList.remove("on"); toast("Stopped; the recording so far stays"); };
+}
+
+$("narrow").onchange = e => $("frame").classList.toggle("narrow", e.target.checked);
+$("theme").onchange = e => { if (e.target.value) document.documentElement.dataset.theme = e.target.value; else delete document.documentElement.dataset.theme; };
+$("scenario").onchange = e => { scenario = e.target.value; current = scenarios[scenario].next.step; render(); };
+render();
+</script>
+</body>
+</html>
