@@ -22,7 +22,7 @@
     test-site (the Scraper's test site, with its dangerous page and counters) or blazor-sample.
 
 .PARAMETER Agent
-    none (the default: free and deterministic), copilot or claude.
+    copilot (the default; it costs AI credits), claude, or none (free and deterministic).
 
 .PARAMETER Profile
     careful (the default guards: every counter must stay 0) or test-tenant (delete and update off,
@@ -49,7 +49,7 @@
 #>
 param(
     [ValidateSet('test-site', 'blazor-sample')][string]$Target = 'test-site',
-    [ValidateSet('none', 'copilot', 'claude')][string]$Agent = 'none',
+    [ValidateSet('none', 'copilot', 'claude')][string]$Agent = 'copilot',
     [ValidateSet('careful', 'test-tenant')][string]$Profile = 'careful',
     [int]$Repeat = 1,
     [int]$AgentMinutes = 0,

@@ -282,5 +282,5 @@ so a run never changes the repository.
 
 | # | Question | Proposal |
 | --- | --- | --- |
-| Q10 | Which agent does the loop use by default? | **Decided:** `none` when Claude runs it after a step (free, deterministic); `copilot` in a run asked for by name. Both CLIs are supported |
+| Q10 | Which agent does the loop use by default? | **Decided:** `copilot` (corrected 2026-10-01; it was `none`). `-Agent none` for a free, deterministic run; Claude Code with `-Agent claude` |
 | Q11 | A budget for the agent stage? | **Decided:** a setting, `AgentMinutes` in `## Explore` (default 10), overridden by the loop's `-AgentMinutes`; with the CLI's own limits. The loop stops the agent after that and fails the stage |

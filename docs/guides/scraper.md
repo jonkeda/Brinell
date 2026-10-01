@@ -228,11 +228,11 @@ pwsh tools/Scripts/scrape-loop.ps1 -Target test-site -Agent copilot
 | Explore | `scrape explore --headless --yes` with the profile's guards | a guard stopped it unexpectedly, or it found fewer pages than the target has |
 | Guards | reads the test site's counters | `careful`: any counter moved. `test-tenant`: anything but delete and update moved, or those were not reached |
 | Draft | `scrape draft` | a draft does not build |
-| Agent | Copilot CLI or Claude Code with only the Brinell MCP server's tools, to make controls and better names; skipped for `-Agent none` (the default) | `check_code` fails, or it ran past `-AgentMinutes` |
+| Agent | Copilot CLI or Claude Code with only the Brinell MCP server's tools, to make controls and better names; Copilot CLI by default; skipped for `-Agent none` | `check_code` fails, or it ran past `-AgentMinutes` |
 | Verify | `scrape verify` | a member is not found, or found more than once |
 
 Each run works on a new project under `TestResults/scrape-loop/<date>-<target>/`, never on the
 repository, and writes `loop-report.md` and `loop-report.json` there even when a stage fails.
 `-WebsocketApps` overrides the Blazor sample's `warn`. `-TurnOff <category>` turns a danger word off
 while the guard check still expects the profile, to prove the loop catches a broken guard. The
-agent stage costs the CLI's credits: run it by name.
+agent stage costs the CLI's credits; `-Agent none` runs the loop without it.
