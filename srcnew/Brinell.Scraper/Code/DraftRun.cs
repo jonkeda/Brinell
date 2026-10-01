@@ -9,6 +9,13 @@ namespace Brinell.Scraper.Code;
 /// </summary>
 public static class DraftRun
 {
+    /// <summary>
+    /// The patterns a draft asks a control for: those no control stands for yet that repeat, on two pages
+    /// or more, or three times on one (a site of one page has its sidebar groups and table rows too).
+    /// </summary>
+    public static IReadOnlyList<Pattern> ControlsToMake(IEnumerable<Pattern> patterns) =>
+        patterns.Where(p => p.Control is null && (p.Pages >= 2 || p.Kind == PatternKind.Repeated)).ToArray();
+
     /// <summary>Drafts every recorded page, or the one with key <paramref name="page"/>.</summary>
     public static async Task<DraftResult> RunAsync(ScrapeProject project, string? page = null, CancellationToken cancellationToken = default)
     {

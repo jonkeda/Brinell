@@ -501,7 +501,7 @@ public sealed class ScraperService : IAsyncDisposable
         {
             throw new ScraperProblem(e.Message);
         }
-        return result with { MakeControls = Patterns(project.Name).Where(p => p.Control is null && p.Pages >= 2).ToArray() };
+        return result with { MakeControls = DraftRun.ControlsToMake(Patterns(project.Name)) };
     }
 
     /// <summary>
