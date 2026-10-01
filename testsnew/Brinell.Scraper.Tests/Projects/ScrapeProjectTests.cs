@@ -107,6 +107,23 @@ public sealed class ScrapeProjectTests : IDisposable
     }
 
     [Fact]
+    public void A_project_the_solution_lists_is_found_where_it_is_and_the_loop_s_copies_are_not()
+    {
+        MakeProject("A.UITests", Config);
+        var copy = Path.Combine(_root, "TestResults", "scrape-loop", "run-1", "tests", "A.UITests");
+        Directory.CreateDirectory(copy);
+        File.WriteAllText(Path.Combine(copy, "A.UITests.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        File.WriteAllText(Path.Combine(copy, ScraperConfig.FileName), Config);
+        var solution = Path.Combine(_root, "app");
+        Directory.CreateDirectory(solution);
+        File.WriteAllText(Path.Combine(solution, "App.sln"), "Project(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\") = \"B.UITests\", \"..\\B.UITests\\B.UITests.csproj\", \"{1}\"\nEndProject\n");
+        MakeProject("B.UITests", Config);
+
+        Assert.Equal([Path.Combine(_root, "A.UITests"), Path.Combine(_root, "B.UITests")], ScrapeProject.FindAll(_root).Select(p => p.Folder));
+        Assert.Equal([Path.Combine(_root, "B.UITests")], ScrapeProject.FindAll(solution).Select(p => p.Folder)); // outside the folder, listed by its solution
+    }
+
+    [Fact]
     public void The_app_s_own_pages_are_on_its_start_host_or_an_alias()
     {
         var project = ScrapeProject.Open(MakeProject("MyApp.UITests", Config));

@@ -6,8 +6,21 @@ page objects and controls from them. Html and Blazor apps today. The decisions a
 
 ## Make a project scrapeable
 
-Add `scraper.config.md` to the UI test project the page objects go into (one project per app, or
-several for a large app; a project that references another scraped project sees its controls):
+A new project: **+** beside the Scraper's project picker. The form asks for the name, folder,
+platform, start URL and test ids, and whether Brinell is referenced as projects (in this repository)
+or as packages. It writes the `.csproj`, its `scraper.config.md` and an empty `Pages/`, and adds the
+project to the open solution (in a solution folder, `Scraped` unless you name another). Each problem
+shows under its field before anything is written. **Add a config to an existing project instead**
+writes only the config into a test project you have. An agent does the same with
+`create_scraped_project`.
+
+The picker lists the solution's projects that have a `scraper.config.md`, and those under the
+solution's folder; `TestResults` (the loop's copies) and build output are left out. Two projects of
+one name are shown with their folders.
+
+By hand: add `scraper.config.md` to the UI test project the page objects go into (one project per
+app, or several for a large app; a project that references another scraped project sees its
+controls):
 
 ```markdown
 # Scraper Config
@@ -205,6 +218,7 @@ Its Scraper tools:
 | `explore_app` | Explore, a dry run unless asked; asks first |
 | `draft_page_objects`, `verify_page_objects` | Draft and Verify, for all pages or one |
 | `update_scraper_config` | one row or field of `scraper.config.md` changed; asks first |
+| `create_scraped_project` | a new scraped project (its `.csproj`, config and `Pages/`), not yet in the solution; asks first |
 
 ## When the app changes
 

@@ -16,6 +16,13 @@ public sealed class BddExplorerWindow : ToolWindowPane
         Content = Control;
     }
 
+    /// <summary>Fills the window: also when Visual Studio restores it at start-up, when no command shows it.</summary>
+    public override void OnToolWindowCreated()
+    {
+        base.OnToolWindowCreated();
+        (Package as BrinellBddPackage)?.Attach(this);
+    }
+
     /// <summary>The window's content: the same WebView2 host as the preview's.</summary>
     public ScenarioPreviewControl Control { get; }
 }

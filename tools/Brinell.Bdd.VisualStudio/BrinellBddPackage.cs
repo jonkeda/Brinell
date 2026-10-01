@@ -122,43 +122,49 @@ public sealed class BrinellBddPackage : AsyncPackage
     private void ToggleStepBreakpoint()
         => JoinableTaskFactory.RunAsync(() => _controller!.ToggleBreakpointAtCaretAsync()).FileAndForget("Brinell/ToggleStepBreakpoint");
 
-    private void ShowExplorer()
-    {
-        JoinableTaskFactory.RunAsync(async () =>
-        {
-            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
-            var window = await ShowToolWindowAsync(typeof(BddExplorerWindow), 0, create: true, DisposalToken);
-            if (window is BddExplorerWindow explorer && _controller is not null)
-            {
-                await _controller.AttachExplorerAsync(explorer.Control);
-            }
-        }).FileAndForget("Brinell/ShowBddExplorer");
-    }
+    private void ShowExplorer() => Show(typeof(BddExplorerWindow), "Brinell/ShowBddExplorer");
 
-    private void ShowScraper()
-    {
-        JoinableTaskFactory.RunAsync(async () =>
+    private void ShowScraper() => Show(typeof(ScraperWindow), "Brinell/ShowScraper");
+
+    private void ShowPreview() => Show(typeof(ScenarioPreviewWindow), "Brinell/ShowScenarioPreview");
+
+    private void Show(Type window, string context)
+        => JoinableTaskFactory.RunAsync(async () =>
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
-            var window = await ShowToolWindowAsync(typeof(ScraperWindow), 0, create: true, DisposalToken);
-            if (window is ScraperWindow scraper && _controller is not null)
+            if (await ShowToolWindowAsync(window, 0, create: true, DisposalToken) is ToolWindowPane pane)
             {
+                await AttachAsync(pane);
+            }
+        }).FileAndForget(context);
+
+    /// <summary>
+    /// Fills a tool window from the language server. A command calls it after showing the window, and the
+    /// window itself when Visual Studio restores it at start-up from the last session's layout.
+    /// </summary>
+    internal void Attach(ToolWindowPane pane)
+        => JoinableTaskFactory.RunAsync(() => AttachAsync(pane)).FileAndForget("Brinell/AttachToolWindow");
+
+    private async Task AttachAsync(ToolWindowPane pane)
+    {
+        await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+        if (_controller is null)
+        {
+            return;
+        }
+
+        switch (pane)
+        {
+            case BddExplorerWindow explorer:
+                await _controller.AttachExplorerAsync(explorer.Control);
+                break;
+            case ScraperWindow scraper:
                 _scraper ??= new ScraperController(this, _controller);
                 await _scraper.AttachAsync(scraper.Control);
-            }
-        }).FileAndForget("Brinell/ShowScraper");
-    }
-
-    private void ShowPreview()
-    {
-        JoinableTaskFactory.RunAsync(async () =>
-        {
-            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
-            var window = await ShowToolWindowAsync(typeof(ScenarioPreviewWindow), 0, create: true, DisposalToken);
-            if (window is ScenarioPreviewWindow preview && _controller is not null)
-            {
+                break;
+            case ScenarioPreviewWindow preview:
                 await _controller.AttachAsync(preview.Control);
-            }
-        }).FileAndForget("Brinell/ShowScenarioPreview");
+                break;
+        }
     }
 }

@@ -25,6 +25,7 @@ internal sealed class ScraperController : IDisposable
         _package = package;
         _previews = previews;
         VSColorTheme.ThemeChanged += OnThemeChanged;
+        _previews.SolutionOpened += OnSolutionOpened;
     }
 
     /// <summary>Shows the Scraper in the window's control: loads the page once.</summary>
@@ -61,6 +62,7 @@ internal sealed class ScraperController : IDisposable
     public void Dispose()
     {
         VSColorTheme.ThemeChanged -= OnThemeChanged;
+        _previews.SolutionOpened -= OnSolutionOpened;
         if (_server is not null)
         {
             _server.ScraperChanged -= OnScraperChanged;
@@ -84,12 +86,63 @@ internal sealed class ScraperController : IDisposable
             case "diff" when (string?)message["left"] is { } left && (string?)message["right"] is { } right:
                 Diff(left, right, (string?)message["title"]);
                 break;
+            case "addProject" when (string?)message["path"] is { } project && File.Exists(project):
+                AddToSolution(project, (string?)message["solutionFolder"]);
+                break;
             case "chat" when (string?)message["prompt"] is { } prompt:
                 // Copilot Chat has no command that takes a prompt: it goes to the clipboard, to paste there.
                 System.Windows.Clipboard.SetText(prompt);
                 SetStatus("The prompt is on the clipboard: paste it into Copilot Chat in agent mode.");
                 break;
         }
+    }
+
+    // A new scraped project into the open solution, in a solution folder when one is named.
+    private void AddToSolution(string project, string? solutionFolder)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (Package.GetGlobalService(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 { Solution: EnvDTE80.Solution2 solution } || !solution.IsOpen)
+        {
+            SetStatus($"No solution is open: add {Path.GetFileName(project)} to one by hand.");
+            return;
+        }
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(solutionFolder))
+            {
+                solution.AddFromFile(project);
+            }
+            else
+            {
+                EnvDTE.Project? folder = null;
+                foreach (EnvDTE.Project candidate in solution.Projects)
+                {
+                    if (candidate.Kind == EnvDTE80.ProjectKinds.vsProjectKindSolutionFolder && candidate.Name == solutionFolder)
+                    {
+                        folder = candidate;
+                        break;
+                    }
+                }
+
+                folder ??= solution.AddSolutionFolder(solutionFolder);
+                ((EnvDTE80.SolutionFolder)folder.Object).AddFromFile(project);
+            }
+
+            SetStatus($"{Path.GetFileNameWithoutExtension(project)} is in the solution.");
+        }
+        catch (Exception exception) when (exception is COMException or ArgumentException)
+        {
+            _previews.Note($"Adding {project} to the solution failed: {exception.Message}");
+            SetStatus($"Could not add {Path.GetFileName(project)} to the solution: {exception.Message}");
+        }
+    }
+
+    // Another solution: its folder holds other projects, so the page lists them again.
+    private void OnSolutionOpened(object sender, EventArgs e)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        _view?.Post(new JObject { ["type"] = "projects" });
     }
 
     // A request relayed; a failed one comes back as a problem the page shows.

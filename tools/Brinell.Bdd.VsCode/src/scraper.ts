@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient/node";
 import { theme } from "./preview";
 
-type PageMessage = { type: string; id?: number; method?: string; params?: unknown; path?: string; left?: string; right?: string; title?: string; prompt?: string };
+type PageMessage = { type: string; id?: number; method?: string; params?: unknown; path?: string; left?: string; right?: string; title?: string; prompt?: string; solutionFolder?: string | null };
 
 export class ScraperView implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
@@ -67,8 +67,33 @@ export class ScraperView implements vscode.Disposable {
         }
 
         break;
+      case "addProject":
+        if (message.path) {
+          await addToSolution(message.path, message.solutionFolder ?? undefined);
+        }
+
+        break;
     }
   }
+}
+
+// A new scraped project into the workspace's solution, with dotnet sln add, in a solution folder when one is named.
+async function addToSolution(project: string, solutionFolder: string | undefined): Promise<void> {
+  const solutions = await vscode.workspace.findFiles("*.{sln,slnx}", undefined, 2);
+  if (solutions.length !== 1) {
+    void vscode.window.showInformationMessage(`Add ${project} to a solution by hand: the workspace has ${solutions.length === 0 ? "no solution" : "several"} at its root.`);
+    return;
+  }
+
+  const args = ["sln", solutions[0].fsPath, "add", project, ...(solutionFolder ? ["--solution-folder", solutionFolder] : [])];
+  const { execFile } = await import("node:child_process");
+  execFile("dotnet", args, (error, _stdout, stderr) => {
+    if (error) {
+      void vscode.window.showWarningMessage(`dotnet sln add failed: ${stderr || error.message}`);
+    } else {
+      void vscode.window.setStatusBarMessage(`${project} is in the solution.`, 5000);
+    }
+  });
 }
 
 // The agent's chat with the prompt filled in; where that command is missing, the prompt on the clipboard.

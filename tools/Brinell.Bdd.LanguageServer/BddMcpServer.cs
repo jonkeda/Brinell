@@ -62,6 +62,7 @@ public sealed class BddMcpServer : IDisposable
         ("draft_page_objects", "Drafts a page object for each recorded page (or one), from the suggestions and no model: <Name>.scraped.cs, a partial class a person adds to in <Name>.cs, which a draft never touches. Builds the project; a draft it does not build with is put back, with its errors. Gives each page's outcome, the members a new draft removed, and the repeated patterns to make controls of (with /brinell-scrape-pages). A page with a page object made by hand is left alone.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "A page key; every recorded page when left out."))),
         ("verify_page_objects", "Opens each recorded page in the running app (a browser of its own, under the Explore guards) and looks up every member of the project's page objects as Brinell would: found once, found several times, or not found. Stop a recording first.", Schema(("project", "string", "The project; the only one when left out."), ("headless", "boolean", "No browser window; true when left out."))),
         ("update_scraper_config", "Makes one change to a scraped project's scraper.config.md, keeping the rest of the file: 'set' a field (values: field, value; in 'Danger words': category, true or false), 'add' a row (values: its cells: Explore hosts [Host], Never click and Always click [Match: 'text: ...' or 'selector: ...'], Never visit [Url], Allow requests [Method, Url], Aliases [Url]) or 'remove' one (values: its first cell). Asks first: without 'confirm' it says what it would write; call again with confirm: true once the person agrees.", Schema(("project", "string", "The project; the only one when left out."), ("action", "string", "set, add or remove; required."), ("section", "string", "The section without ##, e.g. Explore, Never click; required."), ("values", "array", "The values, as strings; required."), ("confirm", "boolean", "The person agreed; false when left out."))),
+        ("create_scraped_project", "Makes a scraped UI test project in the solution's folder: its .csproj (referencing Brinell.Html, and Brinell.Blazor for blazor), its scraper.config.md and an empty Pages folder. It is not added to the solution. Asks first: without 'confirm' it gives what it would write, or what is wrong by field; call again with confirm: true once the person agrees.", Schema(("name", "string", "The project's name; required."), ("folder", "string", "Its folder, relative to the solution's; proposed when left out."), ("platform", "string", "html or blazor; html when left out."), ("startUrl", "string", "Where recording and Explore start; required."), ("testIds", "array", "The attributes that are test ids, preferred first."), ("references", "string", "projects or packages; proposed when left out."), ("confirm", "boolean", "The person agreed; false when left out."))),
         ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
@@ -171,6 +172,7 @@ public sealed class BddMcpServer : IDisposable
                 "check_code" => Scraper(() => _server.Scraper.CheckCodeAsync((string?)arguments["project"]).GetAwaiter().GetResult()),
                 "explore_app" => Scraper(() => ExploreApp(arguments)),
                 "update_scraper_config" => Scraper(() => UpdateConfig(arguments)),
+                "create_scraped_project" => Scraper(() => CreateProject(arguments)),
                 "draft_page_objects" => Scraper(() => _server.Scraper.DraftAsync((string?)arguments["project"], (string?)arguments["page"]).GetAwaiter().GetResult()),
                 "verify_page_objects" => Scraper(() => _server.Scraper.VerifyAsync((string?)arguments["project"], visible: !((bool?)arguments["headless"] ?? true)).GetAwaiter().GetResult()),
                 "search_recordings" => Scraper(() => _server.Scraper.Search((string?)arguments["project"], Required(arguments, "text"))),
@@ -246,7 +248,30 @@ public sealed class BddMcpServer : IDisposable
         };
     }
 
-    // A file that is not written is a tool error    // A file that is not written is a tool error with the reason and each syntax error's place.
+    private object CreateProject(JsonObject arguments)
+    {
+        var name = Required(arguments, "name");
+        var defaults = _server.Scraper.NewProjectDefaults(name);
+        var request = new Brinell.Scraper.Projects.NewProject(
+            name,
+            (string?)arguments["folder"] ?? defaults.Folder,
+            (string?)arguments["platform"] ?? "html",
+            Required(arguments, "startUrl"),
+            (arguments["testIds"] as JsonArray)?.Select(v => (string?)v ?? "").ToList() ?? [],
+            (string?)arguments["references"] is { } references
+                ? (string.Equals(references, "packages", StringComparison.OrdinalIgnoreCase) ? Brinell.Scraper.Projects.BrinellReferences.Packages : Brinell.Scraper.Projects.BrinellReferences.Projects)
+                : defaults.References);
+        var problems = _server.Scraper.NewProjectProblems(request);
+        if (problems.Count > 0 || (bool?)arguments["confirm"] != true)
+        {
+            return new { Written = false, Request = request, Problems = problems, Next = problems.Count > 0 ? "Fix what is wrong, then ask again." : "Tell the person what would be written. Call again with confirm: true once they agree." };
+        }
+
+        var project = _server.Scraper.NewProject(request);
+        return new { Written = true, Project = project.Name, project.Folder, Next = "Add the project to the solution (dotnet sln add), then record or explore it." };
+    }
+
+    // A file that is not written is a tool error with the reason and each syntax error's place.
     private object WriteCode(JsonObject arguments)
     {
         var result = _server.Scraper.WriteCode((string?)arguments["project"], Required(arguments, "path"), Required(arguments, "code"));

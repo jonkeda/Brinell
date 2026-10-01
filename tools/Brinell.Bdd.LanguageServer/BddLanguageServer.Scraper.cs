@@ -51,12 +51,16 @@ public sealed partial class BddLanguageServer
         /// <summary><c>brinell/scraper/projects</c>: the scraped projects and what each has recorded.</summary>
     [JsonRpcMethod("brinell/scraper/projects")]
     public IReadOnlyList<ScraperProjectInfo> ScraperProjects()
-        => Scraper.Projects().Select(project => new ScraperProjectInfo(
+    {
+        var all = Scraper.Projects();
+        return all.Select(project => new ScraperProjectInfo(
             project.Name,
+            Scraper.Label(project, all),
             project.Folder,
             project.Config.Platform,
             project.Config.StartUrl,
             project.Sessions().Select(session => session.Id).ToList())).ToList();
+    }
 
     /// <summary><c>brinell/scraper/state</c>: the recording in progress, or null.</summary>
     [JsonRpcMethod("brinell/scraper/state")]
@@ -175,7 +179,7 @@ public sealed record ScraperResult<T>(
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.Never)] string? Problem);
 
 /// <summary>A scraped project.</summary>
-public sealed record ScraperProjectInfo(string Name, string Folder, string Platform, string StartUrl, IReadOnlyList<string> Sessions);
+public sealed record ScraperProjectInfo(string Name, string Label, string Folder, string Platform, string StartUrl, IReadOnlyList<string> Sessions);
 
 /// <summary>A recorded page, the page object made for it and whether the page changed since, and its captures, newest first.</summary>
 public sealed record ScraperPageInfo(string Key, string Name, string Location, string? PageObject, bool? ChangedSinceGenerated, IReadOnlyList<ScraperCaptureInfo> Captures);

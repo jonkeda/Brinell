@@ -20,8 +20,12 @@ internal static class ScraperPage
         <style>
         {{BddPreview.Stylesheet}}
         body { padding: 0 0.6em; }
-        .sc-bar { display: flex; flex-wrap: wrap; gap: 0.4em; align-items: center; padding: 0.5em 0; position: sticky; top: 0; background: var(--uat-bg); border-bottom: 1px solid var(--uat-border); z-index: 1; }
+        .sc-bar { display: flex; flex-wrap: wrap; gap: 0.4em; align-items: end; padding: 0.5em 0; position: sticky; top: 0; background: var(--uat-bg); border-bottom: 1px solid var(--uat-border); z-index: 1; }
         .sc-bar input { width: 11em; }
+        .sc-field { display: grid; gap: 0.1em; }
+        .sc-field label { font-size: 0.8em; color: var(--uat-muted); }
+        .sc-field-row { display: flex; gap: 0.2em; }
+        .sc-bar input, .sc-bar select, .sc-bar button { height: 1.9em; box-sizing: border-box; }
         .sc-bar button, .sc-tabs button, .sc-small { background: var(--uat-surface); color: var(--uat-fg); border: 1px solid var(--uat-border); border-radius: 3px; padding: 0.15em 0.6em; cursor: pointer; font: inherit; }
         .sc-bar button:disabled { opacity: 0.5; cursor: default; }
         .sc-status { color: var(--uat-muted); margin-left: auto; }
@@ -51,9 +55,21 @@ internal static class ScraperPage
         </head>
         <body>
         <div class="sc-bar">
-          <select id="sc-project" aria-label="Project"></select>
-          <input id="sc-session" placeholder="Session name" aria-label="Session name">
-          <input id="sc-url" placeholder="Start URL (config's)" aria-label="Start URL">
+          <div class="sc-field">
+            <label for="sc-project">Project</label>
+            <div class="sc-field-row">
+              <select id="sc-project"></select>
+              <button id="sc-new-project" type="button" title="New scraped project" aria-label="New scraped project">+</button>
+            </div>
+          </div>
+          <div class="sc-field">
+            <label for="sc-session">Session</label>
+            <input id="sc-session" placeholder="recording">
+          </div>
+          <div class="sc-field">
+            <label for="sc-url">Start URL</label>
+            <input id="sc-url">
+          </div>
           <button id="sc-start" type="button">Record</button>
           <button id="sc-capture" type="button" disabled>Capture</button>
           <button id="sc-pick" type="button" disabled>Pick</button>
@@ -130,6 +146,8 @@ internal static class ScraperPage
               return;
             }
             if (message.type === "changed") { onChanged(message); }
+            // The IDE opened another solution: its projects.
+            if (message.type === "projects") { loadProjects(); }
           });
 
           // A recording's state only moves forward: the server's notices can arrive out of order (a
@@ -171,14 +189,21 @@ internal static class ScraperPage
           async function loadProjects() {
             const projects = await call("projects") || [];
             const picker = $("sc-project");
-            picker.replaceChildren(...projects.map(p => new Option(p.name, p.name, false, p.name === state.project)));
+            picker.replaceChildren(...projects.map(p => {
+              const option = new Option(p.label, p.label, false, p.label === state.project);
+              option.title = p.folder;
+              return option;
+            }));
             if (projects.length === 0) {
               showProblem("No project here has a scraper.config.md yet.");
-              await showCreateConfig();
+              await showNewProject();
               return;
             }
             state.project = picker.value;
-            state.sessions = (projects.find(p => p.name === state.project) || {}).sessions || [];
+            const chosen = projects.find(p => p.label === state.project) || {};
+            state.sessions = chosen.sessions || [];
+            // An empty Start URL records from the config's: show it there.
+            $("sc-url").placeholder = chosen.startUrl || "the config's start URL";
             state.recording = await call("state");
             showRecording();
             await show();
@@ -332,6 +357,71 @@ internal static class ScraperPage
           async function nodeMatch(number, section) {
             const match = await answer("elementMatch", { project: state.project, page: state.page, node: number });
             if (match) await edit("add", section, [match]);
+          }
+
+          // A new scraped project: the server writes it, the IDE adds it to the solution.
+          async function showNewProject() {
+            const field = (label, control, key) => [el("label", { for: control.id }, label), el("div", {}, control, el("div", { class: "sc-refused", "data-problem": key }))];
+            const radio = (group, value, text, checked) => el("label", {}, el("input", { type: "radio", name: group, value, checked: checked ? "" : null }), " " + text);
+            const name = el("input", { id: "sc-np-name", value: "MyApp.UITests" });
+            const folder = el("input", { id: "sc-np-folder" });
+            const platform = el("span", { id: "sc-np-platform" }, radio("sc-np-platform", "html", "Html", true), " ", radio("sc-np-platform", "blazor", "Blazor"));
+            const url = el("input", { id: "sc-np-url", placeholder: "https://localhost:5001/" });
+            const ids = el("input", { id: "sc-np-ids", value: "data-testid, data-test" });
+            const refs = el("span", { id: "sc-np-references" }, radio("sc-np-refs", "projects", "Project references (this repository)", true), " ", radio("sc-np-refs", "packages", "NuGet packages"));
+            const addToSolution = el("input", { id: "sc-np-add", type: "checkbox", checked: "" });
+            const solutionFolder = el("input", { id: "sc-np-solution-folder", value: "Scraped" });
+            const writes = el("pre", { class: "sc-summary", id: "sc-np-writes" });
+            const create = el("button", { type: "button", class: "sc-small", id: "sc-np-create", disabled: "" }, "Create project");
+            const picked = group => (document.querySelector(`input[name=${group}]:checked`) || {}).value;
+            const params = () => ({
+              name: name.value.trim(), folder: folder.value.trim(), platform: picked("sc-np-platform"), startUrl: url.value.trim(),
+              testIds: ids.value.split(",").map(t => t.trim()).filter(t => t), references: picked("sc-np-refs"),
+            });
+            let folderTouched = false;
+            folder.addEventListener("input", () => { folderTouched = true; });
+            const check = async () => {
+              const p = params();
+              const problems = await answer("newProjectCheck", p) || {};
+              for (const slot of document.querySelectorAll("[data-problem]")) slot.textContent = problems[slot.getAttribute("data-problem")] || "";
+              const where = (p.folder || "?").replace(/\\/g, "/").replace(/\/+$/, "");
+              writes.textContent = ["Writes:", `${where}/${p.name}.csproj`, `${where}/scraper.config.md`, `${where}/Pages/`].join("\n  ");
+              create.disabled = Object.keys(problems).length > 0;
+            };
+            const propose = async () => {
+              if (folderTouched) return;
+              const defaults = await answer("projectDefaults", { name: name.value.trim() || "MyApp.UITests" });
+              if (!defaults) return;
+              folder.value = defaults.folder;
+              const r = document.querySelector(`input[name=sc-np-refs][value=${defaults.references}]`);
+              if (r) r.checked = true;
+            };
+            name.addEventListener("input", async () => { await propose(); await check(); });
+            for (const input of [folder, url, ids]) input.addEventListener("input", check);
+            for (const group of [platform, refs]) group.addEventListener("change", check);
+            create.addEventListener("click", async () => {
+              const p = params();
+              const path = await answer("newProject", p);
+              if (!path) return;
+              if (addToSolution.checked) host.post({ type: "addProject", path, solutionFolder: solutionFolder.value.trim() || null });
+              showProblem(null);
+              state.project = p.name;
+              state.tab = "explore";
+              await loadProjects();
+            });
+            $("sc-right").replaceChildren(el("h3", {}, "New scraped project"),
+              el("div", { class: "sc-form" },
+                ...field("Name", name, "name"), ...field("Folder", folder, "folder"),
+                el("span", {}, "Platform"), el("div", {}, platform, el("div", { class: "sc-refused", "data-problem": "platform" })),
+                ...field("Start URL", url, "startUrl"), ...field("Test ids", ids, "testIds"),
+                el("span", {}, "Brinell"), refs,
+                el("label", { for: "sc-np-add" }, "Add to solution"), el("span", {}, addToSolution, " in solution folder ", solutionFolder)),
+              writes,
+              el("div", { class: "sc-actions" }, create,
+                el("button", { type: "button", class: "sc-small", onclick: showCreateConfig }, "Add a config to an existing project instead")));
+            await propose();
+            await check();
+            name.focus();
           }
 
           async function showCreateConfig() {
@@ -533,6 +623,7 @@ internal static class ScraperPage
               ...list("Aliases", c.aliases, "https://login.example.com/"));
           }
 
+          $("sc-new-project").addEventListener("click", () => showNewProject());
           $("sc-project").addEventListener("change", async () => { state.project = $("sc-project").value; state.page = state.capture = null; await show(); });
           for (const tab of document.querySelectorAll("[data-tab]")) tab.addEventListener("click", async () => { state.tab = tab.getAttribute("data-tab"); await show(); });
           $("sc-start").addEventListener("click", async () => {

@@ -80,6 +80,29 @@ public sealed partial class BddLanguageServer
     public ScraperResult<string> ScraperCreateConfig(ScraperCreateConfigParams request)
         => Answer(() => Scraper.CreateConfig(request.Folder, request.StartUrl).Name);
 
+    /// <summary><c>brinell/scraper/projectDefaults</c>: the folder and Brinell references the new project form proposes.</summary>
+    [JsonRpcMethod("brinell/scraper/projectDefaults")]
+    public ScraperResult<ScraperNewProjectDefaults> ScraperProjectDefaults(ScraperNewProjectParams request)
+        => Answer(() =>
+        {
+            var defaults = Scraper.NewProjectDefaults(request.Name);
+            return new ScraperNewProjectDefaults(defaults.Folder, defaults.References.ToString().ToLowerInvariant(), defaults.Version);
+        });
+
+    /// <summary><c>brinell/scraper/newProjectCheck</c>: what is wrong with a new project, by field; empty when nothing is.</summary>
+    [JsonRpcMethod("brinell/scraper/newProjectCheck")]
+    public ScraperResult<IReadOnlyDictionary<string, string>> ScraperNewProjectCheck(ScraperNewProjectParams request)
+        => Answer(() => Scraper.NewProjectProblems(request.ToRequest()));
+
+    /// <summary><c>brinell/scraper/newProject</c>: makes a scraped project; its .csproj's path, for the IDE to add to the solution.</summary>
+    [JsonRpcMethod("brinell/scraper/newProject")]
+    public ScraperResult<string> ScraperNewProject(ScraperNewProjectParams request)
+        => Answer(() =>
+        {
+            var project = Scraper.NewProject(request.ToRequest());
+            return Path.Combine(project.Folder, project.Name + ".csproj");
+        });
+
     /// <summary><c>brinell/scraper/location</c>: where the recording browser is, or null.</summary>
     [JsonRpcMethod("brinell/scraper/location")]
     public string? ScraperLocation() => Scraper.CurrentLocation;
@@ -129,6 +152,22 @@ public sealed record ScraperExploreParams(string? Project, string? Url, bool? Dr
 
 /// <summary><c>brinell/scraper/configEdit</c>'s parameters: set, add or remove, in a section, with its values.</summary>
 public sealed record ScraperConfigEditParams(string? Project, string Action, string Section, IReadOnlyList<string> Values);
+
+/// <summary>What the new project form proposes; <c>references</c> is <c>projects</c> or <c>packages</c>.</summary>
+public sealed record ScraperNewProjectDefaults(string Folder, string References, string Version);
+
+/// <summary>The new project form's fields; <c>references</c> is <c>projects</c> or <c>packages</c>.</summary>
+public sealed record ScraperNewProjectParams(string Name, string? Folder, string? Platform, string? StartUrl, IReadOnlyList<string>? TestIds, string? References)
+{
+    /// <summary>As the engine takes it.</summary>
+    public NewProject ToRequest() => new(
+        Name,
+        Folder ?? "",
+        Platform ?? "html",
+        StartUrl ?? "",
+        TestIds ?? [],
+        string.Equals(References, "packages", StringComparison.OrdinalIgnoreCase) ? BrinellReferences.Packages : BrinellReferences.Projects);
+}
 
 /// <summary><c>brinell/scraper/createConfig</c>'s parameters.</summary>
 public sealed record ScraperCreateConfigParams(string Folder, string StartUrl);

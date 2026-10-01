@@ -26,7 +26,9 @@ public sealed class ScraperService : IAsyncDisposable
     /// <param name="sourceFor">Makes the source for a platform; the Html source when null.</param>
     public ScraperService(string solutionDir, Func<string, IScrapeSource>? sourceFor = null)
     {
-        _solutionDir = Path.GetFullPath(solutionDir);
+        // A solution file names its folder: the IDE may pass either.
+        var full = Path.GetFullPath(solutionDir);
+        _solutionDir = File.Exists(full) ? Path.GetDirectoryName(full)! : full;
         _sourceFor = sourceFor ?? DefaultSource;
     }
 
@@ -48,9 +50,24 @@ public sealed class ScraperService : IAsyncDisposable
             throw new ScraperProblem($"No scraped project under {_solutionDir}: add a {ScraperConfig.FileName} to a UI test project.");
         if (name is null)
             return projects.Count == 1 ? projects[0] : throw new ScraperProblem($"Say which project: {string.Join(", ", projects.Select(p => p.Name))}.");
-        return projects.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
-            ?? throw new ScraperProblem($"No scraped project '{name}'. They are {string.Join(", ", projects.Select(p => p.Name))}.");
+        // A name, or a label as the picker shows it, or a folder relative to the solution.
+        var matches = projects.Where(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Label(p, projects), name, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Relative(p), name.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase)).ToList();
+        return matches.Count switch
+        {
+            1 => matches[0],
+            0 => throw new ScraperProblem($"No scraped project '{name}'. They are {string.Join(", ", projects.Select(p => Label(p, projects)))}."),
+            _ => throw new ScraperProblem($"Several projects are named {name}: {string.Join(", ", matches.Select(Relative))}. Say which by its folder."),
+        };
     }
+
+    /// <summary>How a project is shown: its name, with its folder when another project has the same name.</summary>
+    public string Label(ScrapeProject project, IReadOnlyList<ScrapeProject> all) =>
+        all.Count(p => string.Equals(p.Name, project.Name, StringComparison.OrdinalIgnoreCase)) > 1 ? $"{project.Name} ({Relative(project)})" : project.Name;
+
+    /// <summary>A project's folder relative to the solution, with forward slashes.</summary>
+    public string Relative(ScrapeProject project) => Path.GetRelativePath(_solutionDir, project.Folder).Replace('\\', '/');
 
     /// <summary>
     /// Opens the recording browser on a project's start URL (or <paramref name="url"/>) and starts a
@@ -230,6 +247,26 @@ public sealed class ScraperService : IAsyncDisposable
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out _)) throw new ScraperProblem($"'{startUrl}' is not an address to start at.");
         File.WriteAllText(path, ScraperConfigWriter.New(startUrl));
         return ScrapeProject.Open(full);
+    }
+
+    /// <summary>What the new project form proposes for a project named <paramref name="name"/>.</summary>
+    public NewProjectDefaults NewProjectDefaults(string name) => ProjectMaker.Defaults(_solutionDir, name);
+
+    /// <summary>What is wrong with a new project, by field; empty when it can be made.</summary>
+    public IReadOnlyDictionary<string, string> NewProjectProblems(NewProject request) => ProjectMaker.Problems(_solutionDir, request);
+
+    /// <summary>Makes a scraped project: its <c>.csproj</c>, <c>scraper.config.md</c> and <c>Pages/</c>.</summary>
+    /// <exception cref="ScraperProblem">The request has problems (<see cref="NewProjectProblems"/>).</exception>
+    public ScrapeProject NewProject(NewProject request)
+    {
+        try
+        {
+            return ScrapeProject.Open(ProjectMaker.Create(_solutionDir, request));
+        }
+        catch (ArgumentException e)
+        {
+            throw new ScraperProblem(e.Message);
+        }
     }
 
     /// <summary>What Explore would run with: the project, where it starts, and its budget and guards, to show a person before it starts.</summary>

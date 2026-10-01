@@ -414,7 +414,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         await RefreshAsync();
         await RefreshExplorerAsync();
+        SolutionOpened?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Raised on the main thread once a solution opened and the server serves its folder.</summary>
+    internal event EventHandler? SolutionOpened;
 
     private async Task RefreshAsync()
     {

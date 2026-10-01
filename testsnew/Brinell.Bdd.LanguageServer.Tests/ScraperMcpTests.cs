@@ -80,11 +80,17 @@ public sealed class ScraperMcpTests : IDisposable
         var header = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/header", new { page = "/orders" });
 
         Assert.Contains("<title>Scraper</title>", (string?)host["html"]);
+        // The bar's inputs have labels, and + makes a new project.
+        Assert.Contains("<label for=\"sc-project\">Project</label>", (string?)host["html"]);
+        Assert.Contains("<label for=\"sc-session\">Session</label>", (string?)host["html"]);
+        Assert.Contains("<label for=\"sc-url\">Start URL</label>", (string?)host["html"]);
+        Assert.Contains("id=\"sc-new-project\"", (string?)host["html"]);
         Assert.Equal(3, similar["value"]!.AsArray().Count);
         Assert.True(similar.AsObject().ContainsKey("problem")); // sent even as null: the view tells a result by it
         Assert.StartsWith("// <scraped page=\"/orders\"", (string?)header["value"]);
 
         Assert.Equal("Shop.UITests", (string?)projects[0]!["name"]);
+        Assert.Equal("Shop.UITests", (string?)projects[0]!["label"]);
         Assert.Equal(["/archive", "/orders"], pages["value"]!.AsArray().Select(page => (string?)page!["key"]));
         Assert.Contains("#3 td \"Linus\"", (string?)outline["value"]);
         Assert.Contains("No recording is in progress", (string?)capture["problem"]);
@@ -172,6 +178,41 @@ public sealed class ScraperMcpTests : IDisposable
 
         Assert.Contains("ClickPolicy is links, safe, not-unsafe or all, not 'everything'", error);
         Assert.Equal(before, File.ReadAllText(config));
+    }
+
+    [Fact]
+    public async Task The_view_checks_and_makes_a_new_project_over_json_rpc()
+    {
+        await using var harness = await ServerHarness.StartAsync(_solution);
+        var fields = new { name = "Admin.UITests", folder = "Admin.UITests", platform = "blazor", startUrl = "https://admin.example/", testIds = new[] { "data-testid" }, references = "packages" };
+
+        var defaults = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/projectDefaults", new { name = "Admin.UITests" });
+        var wrong = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/newProjectCheck", new { name = "Shop.UITests", folder = "Shop.UITests", startUrl = "nowhere" });
+        var right = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/newProjectCheck", fields);
+        var made = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/newProject", fields);
+        var projects = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/projects", new { });
+
+        Assert.Equal(("Admin.UITests", "packages"), ((string?)defaults["value"]!["folder"], (string?)defaults["value"]!["references"]));
+        Assert.Equal(["folder", "name", "startUrl"], wrong["value"]!.AsObject().Select(p => p.Key).Order(StringComparer.Ordinal));
+        Assert.Empty(right["value"]!.AsObject());
+        Assert.Equal(Path.Combine(_solution, "Admin.UITests", "Admin.UITests.csproj"), (string?)made["value"]);
+        Assert.Contains("Brinell.Blazor", File.ReadAllText((string)made["value"]!));
+        Assert.Contains(projects.AsArray(), p => (string?)p!["name"] == "Admin.UITests");
+    }
+
+    [Fact]
+    public void An_agent_makes_a_project_only_once_the_person_agreed()
+    {
+        var arguments = new JsonObject { ["name"] = "Agent.UITests", ["startUrl"] = "http://localhost:5001/" };
+
+        var asked = JsonNode.Parse(CallText("create_scraped_project", (JsonObject)arguments.DeepClone()))!;
+        Assert.False(Directory.Exists(Path.Combine(_solution, "Agent.UITests")));
+        arguments["confirm"] = true;
+        var made = JsonNode.Parse(CallText("create_scraped_project", arguments))!;
+
+        Assert.False((bool)asked["written"]!);
+        Assert.True((bool)made["written"]!);
+        Assert.True(File.Exists(Path.Combine(_solution, "Agent.UITests", ScraperConfig.FileName)));
     }
 
     private string CallText(string tool, JsonObject arguments)

@@ -8,7 +8,7 @@ namespace Brinell.Scraper.Projects;
 /// A UI test project that is scraped: the folder with <c>scraper.config.md</c> and the project file. Its
 /// recordings are in <c>Recordings/</c>, one folder per session.
 /// </summary>
-public sealed class ScrapeProject
+public sealed partial class ScrapeProject
 {
     /// <summary>The folder recordings are kept in, in the project.</summary>
     public const string RecordingsFolderName = "Recordings";
@@ -58,25 +58,58 @@ public sealed class ScrapeProject
         return null;
     }
 
-    /// <summary>The scraped projects under <paramref name="root"/> (a solution's folder), skipping build output.</summary>
+    /// <summary>
+    /// The scraped projects of a solution folder: those the <c>.sln</c> or <c>.slnx</c> in it lists (which
+    /// may be anywhere), and those under it. Build output, test results (the loop's copies of projects)
+    /// and hidden folders are skipped.
+    /// </summary>
     public static IReadOnlyList<ScrapeProject> FindAll(string root)
     {
-        var found = new List<ScrapeProject>();
-        var pending = new Stack<string>([Path.GetFullPath(root)]);
+        root = Path.GetFullPath(root);
+        var folders = new HashSet<string>(SolutionProjectFolders(root), StringComparer.OrdinalIgnoreCase);
+        var pending = new Stack<string>([root]);
         while (pending.Count > 0)
         {
             var folder = pending.Pop();
-            if (File.Exists(Path.Combine(folder, ScraperConfig.FileName)))
-                found.Add(Open(folder));
+            folders.Add(folder);
             foreach (var child in Directory.EnumerateDirectories(folder))
             {
                 var name = Path.GetFileName(child);
-                if (name is "bin" or "obj" or "node_modules" or RecordingsFolderName || name.StartsWith('.')) continue;
+                if (SkippedFolders.Contains(name) || name.StartsWith('.')) continue;
                 pending.Push(child);
             }
         }
-        return found.OrderBy(p => p.Folder, StringComparer.OrdinalIgnoreCase).ToArray();
+        return folders.Where(f => File.Exists(Path.Combine(f, ScraperConfig.FileName)))
+            .Select(Open)
+            .OrderBy(p => p.Folder, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
+
+    // Build output, packages, recordings, and test results: the loop copies whole projects there.
+    private static readonly HashSet<string> SkippedFolders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin", "obj", "node_modules", RecordingsFolderName, "TestResults", "artifacts",
+    };
+
+    // The folders of the projects the solutions directly in a folder list.
+    private static IEnumerable<string> SolutionProjectFolders(string root)
+    {
+        var solutions = Directory.EnumerateFiles(root, "*.sln").Concat(Directory.EnumerateFiles(root, "*.slnx"));
+        foreach (var solution in solutions)
+        {
+            var paths = solution.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase)
+                ? System.Xml.Linq.XDocument.Load(solution).Descendants("Project").Select(p => (string?)p.Attribute("Path"))
+                : SolutionProject().Matches(File.ReadAllText(solution)).Select(m => (string?)m.Groups["path"].Value);
+            foreach (var path in paths.OfType<string>())
+            {
+                var folder = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(root, path.Replace('\\', Path.DirectorySeparatorChar))));
+                if (folder is not null && Directory.Exists(folder)) yield return folder;
+            }
+        }
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^Project\(""\{[^}]+\}""\)\s*=\s*""[^""]*"",\s*""(?<path>[^""]+\.(?:cs|vb|fs)proj)""", System.Text.RegularExpressions.RegexOptions.Multiline)]
+    private static partial System.Text.RegularExpressions.Regex SolutionProject();
 
     /// <summary>Whether a location is one of the app's own pages: on the start URL's host or an alias's.</summary>
     public bool IsOwnPage(string location)
