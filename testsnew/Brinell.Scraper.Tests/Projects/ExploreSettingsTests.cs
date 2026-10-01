@@ -22,6 +22,7 @@ public sealed class ExploreSettingsTests
         | MaxPages | 20 |
         | AgentMinutes | 5 |
         | LoginUrl | /login |
+        | Within | /orders |
         | ClickPolicy | not-unsafe |
         | BlockMethods | |
         | WebsocketApps | warn |
@@ -83,7 +84,7 @@ public sealed class ExploreSettingsTests
     {
         var explore = ScraperConfig.Parse(Loosened).Explore;
 
-        Assert.Equal((20, 5, "/login"), (explore.MaxPages, explore.AgentMinutes, explore.LoginUrl));
+        Assert.Equal((20, 5, "/login", "/orders"), (explore.MaxPages, explore.AgentMinutes, explore.LoginUrl, explore.Within));
         Assert.Equal(ClickPolicy.NotUnsafe, explore.ClickPolicy);
         Assert.Empty(explore.BlockMethods);
         Assert.Equal(WebsocketApps.Warn, explore.WebsocketApps);

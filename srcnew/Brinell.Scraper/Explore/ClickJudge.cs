@@ -82,6 +82,8 @@ public static class ClickJudge
         // A plain anchor on the same page (#top) goes nowhere new; a hash route (#/orders) does.
         if (target.GetLeftPart(UriPartial.Query) == page.GetLeftPart(UriPartial.Query) && target.Fragment.Length > 0 && !target.Fragment.StartsWith("#/", StringComparison.Ordinal))
             return Of(Verdict.Unsafe, "an anchor on the same page", target.AbsoluteUri);
+        if (settings.Within.Length > 0 && !Covers(settings.Within, target))
+            return Of(Verdict.Unsafe, $"outside Within {settings.Within} (the config)", target.AbsoluteUri);
         if (settings.NeverVisit.FirstOrDefault(v => Covers(v, target)) is { } never)
             return Of(Verdict.Unsafe, $"never visit {never} (the config)", target.AbsoluteUri);
         var path = Uri.UnescapeDataString(target.PathAndQuery + target.Fragment);
@@ -179,10 +181,10 @@ public static class ClickJudge
         DangerWords.Contains(text, configured) || DangerWords.Contains(node.Name, configured) || DangerWords.Contains(node.Attribute("title"), configured);
 
     // A path covers itself and what is below it; a full URL covers what starts with it.
-    private static bool Covers(string never, Uri target) =>
-        never.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-            ? target.AbsoluteUri.StartsWith(never, StringComparison.OrdinalIgnoreCase)
-            : (target.AbsolutePath + target.Fragment).StartsWith(never, StringComparison.OrdinalIgnoreCase);
+    private static bool Covers(string url, Uri target) =>
+        url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? target.AbsoluteUri.StartsWith(url, StringComparison.OrdinalIgnoreCase)
+            : (target.AbsolutePath + target.Fragment).StartsWith(url, StringComparison.OrdinalIgnoreCase);
 
     // An element's text, or a child's (a button whose label is in a span).
     private static string? TextOf(ScrapeSnapshot snapshot, ScrapeNode node)

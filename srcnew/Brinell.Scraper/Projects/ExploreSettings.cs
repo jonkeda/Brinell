@@ -32,6 +32,9 @@ public sealed record ExploreSettings
     /// <summary>The app's sign-in page (a path or URL), where Explore stops for the person; empty: found by its password field.</summary>
     public string LoginUrl { get; init; } = "";
 
+    /// <summary>A path (or <c>/#/route</c>) the links Explore visits stay under; empty: the whole app.</summary>
+    public string Within { get; init; } = "";
+
     /// <summary>What Explore clicks (guard 1).</summary>
     public ClickPolicy ClickPolicy { get; init; } = ClickPolicy.Safe;
 
@@ -79,10 +82,11 @@ public sealed record ExploreSettings
                     "DelayMs" => settings with { DelayMs = Count(value, line) },
                     "AgentMinutes" => settings with { AgentMinutes = Count(value, line) },
                     "LoginUrl" => settings with { LoginUrl = value },
+                    "Within" => settings with { Within = value },
                     "ClickPolicy" => settings with { ClickPolicy = Policy(value, line) },
                     "BlockMethods" => settings with { BlockMethods = Methods(value, line) },
                     "WebsocketApps" => settings with { WebsocketApps = Websockets(value, line) },
-                    var other => throw new FormatException($"Line {line}: '{other}' is not a field of ## Explore (MaxPages, MaxDepth, MaxMinutes, DelayMs, AgentMinutes, LoginUrl, ClickPolicy, BlockMethods, WebsocketApps)."),
+                    var other => throw new FormatException($"Line {line}: '{other}' is not a field of ## Explore (MaxPages, MaxDepth, MaxMinutes, DelayMs, AgentMinutes, LoginUrl, Within, ClickPolicy, BlockMethods, WebsocketApps)."),
                 };
             }
         }

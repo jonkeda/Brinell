@@ -74,7 +74,7 @@ One commit per step; each from step 3 on ends with a loop run, its report in the
 
 | # | Step | Verify |
 | --- | --- | --- |
-| 1 | `Within` in `ExploreSettings`, the config reader and writer, the judge and Explorer (a link outside is skipped, with the reason) | unit tests; the test site explored `Within: /pages/` captures only those pages |
+| 1 | `Within` in `ExploreSettings`, the config reader and writer, the judge and Explorer (a link outside is skipped, with the reason) | **Done.** `ExploreSettings.Within`, read from `## Explore`; the judge skips a link outside it ("outside Within … (the config)"), a path or a hash route; the summary's `links` line; the server's config data and the settings tab's field. The account page explored `Within: /pages/account.html` stays on it and its states. 2 tests, 1 extended |
 | 2 | The four projects under `Scraper.Sites/` (csproj, config), and `.gitignore` for their sessions | each builds empty |
 | 3 | Explore over each, by hand (`scrape explore --headless --yes`), then `scrape draft` and `scrape verify` | per site: captures, clicks, skipped (the-internet's `delete` / `edit` among them), blocked; the drafts build; members found once. Fixes found go in this step |
 | 4 | The loop's public-site targets and the `sites` target (section 4) | `-Target sites -Agent none` passes; then once with Copilot |

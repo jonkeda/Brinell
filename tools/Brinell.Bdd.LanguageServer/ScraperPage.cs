@@ -503,7 +503,7 @@ internal static class ScraperPage
             $("sc-left").replaceChildren(el("h3", {}, "Explore settings"),
               el("div", { class: "sc-actions" }, el("button", { type: "button", class: "sc-small", onclick: () => host.post({ type: "open", path: c.path }) }, "Open scraper.config.md")),
               el("h4", {}, "Budget"),
-              el("div", { class: "sc-form" }, ...field("MaxPages", c.maxPages, "number"), ...field("MaxDepth", c.maxDepth, "number"), ...field("MaxMinutes", c.maxMinutes, "number"), ...field("DelayMs", c.delayMs, "number"), ...field("AgentMinutes", c.agentMinutes, "number"), ...field("LoginUrl", c.loginUrl)),
+              el("div", { class: "sc-form" }, ...field("MaxPages", c.maxPages, "number"), ...field("MaxDepth", c.maxDepth, "number"), ...field("MaxMinutes", c.maxMinutes, "number"), ...field("DelayMs", c.delayMs, "number"), ...field("AgentMinutes", c.agentMinutes, "number"), ...field("LoginUrl", c.loginUrl), ...field("Within", c.within)),
               el("h4", {}, "Guards"),
               el("div", { class: "sc-form" },
                 ...choice("ClickPolicy", c.clickPolicy, ["links", "safe", "not-unsafe", "all"]),

@@ -189,6 +189,23 @@ public sealed class ClickJudgeTests
         Assert.Equal(Verdict.Safe, Judge(page, 3, settings).Verdict);
     }
 
+    [Fact]
+    public void Within_leaves_links_outside_it_a_path_or_a_hash_route()
+    {
+        var page = Page(
+            N(2, 1, "a", "Tabs", attributes: ("href", "/components/tabs#api")),
+            N(3, 1, "a", "Buttons", attributes: ("href", "/components/buttons")),
+            N(4, 1, "a", "Form", attributes: ("href", "/#/en-US/component/form")));
+
+        var paths = new ExploreSettings { Within = "/components/tabs" };
+        Assert.Equal(Verdict.Safe, Judge(page, 2, paths).Verdict);
+        Assert.Equal("outside Within /components/tabs (the config)", Judge(page, 3, paths).Reason);
+
+        var routes = new ExploreSettings { Within = "/#/en-US/component/tabs" };
+        Assert.Equal("outside Within /#/en-US/component/tabs (the config)", Judge(page, 4, routes).Reason);
+        Assert.Equal(Verdict.Safe, Judge(page, 4, new ExploreSettings()).Verdict);
+    }
+
     [Theory]
     [InlineData("tab", null, null, "a tab")]
     [InlineData(null, "aria-haspopup", "menu", "opens a menu")]

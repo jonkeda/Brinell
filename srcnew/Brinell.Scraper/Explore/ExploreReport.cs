@@ -57,6 +57,7 @@ public static class ExploreReport
             $"  clicks      ClickPolicy {Explorer.Policy(s.ClickPolicy)}; danger words off: {(off.Length == 0 ? "none" : string.Join(", ", off))}",
             $"  requests    blocked: {(s.BlockMethods.Count == 0 ? "none" : string.Join(", ", s.BlockMethods))}{(s.AllowRequests.Count > 0 ? $"; allowed anyway: {string.Join(", ", s.AllowRequests.Select(a => $"{a.Method} {a.Url}".Trim()))}" : "")}",
             $"  websockets  {s.WebsocketApps.ToString().ToLowerInvariant()}",
+            $"  links       {(s.Within.Length == 0 ? "the whole app" : $"within {s.Within}")}",
             $"  budget      {s.MaxPages} captures, {s.MaxDepth} steps deep, {s.MaxMinutes} min, {s.DelayMs} ms between steps");
     }
 

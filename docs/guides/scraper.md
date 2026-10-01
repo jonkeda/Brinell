@@ -111,6 +111,7 @@ you know is harmless for your app and tenant:
 | MaxMinutes | 10 |
 | DelayMs | 500 |
 | LoginUrl | /login |
+| Within | |
 | ClickPolicy | safe |
 | BlockMethods | POST, PUT, PATCH, DELETE |
 | WebsocketApps | links |
@@ -160,6 +161,7 @@ you know is harmless for your app and tenant:
 | `Danger words` | categories of words that make an element unsafe, all on by default, in English, Dutch, German and French: `sign-out`, `delete`, `update`, `send`, `pay`, `approve`, `bulk`. Turn one off by name |
 | `BlockMethods` | request methods aborted while exploring; `GET`, `HEAD` and `OPTIONS` always go through. `Allow requests` lets single endpoints through |
 | `WebsocketApps` | a page that opens a websocket (Blazor Server, SignalR) clicks without a request the guard can see: `links` (the default) explores its links only, `warn` explores it anyway, `ignore` does not say so |
+| `Within` | a path, or `/#/route`, the links Explore visits stay under: `/components/tabs` keeps it on that page and its states. Empty: the whole app |
 | `Explore hosts` | where Explore may run: `localhost` and `127.0.0.1`, and every other host by name |
 
 After every click it checks it is still on the app's host, still signed in, with no dialog it did

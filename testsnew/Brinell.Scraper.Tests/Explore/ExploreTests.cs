@@ -151,6 +151,19 @@ public sealed class ExploreTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Within_keeps_it_on_one_page_and_its_states()
+    {
+        MakeProject("pages/account.html", "| MaxDepth | 1 |\n| Within | /pages/account.html |\n");
+
+        var result = await ExploreAsync();
+
+        Assert.Equal(ExploreStop.Done, result.Stop);
+        Assert.All(result.Captures, c => Assert.Equal("/pages/account.html", c.Page));
+        Assert.True(result.Captures.Count > 1); // its states, a click away
+        Assert.Contains(result.Skipped, s => s.Reason == "outside Within /pages/account.html (the config)");
+    }
+
+    [Fact]
     public async Task MaxDepth_leaves_what_lies_deeper()
     {
         MakeProject("index.html", "| MaxDepth | 1 |\n");
