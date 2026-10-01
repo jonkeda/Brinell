@@ -6,7 +6,7 @@ loop) and the test sites in [plan.md](plan.md) section 10.
 ## 1. What we want
 
 For each technology in plan.md's section 10, one public site and one page; a UI test project per
-technology under `Recordings/`; Explore run over it; and the loop extended so it runs these too.
+technology under `Scraper.Sites/`; Explore run over it; and the loop extended so it runs these too.
 Our own sites (the test site, the Blazor sample) are in the loop already.
 
 ## 2. The sites
@@ -28,7 +28,7 @@ can follow once these pass.
 ## 3. The projects
 
 ```text
-Recordings/                       at the Brinell root
+Scraper.Sites/                    at the Brinell root: what the Scraper made of real sites, not tests
   Brinell.Html.Plain/
     Brinell.Html.Plain.csproj     references srcnew/Brinell.Html (Blazor: srcnew/Brinell.Blazor)
     scraper.config.md             StartUrl, the site's host in Explore hosts, the budget below
@@ -39,9 +39,10 @@ Recordings/                       at the Brinell root
   Brinell.Html.Blazor/ …
 ```
 
-The config for a public site is careful and small: `ClickPolicy safe`, every danger word on,
-`BlockMethods` as default, `MaxPages 10`, `MaxDepth 2`, `MaxMinutes 3`, `DelayMs 1000`, and the
-site's host in `Explore hosts` by name.
+The config for a public site is careful and light on the site: `ClickPolicy safe`, every danger
+word on, `BlockMethods` as default, `MaxPages 5`, `MaxDepth 1` (the page and what one click on it
+shows), `MaxMinutes 2`, `DelayMs 2000`, and the site's host in `Explore hosts` by name. About 5
+requests for pages and 5 clicks a run, no faster than one every 2 seconds.
 
 **One page:** Explore follows every link to the app's host, so on a docs site it would leave the
 page at once. A new `## Explore` field, **`Within`**, keeps it there: a path (or hash-route) prefix a
@@ -64,7 +65,7 @@ link must stay under to be visited; links outside are skipped as "outside Within
 | Report | as now, plus the site's answer time; `sites` writes one report with a row per site |
 
 Runs work on a copy of the project under `TestResults/scrape-loop/`, as now, so a loop never
-writes into `Recordings/`; **Explore** and **Draft** into `Recordings/` are run by hand, to update
+writes into `Scraper.Sites/`; **Explore** and **Draft** into `Scraper.Sites/` are run by hand, to update
 the committed page objects.
 
 ## 5. Steps
@@ -74,15 +75,15 @@ One commit per step; each from step 3 on ends with a loop run, its report in the
 | # | Step | Verify |
 | --- | --- | --- |
 | 1 | `Within` in `ExploreSettings`, the config reader and writer, the judge and Explorer (a link outside is skipped, with the reason) | unit tests; the test site explored `Within: /pages/` captures only those pages |
-| 2 | The four projects under `Recordings/` (csproj, config), and `.gitignore` for their sessions | each builds empty |
+| 2 | The four projects under `Scraper.Sites/` (csproj, config), and `.gitignore` for their sessions | each builds empty |
 | 3 | Explore over each, by hand (`scrape explore --headless --yes`), then `scrape draft` and `scrape verify` | per site: captures, clicks, skipped (the-internet's `delete` / `edit` among them), blocked; the drafts build; members found once. Fixes found go in this step |
 | 4 | The loop's public-site targets and the `sites` target (section 4) | `-Target sites -Agent none` passes; then once with Copilot |
 | 5 | The guide's "The loop" section gets the sites; plan.md section 10 points here | links valid |
 
 ## 6. Questions
 
-| # | Question | Proposal |
+| # | Question | Decided (2026-10-01) |
 | --- | --- | --- |
-| Q1 | Commit the public sites' recordings? plan.md section 10 said not: their content is not ours | Commit the projects, configs and drafted page objects; git-ignore `Recordings/*/Recordings/` |
-| Q2 | Is exploring public sites acceptable? | Yes at this budget (10 pages, 1 s between clicks), run by hand or the loop, never in CI on a schedule |
-| Q3 | Folder name `Recordings/` at the root, beside `srcnew/` and `testsnew/`? | As asked. `testsnew/Scraper.Sites/` would keep test projects together |
+| Q1 | Commit the public sites' recordings? plan.md section 10 said not: their content is not ours | Commit the projects, configs and drafted page objects; git-ignore `Scraper.Sites/*/Recordings/` |
+| Q2 | Is exploring public sites acceptable? | Only lightly: 5 pages, depth 1, 2 minutes, 2 s between clicks (section 3); by hand or the loop, never on a schedule |
+| Q3 | Where do the projects go? | `Scraper.Sites/` at the root: what the Scraper made of real sites, not tests |
