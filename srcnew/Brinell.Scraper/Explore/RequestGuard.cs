@@ -55,10 +55,18 @@ public sealed class RequestGuard(ExploreSettings settings)
         var upper = method.ToUpperInvariant();
         if (!Settings.BlockMethods.Contains(upper, StringComparer.Ordinal))
             return null;
+        // SignalR's negotiate (Blazor Server's circuit) changes nothing: it opens the websocket, which
+        // guard 3 (WebsocketApps) then decides on. Blocked, the app would be dead and guard 3 blind.
+        if (upper == "POST" && IsNegotiate(uri))
+            return null;
         if (Settings.AllowRequests.Any(a => Allows(a, upper, uri)))
             return null;
         return $"{upper} is blocked (BlockMethods)";
     }
+
+    private static bool IsNegotiate(Uri uri) =>
+        uri.AbsolutePath.EndsWith("/negotiate", StringComparison.OrdinalIgnoreCase)
+        && uri.Query.Contains("negotiateVersion=", StringComparison.OrdinalIgnoreCase);
 
     // A method (empty for any) and a URL: a full one covers what starts with it, a path the paths below it.
     private static bool Allows(AllowedRequest allowed, string method, Uri uri) =>

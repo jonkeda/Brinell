@@ -479,7 +479,7 @@ public sealed class ScraperService : IAsyncDisposable
         return index.Pages.ToDictionary(
             p => p.Key,
             p => made.TryGetValue(p.Key, out var code)
-                ? ((string?)code.Name, code.Header!.Hash is { } hash ? hash != SnapshotFile.ContentHash(index.Read(p.Latest)) : (bool?)null)
+                ? ((string?)code.Name, code.Header!.Hash is { } hash ? hash != SnapshotFile.ContentHash(index.Read(PageDrafter.Basis(p))) : (bool?)null)
                 : ((string?)null, (bool?)null),
             StringComparer.Ordinal);
     }

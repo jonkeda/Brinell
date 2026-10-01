@@ -31,7 +31,7 @@ public static class DraftRun
                 continue;
             }
             var previous = code.FirstOrDefault(c => c.Header?.Page == recorded.Key);
-            var className = previous?.Name ?? Free(PageDrafter.ClassName(recorded.Key), names);
+            var className = previous?.Name ?? Free(PageDrafter.ClassName(recorded.Key, PageDrafter.Basis(recorded).Event.Title), names);
             names.Add(className);
             var draft = PageDrafter.Draft(project, index, recorded, className);
             var path = previous is null ? draft.Path : Path.GetRelativePath(project.Folder, previous.File);

@@ -66,6 +66,16 @@ public sealed class RequestGuardTests
     }
 
     [Fact]
+    public void SignalR_s_negotiate_goes_through_so_the_websocket_guard_sees_the_app_for_what_it_is()
+    {
+        var guard = new RequestGuard(new ExploreSettings());
+
+        Assert.Null(guard.Check("POST", "http://localhost:5000/_blazor/negotiate?negotiateVersion=1", navigatesPage: false));
+        Assert.NotNull(guard.Check("POST", "http://localhost:5000/_blazor/disconnect", navigatesPage: false));
+        Assert.NotNull(guard.Check("POST", "http://localhost:5000/api/negotiate", navigatesPage: false));
+    }
+
+    [Fact]
     public void What_never_leaves_the_browser_is_not_guarded()
     {
         var guard = new RequestGuard(new ExploreSettings());

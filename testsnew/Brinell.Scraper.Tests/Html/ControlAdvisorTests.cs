@@ -116,6 +116,17 @@ public sealed class ControlAdvisorTests
     }
 
     [Fact]
+    public void A_test_id_s_camel_case_words_stay_words_in_the_name()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "input", null, null, ("data-testid", "FirstNameInput")), N(3, 1, "button", "Send it", null, ("data-testid", "save-draft_button")));
+
+        var names = ControlAdvisor.Suggest(page, TestIds, blazor: false).Select(s => s.Name);
+
+        Assert.Equal(["FirstNameInput", "SaveDraftButton"], names);
+    }
+
+    [Fact]
     public void A_node_in_a_frame_is_declared_on_the_frame_s_member()
     {
         var page = Page(N(1, 0, "body"),

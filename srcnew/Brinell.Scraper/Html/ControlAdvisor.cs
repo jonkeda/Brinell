@@ -152,7 +152,8 @@ public static partial class ControlAdvisor
         foreach (var source in sources)
         {
             if (string.IsNullOrEmpty(source)) continue;
-            var name = string.Concat(Words().Matches(source).Select(m => char.ToUpperInvariant(m.Value[0]) + m.Value[1..].ToLowerInvariant()).Take(4));
+            // Split at camelCase humps too: FirstNameInput stays FirstNameInput, not Firstnameinput.
+            var name = string.Concat(Explore.DangerWords.Words(source).Select(w => char.ToUpperInvariant(w[0]) + w[1..]).Take(4));
             if (name.Length > 0) return char.IsDigit(name[0]) ? "Element" + name : name;
         }
         return "Element";
@@ -229,9 +230,6 @@ public static partial class ControlAdvisor
 
     [GeneratedRegex(@"^(css|jss|sc|emotion)-|^_|\d{3,}|^(ng|is|has)-|active|selected|open|hover|focus|disabled")]
     private static partial Regex UnstableClass();
-
-    [GeneratedRegex(@"[A-Za-z0-9]+")]
-    private static partial Regex Words();
 }
 
 /// <summary>A node's suggested member: its node, a name, the control type and namespace, the locator expression, and whether that locator is stable and why.</summary>

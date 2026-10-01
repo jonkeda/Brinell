@@ -139,7 +139,9 @@ public sealed class Explorer(ScrapeProject project, IExploreSource source, Explo
                 continue;
             }
 
-            if (snapshot[judgement.Node].Bounds is null) continue; // hidden: a person cannot click it here
+            var node = snapshot[judgement.Node];
+            if (node.Bounds is null) continue; // hidden: a person cannot click it here
+            if (node.Attributes.ContainsKey("disabled") || node.Attribute("aria-disabled") == "true") continue; // nor when it is off
             if (!ClickJudge.Allows(settings.ClickPolicy, judgement))
             {
                 Skip(key, judgement.Verdict == Verdict.Unsafe ? judgement : judgement with { Reason = $"{judgement.Reason}; ClickPolicy {Policy(settings.ClickPolicy)} does not click it" });

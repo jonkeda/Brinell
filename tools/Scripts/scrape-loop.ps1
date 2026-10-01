@@ -34,6 +34,10 @@
 .PARAMETER AgentMinutes
     The agent stage's time limit; the project's AgentMinutes (10) when 0.
 
+.PARAMETER WebsocketApps
+    Overrides the config's WebsocketApps: links (Explore's default), warn or ignore. The Blazor sample
+    runs with warn unless this says otherwise, so its clicks are explored.
+
 .PARAMETER TurnOff
     A danger-word category to turn off in the project's config while the guard check still expects
     the profile: breaks a guard on purpose, to prove the loop catches it.
@@ -50,6 +54,7 @@ param(
     [int]$Repeat = 1,
     [int]$AgentMinutes = 0,
     [string]$TurnOff,
+    [ValidateSet('', 'links', 'warn', 'ignore')][string]$WebsocketApps = '',
     [string]$OutDir
 )
 
@@ -137,7 +142,8 @@ function New-TargetProject([string]$folder, [string]$url) {
         $explore += '| ClickPolicy | not-unsafe |', '| BlockMethods | |'
         $sections += "## Danger words`n`n| Category | On |`n| --- | --- |`n| delete | false |`n| update | false |"
     }
-    if ($spec.Blazor) { $explore += '| WebsocketApps | warn |' }
+    $websockets = if ($WebsocketApps) { $WebsocketApps } elseif ($spec.Blazor) { 'warn' } else { '' }
+    if ($websockets) { $explore += "| WebsocketApps | $websockets |" }
     if ($TurnOff) {
         if ($sections.Count -eq 0) { $sections += "## Danger words`n`n| Category | On |`n| --- | --- |" }
         $sections[0] += "`n| $TurnOff | false |"

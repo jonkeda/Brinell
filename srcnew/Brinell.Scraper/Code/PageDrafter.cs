@@ -9,8 +9,8 @@ namespace Brinell.Scraper.Code;
 
 /// <summary>
 /// A page object drafted from a recorded page by rules, with no model: a member per suggestion with a
-/// stable locator, from every state of the page in its newest session, and the unstable ones listed in a
-/// comment for a person. The draft is a <c>partial</c> class in <c>&lt;Name&gt;.scraped.cs</c>; a person's
+/// stable locator on the page as it opens (a hidden dialog or menu in its document too), and listed in a
+/// comment for a person: the unstable ones, and what only a click shows (a later state of the page). The draft is a <c>partial</c> class in <c>&lt;Name&gt;.scraped.cs</c>; a person's
 /// additions go in the other part, <c>&lt;Name&gt;.cs</c>, which a draft never touches.
 /// </summary>
 public static class PageDrafter
@@ -21,9 +21,14 @@ public static class PageDrafter
     // Folders of a path that say nothing about the page.
     private static readonly HashSet<string> Folders = new(StringComparer.OrdinalIgnoreCase) { "pages", "page", "views", "app", "index" };
 
-    /// <summary>A page's class name from its key: <c>/invoices/{id}/edit</c> is <c>InvoiceEditPage</c>, <c>/</c> is <c>HomePage</c>.</summary>
-    public static string ClassName(string key)
+    /// <summary>
+    /// A page's class name from its key: <c>/invoices/{id}/edit</c> is <c>InvoiceEditPage</c>, <c>/</c> is
+    /// <c>HomePage</c>. A segment that is the <paramref name="title"/>'s words run together takes their
+    /// breaks: <c>/userform</c> titled "User Form" is <c>UserFormPage</c>.
+    /// </summary>
+    public static string ClassName(string key, string? title = null)
     {
+        var titleWords = string.IsNullOrEmpty(title) ? [] : DangerWordsSplit(title).ToArray();
         var path = key.Split('#')[^1];
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var words = new List<string>();
@@ -33,7 +38,8 @@ public static class PageDrafter
             if (segment == "{id}" || Folders.Contains(segment)) continue;
             // The collection a record is in names one record: invoices/{id} is an invoice.
             if (i + 1 < segments.Length && segments[i + 1] == "{id}") segment = Singular(segment);
-            words.AddRange(DangerWordsSplit(segment));
+            foreach (var word in DangerWordsSplit(segment))
+                words.AddRange(Broken(word, titleWords));
         }
         var name = string.Concat(words.Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
         if (name.Length == 0) name = "Home";
@@ -41,31 +47,40 @@ public static class PageDrafter
         return name.EndsWith("Page", StringComparison.Ordinal) ? name : name + "Page";
     }
 
-    /// <summary>Drafts one page: the members of all its states in the session of its newest capture.</summary>
-    public static PageDraft Draft(ScrapeProject project, RecordingIndex index, RecordedPage page, string className)
+    /// <summary>
+    /// The capture a page object is made from: in the session of the page's newest capture, the page as
+    /// it opened (not a state a click showed, which Explore names), else its oldest capture there.
+    /// </summary>
+    public static PageCapture Basis(RecordedPage page)
     {
-        var session = page.Latest.Session;
-        var blazor = project.Config.Platform == "blazor";
-        var merged = new List<ControlSuggestion>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        // Oldest first, so the page as it first shows names the members.
-        foreach (var capture in page.Captures.Where(c => c.Session == session).Reverse())
-        {
-            foreach (var suggestion in ControlAdvisor.Suggest(index.Read(capture), project.Config.TestIds, blazor))
-            {
-                if (seen.Add($"{suggestion.Scope}|{suggestion.Locator}")) merged.Add(suggestion);
-            }
-        }
-
-        var members = Unique(merged.Where(m => m.Stable).ToList(), className);
-        var unstable = merged.Where(m => !m.Stable).ToArray();
-        var latest = index.Read(page.Latest);
-        var header = new ScrapedHeader { Page = page.Key, From = $"{session}/{page.Latest.Event.Snapshot}", Hash = SnapshotFile.ContentHash(latest) };
-        var path = Path.Combine(project.Config.PagesFolder, className + Extension);
-        return new PageDraft(page.Key, className, path, Code(project, className, header, members, unstable, blazor), members, unstable);
+        var session = page.Captures.Where(c => c.Session == page.Latest.Session).Reverse().ToList();
+        return session.FirstOrDefault(c => c.Event.Name is null) ?? session[0];
     }
 
-    private static string Code(ScrapeProject project, string className, ScrapedHeader header, IReadOnlyList<ControlSuggestion> members, IReadOnlyList<ControlSuggestion> unstable, bool blazor)
+    /// <summary>Drafts one page from its <see cref="Basis"/>; what only its other states show is listed, not drafted.</summary>
+    public static PageDraft Draft(ScrapeProject project, RecordingIndex index, RecordedPage page, string className)
+    {
+        var basis = Basis(page);
+        var blazor = project.Config.Platform == "blazor";
+        static string Key(ControlSuggestion s) => $"{s.Scope}|{s.Locator}";
+        var opened = ControlAdvisor.Suggest(index.Read(basis), project.Config.TestIds, blazor);
+        var have = opened.Select(Key).ToHashSet(StringComparer.Ordinal);
+        // Verify opens the page as it opens: a member only a click shows would not be found there.
+        var afterClick = page.Captures.Where(c => c.Session == basis.Session && c != basis)
+            .SelectMany(c => ControlAdvisor.Suggest(index.Read(c), project.Config.TestIds, blazor).Where(s => s.Stable).Select(s => (Capture: c, Suggestion: s)))
+            .Where(x => !have.Contains(Key(x.Suggestion)))
+            .DistinctBy(x => Key(x.Suggestion))
+            .Select(x => new ShownAfter(x.Suggestion, x.Capture.Event.DisplayName))
+            .ToArray();
+
+        var members = Unique(opened.Where(m => m.Stable).ToList(), className);
+        var unstable = opened.Where(m => !m.Stable).ToArray();
+        var header = new ScrapedHeader { Page = page.Key, From = $"{basis.Session}/{basis.Event.Snapshot}", Hash = SnapshotFile.ContentHash(index.Read(basis)) };
+        var path = Path.Combine(project.Config.PagesFolder, className + Extension);
+        return new PageDraft(page.Key, className, path, Code(project, className, header, members, unstable, afterClick, blazor), members, unstable) { AfterClick = afterClick };
+    }
+
+    private static string Code(ScrapeProject project, string className, ScrapedHeader header, IReadOnlyList<ControlSuggestion> members, IReadOnlyList<ControlSuggestion> unstable, IReadOnlyList<ShownAfter> afterClick, bool blazor)
     {
         var baseClass = blazor ? "BlazorPageObjectBase" : "HtmlPageObjectBase";
         var namespaces = new SortedSet<string>(StringComparer.Ordinal) { "Brinell.Core.Locators", "Brinell.Html.Interfaces", blazor ? "Brinell.Blazor.Pages" : "Brinell.Html.Pages" };
@@ -98,6 +113,13 @@ public static class PageDrafter
             code.AppendLine("    // Not drafted: no stable locator. Give the element a test id, or pick a locator by hand.");
             foreach (var m in unstable)
                 code.AppendLine(CultureInfo.InvariantCulture, $"    // {m.Control} {m.Name}: {m.Locator} ({m.Why})");
+        }
+        if (afterClick.Count > 0)
+        {
+            code.AppendLine();
+            code.AppendLine("    // Not drafted: shown only after a click (a state of the page, or a collection's other rows).");
+            foreach (var a in afterClick)
+                code.AppendLine(CultureInfo.InvariantCulture, $"    // {a.Suggestion.Control} {a.Suggestion.Name}: {a.Suggestion.Locator}, in \"{a.State}\"");
         }
         code.AppendLine("}");
         return code.ToString();
@@ -132,8 +154,30 @@ public static class PageDrafter
 
     private static IEnumerable<string> DangerWordsSplit(string text) => Explore.DangerWords.Words(text);
 
+    // A word that is two or more consecutive title words run together, as those words; else itself.
+    private static IEnumerable<string> Broken(string word, string[] titleWords)
+    {
+        for (var i = 0; i < titleWords.Length; i++)
+        {
+            var joined = titleWords[i];
+            for (var k = i + 1; k < titleWords.Length && joined.Length < word.Length; k++)
+            {
+                joined += titleWords[k];
+                if (joined == word) return titleWords[i..(k + 1)];
+            }
+        }
+        return [word];
+    }
+
     private static string Xml(string text) => text.Replace("&", "&amp;", StringComparison.Ordinal).Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal);
 }
 
 /// <summary>A drafted page object: the page, its class, where it goes, its code, its members and those left out.</summary>
-public sealed record PageDraft(string Key, string ClassName, string Path, string Code, IReadOnlyList<ControlSuggestion> Members, IReadOnlyList<ControlSuggestion> Unstable);
+public sealed record PageDraft(string Key, string ClassName, string Path, string Code, IReadOnlyList<ControlSuggestion> Members, IReadOnlyList<ControlSuggestion> Unstable)
+{
+    /// <summary>What only a state a click showed has: listed in the draft, not drafted.</summary>
+    public IReadOnlyList<ShownAfter> AfterClick { get; init; } = [];
+}
+
+/// <summary>A suggestion only a later state of the page shows, and that state's name.</summary>
+public sealed record ShownAfter(ControlSuggestion Suggestion, string State);
