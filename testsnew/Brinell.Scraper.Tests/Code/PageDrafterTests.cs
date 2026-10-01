@@ -119,4 +119,19 @@ public sealed class PageDrafterTests : IDisposable
         Assert.Contains("    // Not drafted: a container is a control of its own.", draft.Code);
         Assert.Contains("    // TabContainerControl<TParent, TScope> Tabs: Locator.ByDataTestId(\"tabs\")", draft.Code);
     }
+
+    [Fact]
+    public void A_part_repeated_on_one_page_asks_for_a_control_as_one_on_two_pages_does()
+    {
+        static Pattern P(string signature, PatternKind kind, int pages, string? control = null) => new(signature, kind, pages, 6, [], control);
+        var patterns = new[]
+        {
+            P("li.menu-item", PatternKind.Repeated, 1),
+            P("header.site", PatternKind.Navigation, 4),
+            P("tr", PatternKind.Repeated, 2, control: "OrderRow"),
+            P("table#orders", PatternKind.Table, 1),
+        };
+
+        Assert.Equal(["li.menu-item", "header.site"], DraftRun.ControlsToMake(patterns).Select(p => p.Signature));
+    }
 }
