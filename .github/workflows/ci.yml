@@ -38,14 +38,14 @@ jobs:
           java-version: '17'
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Brinell.sln
+        run: dotnet workload restore Brinell.sln
 
       # Debug on purpose: the UI Automation bridge only compiles in Debug
       # (srcnew/Brinell.Uia.Contracts/Brinell.Uia.Bridge.props), and Debug is what the
       # test suites are written against.
       # Every project in the repository but the two VSIX projects (see ide-extensions).
       - name: Build
-        run: dotnet build srcnew/Brinell.sln -v:minimal /nr:false
+        run: dotnet build Brinell.sln -v:minimal /nr:false
 
       # Unit tests only. The *.UITests projects (UI tests and UAT suites) launch real apps and
       # stay local; see AGENTS.md "Match the test scope to the change".
@@ -63,12 +63,12 @@ jobs:
             'Brinell.Mocking.Tests',
             'Brinell.Uat.Tests',
             'Brinell.TestData.Tests',
-            'Brinell.DataValidator.Tests',
-            'Brinell.Generator.Tests'
+            'Brinell.Cli.Tests'
           )
           $failed = @()
           foreach ($p in $projects) {
-            dotnet test "testsnew/$p/$p.csproj" --no-build -v:minimal `
+            # Category=Browser drives Chromium against a local site; not installed here.
+            dotnet test "testsnew/$p/$p.csproj" --no-build -v:minimal --filter "Category!=Browser" `
               --logger "trx;LogFileName=$p.trx" --results-directory TestResults/ci
             if ($LASTEXITCODE -ne 0) { $failed += $p }
           }

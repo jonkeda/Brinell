@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace Brinell.TestData;
 
 /// <summary>
-/// Reads test-set files strictly and runs their rules. The xUnit gate and the <c>brinell-data</c>
+/// Reads test-set files strictly and runs their rules. The xUnit gate and the <c>brinell data</c>
 /// tool both call this, so they cannot disagree.
 /// </summary>
 public static partial class TestDataValidator

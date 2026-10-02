@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>brinell</AssemblyName>
+    <RootNamespace>Brinell.Cli</RootNamespace>
+    <Description>brinell: Brinell's one command line - the Scraper, test data and scenarios, control generation, and the language and MCP servers the IDEs and agents start.</Description>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>brinell</ToolCommandName>
+    <PackageId>Brinell.Cli</PackageId>
+    <!-- Playwright's driver carries .ps1 files of its own; NuGet only warns that it will not run them. -->
+    <NoWarn>$(NoWarn);NU5110;NU5111</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Scraper\Brinell.Scraper.csproj" />
+    <!-- data: Brinell.TestData is shared with the loaded assemblies, so their definitions are the tool's ITestDataDefinition. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.TestData\Brinell.TestData.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" />
+    <PackageReference Include="System.CommandLine" />
+    <!-- controls generate -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Brinell.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+    <Using Include="Brinell.Uat" />
+  </ItemGroup>
+
+  <!-- The recorder and voice for Record, which a net10.0-windows suite cannot reference (they need
+       the Windows 10 SDK's projections): built here, and copied into recorders\ beside the server,
+       which the recording run is pointed at (BRINELL_RECORDERS). -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <ProjectReference Include="..\..\srcnew\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows10.0.19041.0" Private="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RecordersOutput>..\..\srcnew\Brinell.Narrator.Windows\bin\$(Configuration)\net10.0-windows10.0.19041.0\</RecordersOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RecorderFile Include="$(RecordersOutput)Brinell.Narrator.Windows.dll;$(RecordersOutput)Microsoft.Windows.SDK.NET.dll;$(RecordersOutput)WinRT.Runtime.dll" />
+  </ItemGroup>
+
+  <Target Name="CopyRecorders" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(OutDir)recorders" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PublishRecorders" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT'">
+    <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(PublishDir)recorders" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

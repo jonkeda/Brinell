@@ -53,7 +53,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [The Scraper](guides/scraper.md) - record or explore an app's pages into a UI test project,
   draft page objects from them, and have an agent make controls; from VS Code, Visual Studio, the
   command line or MCP, and unattended with the loop
-- [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
+- [Test Data](guides/test-data.md) - test sets, `brinell data`, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
@@ -73,6 +73,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Run Guides
 
 - [Build And Test](run/build-and-test.md)
+- [The `brinell` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
 - [Playwright](run/Playwright.md)

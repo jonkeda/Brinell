@@ -7,7 +7,7 @@ namespace Brinell.Uat;
 
 /// <summary>
 /// Checks scenario files without running them: the same parser, binder and value rules as the
-/// xUnit gate, against a catalog built from the fixture's type. Used by the <c>brinell-data</c> tool.
+/// xUnit gate, against a catalog built from the fixture's type. Used by the <c>brinell data</c> tool.
 /// </summary>
 public static partial class UatScenarioCheck
 {

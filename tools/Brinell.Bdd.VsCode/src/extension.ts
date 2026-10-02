@@ -1,5 +1,5 @@
 // The Brinell BDD extension for VS Code: the same language server as Visual Studio's
-// (Brinell.Bdd.LanguageServer) for diagnostics, completion and navigation, the same Scenario Preview,
+// (brinell lsp, tools/Brinell.Cli) for diagnostics, completion and navigation, the same Scenario Preview,
 // Test Explorer on the scenarios' addresses, step breakpoints shared with Visual Studio, and the
 // Scraper view, which records an app's pages into a UI test project.
 import * as fs from "fs";
@@ -20,11 +20,11 @@ let client: LanguageClient | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const server = serverPath(context);
   if (!server) {
-    void vscode.window.showErrorMessage("The Brinell BDD language server is not built. Build tools/Brinell.Bdd.LanguageServer, or set brinellBdd.serverPath.");
+    void vscode.window.showErrorMessage("The Brinell BDD language server is not built. Build tools/Brinell.Cli, or set brinellBdd.serverPath.");
     return;
   }
 
-  const serverOptions: ServerOptions = { command: "dotnet", args: [server] };
+  const serverOptions: ServerOptions = { command: "dotnet", args: [server, "lsp"] };
   const clientOptions: LanguageClientOptions = {
     documentSelector: [
       { scheme: "file", language: "markdown", pattern: "**/*.feature.md" },
@@ -125,14 +125,14 @@ function serverPath(context: vscode.ExtensionContext): string | undefined {
     return configured;
   }
 
-  const packed = context.asAbsolutePath(path.join("server", "Brinell.Bdd.LanguageServer.dll"));
+  const packed = context.asAbsolutePath(path.join("server", "brinell.dll"));
   if (fs.existsSync(packed)) {
     return packed;
   }
 
   for (const folder of vscode.workspace.workspaceFolders ?? []) {
     for (let at = folder.uri.fsPath; ; at = path.dirname(at)) {
-      const built = path.join(at, "tools", "Brinell.Bdd.LanguageServer", "bin", "Debug", "net10.0", "Brinell.Bdd.LanguageServer.dll");
+      const built = path.join(at, "tools", "Brinell.Cli", "bin", "Debug", "net10.0", "brinell.dll");
       if (fs.existsSync(built)) {
         return built;
       }

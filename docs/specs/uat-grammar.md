@@ -94,7 +94,7 @@ Rules the EBNF does not show:
   above. A level-2 heading the engine does not know opens a prose section, up to the next
   level-2 heading. Text that reads like a step outside a block is prose; when its section then
   has no steps, the "no steps" error says to put them in a gherkin block, and
-  `brinell-data validate --fix` does.
+  `brinell data validate --fix` does.
 - **Headings** that look like a section but are not one (`## scenario:`, `### Scenario:`,
   `## Scenario x`, an underlined heading) are a warning, `UAT031`, and read as prose.
 
@@ -169,7 +169,7 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 | `UAT025`, `UAT026` | a phrase heading has no phrase, or the phrase has no steps (with the hint) |
 | `UAT027` | a malformed `Parameters` table |
 | `UAT028` | a steps file with content other than one `# Steps:` heading and step sections |
-| `UAT029` | a heading or file name in the form before feature files (`# UAT:`, `## Phrase:`, `*.uat.md`, `*.phrases.md`); `brinell-data validate --fix` rewrites it |
+| `UAT029` | a heading or file name in the form before feature files (`# UAT:`, `## Phrase:`, `*.uat.md`, `*.phrases.md`); `brinell data validate --fix` rewrites it |
 | `UAT031` | warning: a heading that looks like a section but is not one, read as prose |
 
 Binder (`UATB0xx`) and argument (`UATA0xx`) diagnostics are raised in the binder and the value

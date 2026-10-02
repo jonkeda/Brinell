@@ -5,7 +5,7 @@ Working directory for commands in this document: Brinell root.
 ## Build
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
 ## Unit Tests

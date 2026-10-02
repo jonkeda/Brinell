@@ -14,10 +14,10 @@ and draft is in [the guide](../docs/guides/scraper.md#explore-and-draft).
 Explore, draft and verify one (from this folder):
 
 ```powershell
-$server = '..\tools\Brinell.Bdd.LanguageServer\bin\Debug\net10.0\Brinell.Bdd.LanguageServer.dll'
-dotnet $server scrape explore --project Brinell.Html.Plain --solution . --headless
-dotnet $server scrape draft --project Brinell.Html.Plain --solution .
-dotnet $server scrape verify --project Brinell.Html.Plain --solution . --headless
+$brinell = '..\tools\Scripts\brinell.ps1'
+& $brinell scrape explore --project Brinell.Html.Plain --solution . --headless
+& $brinell scrape draft --project Brinell.Html.Plain --solution .
+& $brinell scrape verify --project Brinell.Html.Plain --solution . --headless
 ```
 
 The sites' recordings stay out of git (their content is not ours); the drafted page objects are

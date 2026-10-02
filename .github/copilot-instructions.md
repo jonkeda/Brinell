@@ -26,7 +26,7 @@ reference it points to; if your tool does not load skills, open them directly.
 Commands are from the Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Uat.Tests\Brinell.Uat.Tests.csproj -v:minimal /nr:false
@@ -35,7 +35,7 @@ dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal
 ```
 
 Use the focused platform run guides under `docs/run/` for UI tests.
-`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+`Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 

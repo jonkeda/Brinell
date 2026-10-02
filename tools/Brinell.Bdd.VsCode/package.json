@@ -122,7 +122,7 @@
         "brinellBdd.serverPath": {
           "type": "string",
           "default": "",
-          "description": "The language server's dll (Brinell.Bdd.LanguageServer.dll). Empty: the one in the extension, else the repository's build."
+          "description": "brinell's dll (brinell.dll, started with lsp). Empty: the one in the extension, else the repository's build."
         },
         "brinellBdd.recordingsFolder": {
           "type": "string",

@@ -9,7 +9,7 @@ namespace Brinell.Samples.Todo.IntegrationTests;
 /// </summary>
 /// <remarks>
 /// The rules live in <see cref="TodoTestDataDefinition"/> and run through
-/// <see cref="TestDataValidator"/>, the same code the <c>brinell-data</c> tool runs.
+/// <see cref="TestDataValidator"/>, the same code the <c>brinell data</c> tool runs.
 /// </remarks>
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "Integration")]
@@ -39,7 +39,7 @@ public sealed class TestDataTests
     [Fact]
     public void TheSchemaFile_IsUpToDate()
     {
-        // BRINELL_UPDATE_SCHEMA=1 rewrites the file instead of failing; brinell-data schema does the same.
+        // BRINELL_UPDATE_SCHEMA=1 rewrites the file instead of failing; brinell data schema does the same.
         var path = TestDataSchema.PathOf(Definition);
         var expected = TestDataSchema.Export(Definition);
         if (Environment.GetEnvironmentVariable("BRINELL_UPDATE_SCHEMA") == "1")

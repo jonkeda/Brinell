@@ -32,7 +32,7 @@ public sealed record BddFileAnalysis(
             diagnostics.Add(new BddDiagnostic(
                 BddDiagnosticSeverity.Error,
                 BddFileFormat.OldFormCode,
-                $"'{Path.GetFileName(filePath)}' is the old name of '{Path.GetFileName(renamed)}'. Run 'brinell-data validate --fix' to rename it.",
+                $"'{Path.GetFileName(filePath)}' is the old name of '{Path.GetFileName(renamed)}'. Run 'brinell data validate --fix' to rename it.",
                 new BddSourceLocation(filePath, 1)));
         }
 

@@ -359,7 +359,7 @@ public static partial class BddMarkdownParser
                 return trimmed;
             }
 
-            AddError(BddFileFormat.OldFormCode, $"'{trimmed}' is the old form of '{heading}'. Run 'brinell-data validate --fix' to rewrite it.", line);
+            AddError(BddFileFormat.OldFormCode, $"'{trimmed}' is the old form of '{heading}'. Run 'brinell data validate --fix' to rewrite it.", line);
             return heading;
         }
 

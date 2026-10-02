@@ -1,7 +1,7 @@
 # AD-022: The IDEs Run The Gate's Engine
 
 What an IDE shows about a feature file, step file or suite config comes from the engine the xUnit
-gate runs. It is served by one .NET process, `Brinell.Bdd.LanguageServer`:
+gate runs. It is served by one .NET process, `brinell lsp` (AD-028):
 
 | Decision | What holds |
 | --- | --- |

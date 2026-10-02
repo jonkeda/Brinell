@@ -33,7 +33,7 @@ The short list that must not be broken. Each links the decision that explains it
   discovery pass.
   [AD-011](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - **Test data is typed and validated.** Test sets are read strictly into the app's real types
-  and checked by one engine (gate and `brinell-data` alike); mock bodies are contract types,
+  and checked by one engine (gate and `brinell data` alike); mock bodies are contract types,
   never anonymous (`BRINELL001`); a UAT file names its own `TestData`.
   [AD-012](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
 - **Html controls have MAUI's shape.** Generated from `.tpl.cs`, MAUI's `Run*` signatures and
@@ -47,7 +47,7 @@ The short list that must not be broken. Each links the decision that explains it
   [AD-015](decisions/ad-015-a-steps-subject-picks-its-app.md)
 - **Phrase arguments are typed by the method.** One invariant reader for step values, Examples
   and table cells (`12-May-2026`, `1,250.75`), checked at bind time; a broken phrase fails only the
-  steps that use it; the gate and `brinell-data` check alike.
+  steps that use it; the gate and `brinell data` check alike.
   [AD-016](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
 - **Callable phrases are sequences, not programs.** A `## Step:` is steps with placeholders; no
   branch, loop or variable; bound where it is called, problems reported at the call; no shadowing.
@@ -62,7 +62,7 @@ The short list that must not be broken. Each links the decision that explains it
   (and `UatPlatformsAttribute`, for now). The engine, the Presenter, the tools and the IDE
   extensions have `Bdd` names. [AD-021](decisions/ad-021-bdd-under-uat.md)
 - **The IDEs run the gate's engine.** An IDE never parses or binds a scenario itself. It asks
-  `Brinell.Bdd.LanguageServer`, which checks with the gate's own code and words, and loads a suite
+  `brinell lsp`, which checks with the gate's own code and words, and loads a suite
   only through `Brinell.Bdd.Workspace`. A scenario runs by its `BddScenario` address.
   [AD-022](decisions/ad-022-the-ides-run-the-gates-engine.md)
 - **Gherkin is fenced; the rest is prose.** A step is read only inside a ` ```gherkin ` block; any

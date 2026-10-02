@@ -10,6 +10,7 @@ Deleted topics stay in git history; the last full tree is at
 | --- | --- | --- | --- |
 | [android/](android/plan.md) | Every Android UI failure fixed or explained; TOD.07.15 on an emulator (step 9) | doing: baseline taken | 2026-09-27 |
 | [cleanup/](cleanup/plan.md) | This cleanup: every step done, `Scraper/` last | done; to close | 2026-09-30 |
+| [cli/](cli/design.md) | One command line, `brinell` (a dotnet tool, AD-028, `docs/run/cli.md`): `scrape`, `data` (was `brinell-data`), `scenario`, `controls generate`, `mcp`, `lsp`; `tools/Brinell.Cli` holds the language server, DataValidator and Generator. Open: the VSIX built and both IDEs tried on `brinell.dll lsp`; then extract and close | built (section 10) | 2026-10-02 |
 | [communitytoolkit/](communitytoolkit/plan.md) | Android runs of the toolkit controls; the agent template for the next control source | Windows done | 2026-09-27 |
 | [construction/](construction/plan.md) | Exact.Construction's UI test migration onto Brinell | infrastructure in place, Todos not started | 2026-09 |
 | [core/](core/README.md) | One `ICore*` shape for every stack: L2 (busy signal), then the interfaces and bases | draft; L1 done | 2026-09-27 |
@@ -35,7 +36,6 @@ Deleted topics stay in git history; the last full tree is at
 | --- | --- | --- |
 | Repo move leftovers: licence decision, org secrets, archive `jonkeda/Brinell` | the deleted `move/` plan (the move PR merged 2026-09-23) | todo |
 | Test data for Construction: expose or move the DTOs, a Construction `ITestDataDefinition`, `brinell-data` pointed at it; test sets per module and a cached seeded DB | step 9.3 of the deleted `uat/implementation-plan.md` | todo, a plan of its own |
-| Ship `brinell-data` as a `dotnet tool` package, or keep running it from source | the same plan's open points | undecided |
 | Narrated recordings, checks not run: M1, M3 to M7, M9, M11 to M15, another voice in M19 (the IDEs' Record, the MCP review page, a failed scene, Blazor headless, an emulator scene past 3 minutes, no ffmpeg) | [the manual test plan](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/manual-test-plan.md) of the deleted `narrator/` topic (AD-024) | to run |
 | Narrator mode, designed and not built: a list of recent scripts, **Open in Narrator** on a `*.video.md` in the Workspace tree, reloading a script when its file changes, a three-state script checkbox, "n scenes newer" since the last stitch | [its design](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/presenter/design.md) | todo |
 | Recorders not there: the Stride context does not name its window (`IRecordable`), no iOS simulator recorder | [screen-capture.md](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/screen-capture.md) | todo |

@@ -9,7 +9,7 @@ using StreamJsonRpc;
 namespace Brinell.Bdd.VisualStudio;
 
 /// <summary>
-/// The language server, started as <c>dotnet Server\Brinell.Bdd.LanguageServer.dll</c> from the
+/// The language server, started as <c>dotnet Server\brinell.dll lsp</c> from the
 /// extension's folder, and the messages the extension sends it. The extension holds no engine
 /// types: everything here is JSON (P2). A server that exits is started again on the next call.
 /// </summary>
@@ -39,7 +39,7 @@ public sealed class BddServerClient : IDisposable
 
     /// <summary>The server's path beside the extension's assembly.</summary>
     public static string DefaultServerPath =>
-        Path.Combine(Path.GetDirectoryName(typeof(BddServerClient).Assembly.Location)!, "Server", "Brinell.Bdd.LanguageServer.dll");
+        Path.Combine(Path.GetDirectoryName(typeof(BddServerClient).Assembly.Location)!, "Server", "brinell.dll");
 
     /// <summary>Starts the server for a solution folder, or restarts it for another one.</summary>
     /// <param name="solutionDir">The folder whose suites the server serves.</param>
@@ -175,7 +175,7 @@ public sealed class BddServerClient : IDisposable
                 throw new FileNotFoundException($"The Brinell language server is not at {_serverPath}. Reinstall the extension.", _serverPath);
             }
 
-            var process = Process.Start(new ProcessStartInfo("dotnet", $"\"{_serverPath}\"")
+            var process = Process.Start(new ProcessStartInfo("dotnet", $"\"{_serverPath}\" lsp")
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,

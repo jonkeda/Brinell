@@ -7,7 +7,7 @@ Start with diagnostics. Do not add sleeps or longer timeouts as the first fix.
 Run:
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
 ## Test Cannot Find Element

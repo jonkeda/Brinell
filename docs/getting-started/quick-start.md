@@ -8,10 +8,10 @@ and a first page-object style test.
 Working directory: Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
-`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+`Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 

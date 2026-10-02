@@ -3,7 +3,7 @@ namespace Brinell.Bdd;
 /// <summary>
 /// The names of feature and step files, and the rewrite from the forms before them
 /// (<c>Scenarios/</c>, <c>*.uat.md</c>, <c># UAT:</c>, <c>*.phrases.md</c>, <c>## Phrase:</c>) that
-/// <c>brinell-data validate --fix</c> applies.
+/// <c>brinell data validate --fix</c> applies.
 /// </summary>
 public static class BddFileFormat
 {
@@ -123,7 +123,7 @@ public static class BddFileFormat
     }
 
     /// <summary>What a "no steps" error adds when its section holds text that reads like steps.</summary>
-    public const string FenceHint = "Steps go in a ```gherkin block; run 'brinell-data validate --fix' to wrap them.";
+    public const string FenceHint = "Steps go in a ```gherkin block; run 'brinell data validate --fix' to wrap them.";
 
     private static readonly string[] StepSections = ["## Background", "## Scenario:", "## Scenario Outline:", "## Step:", "## Step for each row:"];
 

@@ -8,7 +8,7 @@ namespace Brinell.Samples.Todo.TestSupport;
 
 /// <summary>
 /// The Todo test sets (<c>TestData/*.json</c>) and the rules they follow, for the xUnit gate and
-/// the <c>brinell-data</c> tool.
+/// the <c>brinell data</c> tool.
 /// </summary>
 public sealed class TodoTestDataDefinition : TestDataDefinition<TodoTestSetFile>
 {

@@ -112,7 +112,7 @@ public sealed class UatReflectionRuntime
 
     /// <summary>
     /// The phrases of <paramref name="fixtureType"/> without creating the fixture: for checking
-    /// scenario files (the <c>brinell-data</c> tool), not for running them.
+    /// scenario files (the <c>brinell data</c> tool), not for running them.
     /// </summary>
     /// <param name="fixtureType">The suite's fixture, as the config's <c>Fixture</c> names it.</param>
     /// <param name="modules">A head's modules, for a fixture with several heads; the fixture's own scan when null.</param>

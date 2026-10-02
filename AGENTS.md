@@ -136,7 +136,7 @@ and all XML doc on private/internal members. Durable rationale goes to `.docs/`,
 Commands are from the Brinell root:
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false

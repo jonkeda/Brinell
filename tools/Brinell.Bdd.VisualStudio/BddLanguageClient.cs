@@ -59,7 +59,7 @@ internal sealed class BddContentTypeProvider : IFilePathToContentTypeProvider
 
 /// <summary>
 /// The editor's LSP client (phase 3): diagnostics into the Error List, and the language features,
-/// from <c>Brinell.Bdd.LanguageServer</c>. It starts its own server process; the preview keeps its
+/// from <c>brinell lsp</c> (tools/Brinell.Cli). It starts its own server process; the preview keeps its
 /// own (<see cref="BddServerClient"/>), so a failing editor client never takes the preview down.
 /// </summary>
 [Export(typeof(ILanguageClient))]
@@ -97,7 +97,7 @@ internal sealed class BddLanguageClient : ILanguageClient
             return null;
         }
 
-        _process = Process.Start(new ProcessStartInfo("dotnet", $"\"{server}\"")
+        _process = Process.Start(new ProcessStartInfo("dotnet", $"\"{server}\" lsp")
         {
             UseShellExecute = false,
             CreateNoWindow = true,

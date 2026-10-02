@@ -223,7 +223,7 @@ $($sections -join "`n`n")
     return $project
 }
 
-# The language server's scrape mode; its exit code and its JSON.
+# brinell scrape; its exit code and its JSON.
 function Invoke-Scrape([string[]]$arguments) {
     $out = & dotnet $server scrape @arguments --json 2>$null
     $text = $out -join "`n"
@@ -235,7 +235,7 @@ function Invoke-Scrape([string[]]$arguments) {
 function Invoke-Agent([string]$solution, [string]$project, [string]$logFile) {
     $minutes = if ($AgentMinutes -gt 0) { $AgentMinutes } else { 10 }
     $prompt = "Use only the brinell-bdd MCP tools. In the scraped project $($spec.Project), follow the scrape-pages workflow on the drafted page objects (the *.scraped.cs files): detect_patterns, and for each repeated pattern write a control with write_code; give members better names where the draft's are poor; then check_code until it passes. Do not start or stop recordings, and do not explore."
-    $mcp = @{ mcpServers = @{ 'brinell-bdd' = @{ type = 'local'; command = 'dotnet'; args = @($server, '--mcp', '--solution', $solution); tools = @('*') } } } | ConvertTo-Json -Depth 5 -Compress
+    $mcp = @{ mcpServers = @{ 'brinell-bdd' = @{ type = 'local'; command = 'dotnet'; args = @($server, 'mcp', '--solution', $solution); tools = @('*') } } } | ConvertTo-Json -Depth 5 -Compress
     if ($Agent -eq 'copilot') {
         $command = 'copilot'
         $arguments = @('-p', $prompt, '--additional-mcp-config', $mcp, '--allow-tool', 'brinell-bdd', '--deny-tool', 'shell', '--deny-tool', 'write')
@@ -264,10 +264,10 @@ function Get-Files([string]$folder) {
 }
 
 Write-Host "scrape-loop: $Target, agent $Agent, profile $Profile, $Repeat run(s) into $OutDir"
-Invoke-Build 'tools/Brinell.Bdd.LanguageServer/Brinell.Bdd.LanguageServer.csproj'
+Invoke-Build 'tools/Brinell.Cli/Brinell.Cli.csproj'
 if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Brinell.Scraper.TestSite/Brinell.Scraper.TestSite.csproj' }
 elseif (-not $spec.Site) { Invoke-Build 'samples/Brinell.Samples.Blazor.App/Brinell.Samples.Blazor.App.csproj' }
-$server = Join-Path $root 'tools/Brinell.Bdd.LanguageServer/bin/Debug/net10.0/Brinell.Bdd.LanguageServer.dll'
+$server = Join-Path $root 'tools/Brinell.Cli/bin/Debug/net10.0/brinell.dll'
 $repoBefore = & git -C $root status --porcelain
 
 $runs = @()

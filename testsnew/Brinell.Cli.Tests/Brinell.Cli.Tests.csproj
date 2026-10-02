@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Cli.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\Brinell.Cli\Brinell.Cli.csproj" />
+    <!-- scrape: the site the commands explore, served by TestSiteServer; its files come along. -->
+    <ProjectReference Include="..\Brinell.Scraper.TestSite\Brinell.Scraper.TestSite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- controls generate: the inputs and expected outputs are files to read, not code; under TestData\ in the output. -->
+    <Compile Remove="Generate/TestData/**/*.cs" />
+    <Content Include="Generate/TestData/**/*" CopyToOutputDirectory="PreserveNewest" Link="TestData/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Brinell.Bdd" />
+    <Using Include="Brinell.Uat" />
+  </ItemGroup>
+
+</Project>

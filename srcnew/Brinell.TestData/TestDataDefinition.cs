@@ -8,7 +8,7 @@ namespace Brinell.TestData;
 /// the rules the data must follow.
 /// </summary>
 /// <remarks>
-/// Implement it by deriving from <see cref="TestDataDefinition{TSet}"/>. The <c>brinell-data</c>
+/// Implement it by deriving from <see cref="TestDataDefinition{TSet}"/>. The <c>brinell data</c>
 /// tool finds every public implementation in the assemblies it loads.
 /// </remarks>
 public interface ITestDataDefinition

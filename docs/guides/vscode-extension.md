@@ -1,7 +1,7 @@
 # Brinell BDD In VS Code
 
 The VS Code extension (`tools/Brinell.Bdd.VsCode`) is the Visual Studio extension's twin. It
-starts the same language server (`Brinell.Bdd.LanguageServer`) and shows the same Scenario Preview,
+starts the same language server (`brinell lsp`, from `tools/Brinell.Cli`) and shows the same Scenario Preview,
 so the two IDEs say the same thing about a file. What each feature does is in the Visual Studio
 guide ([visual-studio-preview.md](visual-studio-preview.md)). This page is only what differs in
 VS Code.
@@ -21,8 +21,8 @@ Open the folder in VS Code and press **F5** to start an Extension Development Ho
 folder with a suite, such as `samples/Todo`. The extension uses:
 - the server in its own `server` folder when packaged;
 - else `brinellBdd.serverPath`;
-- else the repository's build of `tools/Brinell.Bdd.LanguageServer` (build it first:
-  `dotnet build tools\Brinell.Bdd.LanguageServer` from the Brinell root).
+- else the repository's build of `tools/Brinell.Cli` (build it first:
+  `dotnet build tools\Brinell.Cli` from the Brinell root).
 
 ## In The Editor
 

@@ -5,7 +5,7 @@ Brinell has many projects (84). A project is separate only when one of these hol
 | # | Reason | Example |
 | --- | --- | --- |
 | R1 | **Another target framework** | `net48` for the Visual Studio extension; a Windows 10 SDK framework for `Brinell.Narrator.Windows`; `netstandard2.0` for an analyzer |
-| R2 | **Another process or loader** | An executable; an assembly an app under test loads (`Brinell.Uia.Contracts`); one Visual Studio loads out of process (the CodeLens provider); one found at run time in a `recorders` folder |
+| R2 | **Another process or loader** | An executable (one with a command line is `brinell`, AD-028); an assembly an app under test loads (`Brinell.Uia.Contracts`); one Visual Studio loads out of process (the CodeLens provider); one found at run time in a `recorders` folder |
 | R3 | **A dependency its users should not get** | Appium, FlaUI, Playwright, xUnit, Markdig |
 | R4 | **A layer others build on without the rest** | `Brinell.Core` under everything; `Brinell.Bdd` without xUnit (AD-021); `Brinell.TestData` with no dependency at all |
 | R5 | **A sample that teaches a structure** | The Todo sample's tiers |

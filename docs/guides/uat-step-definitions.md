@@ -214,7 +214,7 @@ loads, and a step that binds to it fails naming the method:
 | `UATA012` | takes two parameters from under the step |
 | `UATA013` | has two empty attributes of one keyword, a name prefix that is not its keyword, an empty attribute on a control verb, or a control-verb property (`CommandId`, `Literal`) on a phrase method |
 
-`brinell-data phrases` lists the broken ones as warnings.
+`brinell data phrases` lists the broken ones as warnings.
 
 ## Callable Phrases
 
@@ -261,7 +261,7 @@ Given the synced list has todos
   | due       | date | 12-May-2026 |
   ```
 
-  Types are written as `brinell-data phrases` shows them: `text`, `whole number`, `number`,
+  Types are written as `brinell data phrases` shows them: `text`, `whole number`, `number`,
   `true/false`, `date`, `date and time`, `time`, `duration`, `user`, `list of ...`, `table`, or
   the C# name of a type a phrase already takes (`TodoStatus`). A declared type must agree with
   the steps the value goes to.
@@ -320,7 +320,7 @@ What the text alone shows is a parse error: `<table>` outside a phrase section (
 (`UAT028`). Phrase files hold no prose, as scenario files do not.
 
 A body step that binds to nothing is not a broken callable: it may bind where it is called (in
-another app). The call reports it. `brinell-data validate` reports broken callables as warnings,
+another app). The call reports it. `brinell data validate` reports broken callables as warnings,
 and `phrases` lists callables with their types.
 
 ## Built-In Phrases
@@ -626,11 +626,11 @@ the file sees; when it sees two, the step is ambiguous and names it with its nam
 
 - A failure report names each step's scope: `Passed: file:12: [Invoicing] ...AddLine: When I add
   a line "Rent"`, or `[page Todo List]` for a page phrase.
-- `brinell-data phrases <file>` lists only the phrases that file sees, grouped by where they come
+- `brinell data phrases <file>` lists only the phrases that file sees, grouped by where they come
   from (`## This file`, `## Invoicing`, `## Backend (Using)`, `## Every scenario`, a page's own):
   what an editor would offer at a step there. Without a file it lists every phrase, with
   `in Invoicing` on a namespaced one.
-- `brinell-data references Accounts` lists the config and the files that use a namespace.
+- `brinell data references Accounts` lists the config and the files that use a namespace.
 ## Page And Control Names
 
 Page and control names come from the runtime model, not from the markdown file.
@@ -931,7 +931,7 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 - `srcnew/Brinell.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
 - `srcnew/Brinell.Uat/BddArguments.cs` — the bind-time check and the run-time read
 - `srcnew/Brinell.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
-- `srcnew/Brinell.Uat/UatScenarioCheck.cs` — checking files without running them (`brinell-data`)
+- `srcnew/Brinell.Uat/UatScenarioCheck.cs` — checking files without running them (`brinell data`)
 - `srcnew/Brinell.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
 - `srcnew/Brinell.Uat/UatExecution.cs`
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs`

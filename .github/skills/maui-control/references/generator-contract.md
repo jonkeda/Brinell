@@ -18,10 +18,10 @@ Run from the Brinell root. It rebuilds the generator CLI, then regenerates every
 under `srcnew\Brinell.Maui\Controls` and `srcnew\Brinell.Maui.CommunityToolkit\Controls`,
 recursively. `tools\Scripts\CreateHtml.Bat` does the same for `srcnew\Brinell.Html\Controls`
 and `srcnew\Brinell.Blazor\Controls`: the contract below holds for Html controls unchanged, with
-`IHtmlElement` as the element type. For one file or folder elsewhere, run the CLI directly:
+`IHtmlElement` as the element type. For one file or folder elsewhere, run `brinell controls generate` directly:
 
 ```
-tools\Brinell.Generator\bin\Release\net10.0\Brinell.Generator.exe --input <file-or-folder>[;<file-or-folder>...]
+pwsh tools\Scripts\brinell.ps1 controls generate --input <file-or-folder>[;<file-or-folder>...]
 ```
 
 Output is always `<name>.gen.cs` beside the input.
@@ -206,5 +206,5 @@ Mark a Core method `[SkipGeneration("reason")]` when its public member is hand-w
    Every member you meant should be there, nothing extra, each returning the type you meant.
 3. Build the project, then the solution: controls are referenced widely.
    ```
-   dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+   dotnet build Brinell.sln -v:minimal /nr:false
    ```

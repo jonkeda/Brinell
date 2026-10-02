@@ -70,7 +70,7 @@ Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/
 ```powershell
 # From the suite's project folder
 $env:BRINELL_RECORD = "Features\how-todo-works.video.md"
-$env:BRINELL_RECORDERS = "..\..\..\..\tools\Brinell.Bdd.LanguageServer\bin\Debug\net10.0\recorders"
+$env:BRINELL_RECORDERS = "..\..\..\..\tools\Brinell.Cli\bin\Debug\net10.0\recorders"
 dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01.1"
 ```
 

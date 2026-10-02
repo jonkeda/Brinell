@@ -112,16 +112,19 @@ no model.
   with **Explore** (a dry run the first time: links only, it lists what it would click), **Stop**
   and **Continue** in the running strip. Step 4 lists what was captured, skipped and blocked, with
   **Never click**, **Always click** or **Allow this request**. Steps 6 and 7 draft and verify.
-- **The command line** (from the solution folder):
+- **The command line** ([`brinell`](../run/cli.md), from the solution folder or a project's own
+  folder, which picks the project):
 
   ```powershell
-  dotnet <Brinell.Bdd.LanguageServer.dll> scrape explore --project MyApp.UITests [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--headless] [--yes] [--json]
-  dotnet <Brinell.Bdd.LanguageServer.dll> scrape draft --project MyApp.UITests [--page /orders/{id}]
-  dotnet <Brinell.Bdd.LanguageServer.dll> scrape verify --project MyApp.UITests [--headless]
+  brinell scrape status
+  brinell scrape explore --project MyApp.UITests [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--headless] [--yes] [--json]
+  brinell scrape draft --project MyApp.UITests [--page /orders/{id}]
+  brinell scrape verify --project MyApp.UITests [--headless]
   ```
 
-  `explore` shows the guards and asks "Go on?" unless `--yes`. It exits with 0 when it ran within
-  its guards, 1 when a guard stopped it (a sign-in, a refused host), 2 for an error.
+  `explore` shows the guards and asks "Go on?" unless `--yes`; with no one at a terminal it does
+  not start without `--yes`. It exits with 0 when it ran within its guards, 1 when a guard stopped
+  it (a sign-in, a refused host), 2 for an error.
 - **An agent:** `explore_app` (a dry run unless asked otherwise), `draft_page_objects`,
   `verify_page_objects` and `update_scraper_config`. Each asks you first.
 

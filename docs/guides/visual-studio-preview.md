@@ -3,7 +3,7 @@
 The Brinell BDD extension shows a feature or step file as readable steps, beside the editor: what
 each step binds to and on which page, the gate's diagnostic on a step that binds to nothing, a
 callable call unfolded into its body, and each Scenario Outline row. It is the same check the
-xUnit gate and `brinell-data validate` run, on the text as you type it.
+xUnit gate and `brinell data validate` run, on the text as you type it.
 
 Visual Studio 2022 17.10 or later (2026 too), and the .NET 10 runtime, which a Brinell suite needs
 anyway.
@@ -16,7 +16,7 @@ The extension needs Visual Studio's MSBuild, so it has a solution of its own. Fr
 & "<Visual Studio>\MSBuild\Current\Bin\MSBuild.exe" tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx -restore
 ```
 
-The build publishes `Brinell.Bdd.LanguageServer` into the VSIX and deploys the extension to the
+The build publishes `brinell` (`tools/Brinell.Cli`) into the VSIX and deploys the extension to the
 experimental instance (`devenv /rootsuffix Exp`); pass `/p:DeployExtension=false` to only build it.
 To install it for everyday use, open `tools\Brinell.Bdd.VisualStudio\bin\Debug\net48\Brinell.Bdd.VisualStudio.vsix`.
 Each GitHub release carries both extensions: `Brinell.Bdd.VisualStudio-<version>.vsix` for Visual
@@ -138,16 +138,16 @@ step's text, its arguments as read, the app, the page and the call chain; **F11*
 step definition. A test runs the build output's copy of a feature file; a listed file matches it
 by its path below the `Features` folder.
 
-The extension starts `dotnet Server\Brinell.Bdd.LanguageServer.dll` from its own folder; its log is
+The extension starts `dotnet Server\brinell.dll lsp` from its own folder; its log is
 the **Brinell BDD** pane of the Output window.
 
 ## In The Editor
 
 Feature files, step files and the suite configs (`uat.config.md`, `bdd.config.md`) open in the
-Markdown editor with a language server of their own, the same `Brinell.Bdd.LanguageServer`:
+Markdown editor with a language server of their own, the same `brinell lsp`:
 
 - **Diagnostics.** The gate's problems show as squiggles and in the Error List, word for word as
-  the xUnit gate and `brinell-data validate` report them: the open file as you type, the whole suite
+  the xUnit gate and `brinell data validate` report them: the open file as you type, the whole suite
   on save and after a build. A problem inside a callable shows at the call, with the steps it went
   through. A step that failed in the last run is an error at its line (`UATRUN`), with the failure's
   message.
@@ -177,7 +177,7 @@ Markdown editor with a language server of their own, the same `Brinell.Bdd.Langu
 
 - **Quick fixes (Ctrl+.).**
   - A value with one right answer (`2026-05-12` for a date) is rewritten, as
-    `brinell-data validate --fix` does.
+    `brinell data validate --fix` does.
   - Old headings are rewritten, and an old file name (UAT029) is renamed.
   - On a step that binds to nothing, **Create step definition** adds a stub to the suite's
     `[BddStepDefinitions]` class: its phrase has a placeholder for each quoted value and number.
@@ -200,7 +200,7 @@ Markdown editor with a language server of their own, the same `Brinell.Bdd.Langu
 - a `Using` namespace nothing is in;
 - a suite that cannot bind, with the reason;
 - a `testdata.schema.json` out of date with the test-data definition. **Ctrl+.** regenerates it, as
-  `brinell-data schema` does.
+  `brinell data schema` does.
 
 Completion offers the fields of each table and their values (heads, `true`/`false`, test sets),
 the assembly kinds, the namespaces, and the heads in the Apps table. Hover on a field says what it
@@ -248,7 +248,7 @@ From the Brinell root, for the Todo sample:
     "brinell-bdd": {
       "type": "stdio",
       "command": "dotnet",
-      "args": ["run", "--project", "tools/Brinell.Bdd.LanguageServer", "--", "--mcp", "--solution", "samples/Todo"]
+      "args": ["run", "--project", "tools/Brinell.Cli", "--", "mcp", "--solution", "samples/Todo"]
     }
   }
 }
@@ -261,11 +261,11 @@ passes it. A step with no phrase is left as a marked gap, never an invented phra
 
 ## Without Visual Studio
 
-The server renders one file as a page, for a look or a bug report (from the Brinell root, after
-`dotnet build tools\Brinell.Bdd.LanguageServer`):
+`brinell scenario preview` renders one file as a page, for a look or a bug report (from the Brinell
+root; elsewhere, `brinell` once [installed](../run/cli.md)):
 
 ```powershell
-tools\Brinell.Bdd.LanguageServer\bin\Debug\net10.0\Brinell.Bdd.LanguageServer.exe --preview samples\Todo\tests\Brinell.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
+pwsh tools\Scripts\brinell.ps1 scenario preview samples\Todo\tests\Brinell.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
 ```
 
 `--host` writes the page the IDE's webview loads, with the preview posted into it.

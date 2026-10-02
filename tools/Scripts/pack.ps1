@@ -1,4 +1,4 @@
-# Packs the Brinell library projects that are part of srcnew\Brinell.sln.
+# Packs the Brinell library projects that are part of Brinell.sln, and the brinell tool.
 # Working directory: Brinell root.
 #
 #   ./tools/Scripts/pack.ps1 -Version 0.2.0 -Output artifacts
@@ -34,3 +34,7 @@ foreach ($name in $libraries) {
     dotnet pack "srcnew/$name/$name.csproj" -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version" -p:GeneratePackageOnBuild=false
     if ($LASTEXITCODE -ne 0) { throw "Pack failed: $name" }
 }
+
+# brinell, the command line (AD-028): a dotnet tool, versioned with the libraries.
+dotnet pack 'tools/Brinell.Cli/Brinell.Cli.csproj' -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version"
+if ($LASTEXITCODE -ne 0) { throw 'Pack failed: Brinell.Cli' }

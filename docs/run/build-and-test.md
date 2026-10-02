@@ -5,7 +5,7 @@ Working directory: Brinell root.
 ## Framework Build
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
 ## Focused Unit Tests
@@ -26,6 +26,6 @@ dotnet build srcnew\Brinell.WinForms\Brinell.WinForms.csproj -f net10.0-windows 
 
 ## Notes
 
-`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+`Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.

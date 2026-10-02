@@ -22,16 +22,27 @@ public sealed class BddWorkspaceTests
             configs);
     }
 
-    // srcnew/Brinell.sln lists the Todo projects, which are not under srcnew.
+    // A solution in a folder of its own that lists the Todo projects, which are not under it.
     [Fact]
     public void FindConfigs_FindsTheSuitesOfTheProjectsASolutionLists_OutsideItsFolder()
     {
-        var srcnew = Path.GetFullPath(Path.Combine(Todo, "..", "..", "srcnew"));
+        var folder = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "brinell-sln-" + Guid.NewGuid().ToString("N"))).FullName;
+        try
+        {
+            string Line(string project) =>
+                $"Project(\"{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}\") = \"{project}\", \"{Path.Combine(Todo, "tests", project, project + ".csproj")}\", \"{{{Guid.NewGuid().ToString().ToUpperInvariant()}}}\"\nEndProject\n";
+            File.WriteAllText(
+                Path.Combine(folder, "Outside.sln"),
+                "Microsoft Visual Studio Solution File, Format Version 12.00\n" + Line("Brinell.Samples.Todo.Uat") + Line("Brinell.Samples.Todo.IntegrationTests"));
 
-        var configs = BddWorkspace.FindConfigs(srcnew).Select(path => Path.GetRelativePath(Todo, path).Replace('\\', '/')).ToList();
+            var configs = BddWorkspace.FindConfigs(folder).Select(path => Path.GetRelativePath(Todo, path).Replace('\\', '/')).ToList();
 
-        Assert.Contains("tests/Brinell.Samples.Todo.Uat/uat.config.md", configs);
-        Assert.Contains("tests/Brinell.Samples.Todo.IntegrationTests/bdd.config.md", configs);
+            Assert.Equal(["tests/Brinell.Samples.Todo.IntegrationTests/bdd.config.md", "tests/Brinell.Samples.Todo.Uat/uat.config.md"], configs);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

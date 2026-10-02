@@ -70,7 +70,7 @@ public void EveryTestSet_FollowsTheRules()
 }
 ```
 
-## The `brinell-data` Tool
+## `brinell data`
 
 The same engine from the command line, for people and for models editing test data. It loads
 the app's test-support assembly at run time, found through a `TestData` row in the UAT
@@ -82,20 +82,22 @@ project's `uat.config.md`:
 | TestData | ../Brinell.Samples.Todo.TestSupport/bin/Debug/net10.0/Brinell.Samples.Todo.TestSupport.dll |
 ```
 
-Commands, from the UAT project folder (`samples/Todo/tests/Brinell.Samples.Todo.Uat`):
+Commands, from the UAT project folder (`samples/Todo/tests/Brinell.Samples.Todo.Uat`), with
+[`brinell`](../run/cli.md) installed (inside Brinell's repository, `pwsh ../../../../tools/Scripts/brinell.ps1`
+instead of `brinell`):
 
 ```powershell
-dotnet run --project ../../../../tools/Brinell.DataValidator -- validate
-dotnet run --project ../../../../tools/Brinell.DataValidator -- validate ../Brinell.Samples.Todo.TestSupport/TestData/one-todo.json --format json
-dotnet run --project ../../../../tools/Brinell.DataValidator -- describe TodoDto
-dotnet run --project ../../../../tools/Brinell.DataValidator -- list
-dotnet run --project ../../../../tools/Brinell.DataValidator -- schema
+brinell data validate
+brinell data validate ../Brinell.Samples.Todo.TestSupport/TestData/one-todo.json --json
+brinell data describe TodoDto
+brinell data list
+brinell data schema
 ```
 
 | Command | Does |
 | --- | --- |
-| `validate [file] [--format json] [--fix]` | Every test set (or one file), plus every `TestData` name in `Features/**/*.feature.md` and `DefaultTestData`. With a `Fixture` and a `Pages` assembly in the config, also every scenario file (or one `.feature.md`): parse, bind and argument errors, as the xUnit gate reports them. `--fix` rewrites values with one right answer (`2026-05-12` to `12-May-2026`) |
-| `phrases [--keyword When] [--format json]` | The phrases steps can use, with argument types (`{due: date}`), where each is declared, and broken phrases as warnings; then the callable phrases of every `*.steps.md` under `Features/`, with their inferred types and the folder each is seen in |
+| `validate [file] [--json] [--fix]` | Every test set (or one file), plus every `TestData` name in `Features/**/*.feature.md` and `DefaultTestData`. With a `Fixture` and a `Pages` assembly in the config, also every scenario file (or one `.feature.md`): parse, bind and argument errors, as the xUnit gate reports them. `--fix` rewrites values with one right answer (`2026-05-12` to `12-May-2026`) |
+| `phrases [--keyword When] [--json]` | The phrases steps can use, with argument types (`{due: date}`), where each is declared, and broken phrases as warnings; then the callable phrases of every `*.steps.md` under `Features/`, with their inferred types and the folder each is seen in |
 | `phrases <file>` | Only the phrases that scenario file sees, grouped by where they come from: its own callables, its folders, the namespaces it uses (`(Using)`), every scenario, each page |
 | `references <namespace>` | The config and the scenario files that use a namespace: `Using`, `## Using`, or being in its folder |
 | `snippet <file>:<line>` | A method for a step that binds to nothing, its phrase in the name: `When_I_archive_P1_on_P2(string p1, DateOnly p2)` |

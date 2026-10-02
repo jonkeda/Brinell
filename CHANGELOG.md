@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- One command line, `brinell` (AD-028, `docs/run/cli.md`): a dotnet tool (`Brinell.Cli`) with
+  `scrape` (`new`, `list`, `status`, `check`, `explore`, `record`, `draft`, `verify`, `config`,
+  `install-browser`), `data` (what `brinell-data` did), `scenario` (`preview`, `results delete`),
+  `controls generate` (what `Brinell.Generator` did), `version`, and the servers `lsp` and `mcp`.
+  One set of options (`--solution`, `--project`, `--json`, `--yes`, `--headless`) and exit codes
+  (0 fine, 1 problems found, 2 could not run). `tools/Brinell.Bdd.LanguageServer` is now
+  `tools/Brinell.Cli` (assembly `brinell`); `tools/Brinell.DataValidator` and `tools/Brinell.Generator`
+  are folders of it, and their tests are in `testsnew/Brinell.Cli.Tests`. The IDE extensions start
+  `brinell.dll lsp`; `brinell-data`, `--mcp` and `--preview` are gone. `tools/Scripts/brinell.ps1`
+  runs it from source.
 - The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Brinell.Scraper`
   records an app's pages through Playwright's Chromium into the UI test project
   (`scraper.config.md`, `Recordings/`), finds repeated parts, suggests controls and locators, diffs

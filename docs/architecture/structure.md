@@ -9,12 +9,11 @@ Working directory for paths in this document: Brinell root.
 | `srcnew/` | Active Brinell source projects |
 | `testsnew/` | Active unit, UI, and UAT test projects |
 | `samples/` | Sample applications used by UI tests and demos |
-| `tools/` | Developer tools: the generator, the data validator, the language server and the IDE extensions |
+| `tools/` | Developer tools: `brinell`, the command line (`tools/Brinell.Cli`: the Scraper, test data, control generation, the language and MCP servers), and the IDE extensions |
 | `docs/` | Active curated documentation |
 | `docs2/` | Preserved previous documentation tree |
 | `.my/` | Plans for work in flight, indexed in `.my/README.md` |
-| `srcnew/Brinell.sln` | The solution: every project, in folders by area, each test project beside the one it is named after |
-| `Brinell.sln` | An older partial solution. Open `srcnew/Brinell.sln` instead; this file is kept because tests and the Presenter find the repository root by it |
+| `Brinell.sln` | The solution: every project, in folders by area, each test project beside the one it is named after. Tests and the Presenter also find the repository root by it |
 
 The two Visual Studio extension projects are in the solution but not built by it; they build from
 their own `.slnx` with Visual Studio's MSBuild.

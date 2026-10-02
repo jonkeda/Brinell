@@ -45,7 +45,7 @@ internal static class UatCatalogBuilder
     private const string UserParameter = "user";
 
     // The Brinell.Core assembly declares the built-in control vocabulary via [BddWhen]/[BddThen].
-    // A type whose dependency is missing (xunit, when the brinell-data tool loads Core) is skipped.
+    // A type whose dependency is missing (xunit, when the brinell data tool loads Core) is skipped.
     private static readonly Type[] BuiltinStepTypes = LoadableTypes(typeof(IElementObject<>).Assembly);
 
     public static IReadOnlyList<Type> CoreStepTypes => BuiltinStepTypes;

@@ -33,8 +33,7 @@ Working directory: Brinell root.
 dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
-`Brinell.sln` holds every project in the repository, in folders by area (a copy of
-`srcnew\Brinell.sln`, which the scripts and CI still use). The two
+`Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
