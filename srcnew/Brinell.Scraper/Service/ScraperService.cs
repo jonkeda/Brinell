@@ -431,7 +431,7 @@ public sealed partial class ScraperService : IAsyncDisposable
         var project = Project(projectName);
         var index = project.Index();
         var pages = index.Pages.Select(p => (p.Key, index.Read(p.Latest))).ToArray();
-        return PatternDetector.Detect(pages, ProjectCode.Read(project), max);
+        return PatternDetector.Detect(pages, ProjectCode.Read(project), max, project.Config.TestIds);
     }
 
     /// <summary>The header line a file made from something recorded starts with.</summary>

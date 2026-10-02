@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using Brinell.Core.Scraping;
+using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Service;
 
@@ -13,11 +15,19 @@ public static class PatternDetector
 {
     private static readonly HashSet<string> Skipped = new(StringComparer.Ordinal) { "html", "body", "head", "main" };
 
+    // Classes that say how an element looks or what state it is in, not what it is: a modifier
+    // (v-btn--icon), spacing and layout utilities (pb-4, mx-6, d-flex, justify-center), themes and
+    // states (theme--light, hydrated). A control is not named after them.
+    private static readonly Regex Utility = new(
+        @"--|^(m|p)[tbrlxya]?-|^(d|align|justify|text|flex|col|order|float|overflow|elevation|rounded|theme|has|is|no|last|first)-|^(row|hydrated|interactive|active|disabled|selected|open|show|hidden)$",
+        RegexOptions.CultureInvariant);
+
     /// <summary>The patterns, most widespread first.</summary>
     /// <param name="pages">Each page's key and its newest capture.</param>
     /// <param name="controls">The controls the project has, to say which pattern one already stands for.</param>
     /// <param name="max">The most patterns given.</param>
-    public static IReadOnlyList<Pattern> Detect(IReadOnlyList<(string Page, ScrapeSnapshot Snapshot)> pages, IReadOnlyList<CodeClass> controls, int max = 30)
+    /// <param name="testIds">The attributes that are test ids, preferred first, to name a pattern by.</param>
+    public static IReadOnlyList<Pattern> Detect(IReadOnlyList<(string Page, ScrapeSnapshot Snapshot)> pages, IReadOnlyList<CodeClass> controls, int max = 30, IReadOnlyList<string>? testIds = null)
     {
         var occurrences = new Dictionary<string, List<(string Page, ScrapeSnapshot Snapshot, ScrapeNode Node)>>(StringComparer.Ordinal);
         foreach (var (page, snapshot) in pages)
@@ -41,13 +51,19 @@ public static class PatternDetector
             var pageCount = found.Select(f => f.Page).Distinct(StringComparer.Ordinal).Count();
             var repeats = pageCount >= 2 || found.Count >= 3;
             if (!repeats && kind == PatternKind.Repeated) continue;
+            var shared = SharedName(found.Select(f => f.Node).ToArray(), testIds ?? HtmlAttributes.TestIds);
+            var parts = signature.Split('|');
+            var named = NamingClass(parts, first.Node);
+            // A wrapper or layout cell with nothing that says what it is (div|||div, td.pb-4) groups unrelated elements: not a control.
+            if (kind == PatternKind.Repeated && shared is null && named is null && parts[1].Length == 0 && !parts[0].Contains('-')) continue;
             var pattern = new Pattern(
                 signature,
                 repeats && kind == PatternKind.Repeated ? PatternKind.Repeated : kind,
                 pageCount,
                 found.Count,
                 found.Take(3).Select(f => new PatternExample(f.Page, f.Node.Number, SnapshotOutline.Line(f.Node))).ToArray(),
-                bySignature.GetValueOrDefault(signature));
+                bySignature.GetValueOrDefault(signature),
+                shared ?? NameOf(parts, named));
             patterns.Add((pattern, found.Select(f => (f.Page, f.Node.Number)).ToHashSet(), Ancestors(first.Snapshot, first.Node.Number).Count()));
         }
 
@@ -64,8 +80,45 @@ public static class PatternDetector
             if (!inner) kept.Add(candidate);
             if (kept.Count == max) break;
         }
-        return kept.Select(k => k.Pattern).ToArray();
+        // Two patterns can come to the same name (a field with and without its label): the later ones are numbered.
+        var taken = new Dictionary<string, int>(StringComparer.Ordinal);
+        return kept.Select(k =>
+        {
+            var count = taken[k.Pattern.Name] = taken.GetValueOrDefault(k.Pattern.Name) + 1;
+            return count == 1 ? k.Pattern : k.Pattern with { Name = k.Pattern.Name + count };
+        }).ToArray();
     }
+
+    // A control's name: a test id or id all occurrences share (numbers left out: row-1, row-2 is Row),
+    // else the first stable class, the role, the type.
+    private static string? SharedName(IReadOnlyList<ScrapeNode> nodes, IReadOnlyList<string> testIds)
+    {
+        foreach (var attribute in testIds.Append("id"))
+        {
+            var names = nodes.Select(n => Pascal(n.Attribute(attribute))).Distinct(StringComparer.Ordinal).ToArray();
+            if (names is [{ Length: > 0 } shared]) return shared;
+        }
+        return null;
+    }
+
+    // The first class that says what the element is, in its own order (the component's class usually comes first).
+    private static string? NamingClass(string[] parts, ScrapeNode example)
+    {
+        var stable = parts[2].Split('.', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+        return (example.Attribute("class") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(c => stable.Contains(c) && !Utility.IsMatch(c));
+    }
+
+    // A custom element's tag (b7-navbar-button) is its name; else its naming class, its role, its type.
+    private static string NameOf(string[] parts, string? named)
+    {
+        foreach (var source in new[] { parts[0].Contains('-') ? parts[0] : null, named, parts[1], parts[0] })
+            if (Pascal(source) is { Length: > 0 } name) return name;
+        return "Part";
+    }
+
+    private static string Pascal(string? text) => text is null ? "" : string.Concat(
+        Explore.DangerWords.Words(text).Where(w => !w.All(char.IsDigit)).Take(4).Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
     private static PatternKind KindOf(ScrapeSnapshot snapshot, ScrapeNode node) => node switch
     {
@@ -123,8 +176,8 @@ public enum PatternKind
     Frame,
 }
 
-/// <summary>A pattern: its signature, kind, on how many pages and how often, examples, and the control that stands for it if one does.</summary>
-public sealed record Pattern(string Signature, PatternKind Kind, int Pages, int Occurrences, IReadOnlyList<PatternExample> Examples, string? Control);
+/// <summary>A pattern: its signature, kind, on how many pages and how often, examples, the control that stands for it if one does, and the name a control for it gets.</summary>
+public sealed record Pattern(string Signature, PatternKind Kind, int Pages, int Occurrences, IReadOnlyList<PatternExample> Examples, string? Control, string Name);
 
 /// <summary>Where a pattern occurs: the page, the node's number and its outline line.</summary>
 public sealed record PatternExample(string Page, int Node, string Line);

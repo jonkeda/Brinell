@@ -31,7 +31,8 @@ internal static class ScraperPage
         input:not([type=checkbox]):not([type=radio]), select { height: 1.9em; padding: 0 0.4em; }
         input[type=number] { width: 6em; }
         .sc-changed { outline: 2px solid var(--uat-accent); outline-offset: -1px; }
-        .sc-header { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: end; padding: 0.5em 0.8em; border-bottom: 1px solid var(--uat-border); position: sticky; top: 0; background: var(--uat-bg); z-index: 2; }
+        .sc-top { position: sticky; top: 0; z-index: 3; background: var(--uat-bg); }
+        .sc-header { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: end; padding: 0.5em 0.8em; border-bottom: 1px solid var(--uat-border); }
         .sc-field { display: grid; gap: 0.1em; }
         .sc-field > label { font-size: 0.8em; color: var(--uat-muted); }
         .sc-field-row { display: flex; gap: 0.2em; }
@@ -41,6 +42,9 @@ internal static class ScraperPage
         .sc-status { color: var(--uat-muted); }
         .sc-status[data-recording="true"] { color: var(--uat-failed); }
         .sc-problem { color: var(--uat-failed); padding: 0.3em 0.8em; }
+        .sc-notice { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; padding: 0.4em 0.8em; border-bottom: 1px solid var(--uat-border); background: var(--uat-surface); }
+        .sc-notice[hidden] { display: none; }
+        .sc-notice span { flex: 1; min-width: 14em; }
         .sc-body { display: grid; grid-template-columns: 14em 1fr; min-height: 30em; }
         .sc-steps { border-right: 1px solid var(--uat-border); padding: 0.5em 0; }
         .sc-step { display: grid; grid-template-columns: 1.6em 1fr auto; gap: 0.4em; align-items: center; padding: 0.35em 0.8em; cursor: pointer; border-left: 3px solid transparent; }
@@ -69,6 +73,13 @@ internal static class ScraperPage
         .sc-table th, .sc-table td { text-align: left; padding: 0.3em 0.5em; border-bottom: 1px solid var(--uat-border); vertical-align: middle; }
         .sc-table th { font-size: 0.8em; color: var(--uat-muted); font-weight: 600; }
         .sc-actions { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; }
+        /* A step's main actions, under the header: they stay in sight while the step scrolls. */
+        .sc-bar { position: sticky; top: var(--sc-top, 0); z-index: 2; background: var(--uat-bg); padding: 0.4em 0; border-bottom: 1px solid var(--uat-border); }
+        details.sc-expander > summary { cursor: pointer; font-weight: 600; }
+        details.sc-expander > summary .sc-muted { font-weight: normal; }
+        details.sc-expander > fieldset { margin-top: 0.4em; }
+        .sc-collected { max-height: 16em; overflow: auto; border: 1px solid var(--uat-border); border-radius: 4px; padding: 0.2em; }
+        .sc-collected .sc-item[aria-current="true"] { outline: 1px solid var(--uat-accent); }
         details.sc-more summary { cursor: pointer; color: var(--uat-accent); }
         details.sc-more > div { display: flex; flex-wrap: wrap; gap: 0.4em; margin-top: 0.4em; }
         .sc-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--uat-border); padding-top: 0.6em; }
@@ -108,6 +119,7 @@ internal static class ScraperPage
         </style>
         </head>
         <body>
+        <div class="sc-top" id="sc-top">
         <header class="sc-header">
           <div class="sc-field">
             <label for="sc-project">Project</label>
@@ -133,6 +145,8 @@ internal static class ScraperPage
           </select>
         </div>
         <div id="sc-problem" class="sc-problem" hidden></div>
+        <div id="sc-notice" class="sc-notice" role="status" hidden></div>
+        </div>
         <div class="sc-body">
           <nav class="sc-steps" id="sc-steps" aria-label="Steps"></nav>
           <main class="sc-panel" id="sc-panel"></main>
@@ -169,22 +183,26 @@ internal static class ScraperPage
             waiting.set(id, resolve);
             host.post({ type: "call", id, method: "brinell/scraper/" + method, params: params || {} });
           });
-          // A ScraperResult: the value, or the problem shown under the header.
+          // A ScraperResult: the value, or the problem shown under the header. A problem stays until
+          // the call that raised it succeeds, another step opens, or another problem replaces it:
+          // the refresh after a failed call must not wipe it.
           const answer = async (method, params) => {
             const result = await call(method, params);
             if (result && typeof result === "object" && "problem" in result) {
-              showProblem(result.problem);
+              if (result.problem) showProblem(result.problem, method);
+              else if (showProblem.from === method) showProblem(null);
               return result.problem ? undefined : result.value;
             }
             return result;
           };
-          const showProblem = text => { $("sc-problem").hidden = !text; $("sc-problem").textContent = text || ""; };
+          const showProblem = (text, from) => { showProblem.from = text ? from : null; $("sc-problem").hidden = !text; $("sc-problem").textContent = text || ""; };
           const say = text => { $("sc-status").textContent = text || ""; if (text && !state.recording && !state.exploring) { $("sc-strip").hidden = false; clearTimeout(say.timer); say.timer = setTimeout(showRunning, 6000); } };
 
           const STEPS = ["Project", "Connect", "Collect pages", "Review", "Controls", "Page objects", "Verify"];
           const state = {
             project: null, projects: [], step: null, progress: null, recording: null, live: null, exploring: null, explored: null,
             pages: [], page: null, capture: null, node: null, reviewing: null, picked: new Set(), pickedPages: new Set(), names: {},
+            collected: [], guardsOpen: false,
           };
 
           host.on(message => {
@@ -195,6 +213,7 @@ internal static class ScraperPage
               return;
             }
             if (message.type === "changed") { onChanged(message); }
+            if (message.type === "chatted") { showChatted(message); }
             // The IDE opened another solution: its projects.
             if (message.type === "projects") { loadProjects(); }
           });
@@ -270,7 +289,14 @@ internal static class ScraperPage
             if (s === "code") return showCode();
             const body = await [null, stepProject, stepConnect, stepCollect, stepReview, stepControls, stepPages, stepVerify][s]();
             if (state.step !== s) return; // another step was chosen meanwhile
-            panel.replaceChildren(...[].concat(body || []).flat().filter(x => x !== null && x !== undefined && x !== false), footer(s));
+            const parts = [].concat(body || []).flat().filter(x => x !== null && x !== undefined && x !== false);
+            const bar = parts.find(x => x.classList && x.classList.contains("sc-actions"));
+            if (bar) {
+              parts.splice(parts.indexOf(bar), 1);
+              bar.classList.add("sc-bar");
+              parts.splice(parts.findIndex(x => x.classList && x.classList.contains("sc-why")) + 1, 0, bar);
+            }
+            panel.replaceChildren(...parts, footer(s));
           }
 
           function footer(step) {
@@ -288,12 +314,32 @@ internal static class ScraperPage
           async function stepProject() {
             const p = projectInfo();
             const c = await answer("config", { project: state.project });
+            const platform = el("select", { id: "sc-platform" }, ...[["html", "Html"], ["blazor", "Blazor"]].map(([v, t]) => new Option(t, v, false, v === p.platform)));
+            const start = el("input", { id: "sc-start-url", value: p.startUrl || "", placeholder: "https://localhost:5001/", style: "width: 24em" });
+            const changes = () => [
+              platform.value !== p.platform ? { action: "set", section: "App", values: ["Platform", platform.value] } : null,
+              start.value.trim() !== (p.startUrl || "") ? { action: "set", section: "App", values: ["StartUrl", start.value.trim()] } : null].filter(x => x);
+            const save = button("Save", async () => {
+              const said = await answer("configEdits", { project: state.project, changes: changes() });
+              if (said === undefined) return;
+              say(said.join(" "));
+              await loadProjectsQuietly();
+              await refresh(false);
+            }, { id: "sc-app-save", disabled: true });
+            const update = () => {
+              platform.classList.toggle("sc-changed", platform.value !== p.platform);
+              start.classList.toggle("sc-changed", start.value.trim() !== (p.startUrl || ""));
+              save.disabled = changes().length === 0;
+            };
+            platform.addEventListener("change", update);
+            start.addEventListener("input", update);
             return [...heading(1, "The UI test project the page objects go into."),
               el("table", { class: "sc-table" },
                 el("tr", {}, el("th", {}, "Folder"), el("td", {}, el("code", {}, p.folder || ""))),
-                el("tr", {}, el("th", {}, "Platform"), el("td", {}, p.platform || "")),
-                el("tr", {}, el("th", {}, "Start URL"), el("td", {}, el("code", {}, p.startUrl || ""))),
+                el("tr", {}, el("th", {}, el("label", { for: "sc-platform" }, "Platform")), el("td", {}, platform)),
+                el("tr", {}, el("th", {}, el("label", { for: "sc-start-url" }, "Start URL")), el("td", {}, start)),
                 el("tr", {}, el("th", {}, "Recordings"), el("td", {}, plural((p.sessions || []).length, "session")))),
+              el("div", { class: "sc-row" }, save),
               el("div", { class: "sc-actions" }, primary("New project…", showNewProject),
                 more(c ? button("Open scraper.config.md", () => host.post({ type: "open", path: c.path })) : null, button("Add a config to an existing project", showCreateConfig)))];
           }
@@ -386,10 +432,9 @@ internal static class ScraperPage
             const c = p.lastCheck;
             const firstTime = !p.steps[2] || p.steps[2].state !== "Done";
             const result = text => el("td", { class: c && c.passed ? "sc-ok" : "sc-warn" }, text);
-            const rows = [el("tr", {}, el("th", {}, "Start URL"), el("td", {}, el("code", {}, projectInfo().startUrl || "")))];
+            const rows = [el("tr", {}, el("th", {}, "Start URL"), el("td", {}, el("code", {}, projectInfo().startUrl || ""), " ", button("Change in step 1", () => go(1), { class: "sc-link" })))];
             if (!c) rows.push(el("tr", {}, el("th", {}, "Last check"), el("td", { class: "sc-warn" }, "Not checked yet")));
             else rows.push(el("tr", {}, el("th", {}, "Last check"), result(c.detail)), el("tr", {}, el("th", {}, "Checked"), el("td", { class: "sc-muted" }, new Date(c.at).toLocaleString())));
-            const start = el("input", { id: "sc-start-url", value: projectInfo().startUrl || "", style: "width: 24em" });
             return [...heading(2, "Can the Scraper reach the app, signed in, and may it go there?"),
               firstTime ? el("div", { class: "sc-intro", id: "sc-intro" }, el("b", {}, "Three steps to page objects"),
                 el("ol", {}, el("li", {}, "Connect to the app"), el("li", {}, "Collect its pages"), el("li", {}, "Draft page objects")),
@@ -400,7 +445,6 @@ internal static class ScraperPage
                 c && c.refused ? button("Allow this host", async () => { await edit("add", "Explore hosts", [new URL(c.url).host]); await checkApp(); }) : null,
                 c && c.signIn ? button("Open the browser to sign in", () => record("sign-in")) : null,
                 more(
-                  el("span", { class: "sc-row" }, el("label", { for: "sc-start-url" }, "Start URL"), start, button("Save", async () => { await edit("set", "App", ["StartUrl", start.value.trim()]); await loadProjects(); })),
                   button("Open the browser to sign in", () => record("sign-in")),
                   button("Open scraper.config.md", async () => { const cfg = await answer("config", { project: state.project }); if (cfg) host.post({ type: "open", path: cfg.path }); })))];
           }
@@ -438,13 +482,19 @@ internal static class ScraperPage
               : el("p", { class: "sc-muted" }, `${plural((projectInfo().sessions || []).length, "recording session")} so far. Explore's report of a run is explore.md in its session.`);
             const session = el("input", { id: "sc-session", placeholder: "recording", style: "width: 10em" });
             const url = el("input", { id: "sc-url", placeholder: projectInfo().startUrl || "the config's start URL", style: "width: 20em" });
-            const result = [...heading(3, "Explore visits the app's pages and states by itself, inside the guards below. Change them here; Save writes them to the config."),
+            const guards = el("details", { class: "sc-expander", id: "sc-guards", open: state.guardsOpen },
+              el("summary", {}, "Guards and budget ", el("span", { class: "sc-muted" }, `up to ${c.maxPages} pages, ${c.maxDepth} deep, ${c.maxMinutes} min, clicks: ${c.clickPolicy}, hosts: ${c.hosts.join(", ") || "none"}`)),
+              form.element);
+            guards.addEventListener("toggle", () => { state.guardsOpen = guards.open; });
+            const result = [...heading(3, "Explore visits the app's pages and states by itself, inside its guards; or record by hand, browsing the app yourself."),
               changed ? el("p", { class: "sc-warn" }, `! ${state.progress.steps[2].summary} since its page object was made. Explore again, or record it by hand.`) : null,
-              form.element, summary, risky, runs,
+              guards, summary, risky, runs,
+              el("div", { id: "sc-collected" }, ...collected()),
               el("div", { class: "sc-actions" }, el("label", {}, dry, " Dry run (links only, nothing clicked)"), start,
+                button("Record by hand", () => record(session.value || "recording", url.value || null), { id: "sc-start", title: "Opens the browser: browse the app yourself, each page is captured" }),
                 more(
-                  el("span", { class: "sc-row" }, el("label", { for: "sc-session" }, "Session"), session, el("label", { for: "sc-url" }, "Start URL"), url, button("Record by hand", () => record(session.value || "recording", url.value || null), { id: "sc-start" })),
-                  ...["Never click", "Always click", "Never visit", "Allow requests", "Aliases"].map(section => button(`${section}…`, () => showList(section))),
+                  el("span", { class: "sc-row" }, "Record by hand: ", el("label", { for: "sc-session" }, "Session"), session, el("label", { for: "sc-url" }, "Start URL"), url),
+                  ...LISTS.map(([section, label, rows]) => button(`${label} (${c[rows].length})…`, () => showList(section), { title: LIST_HELP[section] })),
                   button("Open scraper.config.md", () => host.post({ type: "open", path: c.path })),
                   run && run.report ? button("Open explore.md", () => host.post({ type: "open", path: run.report })) : null))];
             setTimeout(form.refreshSummary, 0);
@@ -526,6 +576,39 @@ internal static class ScraperPage
             return { element, refreshSummary, hasChanges: () => changes().length > 0 };
           }
 
+          // What this run collected (Explore, or a recording by hand), newest first.
+          function collected() {
+            const items = state.collected;
+            if (!items.length) return (state.recording || state.exploring) ? [el("p", { class: "sc-muted" }, "Collected pages show here as they are captured.")] : [];
+            return [el("h3", {}, `Collected in this run: ${plural(items.length, "capture")} of ${plural(new Set(items.map(i => i.page)).size, "page")}`),
+              el("div", { class: "sc-collected" }, ...items.slice().reverse().map((i, n) => el("div", { class: "sc-item", "aria-current": String(n === 0), title: i.location, onclick: () => openCollected(i) },
+                el("code", {}, i.page), el("span", { class: "sc-muted" }, ` ${i.title || ""}  ${i.session} #${i.number}`))))];
+          }
+
+          function renderCollected() { if ($("sc-collected")) $("sc-collected").replaceChildren(...collected()); }
+
+          async function openCollected(item) {
+            await go(4);
+            const page = state.pages.find(p => p.key === item.page);
+            if (page) await openCapture(page.key, page.captures.find(c => c.session === item.session && c.number === item.number) || page.captures[0]);
+          }
+
+          // The config's lists that steer Explore: the section, its label, and its rows in the config.
+          const LISTS = [
+            ["Never click", "Elements never clicked", "neverClick"],
+            ["Always click", "Elements always clicked", "alwaysClick"],
+            ["Never visit", "Pages never visited", "neverVisit"],
+            ["Allow requests", "Requests allowed", "allowRequests"],
+            ["Aliases", "Aliases", "aliases"],
+          ];
+          const LIST_HELP = {
+            "Never click": "Explore never clicks these elements, even when they look safe (an Empty cache button).",
+            "Always click": "Explore clicks these elements even when their words look risky (a Filters toggle). Never click wins over always click.",
+            "Never visit": "Explore never goes to these paths (an admin area).",
+            "Allow requests": "Requests Explore lets through although their method is blocked (a search that POSTs).",
+            "Aliases": "Other hosts of the same app (a sign-in page): pages there are not recorded.",
+          };
+
           // A list of the config (Never click, Always click, Never visit, Allow requests, Aliases): add and remove rows.
           async function showList(section) {
             const c = await answer("config", { project: state.project });
@@ -540,7 +623,8 @@ internal static class ScraperPage
               await edit("add", section, section === "Allow requests" ? (pair ? [pair[1].toUpperCase(), pair[2]] : ["", value]) : [value]);
               await showList(section);
             };
-            $("sc-panel").replaceChildren(el("h2", {}, `3 Collect pages › ${section}`),
+            $("sc-panel").replaceChildren(el("h2", {}, `3 Collect pages › ${LISTS.find(l => l[0] === section)[1]}`),
+              el("p", { class: "sc-why" }, LIST_HELP[section]),
               ...rows.map(row => el("div", { class: "sc-row" }, el("span", { class: "sc-grow" }, row),
                 button("Remove", async () => { await edit("remove", section, [section === "Allow requests" ? row.split(" ")[0] : row]); await showList(section); }))),
               el("div", { class: "sc-row" }, input, button("Add", add)),
@@ -550,7 +634,9 @@ internal static class ScraperPage
           async function startExplore(dryRun) {
             const started = await answer("explore", { project: state.project, dryRun });
             if (!started) return;
+            state.collected = [];
             state.exploring = "Explore starting…";
+            renderCollected();
             showRunning();
           }
 
@@ -577,9 +663,10 @@ internal static class ScraperPage
                 run ? el("div", { class: "sc-fact" }, el("b", {}, String(run.blocked.length)), el("span", {}, "requests blocked")) : null),
               state.pages.length ? el("div", { class: "sc-split" }, list, el("div", { id: "sc-capture-view" }, el("p", { class: "sc-muted" }, "Choose a page or a capture to see its outline."))) : el("p", { class: "sc-muted" }, "Nothing recorded yet: collect pages first (step 3)."),
               skipped.length ? el("h3", {}, "Skipped by Explore, by reason") : null,
+              skipped.length ? el("p", { class: "sc-why" }, "Never click it: Explore leaves it alone from now on. Always click it: Explore clicks it although its words look risky.") : null,
               skipped.length ? el("table", { class: "sc-table", id: "sc-skipped" }, ...skipped.map(([reason, items]) => el("tr", {},
                 el("td", {}, reason), el("td", {}, items.slice(0, 4).map(i => i.label).join(", ") + (items.length > 4 ? ` and ${items.length - 4} more` : "")),
-                el("td", {}, items.length === 1 ? [button("Never click", () => edit("add", "Never click", [`text: ${items[0].label}`])), " ", button("Always click", () => edit("add", "Always click", [`text: ${items[0].label}`]))] : null)))) : null,
+                el("td", {}, items.length === 1 ? [button("Never click it", () => edit("add", "Never click", [`text: ${items[0].label}`]), { title: LIST_HELP["Never click"] }), " ", button("Always click it", () => edit("add", "Always click", [`text: ${items[0].label}`]), { title: LIST_HELP["Always click"] })] : null)))) : null,
               run && run.blocked.length ? el("h3", {}, "Blocked requests") : null,
               ...(run ? run.blocked.map(b => el("div", { class: "sc-row" }, el("span", { class: "sc-grow" }, `${b.method} ${b.url} `, el("span", { class: "sc-muted" }, b.reason)),
                 button("Allow this request", () => edit("add", "Allow requests", [b.method, new URL(b.url).pathname])))) : [])];
@@ -652,20 +739,13 @@ internal static class ScraperPage
 
           // ---- 5 Controls ----
 
-          // A control's name from its pattern: its first stable class, else its type, in Pascal case.
-          const controlName = signature => {
-            const parts = signature.split("|");
-            const words = ((parts[2] || "").split(".")[0] || parts[0] || "part").split(/[^A-Za-z0-9]+/).filter(w => w);
-            return words.map(w => w[0].toUpperCase() + w.slice(1)).join("") || "Part";
-          };
-
           async function stepControls() {
             if (state.reviewing) return reviewControl(state.reviewing);
             const patterns = await answer("patterns", { project: state.project }) || [];
             const checks = await answer("controlChecks", { project: state.project }) || [];
             const toMake = patterns.filter(p => !p.control && (p.pages >= 2 || p.kind === "Repeated"));
             // Nothing ticked at first: the person picks what the agent makes.
-            for (const p of toMake) if (!(p.signature in state.names)) state.names[p.signature] = controlName(p.signature);
+            for (const p of toMake) if (!(p.signature in state.names)) state.names[p.signature] = p.name;
             const count = () => toMake.filter(p => state.picked.has(p.signature)).length;
             const make = primary("", () => makeControls(toMake.filter(p => state.picked.has(p.signature))), { "data-make": "" });
             const label = () => { const n = count(); make.textContent = `Make ${plural(n, "control")} with the agent`; make.disabled = n === 0; };
@@ -701,9 +781,9 @@ internal static class ScraperPage
           }
 
           function makeControls(patterns) {
-            const list = patterns.map(p => `- ${state.names[p.signature] || controlName(p.signature)}: the ${p.kind} pattern '${p.signature}', ${p.occurrences}× on ${p.pages} page(s), e.g. node #${p.examples[0].node} of ${p.examples[0].page}`).join("\n");
-            chat(`Make these controls for ${state.project}, one file each under Controls, each with its scraped header (scraped_header) so the Scraper can check it; then check_code until it passes:\n${list}`);
-            say(`The agent makes ${plural(patterns.length, "control")}; they show under Made as they come. Check again to see them.`);
+            const list = patterns.map(p => `- ${state.names[p.signature] || p.name}: the ${p.kind} pattern '${p.signature}', ${p.occurrences}× on ${p.pages} page(s), e.g. node #${p.examples[0].node} of ${p.examples[0].page}`).join("\n");
+            chat(`Make these controls for ${state.project}, one file each under Controls, each with its scraped header (scraped_header) so the Scraper can check it; then check_code until it passes:\n${list}`,
+              `When the agent has written ${patterns.length === 1 ? "it, it shows" : "them, they show"} under Made.`);
           }
 
           async function showPatterns() {
@@ -883,8 +963,10 @@ internal static class ScraperPage
           async function record(session, url) {
             const started = await answer("start", { project: state.project, session, url: url || null });
             if (!started) return;
+            state.collected = [];
             setRecording(started);
             showRunning();
+            renderCollected();
           }
 
           async function onChanged(change) {
@@ -904,7 +986,6 @@ internal static class ScraperPage
                 $("sc-status").textContent = change.message || "";
                 await loadProjectsQuietly();
                 await refresh(false);
-                if (state.step === 3) await go(4);
               }
               showRunning();
               return;
@@ -912,7 +993,12 @@ internal static class ScraperPage
             if (change.kind === "Stopped") { if (change.recording) stopped.add(change.recording.session); state.recording = null; $("sc-status").textContent = ""; await loadProjectsQuietly(); await refresh(false); }
             else setRecording(change.recording);
             if (change.kind === "Failed") showProblem(change.message);
-            if (change.kind === "Captured" && change.captured && change.recording) state.live = { session: change.recording.session, number: change.captured.number };
+            if (change.kind === "Captured" && change.captured && change.recording) {
+              const c = change.captured;
+              state.live = { session: change.recording.session, number: c.number };
+              state.collected.push({ page: c.page, title: c.title, location: c.location, session: change.recording.session, number: c.number });
+              renderCollected();
+            }
             showRunning();
           }
 
@@ -921,7 +1007,25 @@ internal static class ScraperPage
 
           // ---- Shared ----
 
-          function chat(prompt) { host.post({ type: "chat", prompt: `/brinell-scrape-pages ${prompt}` }); }
+          // The prompt goes to the IDE, which types it into Copilot Chat or puts it on the clipboard; it
+          // is never sent by itself. "chatted" says which, and the notice says what to do then.
+          function chat(prompt, after) {
+            state.chatAfter = after || null;
+            host.post({ type: "chat", prompt: `/brinell-scrape-pages ${prompt}` });
+          }
+
+          function showChatted(message) {
+            const what = message.via === "sent"
+              ? "The prompt is sent to Copilot Chat: follow the agent there."
+              : message.via === "chat"
+              ? "The prompt is in Copilot Chat, not sent yet: check agent mode is on, then send it."
+              : `The prompt is on the clipboard${message.opened ? " and Copilot Chat is open" : ""}: paste it into Copilot Chat in agent mode, then send it.`;
+            const notice = $("sc-notice");
+            notice.replaceChildren(el("span", {}, what, state.chatAfter ? ` ${state.chatAfter}` : ""),
+              state.chatAfter ? button("Check again", () => showStep(), { id: "sc-check-again" }) : null,
+              button("×", () => { notice.hidden = true; }, { class: "sc-link", title: "Close", "aria-label": "Close" }));
+            notice.hidden = false;
+          }
 
           // One change to the config; the sentence the server gives says what it wrote.
           async function edit(action, section, values) {
@@ -958,6 +1062,7 @@ internal static class ScraperPage
             const capture = page && page.captures.find(c => c.session === state.recording.session && c.number === picked.capture.number);
             if (capture) { state.live = { session: capture.session, number: capture.number }; await openCapture(page.key, capture, picked.node); }
           });
+          new ResizeObserver(() => document.documentElement.style.setProperty("--sc-top", `${$("sc-top").offsetHeight}px`)).observe($("sc-top"));
           host.post({ type: "ready" });
           loadProjects();
         })();

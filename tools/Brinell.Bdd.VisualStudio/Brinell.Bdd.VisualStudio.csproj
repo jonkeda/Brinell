@@ -55,13 +55,20 @@
 
   <Target Name="PublishLanguageServer" BeforeTargets="BeforeBuild" Condition="'$(SkipServerPublish)' != 'true'">
     <Exec Command="dotnet publish &quot;$(ServerProject)&quot; -c $(Configuration) -o &quot;$(ServerPublishDir)&quot; --nologo -v:q" />
+    <!-- %(RecursiveDir) is empty in metadata set inside a target, which flattened Server\ and lost
+         .playwright\node\win32_x64\node.exe; the subfolder is computed from the path instead. -->
     <ItemGroup>
-      <Content Include="$(ServerPublishDir)\**\*" Exclude="$(ServerPublishDir)\**\*.pdb">
+      <_ServerFile Include="$(ServerPublishDir)\**\*" Exclude="$(ServerPublishDir)\**\*.pdb" />
+      <_ServerFile>
+        <ServerRelativePath>$([MSBuild]::MakeRelative('$(ServerPublishDir)\', '%(FullPath)'))</ServerRelativePath>
+      </_ServerFile>
+      <_ServerFile>
         <IncludeInVSIX>true</IncludeInVSIX>
-        <VSIXSubPath>Server\%(RecursiveDir)</VSIXSubPath>
-        <Link>Server\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <VSIXSubPath>Server\$([System.IO.Path]::GetDirectoryName('%(ServerRelativePath)'))</VSIXSubPath>
+        <Link>Server\%(ServerRelativePath)</Link>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
+      </_ServerFile>
+      <Content Include="@(_ServerFile)" />
     </ItemGroup>
   </Target>
 

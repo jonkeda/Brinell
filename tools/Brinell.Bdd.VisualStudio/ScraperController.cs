@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.PlatformUI;
@@ -90,11 +92,65 @@ internal sealed class ScraperController : IDisposable
                 AddToSolution(project, (string?)message["solutionFolder"]);
                 break;
             case "chat" when (string?)message["prompt"] is { } prompt:
-                // Copilot Chat has no command that takes a prompt: it goes to the clipboard, to paste there.
-                System.Windows.Clipboard.SetText(prompt);
-                SetStatus("The prompt is on the clipboard: paste it into Copilot Chat in agent mode.");
+                _package.JoinableTaskFactory.RunAsync(() => ChatAsync(prompt)).FileAndForget("Brinell/ScraperChat");
                 break;
         }
+    }
+
+    // The prompt into Copilot Chat's conversation; where that fails, on the clipboard to paste there.
+    private async Task ChatAsync(string prompt)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        var opened = TryOpenCopilotChat(_previews.Note);
+        var sent = await CopilotChatSender.TrySendAsync(_package, prompt, _previews.Note, _package.DisposalToken);
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (sent)
+        {
+            SetStatus("The prompt is sent to Copilot Chat.");
+            _view?.Post(new JObject { ["type"] = "chatted", ["via"] = "sent", ["opened"] = true });
+            return;
+        }
+
+        System.Windows.Clipboard.SetText(prompt);
+        SetStatus("The prompt is on the clipboard: paste it into Copilot Chat in agent mode.");
+        _view?.Post(new JObject { ["type"] = "chatted", ["via"] = "clipboard", ["opened"] = opened });
+    }
+
+    // Copilot Chat's window, found by its command's name (View.GitHub.Copilot.Chat or alike, by version);
+    // false when Copilot is not installed or the command would not run.
+    private static bool TryOpenCopilotChat(Action<string> log)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (Package.GetGlobalService(typeof(EnvDTE.DTE)) is not EnvDTE.DTE dte)
+        {
+            return false;
+        }
+
+        var names = new List<string>();
+        foreach (EnvDTE.Command command in dte.Commands)
+        {
+            if (command.Name is { } name && name.IndexOf("Copilot", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                names.Add(name);
+            }
+        }
+
+        log($"Copilot Chat: commands named Copilot: {(names.Count == 0 ? "none" : string.Join(", ", names))}.");
+        foreach (var name in names.Where(n => n.StartsWith("View.", StringComparison.Ordinal) && n.IndexOf("Chat", StringComparison.OrdinalIgnoreCase) >= 0))
+        {
+            try
+            {
+                dte.ExecuteCommand(name);
+                log($"Copilot Chat: opened with {name}.");
+                return true;
+            }
+            catch (Exception exception) when (exception is COMException or ArgumentException)
+            {
+                log($"Copilot Chat: {name} did not run: {exception.Message}");
+            }
+        }
+
+        return false;
     }
 
     // A new scraped project into the open solution, in a solution folder when one is named.

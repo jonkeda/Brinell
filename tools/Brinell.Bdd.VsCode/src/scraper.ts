@@ -63,7 +63,8 @@ export class ScraperView implements vscode.Disposable {
         break;
       case "chat":
         if (message.prompt) {
-          await openChat(message.prompt);
+          const via = await openChat(message.prompt);
+          void this.panel?.webview.postMessage({ type: "chatted", via, opened: via === "chat" });
         }
 
         break;
@@ -97,11 +98,14 @@ async function addToSolution(project: string, solutionFolder: string | undefined
 }
 
 // The agent's chat with the prompt filled in; where that command is missing, the prompt on the clipboard.
-async function openChat(prompt: string): Promise<void> {
+// The prompt typed into the chat, not sent; where there is no chat, on the clipboard. Says which.
+async function openChat(prompt: string): Promise<"chat" | "clipboard"> {
   try {
     await vscode.commands.executeCommand("workbench.action.chat.open", { query: prompt, isPartialQuery: true });
+    return "chat";
   } catch {
     await vscode.env.clipboard.writeText(prompt);
     void vscode.window.showInformationMessage("The prompt is on the clipboard: paste it into Copilot Chat in agent mode.");
+    return "clipboard";
   }
 }

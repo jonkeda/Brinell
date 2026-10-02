@@ -123,7 +123,7 @@ public sealed class PageDrafterTests : IDisposable
     [Fact]
     public void A_part_repeated_on_one_page_asks_for_a_control_as_one_on_two_pages_does()
     {
-        static Pattern P(string signature, PatternKind kind, int pages, string? control = null) => new(signature, kind, pages, 6, [], control);
+        static Pattern P(string signature, PatternKind kind, int pages, string? control = null) => new(signature, kind, pages, 6, [], control, "Part");
         var patterns = new[]
         {
             P("li.menu-item", PatternKind.Repeated, 1),

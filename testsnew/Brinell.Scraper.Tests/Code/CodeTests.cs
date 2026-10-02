@@ -183,6 +183,40 @@ public sealed class CodeTests : IDisposable
     }
 
     [Fact]
+    public void A_pattern_is_named_by_the_id_its_occurrences_share_else_by_its_class_and_a_bare_wrapper_is_none()
+    {
+        static ScrapeSnapshot Framed(string location, string id)
+        {
+            var frame = N(2, 1, "div");
+            frame = frame with { Attributes = new Dictionary<string, string> { ["id"] = id } };
+            return Page(location, N(1, 0, "body"), frame, N(3, 2, "h1", "Title"), N(4, 2, "p", "Text"));
+        }
+
+        var shared = PatternDetector.Detect([("/a", Framed("https://shop.example/a", "frame-content")), ("/b", Framed("https://shop.example/b", "frame-content"))], []);
+        var numbered = PatternDetector.Detect([("/a", Framed("https://shop.example/a", "row-1")), ("/b", Framed("https://shop.example/b", "row-2"))], []);
+        var cards = PatternDetector.Detect([("/a", Cards("https://shop.example/a", 2)), ("/b", Cards("https://shop.example/b", 1))], []);
+        var wrappers = PatternDetector.Detect([("/a", Framed("https://shop.example/a", "frame-logo")), ("/b", Framed("https://shop.example/b", "workspace"))], []);
+
+        Assert.Equal("FrameContent", Assert.Single(shared).Name);
+        Assert.Equal("Row", Assert.Single(numbered).Name);
+        Assert.Equal("Card", Assert.Single(cards).Name);
+        Assert.Empty(wrappers);
+    }
+
+    [Fact]
+    public void A_pattern_is_named_after_a_custom_elements_tag_or_its_class_that_says_what_it_is()
+    {
+        static ScrapeSnapshot Part(string location, string type, string cls) =>
+            Page(location, N(1, 0, "body"), N(2, 1, type, cls: cls), N(3, 2, "span", "Label"), N(4, 2, "i"));
+
+        var button = PatternDetector.Detect([("/a", Part("https://shop.example/a", "button", "theme--light v-btn v-btn--icon pb-4")), ("/b", Part("https://shop.example/b", "button", "theme--light v-btn v-btn--icon pb-4"))], []);
+        var custom = PatternDetector.Detect([("/a", Part("https://shop.example/a", "b7-navbar-button", "hydrated interactive")), ("/b", Part("https://shop.example/b", "b7-navbar-button", "hydrated interactive"))], []);
+
+        Assert.Equal("VBtn", Assert.Single(button).Name);
+        Assert.Equal("B7NavbarButton", Assert.Single(custom).Name);
+    }
+
+    [Fact]
     public void Structure_is_a_pattern_even_once_and_a_control_that_stands_for_one_is_named()
     {
         var table = Page("https://shop.example/t",
