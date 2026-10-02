@@ -14,7 +14,7 @@ public static class DraftRun
     /// or more, or three times on one (a site of one page has its sidebar groups and table rows too).
     /// </summary>
     public static IReadOnlyList<Pattern> ControlsToMake(IEnumerable<Pattern> patterns) =>
-        patterns.Where(p => p.Control is null && (p.Pages >= 2 || p.Kind == PatternKind.Repeated)).ToArray();
+        patterns.Where(p => p.Control is null && (p.Pages >= 2 || p.Kind is PatternKind.Repeated or PatternKind.Collection)).ToArray();
 
     /// <summary>Drafts every recorded page, or the one with key <paramref name="page"/>.</summary>
     public static Task<DraftResult> RunAsync(ScrapeProject project, string? page = null, CancellationToken cancellationToken = default) =>

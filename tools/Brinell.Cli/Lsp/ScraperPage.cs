@@ -746,7 +746,7 @@ internal static class ScraperPage
             if (state.reviewing) return reviewControl(state.reviewing);
             const patterns = await answer("patterns", { project: state.project }) || [];
             const checks = await answer("controlChecks", { project: state.project }) || [];
-            const toMake = patterns.filter(p => !p.control && (p.pages >= 2 || p.kind === "Repeated"));
+            const toMake = patterns.filter(p => !p.control && (p.pages >= 2 || p.kind === "Repeated" || p.kind === "Collection"));
             // Nothing ticked at first: the person picks what the agent makes.
             for (const p of toMake) if (!(key(p) in state.names)) state.names[key(p)] = p.name;
             const count = () => toMake.filter(p => state.picked.has(key(p))).length;

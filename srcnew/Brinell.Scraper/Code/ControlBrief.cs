@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Brinell.Core.Scraping;
+using Brinell.Core.Utilities;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Service;
@@ -19,7 +21,7 @@ public sealed record ControlBriefText(string Name, string Text, bool Cut);
 /// example outline, its parts and in how many occurrences each is found) and the <b>hints</b>
 /// (<see cref="ControlKind"/>'s reading: a base, members). The model decides; the hints help it.
 /// </summary>
-public static class ControlBrief
+public static partial class ControlBrief
 {
     /// <summary>The most characters a brief has (about 6k tokens); the rest is a tool call away.</summary>
     public const int MaxCharacters = 24_000;
@@ -30,6 +32,7 @@ public static class ControlBrief
     private const int NodesPerPage = 8;
     private const int PartSources = 20;
     private const int MaxVariants = 10;
+    private const int RowLines = 30;
 
     private static readonly string[] FactAttributes =
         ["type", "readonly", "disabled", "placeholder", "name", "for", "href", "tabindex", "contenteditable", "aria-haspopup", "aria-expanded", "aria-owns", "aria-controls", "aria-checked", "aria-pressed", "aria-selected", "aria-label", "aria-labelledby", "aria-disabled", "aria-live"];
@@ -62,7 +65,9 @@ public static class ControlBrief
         var readings = ControlKind.Below(example.Snapshot, example.Root);
         var interactive = readings.Where(r => r.Reading.Core != PartCore.Readable).ToArray();
         var cores = interactive.Select(r => r.Reading.Core).Distinct().ToArray();
-        var hint = cores.Length switch
+        // Rows: children of one signature, two or more, in the occurrences (a list's items, a table's rows).
+        var rows = Rows(occurrences);
+        var hint = rows is not null ? Collection : cores.Length switch
         {
             0 => Hints[PartCore.Readable],
             1 => Hints[cores[0]],
@@ -75,8 +80,8 @@ public static class ControlBrief
         text.Append(CultureInfo.InvariantCulture, $"## {className} ({occurrences.Length}× on {Plural(pages, "page")})\n\n");
 
         text.Append("### Task\n");
-        var file = Path.Combine(project.Folder, project.Config.ControlsFolder, className + CodeGate.TemplateExtension);
-        text.Append(CultureInfo.InvariantCulture, $"Write:      {file}   (new file; check_code generates {className}.gen.cs from it)\n");
+        var file = Path.Combine(project.Folder, project.Config.ControlsFolder, className + (hint.Template ? CodeGate.TemplateExtension : ".cs"));
+        text.Append(CultureInfo.InvariantCulture, $"Write:      {file}   (new file{(hint.Template ? $"; check_code generates {className}.gen.cs from it" : "; a container is written by hand, not generated")})\n");
         text.Append(CultureInfo.InvariantCulture, $"Namespace:  {ControlsNamespace(project)}\n");
         text.Append(CultureInfo.InvariantCulture, $"First line: {header(example.Page, example.Inner.Number)}\n");
         text.Append(CultureInfo.InvariantCulture, $"Class:      {hint.Declaration(className)}\n");
@@ -98,8 +103,22 @@ public static class ControlBrief
         text.Append("Where: ").Append(Where(occurrences)).Append('\n');
         text.Append(CultureInfo.InvariantCulture, $"\nExample ({example.Page}, node {example.Root.Number}, with its parent):\n");
         text.Append(Outline(example.Snapshot, example.Root, ExampleLines));
-        text.Append(CultureInfo.InvariantCulture, $"\nParts (relative to the control's root), found in how many of the {occurrences.Length}:\n");
-        text.Append(Parts(example, occurrences, project.Config.TestIds));
+        text.Append(Owned(example));
+        text.Append(Clicks(project, occurrences));
+        if (rows is not null)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"\nRows: {rows.Signature}, per occurrence: {string.Join(", ", rows.PerOccurrence.Take(MaxPages))}\n");
+            text.Append(CultureInfo.InvariantCulture, $"Row example ({rows.Example.Page}, node {rows.Example.Root.Number}):\n");
+            text.Append(Outline(rows.Example.Snapshot, rows.Example.Root, RowLines));
+            text.Append(CultureInfo.InvariantCulture, $"\nRow parts (relative to a row), found in how many of the {rows.All.Count} rows:\n");
+            text.Append(Parts(rows.Example, rows.All, project.Config.TestIds));
+            text.Append("Row keys (what tells one row from another): ").Append(Keys(rows.All, project.Config.TestIds)).Append('\n');
+        }
+        else
+        {
+            text.Append(CultureInfo.InvariantCulture, $"\nParts (relative to the control's root), found in how many of the {occurrences.Length}:\n");
+            text.Append(Parts(example, occurrences, project.Config.TestIds));
+        }
 
         text.Append("\n### Hints\n");
         text.Append("What the elements are: ").Append(interactive.Length == 0 ? "nothing interactive; text to read" : string.Join("; ", interactive.Select(r => $"#{r.Node.Number} {r.Reading.Core.ToString().ToLowerInvariant()} ({r.Reading.Because})").Distinct().Take(8))).Append('\n');
@@ -128,7 +147,12 @@ public static class ControlBrief
 
     private static string[] Classes(ScrapeNode node) => (node.Attribute("class") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-    private sealed record Hint(string Kind, string Base, string BaseFile, string Example, string Members, Func<string, string> Declaration);
+    private sealed record Hint(string Kind, string Base, string BaseFile, string Example, string Members, Func<string, string> Declaration, bool Template = true);
+
+    private sealed record RowFacts(string Signature, Occurrence Example, IReadOnlyList<Occurrence> All, IReadOnlyList<string> PerOccurrence);
+
+    // A row and the collection it is in, so a key need only be unique within its own collection.
+    private static int Host(Occurrence row) => row.Root.Parent;
 
     private static Hint Simple(string kind, string @base, string example, string members) =>
         new(kind, $"{@base}<TScope>", $"srcnew/Brinell.Html/Controls/{@base}.tpl.cs", example, members,
@@ -137,7 +161,7 @@ public static class ControlBrief
     private static readonly IReadOnlyDictionary<PartCore, Hint> Hints = new Dictionary<PartCore, Hint>
     {
         [PartCore.Text] = Simple("a simple control: text", "FocusableControlBase", "srcnew/Brinell.Html/Controls/Text/TextInputControl.tpl.cs", "SetText(text) and Clear() on the input; GetText()"),
-        [PartCore.Selector] = Simple("a simple control: selector", "SelectorControlBase", "srcnew/Brinell.Html/Controls/Selection/SelectControl.tpl.cs", "SelectItem(text): open it, then the option with that text; GetSelectedText(); Open()"),
+        [PartCore.Selector] = Simple("a simple control: selector", "SelectorControlBase", "srcnew/Brinell.Html/Controls/Selection/SelectControl.tpl.cs", "SelectItem(text): open it, then the option with that text in the list it owns (see \"Lists it owns\"; a list drawn elsewhere is found from the page, by the id aria-owns names); GetSelectedText(); Open()"),
         [PartCore.Toggle] = Simple("a simple control: toggle", "ToggleControlBase", "srcnew/Brinell.Html/Controls/Toggle/CheckBoxControl.cs", "Check(), Uncheck(), IsChecked()"),
         [PartCore.Range] = Simple("a simple control: range", "RangeControlBase", "srcnew/Brinell.Html/Controls/Range/RangeInputControl.cs", "SetValue(value), GetValue()"),
         [PartCore.Date] = Simple("a simple control: date", "FocusableControlBase", "srcnew/Brinell.Html/Controls/DateTime/DateInputControl.tpl.cs", "SetDate(date), GetDate()"),
@@ -149,7 +173,128 @@ public static class ControlBrief
         "a component: several parts a test uses", "ContainerBase<TParent, TSelf>", "srcnew/Brinell.Html/Controls/ContainerBase.cs",
         "samples/Todo/tests/Brinell.Samples.Todo.Web.UITests/Pages/Parts.cs",
         "a control per part (each with its own core, from the parts above), and members for what a test does with the whole",
-        name => $"public partial class {name}<TParent> : ContainerBase<TParent, {name}<TParent>> where TParent : IHtmlScope<TParent>   (as TodoStatus in the example: Self, a constructor taking the parent and a locator, a property per part)");
+        name => $"public sealed class {name}<TParent> : ContainerBase<TParent, {name}<TParent>> where TParent : IHtmlScope<TParent>   (as TodoStatus in the example: Self, a constructor taking the parent and a locator, a property per part)",
+        Template: false);
+
+    private static readonly Hint Collection = new(
+        "a collection with rows", "CollectionObjectBase<TParent, TSelf, TItem> and ItemObjectBase<TItem>", "srcnew/Brinell.Html/Collections/CollectionObjectBase.cs",
+        "samples/Todo/tests/Brinell.Samples.Todo.Web.UITests/Pages/TodoListPage.cs",
+        "a row class with a property per row part; on the collection, CreateItem and the ways a test finds a row (by a key or a part's text); the rows' locator",
+        name => $"public sealed class {name}<TParent> : CollectionObjectBase<TParent, {name}<TParent>, {name}Row> where TParent : IHtmlScope<TParent>, and public sealed class {name}Row(IHtmlCollection rows, ItemKey key, int position) : ItemObjectBase<{name}Row>(rows, key, position)   (as TodoRows and TodoRow in the example)",
+        Template: false);
+
+    private const int MaxOptions = 10;
+    private const int MaxClicks = 5;
+
+    // A list the control owns or controls (aria-owns, aria-controls) that the page draws elsewhere, as a
+    // select's options at the end of body: where it is, and its options; or that this capture has no such list.
+    private static string Owned(Occurrence example)
+    {
+        var text = new StringBuilder();
+        foreach (var node in ControlKind.Subtree(example.Snapshot, example.Root))
+        {
+            foreach (var attribute in new[] { "aria-owns", "aria-controls" })
+            {
+                foreach (var id in (node.Attribute(attribute) ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var list = example.Snapshot.Nodes.FirstOrDefault(n => n.Attribute("id") == id);
+                    if (list is null)
+                    {
+                        text.Append(CultureInfo.InvariantCulture, $"#{node.Number} {attribute}={id}: not in this capture; the page draws it after a click (Explore's clicks below may show it).\n");
+                        continue;
+                    }
+                    var options = ControlKind.Subtree(example.Snapshot, list)
+                        .Where(n => n.Role is "option" or "menuitem" or "treeitem" or "menuitemcheckbox" or "menuitemradio" || n.Type is "option" or "li")
+                        .ToArray();
+                    var texts = options.Select(o => OwnText(example.Snapshot, o)).Where(t => t.Length > 0).Take(MaxOptions).Select(t => $"\"{Short(t, 30)}\"");
+                    var inside = ControlKind.Subtree(example.Snapshot, example.Root).Any(n => n.Number == list.Number);
+                    text.Append(CultureInfo.InvariantCulture, $"#{node.Number} {attribute}={id}: {Line(list)}{(inside ? "" : ", outside the control")}; {options.Length} options{(options.Length > 0 ? ": " + string.Join(", ", texts) : "")}\n");
+                }
+            }
+        }
+        return text.Length == 0 ? "" : "Lists it owns:\n" + text;
+    }
+
+    // An option's text: its own, else its descendants'.
+    private static string OwnText(ScrapeSnapshot snapshot, ScrapeNode node) =>
+        string.Join(' ', ControlKind.Subtree(snapshot, node).Select(n => n.Text?.Trim()).Where(t => t is { Length: > 0 })).Trim();
+
+    // What Explore saw when it clicked something inside an occurrence: its reports' captures say which
+    // label it clicked on which page; the capture before and after say what appeared.
+    private static string Clicks(ScrapeProject project, IReadOnlyList<Occurrence> occurrences)
+    {
+        var facts = new List<string>();
+        var byPage = occurrences.GroupBy(o => o.Page, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
+        foreach (var session in project.Sessions())
+        {
+            var report = Path.Combine(session.Folder, Explore.ExploreReport.FileName);
+            if (!File.Exists(report) || !MarkdownTables.ReadSections(File.ReadAllText(report)).TryGetValue("Captures", out var captures)) continue;
+            foreach (var row in captures.Rows)
+            {
+                var via = ClickVia().Match(row.Cells.GetValueOrDefault("Via", ""));
+                if (!via.Success || !int.TryParse(row.Cells.GetValueOrDefault("#", ""), CultureInfo.InvariantCulture, out var number)) continue;
+                var (label, page) = (via.Groups["label"].Value, via.Groups["page"].Value);
+                if (!byPage.TryGetValue(page, out var here)) continue;
+                if (!here.Any(o => ControlKind.Subtree(o.Snapshot, o.Root).Any(n => Says(n, label)))) continue;
+                var after = session.Events.FirstOrDefault(e => e.Number == number);
+                var before = session.Events.Where(e => e.Page == page && e.Number < number).MaxBy(e => e.Number);
+                var change = after is null || before is null ? "" : ": " + Change(session.ReadSnapshot(before), session.ReadSnapshot(after));
+                facts.Add($"clicked '{label}' on {page} ({session.Id} capture #{number}){change}");
+                if (facts.Count == MaxClicks) break;
+            }
+            if (facts.Count == MaxClicks) break;
+        }
+        return facts.Count == 0 ? "" : "Explore's clicks inside it:\n" + string.Concat(facts.Select(f => "  " + f + "\n"));
+    }
+
+    private static bool Says(ScrapeNode node, string label) =>
+        new[] { node.Text, node.Name, node.Attribute("aria-label"), node.Attribute("title") }.Any(t => t is not null && string.Equals(t.Trim(), label, StringComparison.OrdinalIgnoreCase));
+
+    private static readonly string[] Popups = ["listbox", "option", "menu", "menuitem", "dialog", "alertdialog", "tooltip", "tabpanel", "grid", "tree"];
+
+    // What a click made appear: popup roles that grew in number, and the nodes it added or took away.
+    private static string Change(ScrapeSnapshot before, ScrapeSnapshot after)
+    {
+        int Count(ScrapeSnapshot s, string role) => s.Nodes.Count(n => n.Role == role || (role == "dialog" && n.Type == "dialog"));
+        var appeared = Popups.Select(r => (Role: r, Delta: Count(after, r) - Count(before, r))).Where(d => d.Delta > 0).Select(d => $"role={d.Role} ×{d.Delta}").ToArray();
+        var nodes = after.Nodes.Count - before.Nodes.Count;
+        return (appeared.Length > 0 ? "appeared " + string.Join(", ", appeared) : "no list, menu or dialog appeared")
+            + $"; {(nodes >= 0 ? "+" : "")}{nodes} nodes";
+    }
+
+    [GeneratedRegex(@"^click '(?<label>.*)' on (?<page>\S+)$")]
+    private static partial Regex ClickVia();
+
+    // The child signature that occurs two or more times under the most occurrences: the rows.
+    private static RowFacts? Rows(IReadOnlyList<Occurrence> occurrences)
+    {
+        var counts = occurrences
+            .Select(o => (Occurrence: o, Children: o.Snapshot.ChildrenOf(o.Root.Number).Where(c => c.Kind == ScrapeNodeKind.Element).GroupBy(c => NodeSignature.Of(o.Snapshot, c), StringComparer.Ordinal).Where(g => g.Count() >= 2).ToArray()))
+            .ToArray();
+        var signature = counts.SelectMany(c => c.Children.Select(g => g.Key)).GroupBy(s => s, StringComparer.Ordinal).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault();
+        if (signature is null) return null;
+        var all = counts.SelectMany(c => c.Children.Where(g => g.Key == signature).SelectMany(g => g.Select(n => new Occurrence(c.Occurrence.Page, c.Occurrence.Snapshot, n, ControlKind.Variant(c.Occurrence.Snapshot, n), n)))).ToArray();
+        var example = all.MaxBy(r => ControlKind.Below(r.Snapshot, r.Root).Count)!;
+        var per = counts.Select(c => $"{c.Occurrence.Page} node {c.Occurrence.Root.Number}: {c.Children.Where(g => g.Key == signature).Sum(g => g.Count())}").ToArray();
+        return new RowFacts(signature, example, all, per);
+    }
+
+    // What tells rows apart: an attribute every row has with a value of its own, a numbered id, else a part's text.
+    private static string Keys(IReadOnlyList<Occurrence> rows, IReadOnlyList<string> testIds)
+    {
+        var keys = new List<string>();
+        var names = rows.SelectMany(r => r.Root.Attributes.Keys).Distinct(StringComparer.Ordinal)
+            .Where(a => a is "id" or "key" || a.StartsWith("data-", StringComparison.Ordinal) || testIds.Contains(a));
+        foreach (var name in names)
+        {
+            var values = rows.Select(r => r.Root.Attribute(name)).ToArray();
+            var unique = rows.GroupBy(r => (r.Page, Host(r))).All(g => g.Select(r => r.Root.Attribute(name)).Distinct(StringComparer.Ordinal).Count() == g.Count());
+            if (values.All(v => v is { Length: > 0 }) && unique)
+                keys.Add($"{name} (unique on every row, e.g. {values[0]})");
+        }
+        if (keys.Count == 0) keys.Add("none on the row itself: a part's text (the first readable part above), or the position");
+        return string.Join("; ", keys);
+    }
 
     private static IEnumerable<string> ReadOnly(Hint hint, string? root)
     {

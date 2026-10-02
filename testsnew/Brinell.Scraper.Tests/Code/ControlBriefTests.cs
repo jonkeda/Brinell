@@ -116,6 +116,66 @@ public sealed class ControlBriefTests : IDisposable
     }
 
     [Fact]
+    public async Task Rows_under_one_parent_make_a_collection_whose_brief_gives_the_rows_parts_and_keys()
+    {
+        var project = MakeProject("List.UITests");
+        static IEnumerable<ScrapeNode> Rows(int count)
+        {
+            yield return N(2, 1, "ul", attributes: ("class", "orders"));
+            for (var i = 0; i < count; i++)
+            {
+                var at = 3 + i * 3;
+                yield return N(at, 2, "li", attributes: [("class", "order"), ("data-id", $"o-{i}")]);
+                yield return N(at + 1, at, "span", text: $"Order {i}");
+                yield return N(at + 2, at, "button", text: "Open");
+            }
+        }
+        var session = project.StartSession("One", DateTimeOffset.UnixEpoch);
+        session.AddPage(Page("https://shop.example/a", [.. Rows(3)]));
+        session.AddPage(Page("https://shop.example/b", [.. Rows(2)]));
+        await using var service = new ScraperService(_root);
+
+        var collection = Assert.Single(service.Patterns(null), p => p.Kind == PatternKind.Collection);
+        var brief = service.ControlBrief(null, collection.Signature, collection.Name).Text;
+
+        Assert.Equal("li||order|span,button", collection.Row);
+        Assert.Equal(2, collection.Occurrences);
+        Assert.Contains("a collection with rows", brief);
+        Assert.Contains("Rows: li||order|span,button", brief);
+        Assert.Matches(@"button\s+5 of 5\s+clickable", brief);
+        Assert.Contains("data-id (unique on every row, e.g. o-0)", brief);
+        Assert.Contains(".cs   (new file; a container is written by hand", brief);
+    }
+
+    [Fact]
+    public async Task A_brief_shows_the_list_a_select_owns_and_what_Explore_saw_when_it_clicked_one()
+    {
+        var project = MakeProject("Owns.UITests");
+        static IEnumerable<ScrapeNode> Picker(bool open)
+        {
+            yield return N(2, 1, "div", attributes: ("class", "picker"));
+            yield return N(3, 2, "label", text: "Status");
+            yield return N(4, 2, "div", "button", "Open", ("aria-haspopup", "listbox"), ("aria-owns", "list-1"), ("aria-expanded", open ? "true" : "false"));
+            yield return N(5, 4, "input", attributes: [("type", "text"), ("readonly", "readonly")]);
+            if (!open) yield break;
+            yield return N(6, 1, "div", "listbox", attributes: ("id", "list-1"));
+            yield return N(7, 6, "div", "option", "Open");
+            yield return N(8, 6, "div", "option", "Closed");
+        }
+        var session = project.StartSession("Explore", DateTimeOffset.UnixEpoch);
+        session.AddPage(Page("https://shop.example/a", [.. Picker(open: false)]));
+        session.AddPage(Page("https://shop.example/b", [.. Picker(open: false)]));
+        session.AddPage(Page("https://shop.example/a", [.. Picker(open: true)]) with { CapturedAt = DateTimeOffset.UnixEpoch.AddMinutes(1) });
+        File.WriteAllText(Path.Combine(session.Folder, "explore.md"), "# Explore\n\n## Captures\n\n| # | Page | Via | Depth |\n| --- | --- | --- | --- |\n| 1 | `/a` | the start URL | 0 |\n| 3 | `/a` | click 'Open' on /a | 1 |\n");
+        await using var service = new ScraperService(_root);
+
+        var brief = service.ControlBrief(null, "div||picker|label,div", "StatusPicker").Text;
+
+        Assert.Contains("#4 aria-owns=list-1: #6 div #list-1 role=listbox, outside the control; 2 options: \"Open\", \"Closed\"", brief);
+        Assert.Contains("clicked 'Open' on /a (1970-01-01-explore capture #3): appeared role=listbox ×1, role=option ×2; +3 nodes", brief);
+    }
+
+    [Fact]
     public void The_controls_namespace_swaps_the_pages_folder_for_the_controls_folder()
     {
         var plain = MakeProject("Plain.UITests");

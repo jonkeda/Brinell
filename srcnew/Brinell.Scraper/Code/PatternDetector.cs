@@ -134,6 +134,43 @@ public static class PatternDetector
             if (!inner) kept.Add(candidate);
             if (kept.Count == max) break;
         }
+        // Rows: a repeated part that is two or more children of one parent is a collection's row; the parent
+        // is the collection (3.2), a pattern of its own when it was not one.
+        foreach (var (rowPattern, at, _, _, _) in kept.ToArray())
+        {
+            if (rowPattern.Kind != PatternKind.Repeated) continue;
+            var parents = at.Select(a => (Page: a.Item1, Parent: snapshots[a.Item1][a.Item2].Parent))
+                .Where(p => p.Parent > 0 && !Skipped.Contains(snapshots[p.Page][p.Parent].Type))
+                .GroupBy(p => p)
+                .Where(g => g.Count() >= 2)
+                .Select(g => g.Key)
+                .ToArray();
+            if (parents.Length == 0) continue;
+            var bySig = parents.GroupBy(p => signatures[p.Page][p.Parent]!, StringComparer.Ordinal).OrderByDescending(g => g.Count()).First();
+            var hosts = bySig.ToArray();
+            var existing = kept.FindIndex(k => k.Pattern.Signature == bySig.Key && !k.Pattern.Lifted);
+            if (existing >= 0)
+            {
+                var k = kept[existing];
+                kept[existing] = k with { Pattern = k.Pattern with { Kind = PatternKind.Collection, Row = rowPattern.Signature, RowVariant = rowPattern.Variant, RowLifted = rowPattern.Lifted, RowName = rowPattern.Name } };
+                continue;
+            }
+            var first = snapshots[hosts[0].Page][hosts[0].Parent];
+            var hostParts = bySig.Key.Split('|');
+            var hostNamed = NamingClass(hostParts, first);
+            var collection = new Pattern(
+                bySig.Key,
+                PatternKind.Collection,
+                hosts.Select(h => h.Page).Distinct(StringComparer.Ordinal).Count(),
+                hosts.Length,
+                hosts.Take(3).Select(h => new PatternExample(h.Page, h.Parent, SnapshotOutline.Line(snapshots[h.Page][h.Parent]))).ToArray(),
+                bySignature.GetValueOrDefault(bySig.Key),
+                SharedName(hosts.Select(h => snapshots[h.Page][h.Parent]).ToArray(), testIds ?? HtmlAttributes.TestIds)
+                    ?? (hostNamed is not null || hostParts[0].Contains('-') ? NameOf(hostParts, hostNamed) : rowPattern.Name + "List"))
+            { Row = rowPattern.Signature, RowVariant = rowPattern.Variant, RowLifted = rowPattern.Lifted, RowName = rowPattern.Name };
+            kept.Add((collection, hosts.Select(h => (h.Page, h.Parent)).ToHashSet(), Ancestors(snapshots[hosts[0].Page], hosts[0].Parent).Count(), first, Classes(first).ToHashSet(StringComparer.Ordinal)));
+        }
+
         // Patterns that come to the same name (a select and a text field, both .v-input) are told apart by
         // a class only one of them has, else by their variant; what is still the same is numbered.
         var distinct = kept.Select(k => k.Pattern).ToArray();
@@ -301,6 +338,9 @@ public enum PatternKind
 
     /// <summary>A frame: a document of its own, a <c>FrameScope</c>.</summary>
     Frame,
+
+    /// <summary>A collection: two or more rows of one pattern under one parent; <see cref="Pattern.Row"/> is the rows'.</summary>
+    Collection,
 }
 
 /// <summary>A pattern: its signature, kind, on how many pages and how often, examples, the control that stands for it if one does, and the name a control for it gets.</summary>
@@ -311,6 +351,18 @@ public sealed record Pattern(string Signature, PatternKind Kind, int Pages, int 
     /// does with it (<see cref="ControlKind.Variant"/>, such as <c>selector</c>); null when they are all alike.
     /// </summary>
     public string? Variant { get; init; }
+
+    /// <summary>For a collection: the signature of its rows' pattern.</summary>
+    public string? Row { get; init; }
+
+    /// <summary>For a collection: its rows' variant, when their pattern has several.</summary>
+    public string? RowVariant { get; init; }
+
+    /// <summary>For a collection: whether its rows' pattern is lifted.</summary>
+    public bool RowLifted { get; init; }
+
+    /// <summary>For a collection: its rows' pattern's name.</summary>
+    public string? RowName { get; init; }
 
     /// <summary>
     /// Whether its occurrences are the pattern's nodes lifted to their root (<see cref="PatternDetector.RootOf"/>):
