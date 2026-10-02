@@ -232,6 +232,7 @@ Its Scraper tools:
 | `get_page_snapshot` | a capture as an outline with node numbers; a node's subtree for a large page |
 | `find_similar_elements`, `search_recordings` | where a kind of node, or a text, occurs |
 | `detect_patterns` | repeated parts (controls to make) and forms, tables, lists, navigation, dialogs, frames |
+| `control_brief` | everything known about a pattern to make a control from it: where to write it and what to read, its occurrences, an example outline, its parts with how often each is found, and hints (what the elements are, a base, members) |
 | `list_controls`, `match_controls` | the project's page objects and controls, and which occur on a page |
 | `suggest_controls` | per element: a name, the control that fits, and a locator (test id, accessible name or text, stable id, stable class; a position last, marked unstable) |
 | `scraped_header` | the first line of a generated file: what it was made from |

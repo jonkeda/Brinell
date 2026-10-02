@@ -19,6 +19,12 @@ public sealed partial record ScrapedHeader
     /// <summary>The capture it was made from: session folder and snapshot file.</summary>
     public string? From { get; init; }
 
+    /// <summary>For a control made from one variant of a pattern: the variant (<see cref="ControlKind.Variant"/>), so only its occurrences count.</summary>
+    public string? Variant { get; init; }
+
+    /// <summary>For a control made from a lifted pattern: its root is the pattern's node lifted (<see cref="PatternDetector.RootOf"/>).</summary>
+    public bool Lifted { get; init; }
+
     /// <summary>For a page object: the content hash of that capture, to tell when the page has changed since.</summary>
     public string? Hash { get; init; }
 
@@ -28,6 +34,8 @@ public sealed partial record ScrapedHeader
         var parts = new List<string>();
         if (Page is not null) parts.Add($"page=\"{Escape(Page)}\"");
         if (Control is not null) parts.Add($"control=\"{Escape(Control)}\"");
+        if (Variant is not null) parts.Add($"variant=\"{Escape(Variant)}\"");
+        if (Lifted) parts.Add("root=\"lifted\"");
         if (From is not null) parts.Add($"from=\"{Escape(From)}\"");
         if (Hash is not null) parts.Add($"hash=\"{Escape(Hash)}\"");
         return $"// <scraped {string.Join(' ', parts)} />";
@@ -46,6 +54,8 @@ public sealed partial record ScrapedHeader
             {
                 Page = attributes.GetValueOrDefault("page"),
                 Control = attributes.GetValueOrDefault("control"),
+                Variant = attributes.GetValueOrDefault("variant"),
+                Lifted = attributes.GetValueOrDefault("root") == "lifted",
                 From = attributes.GetValueOrDefault("from"),
                 Hash = attributes.GetValueOrDefault("hash"),
             };

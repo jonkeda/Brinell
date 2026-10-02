@@ -27,11 +27,14 @@ read them first.
    `Navigation` and `Dialog` are what a page object names. `get_page_snapshot` gives a page as an
    outline with node numbers; ask for a `node`'s subtree when a page is large.
    `find_similar_elements` shows where else a part occurs.
-4. **Controls first.** For each pattern the user agrees to: a container
-   (`ContainerBase<TParent, TSelf>`), a collection and its row
-   (`CollectionObjectBase` / `ItemObjectBase`), in the config's `Controls` folder. Its first line
-   is `scraped_header` for the page and the pattern's example node. Show the code, then
-   `write_code`.
+4. **Controls first.** For each pattern the user agrees to, `control_brief` gives the file to
+   write, the files to read (and nothing else), the facts of its occurrences and hints. Decide from
+   the facts; the hints are a reading, not an order. A simple control (a family base such as
+   `SelectorControlBase`), a container (`ContainerBase<TParent, TSelf>`), or a collection and its
+   row (`CollectionObjectBase` / `ItemObjectBase`), in the config's `Controls` folder, as a
+   `<Name>.tpl.cs` template: constructors and a `*Core` method per thing a test reads or does;
+   `check_code` generates the public members. Its first line is the brief's. Say what it will
+   offer, show the code, then `write_code`.
 5. **Pages second.** One page object per recorded page the user wants, in the `Pages` folder:
    `HtmlPageObjectBase<TSelf>`, or `BlazorPageObjectBase<TSelf>` for a Blazor app that sets
    Brinell's busy signal (`data-busy` on `<body>`, as the Blazor sample does): it waits until the

@@ -26,6 +26,9 @@ public static class ControlChecker
         {
             var occurrences = pages
                 .SelectMany(p => p.Snapshot.Nodes.Where(n => n.Kind == ScrapeNodeKind.Element && NodeSignature.Of(p.Snapshot, n) == control.Header!.Control)
+                    .Select(n => control.Header!.Lifted ? PatternDetector.RootOf(p.Snapshot, n) : n)
+                    .Where(n => control.Header!.Variant is null || ControlKind.Variant(p.Snapshot, n) == control.Header.Variant)
+                    .Distinct()
                     .Select(n => (p.Key, p.Snapshot, Root: n)))
                 .ToArray();
             // The control's own members, then those of the classes in its file (its collection's items).
@@ -43,7 +46,8 @@ public static class ControlChecker
                 occurrences.Length,
                 occurrences.Select(o => o.Key).Distinct(StringComparer.Ordinal).Count(),
                 parts,
-                accepted.Contains(name)));
+                accepted.Contains(name))
+            { Variant = control.Header.Variant, Lifted = control.Header.Lifted });
         }
         return checks;
     }
@@ -99,6 +103,12 @@ public static class ControlChecker
 /// <param name="Accepted">The person accepted it as it is.</param>
 public sealed record ControlCheck(string Name, string File, string Pattern, int Occurrences, int Pages, IReadOnlyList<ControlPart> Parts, bool Accepted)
 {
+    /// <summary>The variant of the pattern it was made from, when the pattern has several.</summary>
+    public string? Variant { get; init; }
+
+    /// <summary>Whether it was made from a lifted pattern (<see cref="Pattern.Lifted"/>).</summary>
+    public bool Lifted { get; init; }
+
     /// <summary>Every readable part found in every occurrence.</summary>
     public bool Passed => Parts.All(p => !p.Readable || p.Found == p.Of);
 

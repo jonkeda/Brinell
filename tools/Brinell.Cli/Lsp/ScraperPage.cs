@@ -739,26 +739,29 @@ internal static class ScraperPage
 
           // ---- 5 Controls ----
 
+          // A pattern's own key: its signature, and its variant when one signature is several controls.
+          const key = p => `${p.signature}${p.lifted ? " ↑" : ""}${p.variant ? ` (${p.variant})` : ""}`;
+
           async function stepControls() {
             if (state.reviewing) return reviewControl(state.reviewing);
             const patterns = await answer("patterns", { project: state.project }) || [];
             const checks = await answer("controlChecks", { project: state.project }) || [];
             const toMake = patterns.filter(p => !p.control && (p.pages >= 2 || p.kind === "Repeated"));
             // Nothing ticked at first: the person picks what the agent makes.
-            for (const p of toMake) if (!(p.signature in state.names)) state.names[p.signature] = p.name;
-            const count = () => toMake.filter(p => state.picked.has(p.signature)).length;
-            const make = primary("", () => makeControls(toMake.filter(p => state.picked.has(p.signature))), { "data-make": "" });
+            for (const p of toMake) if (!(key(p) in state.names)) state.names[key(p)] = p.name;
+            const count = () => toMake.filter(p => state.picked.has(key(p))).length;
+            const make = primary("", () => makeControls(toMake.filter(p => state.picked.has(key(p)))), { "data-make": "" });
             const label = () => { const n = count(); make.textContent = `Make ${plural(n, "control")} with the agent`; make.disabled = n === 0; };
             label();
             const all = el("input", { type: "checkbox", id: "sc-all-patterns", "aria-label": "All patterns", checked: toMake.length > 0 && count() === toMake.length });
-            all.addEventListener("change", () => { for (const p of toMake) all.checked ? state.picked.add(p.signature) : state.picked.delete(p.signature); for (const box of document.querySelectorAll("[data-pattern]")) box.checked = all.checked; label(); });
+            all.addEventListener("change", () => { for (const p of toMake) all.checked ? state.picked.add(key(p)) : state.picked.delete(key(p)); for (const box of document.querySelectorAll("[data-pattern]")) box.checked = all.checked; label(); });
             const rows = toMake.map(p => {
-              const box = el("input", { type: "checkbox", "data-pattern": p.signature, checked: state.picked.has(p.signature) });
-              box.addEventListener("change", () => { box.checked ? state.picked.add(p.signature) : state.picked.delete(p.signature); label(); });
-              const name = el("input", { value: state.names[p.signature], "aria-label": `Control name for ${p.signature}`, style: "width: 12em" });
-              name.addEventListener("input", () => { state.names[p.signature] = name.value.trim(); });
+              const box = el("input", { type: "checkbox", "data-pattern": key(p), checked: state.picked.has(key(p)) });
+              box.addEventListener("change", () => { box.checked ? state.picked.add(key(p)) : state.picked.delete(key(p)); label(); });
+              const name = el("input", { value: state.names[key(p)], "aria-label": `Control name for ${key(p)}`, style: "width: 12em" });
+              name.addEventListener("input", () => { state.names[key(p)] = name.value.trim(); });
               const example = p.examples[0];
-              return el("tr", {}, el("td", {}, box), el("td", {}, el("code", {}, p.signature)), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`),
+              return el("tr", {}, el("td", {}, box), el("td", {}, el("code", {}, p.signature), p.variant ? el("span", { class: "sc-muted" }, ` ${p.variant}`) : null), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`),
                 el("td", { class: "sc-muted" }, example ? example.line.replace(/^#\d+ /, "").slice(0, 60) : ""), el("td", {}, name));
             });
             const made = checks.map(c => {
@@ -780,17 +783,46 @@ internal static class ScraperPage
                 el("tr", {}, ...["Control", "From", "Occurs", "Its parts in the recordings", ""].map(h => el("th", {}, h))), ...made) : null];
           }
 
-          function makeControls(patterns) {
-            const list = patterns.map(p => `- ${state.names[p.signature] || p.name}: the ${p.kind} pattern '${p.signature}', ${p.occurrences}× on ${p.pages} page(s), e.g. node #${p.examples[0].node} of ${p.examples[0].page}`).join("\n");
-            chat(`Make these controls for ${state.project}, one file each under Controls, each with its scraped header (scraped_header) so the Scraper can check it; then check_code until it passes:\n${list}`,
-              `When the agent has written ${patterns.length === 1 ? "it, it shows" : "them, they show"} under Made.`);
+          // What goes with every brief (.my/ScraperEx/control-brief-plan.md, section 5).
+          const BRIEF_RULES = [
+            "Read only the files under \"Read only\". Do not search the repository: the brief has the facts. Use get_page_snapshot only to look at an occurrence again.",
+            "Decide what the control is from the facts. The hints are a reading of them, not an order: where you see it differently (another base, one control for two variants, other members), say why, and do that.",
+            "First say in a few lines what the control will offer: its base, its parts, its members. Then write it.",
+            "Write the template at \"Write\", in \"Namespace\", with \"First line\" first: constructors, and a protected virtual *Core method for each thing a test reads or does (the generator makes the public members from them); hand-written members only where the html-control skill says so. For a component, a control per part. Not only constructors.",
+            "Run \"Check\" until it passes. Then report each member, and any part that is not found in every occurrence.",
+          ].map((rule, i) => `${i + 1}. ${rule}`).join("\n");
+
+          // The most controls one prompt carries: the agent's whole job stays well inside a small context.
+          const BRIEFS_PER_PROMPT = 5;
+
+          async function makeControls(patterns) {
+            const batch = patterns.slice(0, BRIEFS_PER_PROMPT);
+            const briefs = [];
+            for (const p of batch) {
+              const brief = await answer("controlBrief", { project: state.project, signature: p.signature, variant: p.variant || null, lifted: !!p.lifted, name: state.names[key(p)] || p.name });
+              if (!brief) return;
+              briefs.push(brief.text);
+            }
+            for (const p of batch) state.picked.delete(key(p));
+            const rest = patterns.length - batch.length;
+            chat(`Make ${plural(batch.length, "control")} for ${state.project}, one per brief below.\n\n${BRIEF_RULES}\n\n${briefs.join("\n\n")}`,
+              `When the agent has written ${batch.length === 1 ? "it, it shows" : "them, they show"} under Made.${rest > 0 ? ` ${plural(rest, "more control")} stay ticked: make them when this batch is done.` : ""}`);
+            if (state.step === 5) await showStep();
+          }
+
+          // A made control again: its brief, with what the check found and the person's note.
+          async function fixControl(c, note) {
+            const brief = await answer("controlBrief", { project: state.project, signature: c.pattern, variant: c.variant || null, lifted: !!c.lifted, name: c.name });
+            const found = c.parts.map(p => `${p.name} ${p.readable ? `${p.found} of ${p.of}` : "not read"}`).join(", ");
+            chat(`Fix the control ${c.name} of ${state.project}, in ${c.file} (keep its first line; when it is a plain .cs with members written by hand, it may become a .tpl.cs template). Where its parts are found in the recordings: ${found}. ${note}\n\n${BRIEF_RULES}\n\n${brief ? brief.text : ""}`,
+              "When the agent has changed it, Check again shows where its parts are found.");
           }
 
           async function showPatterns() {
             const patterns = await answer("patterns", { project: state.project }) || [];
             $("sc-panel").replaceChildren(el("h2", {}, "5 Controls › All patterns"),
               el("table", { class: "sc-table" }, el("tr", {}, ...["Kind", "Pattern", "Where", "Control"].map(h => el("th", {}, h))),
-                ...patterns.map(p => el("tr", {}, el("td", {}, p.kind), el("td", {}, el("code", {}, p.signature)), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`), el("td", {}, p.control || "")))),
+                ...patterns.map(p => el("tr", {}, el("td", {}, p.kind), el("td", {}, el("code", {}, p.signature), p.variant ? el("span", { class: "sc-muted" }, ` ${p.variant}`) : null), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`), el("td", {}, p.control || "")))),
               el("div", { class: "sc-footer" }, button("‹ Controls", () => go(5), { class: "sc-link" }), el("span")));
           }
 
@@ -816,7 +848,7 @@ internal static class ScraperPage
                   c.accepted ? el("p", { class: "sc-muted" }, "Accepted as it is.") : null)),
               el("h3", {}, "Tell the agent what to change"), note,
               el("div", { class: "sc-actions" },
-                primary("Fix with the agent", () => chat(`Fix the control ${c.name} of ${state.project} (${c.file}), made from the pattern '${c.pattern}'. Where its parts are found in the recordings: ${c.parts.map(p => `${p.name} ${p.readable ? `${p.found} of ${p.of}` : "not read"}`).join(", ")}. ${note.value} Keep its scraped header; check_code until it passes.`), { "data-fix": "" }),
+                primary("Fix with the agent", () => fixControl(c, note.value), { "data-fix": "" }),
                 button(c.accepted ? "Take back the accept" : "Accept", async () => { await answer("acceptControl", { project: state.project, control: c.name, accepted: !c.accepted }); await refresh(false); }, { "data-accept": "" }),
                 button("Check again", () => showStep()),
                 more(button("Open the file to fix by hand", () => host.post({ type: "open", path: full })))),

@@ -13,7 +13,8 @@ public static class NodeSignature
     public static string Of(ScrapeSnapshot snapshot, ScrapeNode node)
     {
         var classes = node.Attribute("class") is { } c
-            ? string.Join('.', c.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(IsStable).Order(StringComparer.Ordinal))
+            // A modifier (v-input--dense, card--active) is how one occurrence looks, not what it is.
+            ? string.Join('.', c.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(n => IsStable(n) && !n.Contains("--", StringComparison.Ordinal)).Order(StringComparer.Ordinal))
             : "";
         var children = string.Join(',', Runs(snapshot.ChildrenOf(node.Number).Select(n => n.Kind == ScrapeNodeKind.ShadowRoot ? "#shadow" : n.Type)));
         return $"{node.Type}|{node.Role}|{classes}|{children}";
@@ -40,7 +41,8 @@ public static class NodeSignature
 
     // Generated class names (Emotion's css-1x2y3z, JSS's jss123, styled-components' sc-bdVaJa, CSS
     // modules' _abc123) differ per build, so they cannot say two nodes are alike; Angular's ng-* are state.
-    private static bool IsStable(string name) =>
+    /// <summary>Whether a class name is the app's own, not one a CSS-in-JS tool generates (<c>css-1x2y</c>).</summary>
+    internal static bool IsStable(string name) =>
         !(name.StartsWith("css-", StringComparison.Ordinal)
           || name.StartsWith("jss", StringComparison.Ordinal) && name.Skip(3).All(char.IsAsciiDigit)
           || name.StartsWith("sc-", StringComparison.Ordinal)

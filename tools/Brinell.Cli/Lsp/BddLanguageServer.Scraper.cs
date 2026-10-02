@@ -130,6 +130,11 @@ public sealed partial class BddLanguageServer
     public ScraperResult<IReadOnlyList<Brinell.Scraper.Code.Pattern>> ScraperPatterns(ScraperProjectParams request)
         => Answer(() => Scraper.Patterns(request.Project));
 
+    /// <summary><c>brinell/scraper/controlBrief</c>: what the agent gets to make a control from a pattern.</summary>
+    [JsonRpcMethod("brinell/scraper/controlBrief")]
+    public ScraperResult<Brinell.Scraper.Code.ControlBriefText> ScraperControlBrief(ScraperControlBriefParams request)
+        => Answer(() => Scraper.ControlBrief(request.Project, request.Signature, request.Name, request.Variant, request.Lifted));
+
     /// <summary><c>brinell/scraper/controls</c>: the page objects and controls a project has.</summary>
     [JsonRpcMethod("brinell/scraper/controls")]
     public ScraperResult<IReadOnlyList<Brinell.Scraper.Code.CodeClass>> ScraperControls(ScraperProjectParams request)
@@ -201,6 +206,9 @@ public sealed record ScraperCaptureParams(string? Name);
 
 /// <summary>A project, by name; the only one when null.</summary>
 public sealed record ScraperProjectParams(string? Project);
+
+/// <summary><c>brinell/scraper/controlBrief</c>'s parameters: the pattern, and the name the person gave the control.</summary>
+public sealed record ScraperControlBriefParams(string? Project, string Signature, string? Name, string? Variant = null, bool Lifted = false);
 
 /// <summary><c>brinell/scraper/outline</c>'s parameters: the page's newest capture unless a session (and number) is given.</summary>
 /// <param name="Focus">A node shown even when it is a wrapper.</param>

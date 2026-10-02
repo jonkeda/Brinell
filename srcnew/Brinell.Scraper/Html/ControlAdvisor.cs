@@ -55,6 +55,7 @@ public static partial class ControlAdvisor
         {
             Frame = frame == 0 ? null : frame,
             Scope = frame == 0 ? null : Name(snapshot[frame], testIds, null),
+            Core = Code.ControlKind.Of(snapshot, node) is { } reading ? $"{reading.Core.ToString().ToLowerInvariant()} ({reading.Because})" : null,
         };
     }
 
@@ -247,4 +248,12 @@ public sealed record ControlSuggestion(int Node, string Name, string Control, st
 
     /// <summary>For a node in a frame: the frame's member, the scope to declare this one on (<c>new(Frame, …)</c>).</summary>
     public string? Scope { get; init; }
+
+    /// <summary>
+    /// What a test does with it and the facts that say so (<see cref="Code.ControlKind"/>), such as
+    /// <c>selector (aria-haspopup=listbox)</c>; null for nothing interactive or read. Where it differs from
+    /// <see cref="ControlSuggestion.Control"/> (a <c>LabelControl</c> for a selector made of divs), no
+    /// Brinell control fits: a control to make.
+    /// </summary>
+    public string? Core { get; init; }
 }

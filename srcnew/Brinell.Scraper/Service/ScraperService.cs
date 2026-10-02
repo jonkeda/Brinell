@@ -437,17 +437,49 @@ public sealed partial class ScraperService : IAsyncDisposable
         return PatternDetector.Detect(pages, ProjectCode.Read(project), max, project.Config.TestIds);
     }
 
+    /// <summary>
+    /// The brief for making a control from a pattern: where to write it, what to read, the facts of
+    /// its occurrences and the hints (.my/ScraperEx/control-brief-plan.md).
+    /// </summary>
+    /// <param name="projectName">The project.</param>
+    /// <param name="signature">The pattern's signature.</param>
+    /// <param name="name">The control's name; the pattern's own when null.</param>
+    /// <param name="variant">Which variant of the pattern, when it has several (<see cref="Pattern.Variant"/>).</param>
+    /// <param name="lifted">Whether the pattern is lifted to its roots (<see cref="Pattern.Lifted"/>).</param>
+    public ControlBriefText ControlBrief(string? projectName, string signature, string? name = null, string? variant = null, bool lifted = false)
+    {
+        var project = Project(projectName);
+        return Code.ControlBrief.Write(project, signature, variant, lifted, name, (page, node) => Header(project.Name, page, node, variant, lifted), BrinellRoot(project.Folder));
+    }
+
+    // The Brinell repository holding the skills and the base controls, when the project is inside it
+    // or the solution is.
+    private string? BrinellRoot(string from)
+    {
+        foreach (var start in new[] { from, _solutionDir })
+        {
+            for (var folder = new DirectoryInfo(start); folder is not null; folder = folder.Parent)
+            {
+                if (File.Exists(Path.Combine(folder.FullName, ".github", "skills", "html-control", "SKILL.md")))
+                    return folder.FullName;
+            }
+        }
+        return null;
+    }
+
     /// <summary>The header line a file made from something recorded starts with.</summary>
     /// <param name="projectName">The project.</param>
     /// <param name="page">The page key.</param>
     /// <param name="node">A node on its newest capture, for a control; null for the page object.</param>
-    public string Header(string? projectName, string page, int? node = null)
+    /// <param name="variant">For a control made from one variant of a pattern: the variant.</param>
+    /// <param name="lifted">For a control made from a lifted pattern (<see cref="Pattern.Lifted"/>): its root is the node lifted.</param>
+    public string Header(string? projectName, string page, int? node = null, string? variant = null, bool lifted = false)
     {
         var (capture, snapshot) = Snapshot(projectName, page);
         var from = $"{capture.Session}/{capture.Event.Snapshot}";
         if (node is null) return new ScrapedHeader { Page = page, From = from, Hash = SnapshotFile.ContentHash(snapshot) }.ToString();
         if (node < 1 || node > snapshot.Nodes.Count) throw new ScraperProblem($"Page '{page}' has nodes 1 to {snapshot.Nodes.Count}, not {node}.");
-        return new ScrapedHeader { Control = NodeSignature.Of(snapshot, snapshot[node.Value]), From = $"{from}#{node}" }.ToString();
+        return new ScrapedHeader { Control = NodeSignature.Of(snapshot, snapshot[node.Value]), Variant = variant, Lifted = lifted, From = $"{from}#{node}" }.ToString();
     }
 
     /// <summary>
