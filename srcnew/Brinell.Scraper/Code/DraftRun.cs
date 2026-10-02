@@ -17,12 +17,16 @@ public static class DraftRun
         patterns.Where(p => p.Control is null && (p.Pages >= 2 || p.Kind == PatternKind.Repeated)).ToArray();
 
     /// <summary>Drafts every recorded page, or the one with key <paramref name="page"/>.</summary>
-    public static async Task<DraftResult> RunAsync(ScrapeProject project, string? page = null, CancellationToken cancellationToken = default)
+    public static Task<DraftResult> RunAsync(ScrapeProject project, string? page = null, CancellationToken cancellationToken = default) =>
+        RunAsync(project, page is null ? null : [page], cancellationToken);
+
+    /// <summary>Drafts the recorded pages with these keys, or every one when <paramref name="keys"/> is null.</summary>
+    public static async Task<DraftResult> RunAsync(ScrapeProject project, IReadOnlyCollection<string>? keys, CancellationToken cancellationToken = default)
     {
         var index = project.Index();
-        var pages = page is null
+        var pages = keys is null
             ? index.Pages
-            : [index.Page(page) ?? throw new ArgumentException($"No recorded page '{page}'. The pages are {string.Join(", ", index.Pages.Select(p => p.Key))}.")];
+            : keys.Select(k => index.Page(k) ?? throw new ArgumentException($"No recorded page '{k}'. The pages are {string.Join(", ", index.Pages.Select(p => p.Key))}.")).ToArray();
         var code = ProjectCode.Read(project).Where(c => c.Project == project.Name).ToArray();
         var names = code.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
 

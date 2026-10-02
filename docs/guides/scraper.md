@@ -4,6 +4,30 @@ The Scraper records an app's pages into a UI test project and helps an agent (Co
 page objects and controls from them. Html and Blazor apps today. The decisions are in
 [AD-027](../../.docs/decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md).
 
+## The view: seven steps
+
+Open it in **VS Code** with **Brinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar),
+in **Visual Studio** with View, Other Windows, **Scraper**. It is a workflow: the steps on the left,
+each with its state (✓ done, its number to do, ! to look at) and a count, the step in the panel on
+the right with one main button, and in the header **Next:** what to do now, with **Go**.
+
+| Step | What it is for | Main button |
+| --- | --- | --- |
+| 1 Project | The UI test project the page objects go into | **New project…** (also **+** by the picker) |
+| 2 Connect | Can the Scraper reach the app, signed in, and may Explore go there | **Check the app**; then **Allow this host** or **Open the browser to sign in** when it says so |
+| 3 Collect pages | Explore's guards and budget as a form (**Save** writes the fields you changed, **Undo changes** puts them back), and the last run | **Explore** (a dry run the first time); **Record by hand** under More |
+| 4 Review | The pages and their captures (an outline per capture, highlight, Compare, Changes), what Explore skipped by reason and the requests it blocked | none: **Next** |
+| 5 Controls | **To make**: the patterns that repeat, each with a tick box and a control name; **Made**: the controls with a scraped header, checked against the recordings (each part found in how many of the pattern's occurrences) | **Make *n* controls with the agent**; per control **Review** (its code, its parts, a note, **Fix with the agent**, **Accept**). **Skip** if the page objects do without |
+| 6 Page objects | A row per page: a tick box, its class name (edit it to rename the class, its draft and your part), and whether it is drafted or changed since | **Draft *n* page objects** (the ticked ones), **Improve with the agent** |
+| 7 Verify | Each page object's members looked up in the running app | **Verify** |
+
+**Code**, below the steps, lists the project's page objects and controls. While a recording or
+Explore runs, a strip under the header shows its progress with **Capture**, **Pick**, **Stop**,
+**Continue** (after a sign-in) and **This page…**. What the workflow remembers that the files do not
+(the last check and verify, accepted controls, skipped controls) is in the project's
+`.scraper-state.json`, which is not committed. An agent sees the same steps with
+`get_scraper_progress`.
+
 ## Make a project scrapeable
 
 A new project: **+** beside the Scraper's project picker. The form asks for the name, folder,
@@ -66,11 +90,7 @@ controls):
 
 ## Record
 
-- **VS Code:** **Brinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar).
-- **Visual Studio:** View, Other Windows, **Scraper**.
-- **An agent:** the MCP tools below.
-
-**Record** opens a Chromium window. Work in it: each page the app moves to is captured once it has
+Step 3, More, **Record by hand** (or an agent's `start_recording`) opens a Chromium window. Work in it: each page the app moves to is captured once it has
 settled (a hash route and `pushState` count as moves). **Capture** takes the page again (a dialog
 open, a tab chosen); **Pick** lets you click an element to find it in the capture; **Stop** closes
 the window. The window keeps its own login per project, under your local application data.
@@ -88,12 +108,10 @@ recording is `Recordings/<date>-explore/`, and everything else (patterns, sugges
 works on it as on yours. **Draft page objects** then writes a page object per recorded page, with
 no model.
 
-- **The view:** the **Explore** tab shows the host and the guards as set, the budget, and a dry run
-  (ticked the first time: links only, it lists what it would click). **Start**, **Stop**, and
-  **Continue** once you have signed in. Afterwards it lists what was captured, skipped and blocked,
-  each with **Never click**, **Always click** or **Allow this request**. **Explore settings** edits
-  everything below. On the Pages tab: **Draft page objects**, **Verify**, and **Improve with the
-  agent** (the `/brinell-scrape-pages` prompt on the drafts).
+- **The view:** step 3 shows the guards and budget as a form and the summary of the run they make,
+  with **Explore** (a dry run the first time: links only, it lists what it would click), **Stop**
+  and **Continue** in the running strip. Step 4 lists what was captured, skipped and blocked, with
+  **Never click**, **Always click** or **Allow this request**. Steps 6 and 7 draft and verify.
 - **The command line** (from the solution folder):
 
   ```powershell
@@ -193,7 +211,7 @@ every member's locator: once, several times, or not at all.
 
 ## Generate
 
-The view's **Generate…**, **Generate page object** and **Make a control** open the agent's chat
+The view's agent buttons (step 5's **Make *n* controls** and **Fix with the agent**, step 6's **Improve with the agent**, a node's **Make a control**) open the agent's chat
 with the `/brinell-scrape-pages` prompt (Visual Studio puts it on the clipboard). The agent follows
 the [scrape-pages](../../.github/skills/scrape-pages/SKILL.md) skill: controls for the parts that
 repeat, then a page object per page, then the build until it passes. Review the result in your
@@ -205,6 +223,7 @@ Its Scraper tools:
 | Tool | Gives or does |
 | --- | --- |
 | `list_scraped_projects` | the projects with a `scraper.config.md` |
+| `get_scraper_progress` | where a project is in the workflow: each step's state and what to do next |
 | `start_recording`, `capture_page`, `stop_recording` | a recording (one at a time per server) |
 | `list_recorded_pages` | pages by key (path and hash route, ids as `{id}`), their captures, the page object made for each and whether the page changed since |
 | `get_page_snapshot` | a capture as an outline with node numbers; a node's subtree for a large page |
@@ -222,9 +241,10 @@ Its Scraper tools:
 
 ## When the app changes
 
-Record the page again. The page list marks a page whose page object was made from an older
-capture; **Changes** (or `diff_page`) lists what was added, removed and changed since, and
-**Update page object** asks the agent to change only that.
+Steps 3, 6 and 7 get a **!** and the header says what to do: explore or record the page again, then
+update its page object. In step 4 a page whose page object was made from an older capture is marked;
+**Changes** (or `diff_page`) lists what was added, removed and changed since, and **Update page
+object** asks the agent to change only that.
 
 ## The loop
 

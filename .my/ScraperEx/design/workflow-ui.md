@@ -1,6 +1,6 @@
 # The Scraper view as a workflow: proposal
 
-Status: **proposal**, 2026-10-01; revised 2026-10-02 after review (section 10). A clickable mockup: [workflow-mockup.html](workflow-mockup.html)
+Status: **built**, 2026-10-02 (section 11); proposed 2026-10-01, revised after review (section 10). A clickable mockup: [workflow-mockup.html](workflow-mockup.html)
 (open it in a browser; the data in it is made up). Builds on the view as built
 ([plan.md](../plan.md) steps 7-9, [auto-plan.md](../auto-plan.md) step 9,
 [updates/vs-scraper-window.md](../updates/vs-scraper-window.md)).
@@ -179,3 +179,20 @@ The last check (step 2) and the last verify (step 7) are written to `Recordings/
 | Controls: select several and make them in one go; how made controls look; review and fix them | Tick boxes and a name per pattern, **Make *n* controls with the agent**; a **Made** list with build and found-in-recordings results; a review panel per control (code, parts found, a note, **Fix with the agent**, **Accept**). In the mockup: state "Controls made, to review" |
 | Page objects: select, draft only those, change the name | Tick boxes, **Draft *n* page objects**, the class name editable in the row |
 | Page objects, a fourth point | Left empty in the review: still open |
+
+## 11. As built (2026-10-02)
+
+| Part | Built | Differs from the proposal |
+| --- | --- | --- |
+| Engine | `ScraperService.Progress` (the seven steps, their state, summary and count, the next action, the last check and verify); `CheckAppAsync` (the start URL in a headless browser with the project's profile: status, sign-in, host); `ControlChecks` with `ControlChecker` and `SnapshotSelector` (a control's parts matched in every occurrence of its pattern in the recordings, no browser; the CSS page objects use); `AcceptControl`, `SkipControls`; `EditConfig` with several changes, written once; `DraftAsync` for chosen pages; `RenamePageObject` (Roslyn: the class in its draft and the person's part, the files renamed; files elsewhere that use it are listed, not changed); `ReadCode`; the state in `.scraper-state.json` beside the config (git-ignored) | `SkipControls` and the accepted controls are in the state file, not the config: they are the person's. Making controls is the agent's prompt from the page, not a server call |
+| Server | `progress`, `check`, `configEdits`, `controlChecks`, `acceptControl`, `skipControls`, `draftPages`, `renamePageObject`, `code`; MCP `get_scraper_progress` | |
+| Page | The header (project, **+**, **Next** with **Go**), the running strip, the step list with **Code**, a panel per step as in section 4, the narrow layout as a row of marks | Patterns are unticked at first: a docs page has dozens. A name given to a page not yet drafted is used when it is drafted (a rename after the draft) |
+
+Checked: Scraper tests 287 (15 new: the selector, a control's parts in three occurrences with one
+miss, accept, progress from new to skipped controls, several edits and a failing one, chosen pages,
+rename), language server 90; the VS extension builds. Through the stand-in host: MudBlazor's project
+(27 patterns to make, every step renders), Save on its settings (two rows written, the rest kept;
+put back), and on the Copilot run's DemoQA copy: **SideMenuGroup** made by Copilot checked (every
+part in 6 of 6 groups), reviewed, accepted; **TabsPage** renamed to **DemoTabsPage** in both parts
+and the project still builds; **Check the app** against demoqa.com (200, signed in, allowed). Dark
+mode checked. Not tried inside Visual Studio or VS Code.

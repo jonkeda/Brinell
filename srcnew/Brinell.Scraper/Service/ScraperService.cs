@@ -12,7 +12,7 @@ namespace Brinell.Scraper.Service;
 /// recording at a time, and reading what is recorded. The language server and the MCP server are thin
 /// adapters over it. It calls no model.
 /// </summary>
-public sealed class ScraperService : IAsyncDisposable
+public sealed partial class ScraperService : IAsyncDisposable
 {
     private readonly string _solutionDir;
     private readonly Func<string, IScrapeSource> _sourceFor;
@@ -556,7 +556,9 @@ public sealed class ScraperService : IAsyncDisposable
         {
             await source.StartAsync(new ScrapeStart("about:blank", project.ProfileFolder, visible), cancellationToken).ConfigureAwait(false);
             await source.GuardAsync(new RequestGuard(project.Config.Explore)).ConfigureAwait(false);
-            return await PageVerifier.RunAsync(project, source.Page!, () => source.CaptureAsync(cancellationToken)).ConfigureAwait(false);
+            var result = await PageVerifier.RunAsync(project, source.Page!, () => source.CaptureAsync(cancellationToken)).ConfigureAwait(false);
+            Remember(project, result);
+            return result;
         }
     }
 

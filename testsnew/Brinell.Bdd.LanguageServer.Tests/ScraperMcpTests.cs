@@ -80,11 +80,12 @@ public sealed class ScraperMcpTests : IDisposable
         var header = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/header", new { page = "/orders" });
 
         Assert.Contains("<title>Scraper</title>", (string?)host["html"]);
-        // The bar's inputs have labels, and + makes a new project.
+        // The workflow: the project picker with its label and +, the next action, the steps and their panel.
         Assert.Contains("<label for=\"sc-project\">Project</label>", (string?)host["html"]);
-        Assert.Contains("<label for=\"sc-session\">Session</label>", (string?)host["html"]);
-        Assert.Contains("<label for=\"sc-url\">Start URL</label>", (string?)host["html"]);
         Assert.Contains("id=\"sc-new-project\"", (string?)host["html"]);
+        Assert.Contains("id=\"sc-next\"", (string?)host["html"]);
+        Assert.Contains("id=\"sc-steps\"", (string?)host["html"]);
+        Assert.Contains("id=\"sc-panel\"", (string?)host["html"]);
         Assert.Equal(3, similar["value"]!.AsArray().Count);
         Assert.True(similar.AsObject().ContainsKey("problem")); // sent even as null: the view tells a result by it
         Assert.StartsWith("// <scraped page=\"/orders\"", (string?)header["value"]);
@@ -198,6 +199,25 @@ public sealed class ScraperMcpTests : IDisposable
         Assert.Equal(Path.Combine(_solution, "Admin.UITests", "Admin.UITests.csproj"), (string?)made["value"]);
         Assert.Contains("Brinell.Blazor", File.ReadAllText((string)made["value"]!));
         Assert.Contains(projects.AsArray(), p => (string?)p!["name"] == "Admin.UITests");
+    }
+
+    [Fact]
+    public async Task The_view_reads_the_workflow_over_json_rpc()
+    {
+        await using var harness = await ServerHarness.StartAsync(_solution);
+
+        var progress = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/progress", new { });
+        var checks = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/controlChecks", new { });
+        var saved = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/configEdits", new { changes = new[] { new { action = "set", section = "Explore", values = new[] { "MaxPages", "7" } }, new { action = "add", section = "Explore hosts", values = new[] { "shop.example" } } } });
+
+        var steps = progress["value"]!["steps"]!.AsArray();
+        Assert.Equal(7, steps.Count);
+        Assert.Equal(("Project", "Done"), ((string?)steps[0]!["name"], (string?)steps[0]!["state"]));
+        Assert.Equal("Collect pages", (string?)steps[2]!["name"]);
+        Assert.NotNull(progress["value"]!["next"]);
+        Assert.Empty(checks["value"]!.AsArray());
+        Assert.Equal(2, saved["value"]!.AsArray().Count);
+        Assert.Contains("| MaxPages | 7 |", File.ReadAllText(Path.Combine(_solution, "Shop.UITests", ScraperConfig.FileName)));
     }
 
     [Fact]
