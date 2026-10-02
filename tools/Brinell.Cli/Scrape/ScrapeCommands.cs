@@ -364,7 +364,7 @@ internal static class ScrapeCommands
     }
 
     private static ScraperService Service(CliIo io, string? solution) =>
-        new(SolutionFolder(solution, io.CurrentDirectory), io.SourceFor);
+        new(SolutionFolder(solution, io.CurrentDirectory), io.SourceFor, new Generate.ControlTemplates());
 
     // Not given: the project this folder is in (by its folder, so a name two projects share still picks one), else the service's own choice.
     private static string? ProjectName(ScraperService service, string? given, CliIo io)

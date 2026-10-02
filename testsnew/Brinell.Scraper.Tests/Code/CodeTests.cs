@@ -169,6 +169,31 @@ public sealed class CodeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_template_that_does_not_generate_fails_the_build_before_it_runs_and_one_that_does_is_built()
+    {
+        var project = MakeProject("Tiny.UITests", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Library</OutputType></PropertyGroup></Project>");
+        CodeGate.Write(project, "Controls/Field.tpl.cs", "namespace Tiny;\npublic partial class Field { }\n");
+        var folders = new List<string>();
+
+        var failed = await CodeGate.BuildAsync(project, new FakeTemplates(folders, new CodeProblem("Field.tpl.cs", 1, 1, "error", "BRGEN", "no target class")));
+        var passed = await CodeGate.BuildAsync(project, new FakeTemplates(folders));
+
+        Assert.False(failed.Succeeded);
+        Assert.Equal("BRGEN", Assert.Single(failed.Problems).Code);
+        Assert.True(passed.Succeeded, string.Join('\n', passed.Problems) + passed.Output);
+        Assert.Equal([Path.Combine(project.Folder, "Controls"), Path.Combine(project.Folder, "Controls")], folders);
+    }
+
+    private sealed class FakeTemplates(List<string> folders, params CodeProblem[] problems) : ITemplateGenerator
+    {
+        public IReadOnlyList<CodeProblem> Generate(string folder)
+        {
+            folders.Add(folder);
+            return problems;
+        }
+    }
+
+    [Fact]
     public void A_part_that_repeats_across_pages_is_a_pattern_and_its_inner_parts_are_not_repeated_as_patterns()
     {
         var pages = new[] { ("/a", Cards("https://shop.example/a", 2)), ("/b", Cards("https://shop.example/b", 1)) };

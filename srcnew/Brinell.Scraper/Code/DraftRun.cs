@@ -18,10 +18,14 @@ public static class DraftRun
 
     /// <summary>Drafts every recorded page, or the one with key <paramref name="page"/>.</summary>
     public static Task<DraftResult> RunAsync(ScrapeProject project, string? page = null, CancellationToken cancellationToken = default) =>
-        RunAsync(project, page is null ? null : [page], cancellationToken);
+        RunAsync(project, page is null ? null : [page], null, cancellationToken);
 
     /// <summary>Drafts the recorded pages with these keys, or every one when <paramref name="keys"/> is null.</summary>
-    public static async Task<DraftResult> RunAsync(ScrapeProject project, IReadOnlyCollection<string>? keys, CancellationToken cancellationToken = default)
+    /// <param name="project">The scraped project.</param>
+    /// <param name="keys">The pages' keys; every page when null.</param>
+    /// <param name="templates">Generates the project's control templates before each build; null to build only.</param>
+    /// <param name="cancellationToken">Ends the builds.</param>
+    public static async Task<DraftResult> RunAsync(ScrapeProject project, IReadOnlyCollection<string>? keys, ITemplateGenerator? templates, CancellationToken cancellationToken = default)
     {
         var index = project.Index();
         var pages = keys is null
@@ -71,7 +75,7 @@ public static class DraftRun
         if (written.Count == 0)
             return new DraftResult(outcomes, null);
 
-        var build = await CodeGate.BuildAsync(project, cancellationToken).ConfigureAwait(false);
+        var build = await CodeGate.BuildAsync(project, templates, cancellationToken).ConfigureAwait(false);
         if (build.Succeeded)
             return new DraftResult(outcomes, build);
 
@@ -90,7 +94,7 @@ public static class DraftRun
                 Problems = build.Problems.Where(p => failing.Count == 0 || SameFile(p.File, full)).ToArray(),
             };
         }
-        var after = await CodeGate.BuildAsync(project, cancellationToken).ConfigureAwait(false);
+        var after = await CodeGate.BuildAsync(project, templates, cancellationToken).ConfigureAwait(false);
         return new DraftResult(outcomes, after);
     }
 

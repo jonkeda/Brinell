@@ -20,7 +20,7 @@ public sealed partial class BddLanguageServer
             {
                 if (_scraper is null)
                 {
-                    _scraper = new ScraperService(_workspace?.Root ?? Environment.CurrentDirectory);
+                    _scraper = new ScraperService(_workspace?.Root ?? Environment.CurrentDirectory, templates: new Brinell.Cli.Generate.ControlTemplates());
                     _scraper.Changed += (_, change) => _ = _rpc?.NotifyWithParameterObjectAsync("brinell/scraper/changed", change);
                 }
 

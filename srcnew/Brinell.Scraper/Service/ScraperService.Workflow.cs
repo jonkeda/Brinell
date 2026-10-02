@@ -182,7 +182,7 @@ public sealed partial class ScraperService
         DraftResult result;
         try
         {
-            result = await DraftRun.RunAsync(project, pages, cancellationToken).ConfigureAwait(false);
+            result = await DraftRun.RunAsync(project, pages, _templates, cancellationToken).ConfigureAwait(false);
         }
         catch (ArgumentException e)
         {

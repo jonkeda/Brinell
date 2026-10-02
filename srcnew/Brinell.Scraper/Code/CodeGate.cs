@@ -50,9 +50,26 @@ public static partial class CodeGate
             .Select(d => new CodeProblem(null, d.Location.GetLineSpan().StartLinePosition.Line + 1, d.Location.GetLineSpan().StartLinePosition.Character + 1, "error", d.Id, d.GetMessage(System.Globalization.CultureInfo.InvariantCulture)))
             .ToArray();
 
+    /// <summary>A control template's extension: the generator writes its members to a <c>.gen.cs</c> beside it.</summary>
+    public const string TemplateExtension = ".tpl.cs";
+
     /// <summary>Builds the project and gives its errors and warnings.</summary>
-    public static async Task<BuildResult> BuildAsync(ScrapeProject project, CancellationToken cancellationToken = default)
+    public static Task<BuildResult> BuildAsync(ScrapeProject project, CancellationToken cancellationToken = default) =>
+        BuildAsync(project, null, cancellationToken);
+
+    /// <summary>
+    /// Generates the project's control templates, then builds it and gives its errors and warnings. A
+    /// template that does not generate fails the build before it runs.
+    /// </summary>
+    /// <param name="project">The scraped project.</param>
+    /// <param name="templates">Writes each <c>.tpl.cs</c> to its <c>.gen.cs</c>; null to build only.</param>
+    /// <param name="cancellationToken">Ends the build.</param>
+    public static async Task<BuildResult> BuildAsync(ScrapeProject project, ITemplateGenerator? templates, CancellationToken cancellationToken = default)
     {
+        var generated = Generate(project, templates);
+        if (generated.Any(p => p.Severity == "error"))
+            return new BuildResult(false, generated.Take(MaxProblems).ToArray(), null);
+
         var projectFile = Directory.EnumerateFiles(project.Folder, "*.csproj").FirstOrDefault()
             ?? throw new FileNotFoundException($"{project.Folder} has no project file to build.");
         var info = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
@@ -79,9 +96,24 @@ public static partial class CodeGate
 
         List<string> output;
         lock (lines) output = [.. lines];
-        var problems = output.Select(Parse).OfType<CodeProblem>().Distinct().Take(MaxProblems).ToArray();
+        var problems = generated.Concat(output.Select(Parse).OfType<CodeProblem>().Distinct()).Take(MaxProblems).ToArray();
         var succeeded = process.ExitCode == 0;
         return new BuildResult(succeeded, problems, succeeded || problems.Length > 0 ? null : string.Join('\n', output.TakeLast(20)));
+    }
+
+    // The templates under the project's Controls and Pages folders, when it has any.
+    private static IReadOnlyList<CodeProblem> Generate(ScrapeProject project, ITemplateGenerator? templates)
+    {
+        if (templates is null)
+            return [];
+        var problems = new List<CodeProblem>();
+        foreach (var folder in new[] { project.Config.ControlsFolder, project.Config.PagesFolder }.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var full = Path.Combine(project.Folder, folder);
+            if (Directory.Exists(full) && Directory.EnumerateFiles(full, "*" + TemplateExtension, SearchOption.AllDirectories).Any())
+                problems.AddRange(templates.Generate(full));
+        }
+        return problems;
     }
 
     // "C:\x\Pages\Foo.cs(12,5): error CS0246: The type ... [C:\x\X.csproj]"

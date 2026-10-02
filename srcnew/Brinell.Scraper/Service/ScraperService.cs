@@ -20,12 +20,15 @@ public sealed partial class ScraperService : IAsyncDisposable
     private Recording? _recording;
     private CancellationTokenSource? _exploring;
     private TaskCompletionSource? _signIn;
+    private readonly ITemplateGenerator? _templates;
 
     /// <summary>A service for the projects under <paramref name="solutionDir"/>.</summary>
     /// <param name="solutionDir">The solution's folder.</param>
     /// <param name="sourceFor">Makes the source for a platform; the Html source when null.</param>
-    public ScraperService(string solutionDir, Func<string, IScrapeSource>? sourceFor = null)
+    /// <param name="templates">Generates a project's control templates before it builds; null to build only.</param>
+    public ScraperService(string solutionDir, Func<string, IScrapeSource>? sourceFor = null, ITemplateGenerator? templates = null)
     {
+        _templates = templates;
         // A solution file names its folder: the IDE may pass either.
         var full = Path.GetFullPath(solutionDir);
         _solutionDir = File.Exists(full) ? Path.GetDirectoryName(full)! : full;
@@ -532,7 +535,7 @@ public sealed partial class ScraperService : IAsyncDisposable
         DraftResult result;
         try
         {
-            result = await DraftRun.RunAsync(project, page, cancellationToken).ConfigureAwait(false);
+            result = await DraftRun.RunAsync(project, page is null ? null : [page], _templates, cancellationToken).ConfigureAwait(false);
         }
         catch (ArgumentException e)
         {
@@ -567,7 +570,7 @@ public sealed partial class ScraperService : IAsyncDisposable
 
     /// <summary>Builds the project: the gate every generated file must pass.</summary>
     public Task<BuildResult> CheckCodeAsync(string? projectName, CancellationToken cancellationToken = default) =>
-        CodeGate.BuildAsync(Project(projectName), cancellationToken);
+        CodeGate.BuildAsync(Project(projectName), _templates, cancellationToken);
 
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
