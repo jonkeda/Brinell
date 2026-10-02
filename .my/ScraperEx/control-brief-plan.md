@@ -1,6 +1,6 @@
 # Controls the agent can make well: a brief per pattern, and recognizing what a pattern is
 
-Status: **proposal**, 2026-10-02. From the Bouw7 trial
+Status: **built**, steps 1 to 10 (2026-10-02, section 9); not yet tried in an IDE with an agent. From the Bouw7 trial
 ([issues/bouw7-trial-view-feedback.md](issues/bouw7-trial-view-feedback.md)): **Make 1 control with the
 agent** on `div||v-input__control|div` gave a `VInputControl<TScope>` with constructors and nothing else,
 after the agent had read many files to find out where and how to write it.
@@ -336,6 +336,20 @@ for the lists with `{type: "agents"}` and gets `{type: "agents", agents, models}
 **Steps.** Added to section 6 as step 10: the `.agent.md`; the header's choice and its memory; the
 hosts passing `mode`/`modelSelector`/`toolsInclude` (VS Code) and `Model`/`DirectedResponders`
 (Visual Studio); `chatDone`. It does not wait for steps 1 to 9.
+
+## 9. Built (2026-10-02)
+
+| Steps | Commit | Where it differs from the plan |
+| --- | --- | --- |
+| 1 | `bf8f515a` | The generator stays in the CLI; the Scraper gets it as an `ITemplateGenerator`. It runs over the project's `Controls` and `Pages` folders before every build (`check_code`, drafting). |
+| 2 to 5 | `c045748b` | One commit: they share their files. A lifted pattern keeps the **inner** signature (all its occurrences share it; the roots' own classes vary, as Bouw7's `has-c`), and a root that several patterns reach goes to the one with the most occurrences. The header records `variant` and `root="lifted"`; `ControlChecker` lifts and filters the same way. The root rule (3.3) also lifts to the BEM block of the node's element class (`x__y` inside `x`). The inner-pattern rule now applies only inside a repeated part, not a form or table. |
+| 6 to 8 | `3f2c6d77` | Explore's clicks come from its reports (`explore.md`, the click's label); what appeared is the popup roles that grew between the capture before and after. |
+| 9 | `1c05dfc9` | |
+| 10 | (this commit) | Visual Studio cannot choose an agent or mode through its API: it sends into the open chat session, in the window's own mode, with the chosen model (`CopilotRequest.Model`). VS Code sends with `mode`, `modelSelector` and `blockOnResponse`; a VS Code that does not wait for the answer (it returns within 2 s) gives no `chatDone`. The agent file's `tools` names (`search`, `edit`) are not checked against a VS Code. |
+
+On the Bouw7 recordings: `VSelect` (62×, selector, lifted), `VInputText` (16×), `VInputLabel` (4×)
+instead of `VInputControl` and `VInput`..`VInput4`; `HeimdallDataRowList` with its rows; no `Div` or
+`Td`. Not yet tried: an agent making a control from a brief, in Visual Studio and VS Code.
 
 ## 8. Decisions and open questions
 

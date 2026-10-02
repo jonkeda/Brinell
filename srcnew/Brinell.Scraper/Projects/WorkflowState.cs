@@ -26,6 +26,12 @@ public sealed record WorkflowState
     /// <summary>The controls the person accepted as they are, by class name.</summary>
     public IReadOnlyList<string> AcceptedControls { get; init; } = [];
 
+    /// <summary>The chat agent (or mode) the person chose for the Scraper's prompts; null for the config's.</summary>
+    public string? Agent { get; init; }
+
+    /// <summary>The model the person chose for the Scraper's prompts; null for the config's, empty for the IDE's own.</summary>
+    public string? Model { get; init; }
+
     /// <summary>The project's state, or an empty one.</summary>
     public static WorkflowState Read(ScrapeProject project)
     {

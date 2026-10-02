@@ -215,11 +215,25 @@ every member's locator: once, several times, or not at all.
 
 ## Generate
 
-The view's agent buttons (step 5's **Make *n* controls** and **Fix with the agent**, step 6's **Improve with the agent**, a node's **Make a control**) open the agent's chat
-with the `/brinell-scrape-pages` prompt (Visual Studio puts it on the clipboard). The agent follows
-the [scrape-pages](../../.github/skills/scrape-pages/SKILL.md) skill: controls for the parts that
-repeat, then a page object per page, then the build until it passes. Review the result in your
-usual diff.
+The view's agent buttons (step 5's **Make *n* controls** and **Fix with the agent**, step 6's **Improve with the agent**, a node's **Make a control**) send a prompt
+into Copilot Chat, in the agent and with the model chosen in the header (**Agent and model**). The
+**Brinell scraper** agent (`.github/agents/brinell-scraper.agent.md`) has the Brinell tools and the
+rules; **Agent** and **Ask** get them from the `/brinell-scrape-pages` prompt. A control is made from
+its brief (`control_brief`), at most five per prompt. When the IDE cannot send it, the prompt goes to
+the clipboard and the view says so. When the answer is complete, step 5 or 6 checks again by itself.
+Visual Studio sends it into the open chat session with the chosen model, in the chat window's own
+mode. Review the result in your usual diff.
+
+Your choice is kept per project in `.scraper-state.json`; `## Agent` in the config gives the default:
+
+```
+## Agent
+
+| Field | Value |
+| --- | --- |
+| Agent | brinell-scraper |
+| Model | gpt-4.1 |
+```
 
 Register the MCP server as in [Copilot And Other Agents](visual-studio-preview.md#copilot-and-other-agents).
 Its Scraper tools:

@@ -92,28 +92,54 @@ internal sealed class ScraperController : IDisposable
                 AddToSolution(project, (string?)message["solutionFolder"]);
                 break;
             case "chat" when (string?)message["prompt"] is { } prompt:
-                _package.JoinableTaskFactory.RunAsync(() => ChatAsync(prompt)).FileAndForget("Brinell/ScraperChat");
+                _package.JoinableTaskFactory.RunAsync(() => ChatAsync(prompt, (string?)message["agent"], (string?)message["model"])).FileAndForget("Brinell/ScraperChat");
+                break;
+            case "agents":
+                _package.JoinableTaskFactory.RunAsync(PostModelsAsync).FileAndForget("Brinell/ScraperModels");
                 break;
         }
     }
 
-    // The prompt into Copilot Chat's conversation; where that fails, on the clipboard to paste there.
-    private async Task ChatAsync(string prompt)
+    // The prompt into Copilot Chat's conversation; where that fails, on the clipboard to paste there. The
+    // model the person chose goes with it; an agent or mode cannot be chosen through Visual Studio's API
+    // (the chat window's own mode is used), so the page is told.
+    private async Task ChatAsync(string prompt, string? agent, string? model)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         var opened = TryOpenCopilotChat(_previews.Note);
-        var sent = await CopilotChatSender.TrySendAsync(_package, prompt, _previews.Note, _package.DisposalToken);
+        var sent = await CopilotChatSender.TrySendAsync(_package, prompt, model, _previews.Note, PostDone, _package.DisposalToken);
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         if (sent)
         {
             SetStatus("The prompt is sent to Copilot Chat.");
-            _view?.Post(new JObject { ["type"] = "chatted", ["via"] = "sent", ["opened"] = true });
+            _view?.Post(new JObject { ["type"] = "chatted", ["via"] = "sent", ["opened"] = true, ["model"] = model, ["agentIgnored"] = agent is { Length: > 0 } });
             return;
         }
 
         System.Windows.Clipboard.SetText(prompt);
         SetStatus("The prompt is on the clipboard: paste it into Copilot Chat in agent mode.");
         _view?.Post(new JObject { ["type"] = "chatted", ["via"] = "clipboard", ["opened"] = opened });
+    }
+
+    // The agent's answer is complete: the page checks its step again.
+    private void PostDone() =>
+        _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            _view?.Post(new JObject { ["type"] = "chatDone" });
+        }).FileAndForget("Brinell/ScraperChatDone");
+
+    // The models the chat offers, for the page's model choice.
+    private async Task PostModelsAsync()
+    {
+        var models = await CopilotChatSender.TryListModelsAsync(_package, _previews.Note, _package.DisposalToken);
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        _view?.Post(new JObject
+        {
+            ["type"] = "agents",
+            ["models"] = new JArray(models.Select(m => new JObject { ["id"] = m.Family, ["name"] = m.Name.Length > 0 ? m.Name : m.Family })),
+            ["agents"] = false,
+        });
     }
 
     // Copilot Chat's window, found by its command's name (View.GitHub.Copilot.Chat or alike, by version);

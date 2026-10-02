@@ -128,6 +128,17 @@ internal static class ScraperPage
               <button id="sc-new-project" type="button" title="New scraped project" aria-label="New scraped project">+</button>
             </div>
           </div>
+          <div class="sc-field" id="sc-chat">
+            <label for="sc-agent">Agent and model</label>
+            <div class="sc-field-row">
+              <select id="sc-agent" title="The chat agent (or mode) the prompts run in">
+                <option value="brinell-scraper">Brinell scraper</option>
+                <option value="agent">Agent</option>
+                <option value="ask">Ask</option>
+              </select>
+              <select id="sc-model" aria-label="Model" title="The model the prompts run with"><option value="">The chat's model</option></select>
+            </div>
+          </div>
           <div class="sc-next" id="sc-next" hidden></div>
         </header>
         <div class="sc-strip" id="sc-strip" hidden>
@@ -202,7 +213,7 @@ internal static class ScraperPage
           const state = {
             project: null, projects: [], step: null, progress: null, recording: null, live: null, exploring: null, explored: null,
             pages: [], page: null, capture: null, node: null, reviewing: null, picked: new Set(), pickedPages: new Set(), names: {},
-            collected: [], guardsOpen: false,
+            collected: [], guardsOpen: false, chat: { agent: "brinell-scraper", model: "" }, models: [],
           };
 
           host.on(message => {
@@ -214,6 +225,8 @@ internal static class ScraperPage
             }
             if (message.type === "changed") { onChanged(message); }
             if (message.type === "chatted") { showChatted(message); }
+            if (message.type === "chatDone") { chatDone(); }
+            if (message.type === "agents") { showModels(message); }
             // The IDE opened another solution: its projects.
             if (message.type === "projects") { loadProjects(); }
           });
@@ -239,6 +252,7 @@ internal static class ScraperPage
             state.project = picker.value;
             state.recording = await call("state");
             showRunning();
+            await loadChatChoice();
             await refresh(true);
           }
 
@@ -1039,23 +1053,56 @@ internal static class ScraperPage
 
           // ---- Shared ----
 
-          // The prompt goes to the IDE, which types it into Copilot Chat or puts it on the clipboard; it
-          // is never sent by itself. "chatted" says which, and the notice says what to do then.
+          // The prompt goes to the IDE with the chosen agent and model; it sends it into Copilot Chat, or puts
+          // it on the clipboard. "chatted" says which, and "chatDone" that the answer is complete. The Brinell
+          // scraper agent has the instructions; a plain agent or mode gets them from the prompt file.
           function chat(prompt, after) {
             state.chatAfter = after || null;
-            host.post({ type: "chat", prompt: `/brinell-scrape-pages ${prompt}` });
+            const custom = state.chat.agent === "brinell-scraper";
+            host.post({ type: "chat", prompt: custom ? prompt : `/brinell-scrape-pages ${prompt}`, agent: state.chat.agent, model: state.chat.model || null });
+          }
+
+          function chatDone() {
+            const step = state.step;
+            if (step === 5 || step === 6) showStep();
+            const notice = $("sc-notice");
+            if (!notice.hidden) notice.firstChild.textContent = `The agent is done.${step === 5 || step === 6 ? ` Step ${step} is checked again.` : ""}`;
+          }
+
+          // The person's agent and model for this project (the config's when they chose none).
+          async function loadChatChoice() {
+            const choice = await call("chatChoice", { project: state.project });
+            const value = choice && "value" in choice ? choice.value : choice;
+            state.chat = { agent: (value && value.agent) || "brinell-scraper", model: (value && value.model) || "" };
+            $("sc-agent").value = state.chat.agent;
+            showModels({ models: state.models });
+          }
+
+          function showModels(message) {
+            state.models = message.models || state.models || [];
+            const picker = $("sc-model");
+            const known = state.models.some(m => m.id === state.chat.model);
+            picker.replaceChildren(new Option("The chat's model", ""), ...state.models.map(m => new Option(m.name || m.id, m.id)),
+              ...(state.chat.model && !known ? [new Option(`${state.chat.model} (not offered now)`, state.chat.model)] : []));
+            picker.value = state.chat.model;
+            if (message.agents === false) $("sc-agent").title = "Visual Studio uses the chat window's own mode: set it there. The model is used.";
+          }
+
+          async function saveChatChoice() {
+            state.chat = { agent: $("sc-agent").value, model: $("sc-model").value };
+            await answer("setChatChoice", { project: state.project, agent: state.chat.agent, model: state.chat.model });
           }
 
           function showChatted(message) {
             const what = message.via === "sent"
-              ? "The prompt is sent to Copilot Chat: follow the agent there."
+              ? `The prompt is sent to Copilot Chat${message.model ? ` (${message.model})` : ""}: follow the agent there.${message.agentIgnored ? " Visual Studio runs it in the chat window's own mode." : ""}`
               : message.via === "chat"
               ? "The prompt is in Copilot Chat, not sent yet: check agent mode is on, then send it."
               : `The prompt is on the clipboard${message.opened ? " and Copilot Chat is open" : ""}: paste it into Copilot Chat in agent mode, then send it.`;
             const notice = $("sc-notice");
-            notice.replaceChildren(el("span", {}, what, state.chatAfter ? ` ${state.chatAfter}` : ""),
+            notice.replaceChildren(...[el("span", {}, what, state.chatAfter ? ` ${state.chatAfter}` : ""),
               state.chatAfter ? button("Check again", () => showStep(), { id: "sc-check-again" }) : null,
-              button("×", () => { notice.hidden = true; }, { class: "sc-link", title: "Close", "aria-label": "Close" }));
+              button("×", () => { notice.hidden = true; }, { class: "sc-link", title: "Close", "aria-label": "Close" })].filter(x => x));
             notice.hidden = false;
           }
 
@@ -1068,8 +1115,10 @@ internal static class ScraperPage
           }
 
           $("sc-new-project").addEventListener("click", () => { state.step = 1; renderStepsIfAny(); showNewProject(); });
+          $("sc-agent").addEventListener("change", saveChatChoice);
+          $("sc-model").addEventListener("change", saveChatChoice);
           function renderStepsIfAny() { if (state.progress) renderSteps(); }
-          $("sc-project").addEventListener("change", async () => { state.project = $("sc-project").value; state.page = state.capture = null; state.reviewing = null; state.picked.clear(); state.pickedPages.clear(); state.names = {}; await refresh(true); });
+          $("sc-project").addEventListener("change", async () => { state.project = $("sc-project").value; state.page = state.capture = null; state.reviewing = null; state.picked.clear(); state.pickedPages.clear(); state.names = {}; await loadChatChoice(); await refresh(true); });
           $("sc-capture").addEventListener("click", () => answer("capture", {}));
           $("sc-stop").addEventListener("click", () => state.exploring ? call("exploreStop") : answer("stop"));
           $("sc-continue").addEventListener("click", async () => { $("sc-continue").hidden = true; await call("exploreContinue"); });
@@ -1096,6 +1145,7 @@ internal static class ScraperPage
           });
           new ResizeObserver(() => document.documentElement.style.setProperty("--sc-top", `${$("sc-top").offsetHeight}px`)).observe($("sc-top"));
           host.post({ type: "ready" });
+          host.post({ type: "agents" });
           loadProjects();
         })();
         </script>

@@ -34,6 +34,20 @@ public sealed partial class BddLanguageServer
     public ScraperResult<string> ScraperCode(ScraperCodeParams request)
         => Answer(() => Scraper.ReadCode(request.Project, request.Path));
 
+    /// <summary><c>brinell/scraper/chatChoice</c>: the agent and model the prompts run with.</summary>
+    [JsonRpcMethod("brinell/scraper/chatChoice")]
+    public ScraperResult<Brinell.Scraper.Projects.ChatChoice> ScraperChatChoice(ScraperProjectParams request)
+        => Answer(() => Scraper.ChatChoice(request.Project));
+
+    /// <summary><c>brinell/scraper/setChatChoice</c>: remembers the person's agent and model.</summary>
+    [JsonRpcMethod("brinell/scraper/setChatChoice")]
+    public ScraperResult<bool> ScraperSetChatChoice(ScraperChatChoiceParams request)
+        => Answer(() =>
+        {
+            Scraper.SetChatChoice(request.Project, request.Agent, request.Model);
+            return true;
+        });
+
     /// <summary><c>brinell/scraper/acceptControl</c>: accepts a made control as it is (or takes that back).</summary>
     [JsonRpcMethod("brinell/scraper/acceptControl")]
     public ScraperResult<bool> ScraperAcceptControl(ScraperAcceptParams request)
@@ -77,6 +91,9 @@ public sealed record ScraperCodeParams(string? Project, string Path);
 
 /// <summary><c>brinell/scraper/acceptControl</c>'s parameters.</summary>
 public sealed record ScraperAcceptParams(string? Project, string Control, bool? Accepted);
+
+/// <summary><c>brinell/scraper/setChatChoice</c>'s parameters.</summary>
+public sealed record ScraperChatChoiceParams(string? Project, string? Agent, string? Model);
 
 /// <summary><c>brinell/scraper/skipControls</c>'s parameters.</summary>
 public sealed record ScraperSkipParams(string? Project, bool? Skip);

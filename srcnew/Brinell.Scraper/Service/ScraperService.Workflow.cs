@@ -134,6 +134,21 @@ public sealed partial class ScraperService
     }
 
     /// <summary>Accepts a control as it is (or takes that back), so the workflow does not ask for it again.</summary>
+    /// <summary>The agent and model the Scraper's prompts run with: the person's choice, else the config's.</summary>
+    public ChatChoice ChatChoice(string? projectName)
+    {
+        var project = Project(projectName);
+        var state = WorkflowState.Read(project);
+        return new ChatChoice(state.Agent ?? project.Config.ChatAgent, state.Model ?? project.Config.ChatModel);
+    }
+
+    /// <summary>Remembers the person's agent and model, in the project's state (not committed).</summary>
+    public void SetChatChoice(string? projectName, string? agent, string? model)
+    {
+        var project = Project(projectName);
+        (WorkflowState.Read(project) with { Agent = agent, Model = model }).Write(project);
+    }
+
     public void AcceptControl(string? projectName, string control, bool accepted = true)
     {
         var project = Project(projectName);

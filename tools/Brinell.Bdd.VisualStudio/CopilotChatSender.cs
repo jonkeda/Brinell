@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -26,12 +27,17 @@ internal static class CopilotChatSender
     private static readonly TimeSpan Accepted = TimeSpan.FromSeconds(3);
 
     /// <summary>Sends <paramref name="prompt"/> to the active chat session; false when it could not.</summary>
+    /// <param name="package">The package, for the service broker.</param>
+    /// <param name="prompt">The prompt.</param>
+    /// <param name="model">A model's family (<c>gpt-4.1</c>, as <see cref="TryListModelsAsync"/> gives); null for the chat's own.</param>
     /// <param name="log">Says each step, and why it stopped.</param>
-    public static async Task<bool> TrySendAsync(AsyncPackage package, string prompt, Action<string> log, CancellationToken cancellationToken)
+    /// <param name="done">Called once the agent's answer is complete.</param>
+    /// <param name="cancellationToken">Ends the send.</param>
+    public static async Task<bool> TrySendAsync(AsyncPackage package, string prompt, string? model, Action<string> log, Action done, CancellationToken cancellationToken)
     {
         try
         {
-            return await SendAsync(package, prompt, log, cancellationToken);
+            return await SendAsync(package, prompt, model, log, done, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -40,23 +46,68 @@ internal static class CopilotChatSender
         }
     }
 
-    private static async Task<bool> SendAsync(AsyncPackage package, string prompt, Action<string> log, CancellationToken cancellationToken)
+    /// <summary>The models the active chat session offers, as (family, display name); empty when there is no session yet.</summary>
+    public static async Task<IReadOnlyList<(string Family, string Name)>> TryListModelsAsync(AsyncPackage package, Action<string> log, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var connection = await ConnectAsync(package, log, cancellationToken);
+            if (connection is null)
+            {
+                return [];
+            }
+
+            using var proxy = connection.Proxy as IDisposable;
+            var session = await AwaitAsync(connection.Service.GetMethod("GetActiveChatSessionAsync")!.Invoke(connection.Proxy, [cancellationToken]));
+            if (session is null)
+            {
+                return [];
+            }
+
+            var models = await AwaitAsync(connection.Session.GetMethod("GetDefaultModelsAsync")!.Invoke(session, [cancellationToken])) as System.Collections.IEnumerable;
+            return models?.Cast<object>()
+                .Select(m => (Family: m.GetType().GetProperty("Family")?.GetValue(m) as string ?? "", Name: m.GetType().GetProperty("DisplayName")?.GetValue(m) as string ?? ""))
+                .Where(m => m.Family.Length > 0)
+                .GroupBy(m => m.Family, StringComparer.Ordinal)
+                .Select(g => g.First())
+                .ToArray() ?? [];
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            log($"Copilot Chat: no list of models: {(exception as TargetInvocationException)?.InnerException?.Message ?? exception.Message}");
+            return [];
+        }
+    }
+
+    // .NET Framework has no records: a plain class.
+    private sealed class Connection(object proxy, Type service, Type session, Assembly contracts)
+    {
+        public object Proxy { get; } = proxy;
+
+        public Type Service { get; } = service;
+
+        public Type Session { get; } = session;
+
+        public Assembly Contracts { get; } = contracts;
+    }
+
+    // The Copilot service's proxy, through Visual Studio's service broker; null when this Visual Studio has none.
+    private static async Task<Connection?> ConnectAsync(AsyncPackage package, Action<string> log, CancellationToken cancellationToken)
     {
         var contracts = LoadContracts();
         var serviceType = contracts?.GetType(Namespace + "ICopilotService");
         var sessionType = contracts?.GetType(Namespace + "ICopilotSession");
-        var requestType = contracts?.GetType(Namespace + "CopilotRequest");
         var descriptor = contracts?.GetType(Namespace + "CopilotDescriptors")?.GetProperty("CopilotService")?.GetValue(null) as ServiceRpcDescriptor;
-        log($"Copilot Chat: contracts {contracts?.Location ?? "not found"}; service {serviceType is not null}, session {sessionType is not null}, request {requestType is not null}, descriptor {descriptor is not null}.");
-        if (serviceType is null || sessionType is null || requestType is null || descriptor is null)
+        if (contracts is null || serviceType is null || sessionType is null || descriptor is null)
         {
-            return false;
+            log($"Copilot Chat: contracts {contracts?.Location ?? "not found"}; service {serviceType is not null}, session {sessionType is not null}, descriptor {descriptor is not null}.");
+            return null;
         }
 
         if (await package.GetServiceAsync(typeof(SVsBrokeredServiceContainer)) is not IBrokeredServiceContainer container)
         {
             log("Copilot Chat: no brokered service container.");
-            return false;
+            return null;
         }
 
         var broker = container.GetFullAccessServiceBroker();
@@ -65,9 +116,22 @@ internal static class CopilotChatSender
         if (proxy is null)
         {
             log($"Copilot Chat: the broker has no {descriptor.Moniker}.");
+            return null;
+        }
+
+        return new Connection(proxy, serviceType, sessionType, contracts);
+    }
+
+    private static async Task<bool> SendAsync(AsyncPackage package, string prompt, string? model, Action<string> log, Action done, CancellationToken cancellationToken)
+    {
+        var connection = await ConnectAsync(package, log, cancellationToken);
+        var requestType = connection?.Contracts.GetType(Namespace + "CopilotRequest");
+        if (connection is null || requestType is null)
+        {
             return false;
         }
 
+        var proxy = connection.Proxy;
         var sending = false;
         try
         {
@@ -75,7 +139,7 @@ internal static class CopilotChatSender
             object? session = null;
             for (var attempt = 0; attempt < 10 && session is null; attempt++)
             {
-                session = await AwaitAsync(serviceType.GetMethod("GetActiveChatSessionAsync")!.Invoke(proxy, [cancellationToken]));
+                session = await AwaitAsync(connection.Service.GetMethod("GetActiveChatSessionAsync")!.Invoke(proxy, [cancellationToken]));
                 if (session is null)
                 {
                     await Task.Delay(200, cancellationToken);
@@ -88,25 +152,26 @@ internal static class CopilotChatSender
                 return false;
             }
 
-            var info = await AwaitAsync(sessionType.GetMethod("GetSessionInfoAsync")!.Invoke(session, [cancellationToken]));
-            var id = info?.GetType().GetProperty("Id")?.GetValue(info);
-            log($"Copilot Chat: session {id}.");
-            if (id is null)
+            var info = await AwaitAsync(connection.Session.GetMethod("GetSessionInfoAsync")!.Invoke(session, [cancellationToken]));
+            log($"Copilot Chat: session {info?.GetType().GetProperty("Id")?.GetValue(info)}.");
+
+            // In the mode the chat window is in (Ask or Agent); the model when one was chosen.
+            var message = Activator.CreateInstance(requestType, prompt)!;
+            if (model is { Length: > 0 } && connection.Contracts.GetType(Namespace + "CopilotModelRequest") is { } modelType)
             {
-                return false;
+                requestType.GetProperty("Model")?.SetValue(message, Activator.CreateInstance(modelType, model));
+                log($"Copilot Chat: model {model}.");
             }
 
-            // In the mode the chat window is in (Ask or Agent): the options are left at their defaults.
-            var message = Activator.CreateInstance(requestType, prompt)!;
-            var send = sessionType.GetMethods().Single(m => m.Name == "SendRequestAsync" && m.GetParameters().Length == 2);
+            var send = connection.Session.GetMethods().Single(m => m.Name == "SendRequestAsync" && m.GetParameters().Length == 2);
             var request = AwaitAsync(send.Invoke(session, [message, cancellationToken]));
             if (await Task.WhenAny(request, Task.Delay(Accepted, cancellationToken)) == request)
             {
                 // Answered at once: an error, or a short answer; either way the chat shows it.
                 var response = await request;
-                (proxy as IDisposable)?.Dispose();
                 var status = response?.GetType().GetProperty("Status")?.GetValue(response)?.ToString();
                 log($"Copilot Chat: answered at once: status {status ?? "none"}.");
+                done();
                 return status is "Success" or "Unknown";
             }
 
@@ -114,13 +179,14 @@ internal static class CopilotChatSender
             log("Copilot Chat: sent; the request is running.");
             sending = true;
             _ = request.ContinueWith(
-                done =>
+                finished =>
                 {
-                    log(done.IsFaulted
-                        ? $"Copilot Chat: the request failed: {done.Exception?.InnerException}"
-                        : $"Copilot Chat: the request is done: status {done.Result?.GetType().GetProperty("Status")?.GetValue(done.Result)}.");
+                    log(finished.IsFaulted
+                        ? $"Copilot Chat: the request failed: {finished.Exception?.InnerException}"
+                        : $"Copilot Chat: the request is done: status {finished.Result?.GetType().GetProperty("Status")?.GetValue(finished.Result)}.");
 
                     (proxy as IDisposable)?.Dispose();
+                    done();
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
