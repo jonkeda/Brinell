@@ -746,7 +746,7 @@ internal static class ScraperPage
             if (state.reviewing) return reviewControl(state.reviewing);
             const patterns = await answer("patterns", { project: state.project }) || [];
             const checks = await answer("controlChecks", { project: state.project }) || [];
-            const toMake = patterns.filter(p => !p.control && (p.pages >= 2 || p.kind === "Repeated" || p.kind === "Collection"));
+            const toMake = patterns.filter(p => !p.control && !p.hint && (p.pages >= 2 || p.kind === "Repeated" || p.kind === "Collection"));
             // Nothing ticked at first: the person picks what the agent makes.
             for (const p of toMake) if (!(key(p) in state.names)) state.names[key(p)] = p.name;
             const count = () => toMake.filter(p => state.picked.has(key(p))).length;
@@ -822,7 +822,7 @@ internal static class ScraperPage
             const patterns = await answer("patterns", { project: state.project }) || [];
             $("sc-panel").replaceChildren(el("h2", {}, "5 Controls › All patterns"),
               el("table", { class: "sc-table" }, el("tr", {}, ...["Kind", "Pattern", "Where", "Control"].map(h => el("th", {}, h))),
-                ...patterns.map(p => el("tr", {}, el("td", {}, p.kind), el("td", {}, el("code", {}, p.signature), p.variant ? el("span", { class: "sc-muted" }, ` ${p.variant}`) : null), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`), el("td", {}, p.control || "")))),
+                ...patterns.map(p => el("tr", {}, el("td", {}, p.given ? `${p.kind} (config: ${p.given})` : p.kind), el("td", {}, el("code", {}, p.signature), p.variant ? el("span", { class: "sc-muted" }, ` ${p.variant}`) : null, p.hint ? el("div", { class: "sc-muted" }, p.hint) : null), el("td", {}, `${p.occurrences}× on ${plural(p.pages, "page")}`), el("td", {}, p.control || "")))),
               el("div", { class: "sc-footer" }, button("‹ Controls", () => go(5), { class: "sc-link" }), el("span")));
           }
 

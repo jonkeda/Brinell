@@ -67,13 +67,15 @@ public static partial class ControlBrief
         var cores = interactive.Select(r => r.Reading.Core).Distinct().ToArray();
         // Rows: children of one signature, two or more, in the occurrences (a list's items, a table's rows).
         var rows = Rows(occurrences);
-        var hint = rows is not null ? Collection : cores.Length switch
+        // The config's ## Components names it: the person's word wins over the reading below.
+        var rule = project.Config.Components.FirstOrDefault(r => PatternDetector.Matches(example.Snapshot, r.Match).Contains(example.Root));
+        var hint = rule is not null ? GivenHint(rule.Kind) : rows is not null ? Collection : cores.Length switch
         {
             0 => Hints[PartCore.Readable],
             1 => Hints[cores[0]],
             _ => Component,
         };
-        var className = name is { Length: > 0 } ? name : PatternName(project, signature, variant, lifted);
+        var className = name is { Length: > 0 } ? name : project.Config.Components.FirstOrDefault(r => PatternDetector.Matches(occurrences[0].Snapshot, r.Match).Contains(occurrences[0].Root))?.Name ?? PatternName(project, signature, variant, lifted);
         var pages = occurrences.Select(o => o.Page).Distinct(StringComparer.Ordinal).Count();
 
         var text = new StringBuilder();
@@ -122,6 +124,7 @@ public static partial class ControlBrief
 
         text.Append("\n### Hints\n");
         text.Append("What the elements are: ").Append(interactive.Length == 0 ? "nothing interactive; text to read" : string.Join("; ", interactive.Select(r => $"#{r.Node.Number} {r.Reading.Core.ToString().ToLowerInvariant()} ({r.Reading.Because})").Distinct().Take(8))).Append('\n');
+        if (rule is not null) text.Append(CultureInfo.InvariantCulture, $"The config's ## Components names it: {rule.Kind}, {rule.Name} ({rule.Match.Kind}: {rule.Match.Value}). That wins.\n");
         text.Append("Kind: ").Append(hint.Kind).Append(". Base: ").Append(hint.Base).Append('\n');
         text.Append("Members a test needs: ").Append(hint.Members).Append('\n');
         text.Append("These are a reading of the facts, not an order: where you see it differently, say why and do that.\n");
@@ -295,6 +298,13 @@ public static partial class ControlBrief
         if (keys.Count == 0) keys.Add("none on the row itself: a part's text (the first readable part above), or the position");
         return string.Join("; ", keys);
     }
+
+    private static Hint GivenHint(string kind) => kind switch
+    {
+        "collection" => Collection,
+        "component" => Component,
+        _ => Hints[Enum.Parse<PartCore>(kind, ignoreCase: true)],
+    };
 
     private static IEnumerable<string> ReadOnly(Hint hint, string? root)
     {

@@ -225,7 +225,8 @@ public sealed class CodeTests : IDisposable
         Assert.Equal("FrameContent", Assert.Single(shared).Name);
         Assert.Equal("Row", Assert.Single(numbered).Name);
         Assert.Equal("Card", Assert.Single(cards).Name);
-        Assert.Empty(wrappers);
+        Assert.Contains("bare wrapper", Assert.Single(wrappers).Hint);
+        Assert.Empty(DraftRun.ControlsToMake(wrappers));
     }
 
     [Fact]

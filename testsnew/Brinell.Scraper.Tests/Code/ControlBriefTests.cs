@@ -176,6 +176,30 @@ public sealed class ControlBriefTests : IDisposable
     }
 
     [Fact]
+    public async Task The_configs_components_name_what_the_rules_cannot_tell_and_win()
+    {
+        var project = MakeProject("Given.UITests", "\n## Components\n\n| Match | Kind | Name |\n| --- | --- | --- |\n| selector: .tile | component | ProductTile |\n");
+        static IEnumerable<ScrapeNode> Tiles()
+        {
+            yield return N(2, 1, "div", attributes: ("class", "tile"));
+            yield return N(3, 2, "div", text: "Shoes");
+            yield return N(4, 2, "div", text: "Shoes on sale");
+        }
+        var session = project.StartSession("One", DateTimeOffset.UnixEpoch);
+        session.AddPage(Page("https://shop.example/a", [.. Tiles()]));
+        session.AddPage(Page("https://shop.example/b", [.. Tiles()]));
+        await using var service = new ScraperService(_root);
+
+        var tile = Assert.Single(service.Patterns(null), p => p.Given is not null);
+        var brief = service.ControlBrief(null, tile.Signature).Text;
+
+        Assert.Equal(("ProductTile", "component", 2), (tile.Name, tile.Given, tile.Occurrences));
+        Assert.Contains("## ProductTile", brief);
+        Assert.Contains("The config's ## Components names it: component, ProductTile (selector: .tile). That wins.", brief);
+        Assert.Contains("Kind: a component", brief);
+    }
+
+    [Fact]
     public void The_controls_namespace_swaps_the_pages_folder_for_the_controls_folder()
     {
         var plain = MakeProject("Plain.UITests");

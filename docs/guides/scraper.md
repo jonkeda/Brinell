@@ -84,6 +84,7 @@ controls):
 - `Aliases`: other hosts of the same app; a page elsewhere (a sign-in provider) is not recorded.
 - `Test ids`: the attributes that are test ids, preferred first.
 - `Masks`: text replaced before anything is written; what a user types is never recorded.
+- `Components` (optional, columns `Match`, `Kind`, `Name`): elements the Scraper cannot tell by itself, named by you. `Match` is `selector: …` or `text: …`; `Kind` is `collection`, `component` or what a test does with it (`text`, `selector`, `toggle`, `range`, `date`, `clickable`, `readable`). They win over its own reading: step 5 offers them by that name, and their brief says so.
 
 `testsnew/Brinell.Blazor.UITests` is an example: its config, its `Recordings/`, and
 `PageObjects/UserFormPage.cs`, made from them.

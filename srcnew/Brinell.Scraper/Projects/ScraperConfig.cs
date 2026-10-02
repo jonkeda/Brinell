@@ -40,6 +40,15 @@ public sealed record ScraperConfig
     /// <summary>Text masked before anything is written.</summary>
     public IReadOnlyList<TextMask> Masks { get; init; } = [];
 
+    /// <summary>The chat agent (or mode) the Scraper's prompts run in, by default (<c>## Agent</c>, <c>Agent</c>); null for the view's default.</summary>
+    public string? ChatAgent { get; init; }
+
+    /// <summary>The model the Scraper's prompts run with, by default (<c>## Agent</c>, <c>Model</c>); null for the IDE's own.</summary>
+    public string? ChatModel { get; init; }
+
+    /// <summary>The app's own components, as the person names them (<c>## Components</c>): these win over the Scraper's own reading.</summary>
+    public IReadOnlyList<ComponentRule> Components { get; init; } = [];
+
     /// <summary>How Explore may go through the app: its budget and guards.</summary>
     public ExploreSettings Explore { get; init; } = new();
 
@@ -72,6 +81,21 @@ public sealed record ScraperConfig
             config = config with { TestIds = testIds.Rows.Select(r => r.Cells.GetValueOrDefault("Attribute", "")).Where(a => a.Length > 0).ToArray() };
         if (sections.TryGetValue("Masks", out var masks))
             config = config with { Masks = masks.Rows.Select(Mask).ToArray() };
+        if (sections.TryGetValue("Agent", out var agent))
+        {
+            foreach (var row in agent.Rows)
+            {
+                var value = row.Cells.GetValueOrDefault("Value", "").Trim();
+                config = row.Cells.GetValueOrDefault("Field", "") switch
+                {
+                    "Agent" => config with { ChatAgent = value.Length > 0 ? value : null },
+                    "Model" => config with { ChatModel = value.Length > 0 ? value : null },
+                    var other => throw new FormatException($"Line {row.LineNumber}: '{other}' is not a field of ## Agent (Agent, Model)."),
+                };
+            }
+        }
+        if (sections.TryGetValue("Components", out var components))
+            config = config with { Components = components.Rows.Select(ComponentRule.Read).ToArray() };
         return config with { Explore = ExploreSettings.Read(sections) };
     }
 

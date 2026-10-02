@@ -33,7 +33,8 @@ public static class PatternDetector
     /// <param name="controls">The controls the project has, to say which pattern one already stands for.</param>
     /// <param name="max">The most patterns given.</param>
     /// <param name="testIds">The attributes that are test ids, preferred first, to name a pattern by.</param>
-    public static IReadOnlyList<Pattern> Detect(IReadOnlyList<(string Page, ScrapeSnapshot Snapshot)> pages, IReadOnlyList<CodeClass> controls, int max = 30, IReadOnlyList<string>? testIds = null)
+    /// <param name="components">The config's <c>## Components</c>: elements the person names, which win over the rules.</param>
+    public static IReadOnlyList<Pattern> Detect(IReadOnlyList<(string Page, ScrapeSnapshot Snapshot)> pages, IReadOnlyList<CodeClass> controls, int max = 30, IReadOnlyList<string>? testIds = null, IReadOnlyList<ComponentRule>? components = null)
     {
         var signatures = new Dictionary<string, string?[]>(StringComparer.Ordinal);
         var occurrences = new Dictionary<string, List<(string Page, ScrapeSnapshot Snapshot, ScrapeNode Node)>>(StringComparer.Ordinal);
@@ -104,8 +105,9 @@ public static class PatternDetector
             // A lifted pattern is named after its root, what the person sees.
             var parts = (lifted ? signatures[first.Page][first.Node.Number]! : signature).Split('|');
             var named = NamingClass(parts, first.Node);
-            // A wrapper or layout cell with nothing that says what it is (div|||div, td.pb-4) groups unrelated elements: not a control.
-            if (kind == PatternKind.Repeated && shared is null && named is null && parts[1].Length == 0 && !parts[0].Contains('-')) continue;
+            // A wrapper or layout cell with nothing that says what it is (div|||div, td.pb-4) groups unrelated
+            // elements: listed, with that hint, but not offered as a control to make (3.7).
+            var bare = kind == PatternKind.Repeated && shared is null && named is null && parts[1].Length == 0 && !parts[0].Contains('-');
             var pattern = new Pattern(
                 signature,
                 repeats && kind == PatternKind.Repeated ? PatternKind.Repeated : kind,
@@ -114,7 +116,7 @@ public static class PatternDetector
                 found.Take(3).Select(f => new PatternExample(f.Page, f.Node.Number, SnapshotOutline.Line(f.Node))).ToArray(),
                 bySignature.GetValueOrDefault(signature),
                 shared ?? NameOf(parts, named))
-            { Variant = variant, Lifted = lifted };
+            { Variant = variant, Lifted = lifted, Hint = bare ? "a bare wrapper or layout cell: no class, role or shared id says what it is" : null };
             // The classes every occurrence has: what tells this pattern from another of the same name.
             var common = found.Skip(1).Aggregate(Classes(first.Node).ToHashSet(StringComparer.Ordinal), (set, f) => { set.IntersectWith(Classes(f.Node)); return set; });
             patterns.Add((pattern, found.Select(f => (f.Page, f.Node.Number)).ToHashSet(), Ancestors(first.Snapshot, first.Node.Number).Count(), first.Node, common));
@@ -186,11 +188,44 @@ public static class PatternDetector
             }
         }
         var taken = new Dictionary<string, int>(StringComparer.Ordinal);
-        return distinct.Select(p =>
+        var named2 = distinct.Select(p =>
         {
             var count = taken[p.Name] = taken.GetValueOrDefault(p.Name) + 1;
             return count == 1 ? p : p with { Name = p.Name + count };
         }).ToArray();
+
+        // The person's word wins (3.6): what the config's ## Components names is that component, first, and a
+        // pattern of the same elements is left out.
+        var given = new List<Pattern>();
+        var givenAt = new HashSet<(string, int)>();
+        foreach (var rule in components ?? [])
+        {
+            var found = pages.SelectMany(p => Matches(p.Snapshot, rule.Match).Select(n => (p.Page, p.Snapshot, Node: n))).ToArray();
+            if (found.Length == 0) continue;
+            var first = found[0];
+            var signature = signatures[first.Page][first.Node.Number]!;
+            given.Add(new Pattern(
+                signature,
+                rule.Kind == "collection" ? PatternKind.Collection : PatternKind.Repeated,
+                found.Select(f => f.Page).Distinct(StringComparer.Ordinal).Count(),
+                found.Length,
+                found.Take(3).Select(f => new PatternExample(f.Page, f.Node.Number, SnapshotOutline.Line(f.Node))).ToArray(),
+                bySignature.GetValueOrDefault(signature),
+                rule.Name)
+            { Given = rule.Kind });
+            foreach (var f in found) givenAt.Add((f.Page, f.Node.Number));
+        }
+        return given.Count == 0 ? named2 : [.. given, .. named2.Where((p, i) => !kept[i].At.Overlaps(givenAt))];
+    }
+
+    /// <summary>The elements a <c>## Components</c> or click match names in a capture.</summary>
+    public static IReadOnlyList<ScrapeNode> Matches(ScrapeSnapshot snapshot, ElementMatch match)
+    {
+        if (match.Kind == "selector")
+            return SnapshotSelector.Parse(match.Value) is { } selector && snapshot.Nodes.Count > 0
+                ? [.. selector.Under(snapshot, snapshot.Nodes[0])]
+                : [];
+        return snapshot.Nodes.Where(n => n.Kind == ScrapeNodeKind.Element && string.Equals(n.Text?.Trim(), match.Value, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
 
     private static string VariantWord(string variant) => string.Concat(variant.Split('+').Select(core => core switch
@@ -351,6 +386,15 @@ public sealed record Pattern(string Signature, PatternKind Kind, int Pages, int 
     /// does with it (<see cref="ControlKind.Variant"/>, such as <c>selector</c>); null when they are all alike.
     /// </summary>
     public string? Variant { get; init; }
+
+    /// <summary>
+    /// Why it is listed but not offered as a control to make, such as a bare wrapper; null when it is
+    /// offered. A hint, not a verdict: a brief can still be asked for it.
+    /// </summary>
+    public string? Hint { get; init; }
+
+    /// <summary>What the config's <c>## Components</c> says it is (<see cref="ComponentRule.Kind"/>), when it names it.</summary>
+    public string? Given { get; init; }
 
     /// <summary>For a collection: the signature of its rows' pattern.</summary>
     public string? Row { get; init; }

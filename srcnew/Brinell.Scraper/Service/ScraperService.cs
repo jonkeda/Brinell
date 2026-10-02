@@ -434,7 +434,7 @@ public sealed partial class ScraperService : IAsyncDisposable
         var project = Project(projectName);
         var index = project.Index();
         var pages = index.Pages.Select(p => (p.Key, index.Read(p.Latest))).ToArray();
-        return PatternDetector.Detect(pages, ProjectCode.Read(project), max, project.Config.TestIds);
+        return PatternDetector.Detect(pages, ProjectCode.Read(project), max, project.Config.TestIds, project.Config.Components);
     }
 
     /// <summary>
