@@ -246,12 +246,14 @@ internal static class ScraperPage
             }));
             if (state.projects.length === 0) {
               state.project = null;
-              showProblem("No project here has a scraper.config.md yet.");
+              showProblem("No project here has a scraper.config.md yet.", "projects");
               $("sc-steps").replaceChildren();
               $("sc-next").hidden = true;
               await showNewProject();
               return;
             }
+            // Found now (the IDE opened a solution, or a project was made): the earlier "none" no longer holds.
+            if (showProblem.from === "projects") showProblem(null);
             state.project = picker.value;
             state.recording = await call("state");
             showRunning();
