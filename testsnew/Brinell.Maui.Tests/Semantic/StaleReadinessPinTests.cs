@@ -75,6 +75,8 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
 
         public PinClickRows ClickRows => new(this, "Rows");
 
+        public PinGroupedRows GroupedRows => new(this, "Rows");
+
         public SlowContainer Slow => new(this, "Slow");
     }
 
@@ -98,6 +100,23 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
         : ItemObjectBase<PinRows, PinRow>(collection, itemRoot, index)
     {
         public Label<PinRow> Name => new(this, "RowName");
+    }
+
+    /// <summary>A grouped list: the platform restarts <c>PositionInSet</c> in each group.</summary>
+    private sealed class PinGroupedRows(IMauiScope<PinPage> scope, string automationId)
+        : CollectionObjectBase<PinPage, PinGroupedRows, PinGroupedRow>(
+            scope,
+            automationId,
+            ItemStrategy.ByLocator(Locator.ByControlType("ListItem")),
+            (collection, itemRoot, index) => new PinGroupedRow(collection, itemRoot, index))
+    {
+        protected override bool HasLogicalIndexes => false;
+    }
+
+    private sealed class PinGroupedRow(PinGroupedRows collection, IMauiElement itemRoot, int index)
+        : ItemObjectBase<PinGroupedRows, PinGroupedRow>(collection, itemRoot, index)
+    {
+        public Label<PinGroupedRow> Name => new(this, "RowName");
     }
 
     /// <summary>Rows with members of their own (clicked, read), not only children.</summary>
@@ -515,6 +534,23 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
         row.Setup(e => e.Text).Returns(text);
         row.Setup(e => e.PositionInSet).Returns(positionInSet);
         return row;
+    }
+
+    /// <summary>
+    /// A grouped list repeats <c>PositionInSet</c> per group, so its rows are found by position and
+    /// a search reaches the second group.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "grouped")]
+    public void GroupedRows_IgnorePerGroupPositions()
+    {
+        var first = ClickRow("Item 1", () => 1);
+        var second = ClickRow("Item 9", () => 1);
+        _rows.AddRange([first.Object, second.Object]);
+        var rows = NewPage().GroupedRows;
+
+        Assert.Equal(ItemKey.Position(1), rows.Item(1).Key);
+        Assert.Equal(1, rows.ItemWhere(row => row.Name.GetText() == "Item 9", timeoutMs: 500).Index);
     }
 
     /// <summary>

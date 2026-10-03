@@ -70,6 +70,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
     #region Item keys
 
+    /// <summary>False for a grouped list: the platform restarts <c>PositionInSet</c> in each group.</summary>
+    protected virtual bool HasLogicalIndexes => true;
+
+    private int? LogicalIndexOf(IMauiElement itemRoot)
+        => HasLogicalIndexes ? ItemKey.LogicalIndexOf(itemRoot) : null;
+
     /// <inheritdoc />
     /// <remarks>
     /// The strongest the platform offers: the logical index where the platform publishes one
@@ -80,7 +86,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         ArgumentNullException.ThrowIfNull(itemRoot);
 
-        if (ItemKey.LogicalIndexOf(itemRoot) is { } logical)
+        if (LogicalIndexOf(itemRoot) is { } logical)
         {
             return ItemKey.Logical(logical);
         }
@@ -98,7 +104,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     public IMauiElement? TryGetItemRoot(ItemKey key) => key.Kind switch
     {
         ItemKeyKind.Logical => WithRoot(
-            root => _itemStrategy.FindItemElements(root).FirstOrDefault(item => ItemKey.LogicalIndexOf(item) == key.Index),
+            root => _itemStrategy.FindItemElements(root).FirstOrDefault(item => LogicalIndexOf(item) == key.Index),
             null),
         ItemKeyKind.AutomationId => WithRoot(
             root => _itemStrategy.FindItemElements(root).Where(item => item.AutomationId == key.Value).ToList() is [var only]
@@ -142,7 +148,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
     /// <summary>Builds the item for a row, at its logical index when it has one.</summary>
     private TItem CreateItemAt(IMauiElement itemRoot, int positionalIndex, IReadOnlyList<IMauiElement> roots)
-        => CreateItem(itemRoot, ItemKey.LogicalIndexOf(itemRoot) ?? positionalIndex, roots);
+        => CreateItem(itemRoot, LogicalIndexOf(itemRoot) ?? positionalIndex, roots);
 
     #endregion
 
@@ -197,9 +203,9 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
     private IMauiElement? FindItemRoot(IMauiElement collectionRoot, IReadOnlyList<IMauiElement> roots, int index)
     {
-        if (roots.Any(item => ItemKey.LogicalIndexOf(item).HasValue))
+        if (roots.Any(item => LogicalIndexOf(item).HasValue))
         {
-            return roots.FirstOrDefault(item => ItemKey.LogicalIndexOf(item) == index);
+            return roots.FirstOrDefault(item => LogicalIndexOf(item) == index);
         }
 
         return index < roots.Count ? roots[index] : _itemStrategy.FindItemElement(collectionRoot, index);
@@ -207,7 +213,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
     /// <summary>The logical indexes of the realized rows, in tree order, as one comparable string.</summary>
     private string RealizedLogicalIndexes()
-        => string.Join(",", TryGetItemRoots().Select(root => ItemKey.LogicalIndexOf(root)?.ToString() ?? "-"));
+        => string.Join(",", TryGetItemRoots().Select(root => LogicalIndexOf(root)?.ToString() ?? "-"));
 
     /// <summary>
     /// Gets the item identified by <paramref name="key"/>: its automation id, or failing
@@ -551,7 +557,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             for (var position = 0; position < roots.Count; position++)
             {
                 var root = roots[position];
-                if (ItemKey.LogicalIndexOf(root) is { } logical && seen.Contains(ItemKey.Logical(logical)))
+                if (LogicalIndexOf(root) is { } logical && seen.Contains(ItemKey.Logical(logical)))
                 {
                     // Seen already: skip it without building the row object.
                     continue;
@@ -634,7 +640,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var logicalCount = GetLogicalItemCount(roots);
         if (logicalCount.HasValue
             && index >= logicalCount.Value
-            && roots.Any(item => ItemKey.LogicalIndexOf(item).HasValue))
+            && roots.Any(item => LogicalIndexOf(item).HasValue))
         {
             throw new ElementNotFoundException(
                 $"No logical item at index {index} in collection. Locator: {Locator}, "
@@ -649,7 +655,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     private int FurthestReachableIndex()
     {
         var roots = TryGetItemRoots();
-        var logical = roots.Select(ItemKey.LogicalIndexOf).Where(index => index.HasValue)
+        var logical = roots.Select(LogicalIndexOf).Where(index => index.HasValue)
             .Select(index => index!.Value).ToArray();
         return logical.Length > 0
             ? logical.Max()
@@ -659,7 +665,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     private int? GetLogicalItemCount(IReadOnlyList<IMauiElement>? roots = null)
     {
         roots ??= TryGetItemRoots();
-        var size = roots.Select(item => item.SizeOfSet).FirstOrDefault(value => value is > 0);
+        var size = HasLogicalIndexes ? roots.Select(item => item.SizeOfSet).FirstOrDefault(value => value is > 0) : null;
         if (size.HasValue)
         {
             return size.Value;
