@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Newtonsoft.Json.Linq;
@@ -19,7 +20,7 @@ namespace Brinell.Bdd.VisualStudio;
 /// process and the app it started. Debug runs the same way with the testhost waiting for a debugger,
 /// and attaches Visual Studio's to it, so step breakpoints (R2) stop the run.
 /// </summary>
-internal sealed class BddRunController
+internal sealed class BddRunController : IVsDebuggerEvents
 {
     private readonly AsyncPackage _package;
     private readonly BddServerClient _server;
@@ -33,6 +34,12 @@ internal sealed class BddRunController
     private const string CoreClrEngine = "{2E36F1D4-B23C-435D-AB41-18E608940038}";
     private TaskCompletionSource<bool>? _build;
     private Process? _process;
+
+    // The run going now, for the preview's "running" message; and, during a Debug run, the debugger
+    // whose break mode the preview shows as "paused in the debugger".
+    private int? _runLine;
+    private IVsDebugger? _debugger;
+    private uint _debuggerCookie;
 
     public BddRunController(AsyncPackage package, BddServerClient server, Action<string> log, Action<object> post)
     {
@@ -63,7 +70,13 @@ internal sealed class BddRunController
         }
 
         IsRunning = true;
-        _post(new { type = "running", line, file = line is null });
+        _runLine = line;
+        PostRunning(paused: false);
+        if (debug)
+        {
+            await WatchDebuggerAsync();
+        }
+
         try
         {
             _log(string.Empty);
@@ -87,6 +100,7 @@ internal sealed class BddRunController
         finally
         {
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+            UnwatchDebugger();
             IsRunning = false;
             _post(new { type = "running" });
         }
@@ -157,6 +171,40 @@ internal sealed class BddRunController
             IsRunning = false;
             _post(new { type = "running" });
         }
+    }
+
+    /// <inheritdoc />
+    public int OnModeChange(DBGMODE dbgmodeNew)
+    {
+        if (IsRunning && _debugger is not null)
+        {
+            PostRunning(paused: (dbgmodeNew & ~DBGMODE.DBGMODE_EncMask) == DBGMODE.DBGMODE_Break);
+        }
+
+        return VSConstants.S_OK;
+    }
+
+    private void PostRunning(bool paused)
+        => _post(new { type = "running", line = _runLine, file = _runLine is null, paused });
+
+    // While a Debug run goes: the preview says "paused in the debugger" when Visual Studio breaks,
+    // so a run held by an exception or a C# breakpoint does not look like one that never ends.
+    private async Task WatchDebuggerAsync()
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (await _package.GetServiceAsync(typeof(SVsShellDebugger)) is IVsDebugger debugger &&
+            ErrorHandler.Succeeded(debugger.AdviseDebuggerEvents(this, out var cookie)))
+        {
+            _debugger = debugger;
+            _debuggerCookie = cookie;
+        }
+    }
+
+    private void UnwatchDebugger()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        _debugger?.UnadviseDebuggerEvents(_debuggerCookie);
+        _debugger = null;
     }
 
     /// <summary>Stops the run: the test process and everything it started, the app included.</summary>

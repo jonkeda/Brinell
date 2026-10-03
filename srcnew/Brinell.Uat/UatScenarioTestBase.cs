@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
@@ -115,6 +116,7 @@ public abstract class UatScenarioTestBase<TFixture>
         (Fixture as IUatScenarioLifecycle)?.BeforeFile(document);
     }
 
+    [DebuggerNonUserCode] // see RunBoundScenarioAsync
     protected async Task RunUatFileAsync(
         string filePath,
         CancellationToken cancellationToken = default)
@@ -132,6 +134,7 @@ public abstract class UatScenarioTestBase<TFixture>
     /// <param name="filePath">The scenario file.</param>
     /// <param name="scenarioName">The scenario's name, as <see cref="GetScenarioTheoryData"/> gives it.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
+    [DebuggerNonUserCode] // see RunBoundScenarioAsync
     protected async Task RunUatScenarioAsync(
         string filePath,
         string scenarioName,
@@ -166,6 +169,9 @@ public abstract class UatScenarioTestBase<TFixture>
         _currentFile = fullPath;
     }
 
+    // Library code to the debugger, with its callers: a failed scenario is shown in the preview and
+    // Test Explorer, so Visual Studio must not stop on the exception that fails the test for xUnit.
+    [DebuggerNonUserCode]
     private async Task RunBoundScenarioAsync(
         UatBoundFileContext context,
         BddBoundScenario scenario,

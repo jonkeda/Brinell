@@ -269,6 +269,7 @@ p.uat-video-say { font-style: italic; border-left: 3px solid var(--uat-accent); 
 .uat-run:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-running] .uat-run { display: none; }
 [data-running-here]::after { content: " running\2026"; margin-left: 0.6em; font-size: 0.65em; font-weight: 400; color: var(--uat-accent); }
+[data-running-here="paused"]::after { content: " paused in the debugger"; }
 .uat-cancel[hidden] { display: none; }
 .uat-delete { margin-left: 0.4em; padding: 0 5px; font-size: 0.65em; font-weight: 400; color: var(--uat-muted); vertical-align: middle; }
 .uat-delete:hover { color: var(--uat-failed); }

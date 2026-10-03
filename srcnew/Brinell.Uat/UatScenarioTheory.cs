@@ -78,6 +78,23 @@ public sealed class UatScenarioTestCase : XunitTestCase
         }
     }
 
+    /// <inheritdoc />
+    public override Task<RunSummary> RunAsync(
+        IMessageSink diagnosticMessageSink,
+        IMessageBus messageBus,
+        object[] constructorArguments,
+        ExceptionAggregator aggregator,
+        CancellationTokenSource cancellationTokenSource)
+    {
+        // Time paused in the debugger would count against the timeout and fail a scenario still going.
+        if (System.Diagnostics.Debugger.IsAttached)
+        {
+            Timeout = 0;
+        }
+
+        return base.RunAsync(diagnosticMessageSink, messageBus, constructorArguments, aggregator, cancellationTokenSource);
+    }
+
     private static (string File, string Name)? Scenario(object[]? arguments)
         => arguments is [string file, string name, ..] ? (file, name) : null;
 }

@@ -103,7 +103,7 @@
     }
     if (running) {
       const target = running.file ? root.querySelector(".uat-title") : root.querySelector(`.uat-scenario[data-line="${running.line}"]`);
-      target?.setAttribute("data-running-here", "");
+      target?.setAttribute("data-running-here", running.paused ? "paused" : "");
     }
   }
 
@@ -151,7 +151,7 @@
       case "update": update(message); break;
       case "scrollTo": scrollTo(message.line); break;
       case "theme": theme(message); break;
-      case "running": running = message.line || message.file ? { line: message.line, file: message.file } : null; showRunning(); break;
+      case "running": running = message.line || message.file ? { line: message.line, file: message.file, paused: message.paused === true } : null; showRunning(); break;
       case "breaks": breaks = message.lines || []; showBreaks(); break;
       case "paused": paused = message.text ? message : null; showPaused(); break;
     }
