@@ -1,7 +1,7 @@
 # Promote reusable subjects
 
 Status: plan, not started. Date: 2026-09-27.
-Follows the phrases plan's "later" row ([plan.md](plan.md#4-phases)), whose phases 1-8 are done.
+Follows the phrases plan's "later" row ([the phrases plan](https://github.com/exact-mobile-apps/test-tooling/blob/027b0e77/.my/uat/phrases/plan.md#4-phases)), whose phases 1-8 are done.
 **Start when** Construction's first UAT suite needs a network, restart or backend-fault step
 ([construction/plan.md](../../construction/plan.md)); until then Todo is the only consumer and
 this plan is the design.

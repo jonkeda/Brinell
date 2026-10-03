@@ -42,7 +42,7 @@ It's made for UI acceptance tests of apps with Brinell page objects.
 | Argument types | parameter types + `[StepArgumentTransformation]`; parsing follows the binding culture | typed by the method's parameter, culture-invariant, one right way to write each value (AD-016); relative dates against the fixture's clock; app types through `[BddArgumentType]` |
 | Tables | `Reqnroll.Assist`: `CreateInstance`, `CreateSet`, `CompareToInstance`, `CompareToSet` with a diff | a table binds to a record or a list of records by the method's parameter; comparing is the phrase's job |
 | Composition | a step can call other steps in C# (discouraged) | callable phrases: named, parameterised step sequences in Markdown, no control flow (AD-017) |
-| Scoping | `[Scope(Tag, Feature, Scenario)]` on bindings | the page scopes control verbs; scopes and namespaces are planned ([phrases/plan.md](phrases/plan.md)) |
+| Scoping | `[Scope(Tag, Feature, Scenario)]` on bindings | the page scopes control verbs; scopes and namespaces are built ([AD-019](../../.docs/decisions/ad-019-phrases-have-scopes-and-namespaces.md)) |
 | When problems show | undefined or ambiguous steps show when the test runs (the IDE extension warns earlier) | **bind time**: the whole file binds before the first step. `UAT`/`UATB`/`UATA`/`UATC` codes. `brinell-data validate` checks every file in CI without starting the app |
 | Hooks | Before/After TestRun, Feature, Scenario, ScenarioBlock, Step; ordered; filtered by tag | `BeforeFile`, `BeforeScenario`, `ConfigureScenarioContext` and evidence overrides on the test base; no step hooks; not filtered by tag |
 | State and DI | context injection, `ScenarioContext`, `FeatureContext`, DI plugins (MS.DI, Autofac) | phrase classes are scenario services from the fixture's composition scan; the fixture holds state |
@@ -74,7 +74,7 @@ Each row ends with a verdict: **add**, **later**, or **no** (with the reason).
 | R7 | **Rule** (grouping scenarios under a business rule, with its own Background) | Weak. One file is one journey, and scenario ids (`TOD.02.1`) already group. | **no**, for now |
 | R8 | **Parallel execution** | Not for MAUI on Windows (one real app on the desktop). Possible for the web head, and for Android on several emulators. | **later**, web head first |
 | R9 | **Cucumber expressions**: optional text and alternatives (`a/an`, `todo(s)`) | No. One sentence, one meaning, one spelling is what keeps binding strict and completion useful (AD-016). | **no** |
-| R10 | **Scoped bindings by tag or feature** | The need is real; the mechanism isn't. Tag scoping hides where a step comes from. | **no**: page scope, folder namespaces and `Using` ([phrases/plan.md](phrases/plan.md)) cover it better |
+| R10 | **Scoped bindings by tag or feature** | The need is real; the mechanism isn't. Tag scoping hides where a step comes from. | **no**: page scope, folder namespaces and `Using` ([AD-019](../../.docs/decisions/ad-019-phrases-have-scopes-and-namespaces.md)) cover it better |
 | R11 | **Several test frameworks** | No. Brinell is xUnit throughout (AD-006). | **no** |
 | R12 | **Retry plugins** | No (AD-009). | **no** |
 | R13 | **Examples from external files** (ExternalData) | The need is covered by typed test sets. Examples from a test set's table might be handy later. | **later**, if asked |
@@ -98,7 +98,7 @@ Each row ends with a verdict: **add**, **later**, or **no** (with the reason).
 | B10 | **Evidence built in**: screenshots on failure, a value that is almost right reported with its one right spelling, and one artifact layout (AD-007); on MAUI Windows also timings and an accessibility audit. | A failure explains itself without rerunning. |
 | B11 | **Journey traceability**: the `Journey` field plus the coverage check across unit, integration, contract, UI and UAT tiers. | "Is every journey tested, at every level?" is a test, not a spreadsheet. |
 | B12 | **Expected-failure files** and **skip rules** tied to environment variables. | Proves the checker catches what it should; hardware and live-API scenarios are skipped explicitly, not silently. |
-| B13 | Coming: **static page tracking and phrase namespaces** ([phrases/plan.md](phrases/plan.md)). | Scales to Construction's size without the global step-definition pool Reqnroll has. |
+| B13 | **Static page tracking and phrase namespaces** ([AD-019](../../.docs/decisions/ad-019-phrases-have-scopes-and-namespaces.md)). | Scales to Construction's size without the global step-definition pool Reqnroll has. |
 
 ## 5. Summary
 
