@@ -40,7 +40,8 @@ Controls should not:
 - Locators: `srcnew/Brinell.Core/Locators`
 - MAUI controls: `srcnew/Brinell.Maui/Controls`
 - CommunityToolkit.Maui controls: `srcnew/Brinell.Maui.CommunityToolkit/Controls` - see
-  [CommunityToolkit.Maui Controls](community-toolkit.md)
+  [CommunityToolkit.Maui Controls](community-toolkit.md); for another library, see
+  [Adding Controls For A New Control Library](../guides/control-library.md)
 - WPF/WinForms controls: `srcnew/Brinell.Wpf`, `srcnew/Brinell.WinForms`
 - Web controls: `srcnew/Brinell.Html/Controls` and `srcnew/Brinell.Blazor/Controls`. They are
   generated from `.tpl.cs` templates like MAUI's and implement the same Core interfaces, so a
