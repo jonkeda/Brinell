@@ -1,10 +1,10 @@
 # Adding Controls For A New Control Library
 
 How to give a third-party MAUI control library (a vendor suite, a toolkit) its own Brinell
-ControlObjects. [CommunityToolkit.Maui](../controls/community-toolkit.md) was done this way.
+ControlObjects. [CommunityToolkit.Maui](../docs/controls/community-toolkit.md) was done this way.
 
 The work is done by the `control-source-builder` agent
-([.claude/agents/control-source-builder.md](../../.claude/agents/control-source-builder.md)).
+([.claude/agents/control-source-builder.md](../.claude/agents/control-source-builder.md)).
 You run it several times, each time with one step and the library's folder. Between runs, you
 read what it wrote and decide what comes next.
 
@@ -12,7 +12,7 @@ read what it wrote and decide what comes next.
 
 - **One library, one package.** The controls go in their own project,
   `srcnew/Brinell.Maui.<Library>`, so a suite that does not use the library does not get it
-  ([AD-026](../../.docs/decisions/ad-026-a-project-earns-its-place.md)). The project wraps
+  ([AD-026](../.docs/decisions/ad-026-a-project-earns-its-place.md)). The project wraps
   automation elements; it does not reference the library itself. Only the sample app does.
 - **A clean working tree.** The agent stops when it finds changes it did not make. It never
   commits: you review and commit after each run.
@@ -45,7 +45,7 @@ working around it:
 
 - **Routes, in order:** a UI Automation pattern, then an existing gesture-bridge verb, then a
   new verb only when it passes the three tests of
-  [AD-008](../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md).
+  [AD-008](../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md).
   No coordinates, no physical input on MAUI Windows.
 - No sleeps or longer timeouts to make a test pass.
 - No changes to shared infrastructure (fixture, navigation, `MauiProgram`, drivers).

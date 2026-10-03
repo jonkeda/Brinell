@@ -53,7 +53,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [The Scraper](guides/scraper.md) - record or explore an app's pages into a UI test project,
   draft page objects from them, and have an agent make controls; from VS Code, Visual Studio, the
   command line or MCP, and unattended with the loop
-- [Adding Controls For A New Control Library](guides/control-library.md) - the
+- [Adding Controls For A New Control Library](../.guides/control-library.md) - the
   `control-source-builder` agent, step by step: survey, groundwork, probe, build, closeout
 - [Test Data](guides/test-data.md) - test sets, `brinell data`, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
