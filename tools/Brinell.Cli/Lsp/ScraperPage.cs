@@ -100,6 +100,8 @@ internal static class ScraperPage
         pre.sc-outline span[aria-current="true"] { outline: 1px solid var(--uat-accent); }
         pre.sc-summary { font-family: var(--uat-mono); font-size: 0.85em; white-space: pre-wrap; border: 1px solid var(--uat-border); border-radius: 4px; padding: 0.4em; margin: 0; }
         .sc-node { border: 1px solid var(--uat-border); border-radius: 4px; padding: 0.4em; }
+        .sc-test-steps { margin: 0.3em 0; padding-left: 1.6em; }
+        .sc-output { max-height: 20em; overflow: auto; font-size: 0.85em; white-space: pre-wrap; background: var(--uat-surface); padding: 0.4em; }
         .sc-form { display: grid; grid-template-columns: max-content 1fr; gap: 0.3em 0.6em; align-items: center; }
         .sc-row { display: flex; gap: 0.4em; align-items: center; padding: 0.1em 0; }
         .sc-row .sc-grow { flex: 1; overflow-wrap: anywhere; }
@@ -145,6 +147,7 @@ internal static class ScraperPage
           <span id="sc-status" class="sc-status"></span>
           <button id="sc-capture" type="button">Capture</button>
           <button id="sc-pick" type="button">Pick</button>
+          <button id="sc-assert" type="button" hidden title="Click an element in the browser, then choose what to check">Assert</button>
           <button id="sc-stop" type="button">Stop</button>
           <button id="sc-continue" type="button" hidden title="Signed in in the browser: go on">Continue</button>
           <select id="sc-here" aria-label="Add this page to the config">
@@ -209,7 +212,7 @@ internal static class ScraperPage
           const showProblem = (text, from) => { showProblem.from = text ? from : null; $("sc-problem").hidden = !text; $("sc-problem").textContent = text || ""; };
           const say = text => { $("sc-status").textContent = text || ""; if (text && !state.recording && !state.exploring) { $("sc-strip").hidden = false; clearTimeout(say.timer); say.timer = setTimeout(showRunning, 6000); } };
 
-          const STEPS = ["Project", "Connect", "Collect pages", "Review", "Controls", "Page objects", "Verify"];
+          const STEPS = ["Project", "Connect", "Collect pages", "Review", "Controls", "Page objects", "Verify", "Tests"];
           const state = {
             project: null, projects: [], step: null, progress: null, recording: null, live: null, exploring: null, explored: null,
             pages: [], page: null, capture: null, node: null, reviewing: null, picked: new Set(), pickedPages: new Set(), names: {},
@@ -264,7 +267,7 @@ internal static class ScraperPage
             state.progress = await answer("progress", { project: state.project });
             const p = state.progress;
             if (!p) return;
-            if (open || state.step === null) state.step = p.next ? p.next.step : 7;
+            if (open || state.step === null) state.step = p.next ? p.next.step : 8;
             renderSteps();
             await showStep();
           }
@@ -301,7 +304,7 @@ internal static class ScraperPage
             panel.replaceChildren();
             const s = state.step;
             if (s === "code") return showCode();
-            const body = await [null, stepProject, stepConnect, stepCollect, stepReview, stepControls, stepPages, stepVerify][s]();
+            const body = await [null, stepProject, stepConnect, stepCollect, stepReview, stepControls, stepPages, stepVerify, stepTests][s]();
             if (state.step !== s) return; // another step was chosen meanwhile
             const parts = [].concat(body || []).flat().filter(x => x !== null && x !== undefined && x !== false);
             const bar = parts.find(x => x.classList && x.classList.contains("sc-actions"));
@@ -318,7 +321,7 @@ internal static class ScraperPage
               await answer("skipControls", { project: state.project, skip: !(state.progress && state.progress.skipControls) });
               await refresh(false);
             }, { class: "sc-link", id: "sc-skip" }) : el("span");
-            return el("div", { class: "sc-footer" }, skip, step < 7 ? button(`Next: ${STEPS[step]} ▸`, () => go(step + 1), { id: "sc-step-next" }) : el("span"));
+            return el("div", { class: "sc-footer" }, skip, step < 8 ? button(`Next: ${STEPS[step]} ▸`, () => go(step + 1), { id: "sc-step-next" }) : el("span"));
           }
 
           const heading = (n, why) => [el("h2", {}, `${n} ${STEPS[n - 1]}`), el("p", { class: "sc-why" }, why)];
@@ -973,6 +976,66 @@ internal static class ScraperPage
                 el("div", { class: "sc-muted" }, `${p.members.filter(m => m.verdict === "Once").length} of ${p.members.length} found once`))));
           }
 
+          // ---- Tests ----
+
+          // Each test recording: its steps as the scenario would say them, its gaps, its drafts, and Run once.
+          async function stepTests() {
+            const tests = await answer("tests", { project: state.project }) || [];
+            const name = el("input", { type: "text", id: "sc-test-name", placeholder: "What it shows: Submitting the form thanks the user", "aria-label": "The test's name" });
+            return [...heading(8, "Use the app as a person would and assert what it shows: the actions become a test that calls the page objects, a scenario of catalog phrases, or both."),
+              el("div", { class: "sc-actions" }, name, primary("Record a test", () => recordTest(name.value.trim() || "test"), { id: "sc-record-test", title: "Opens the browser with Assert and Stop: what you do is recorded" })),
+              tests.length ? tests.map(testView) : el("p", { class: "sc-muted" }, "No test recorded yet.")];
+          }
+
+          function testView(t) {
+            const gaps = t.resolved.steps.filter(s => s.gap);
+            const target = el("select", { "aria-label": "Draft as" }, ...[["", "As the config says"], ["xunit", "xUnit test"], ["scenario", "Scenario"], ["both", "Both"]].map(([v, text]) => el("option", { value: v }, text)));
+            return el("div", { class: "sc-node", "data-test": t.session },
+              el("div", {}, el("b", {}, t.name), " ", el("span", { class: "sc-muted" }, `${t.session}: ${plural(t.actions, "step")}, ${plural(gaps.length, "gap")}`)),
+              el("ol", { class: "sc-test-steps" }, ...t.resolved.steps.map(s => el("li", { class: s.gap ? "sc-refused" : "", "data-event": String(s.event) },
+                s.phrase || (s.member ? `${s.member}.${s.verb || "?"}` : s.kind),
+                s.gap ? el("div", { class: "sc-muted" }, s.gap.message) : null))),
+              ...t.drafts.map(d => el("div", { class: "sc-item", "data-draft": d.target, title: d.path, onclick: () => host.post({ type: "open", path: d.path }) },
+                `${d.target === "Xunit" ? "xUnit test" : "Scenario"}: ${d.path.split(/[\\/]/).pop()}`,
+                d.stale ? el("span", { class: "sc-refused" }, " - the recording changed since: draft again") : null)),
+              el("div", { class: "sc-actions" }, target,
+                button("Draft", () => draftTest(t, target.value), { "data-draft-test": t.session }),
+                t.drafts.length ? button("Run once", () => runTest(t), { "data-run-test": t.session }) : null),
+              el("div", { class: "sc-run", id: `sc-run-${t.session}` }));
+          }
+
+          async function recordTest(name) {
+            const started = await answer("startTest", { project: state.project, session: name, url: null });
+            if (!started) return;
+            state.collected = [];
+            setRecording(started);
+            showRunning();
+          }
+
+          async function draftTest(t, target) {
+            const result = await answer("draftTest", { project: state.project, session: t.session, target: target || null, name: null });
+            if (!result) return;
+            await refresh(false);
+            const box = $(`sc-run-${t.session}`);
+            if (box) box.replaceChildren(
+              ...result.problems.map(p => el("div", { class: "sc-refused" }, p)),
+              ...result.files.map(f => el("div", { class: f.written ? "" : "sc-muted" }, `${f.path}: ${f.written ? "written" : f.note}`)),
+              result.gaps.length ? el("div", { class: "sc-muted" }, `${plural(result.gaps.length, "gap")} marked in the draft.`) : null);
+          }
+
+          async function runTest(t) {
+            say(`Running ${t.name} once: built first…`);
+            const results = await answer("runTest", { project: state.project, session: t.session });
+            say("");
+            const box = $(`sc-run-${t.session}`);
+            if (!results || !box) return;
+            box.replaceChildren(...results.map(r => el("div", { "data-run": r.passed ? "passed" : "failed" },
+              el("b", { class: r.passed ? "sc-ok" : "sc-refused" }, r.passed ? `Passed (${r.passedCount})` : "Did not pass"), " ",
+              el("span", { class: "sc-muted" }, r.filter),
+              r.problem ? el("div", { class: "sc-refused" }, r.problem) : null,
+              r.output.length ? el("pre", { class: "sc-output" }, r.output.join("\n")) : null)));
+          }
+
           // ---- Code ----
 
           async function showCode() {
@@ -1000,10 +1063,12 @@ internal static class ScraperPage
             const running = !!(r || state.exploring);
             $("sc-strip").hidden = !running && !$("sc-status").textContent;
             $("sc-capture").hidden = $("sc-pick").hidden = !r || !!state.exploring;
+            $("sc-assert").hidden = !r || !r.actions;
             $("sc-stop").hidden = !running;
             $("sc-here").hidden = !r;
             $("sc-status").setAttribute("data-recording", String(running));
-            if (running) $("sc-status").textContent = state.exploring || `Recording ${r.session}: ${plural(r.captures, "page")}`;
+            if (running) $("sc-status").textContent = state.exploring
+              || (r.actions ? `Recording a test, ${r.session}: ${plural(r.captures, "event")}. Assert from the browser's toolbar or here.` : `Recording ${r.session}: ${plural(r.captures, "page")}`);
           }
 
           async function record(session, url) {
@@ -1120,6 +1185,7 @@ internal static class ScraperPage
           function renderStepsIfAny() { if (state.progress) renderSteps(); }
           $("sc-project").addEventListener("change", async () => { state.project = $("sc-project").value; state.page = state.capture = null; state.reviewing = null; state.picked.clear(); state.pickedPages.clear(); state.names = {}; await loadChatChoice(); await refresh(true); });
           $("sc-capture").addEventListener("click", () => answer("capture", {}));
+          $("sc-assert").addEventListener("click", () => answer("assert", {}));
           $("sc-stop").addEventListener("click", () => state.exploring ? call("exploreStop") : answer("stop"));
           $("sc-continue").addEventListener("click", async () => { $("sc-continue").hidden = true; await call("exploreContinue"); });
           $("sc-here").addEventListener("change", async () => {

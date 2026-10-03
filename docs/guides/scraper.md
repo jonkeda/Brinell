@@ -4,7 +4,7 @@ The Scraper records an app's pages into a UI test project and helps an agent (Co
 page objects and controls from them. Html and Blazor apps today. The decisions are in
 [AD-027](../../.docs/decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md).
 
-## The view: seven steps
+## The view: eight steps
 
 Open it in **VS Code** with **Brinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar),
 in **Visual Studio** with View, Other Windows, **Scraper**. It is a workflow: the steps on the left,
@@ -20,9 +20,10 @@ the right with one main button, and in the header **Next:** what to do now, with
 | 5 Controls | **To make**: the patterns that repeat, each with a tick box and a control name; **Made**: the controls with a scraped header, checked against the recordings (each part found in how many of the pattern's occurrences) | **Make *n* controls with the agent**; per control **Review** (its code, its parts, a note, **Fix with the agent**, **Accept**). **Skip** if the page objects do without |
 | 6 Page objects | A row per page: a tick box, its class name (edit it to rename the class, its draft and your part), and whether it is drafted or changed since | **Draft *n* page objects** (the ticked ones), **Improve with the agent** |
 | 7 Verify | Each page object's members looked up in the running app | **Verify** |
+| 8 Tests | Each test recording: its steps as the scenario says them, its gaps with why, its drafts (and whether the recording changed since) | **Record a test** (the browser opens with **Assert**, **Stop** and a count); per test **Draft** (as `## Tests` says, or xUnit, scenario, both) and **Run once** (built, then `dotnet test` on the draft) |
 
 **Code**, below the steps, lists the project's page objects and controls. While a recording or
-Explore runs, a strip under the header shows its progress with **Capture**, **Pick**, **Stop**,
+Explore runs, a strip under the header shows its progress with **Capture**, **Pick**, **Assert** (a test recording), **Stop**,
 **Continue** (after a sign-in) and **This page…**. What the workflow remembers that the files do not
 (the last check and verify, accepted controls, skipped controls) is in the project's
 `.scraper-state.json`, which is not committed. An agent sees the same steps with

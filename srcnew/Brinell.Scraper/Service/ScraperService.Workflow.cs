@@ -47,7 +47,7 @@ public sealed partial class ScraperService
         var verify = state.LastVerify is not { } last ? Step(7, StepState.Todo, "")
             : last.Passed ? Step(7, StepState.Done, $"{last.Found} of {last.Members} found")
             : Step(7, StepState.Attention, $"{last.Problems} not found", last.Problems);
-        var steps = new List<WorkflowStep> { Step(1, StepState.Done, project.Config.Platform), connect, collect, review, controlsStep, pagesStep, verify };
+        var steps = new List<WorkflowStep> { Step(1, StepState.Done, project.Config.Platform), connect, collect, review, controlsStep, pagesStep, verify, TestsStep(project.Name) };
 
         // The next step: the first that needs attention or is to do; changed pages go back to collecting.
         var next = steps.FirstOrDefault(s => s.State == StepState.Attention) ?? steps.FirstOrDefault(s => s.State == StepState.Todo);
@@ -265,7 +265,7 @@ public sealed partial class ScraperService
 
     private static WorkflowStep Step(int step, StepState state, string summary, int? count = null) => new(step, StepNames[step - 1], state, summary, count);
 
-    private static readonly string[] StepNames = ["Project", "Connect", "Collect pages", "Review", "Controls", "Page objects", "Verify"];
+    private static readonly string[] StepNames = ["Project", "Connect", "Collect pages", "Review", "Controls", "Page objects", "Verify", "Tests"];
 
     private static string S(int n) => n == 1 ? "" : "s";
 
@@ -283,7 +283,9 @@ public sealed partial class ScraperService
         6 when changed > 0 => $"Update the {changed} page object{S(changed)} whose page changed",
         6 => $"Draft page objects for the {without} page{S(without)} without one",
         7 when step.State == StepState.Attention => "Fix or re-record the members Verify did not find",
-        _ => "Verify the page objects against the running app",
+        7 => "Verify the page objects against the running app",
+        8 when step.State == StepState.Attention => $"Finish the {step.Count} recorded test{S(step.Count ?? 0)}: fill the gaps, draft, run once",
+        _ => "Record a test: use the app, assert what it shows",
     };
 }
 

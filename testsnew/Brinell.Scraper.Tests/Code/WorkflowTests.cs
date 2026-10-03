@@ -114,7 +114,7 @@ public sealed class WorkflowTests : IAsyncDisposable
     public void Progress_says_what_to_do_next_from_a_new_project_on()
     {
         var fresh = _service.Progress(null);
-        Assert.Equal([StepState.Done, StepState.Next, StepState.Todo, StepState.Todo, StepState.Todo, StepState.Todo, StepState.Todo], fresh.Steps.Select(s => s.State));
+        Assert.Equal([StepState.Done, StepState.Next, StepState.Todo, StepState.Todo, StepState.Todo, StepState.Todo, StepState.Todo, StepState.Todo], fresh.Steps.Select(s => s.State));
         Assert.Equal((2, "Check that the Scraper can reach the app"), (fresh.Next!.Step, fresh.Next.Text));
 
         Record(Menu());

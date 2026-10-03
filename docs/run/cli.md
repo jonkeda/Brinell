@@ -36,7 +36,7 @@ The Scraper drives Playwright's Chromium. Install it once per machine with
 | --- | --- | --- |
 | `brinell scrape new <Name> --url <start>` | Makes a UI test project with a `scraper.config.md` and an empty `Pages` folder (`--platform`, `--folder`, `--test-id`, `--references`) | [Scraper](../guides/scraper.md) |
 | `brinell scrape list` | The projects with a `scraper.config.md` | |
-| `brinell scrape status` | The seven steps of a project and what to do next | |
+| `brinell scrape status` | The eight steps of a project and what to do next | |
 | `brinell scrape check [--visible]` | Opens the start URL: does the app answer, signed in, on a host Explore may go to | |
 | `brinell scrape explore` | Explores the app by itself under the project's guards (`--dry-run`, `--max-pages`, `--max-depth`, `--max-minutes`, `--delay-ms`, `--url`) | |
 | `brinell scrape record` | Records by hand in a browser window; `c` and Enter captures, Enter stops (`--by-hand`, `--session`, `--url`) | |

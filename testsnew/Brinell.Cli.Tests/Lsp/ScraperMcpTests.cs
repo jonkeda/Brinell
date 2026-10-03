@@ -211,7 +211,7 @@ public sealed class ScraperMcpTests : IDisposable
         var saved = await harness.Client.InvokeWithParameterObjectAsync<JsonNode>("brinell/scraper/configEdits", new { changes = new[] { new { action = "set", section = "Explore", values = new[] { "MaxPages", "7" } }, new { action = "add", section = "Explore hosts", values = new[] { "shop.example" } } } });
 
         var steps = progress["value"]!["steps"]!.AsArray();
-        Assert.Equal(7, steps.Count);
+        Assert.Equal(8, steps.Count);
         Assert.Equal(("Project", "Done"), ((string?)steps[0]!["name"], (string?)steps[0]!["state"]));
         Assert.Equal("Collect pages", (string?)steps[2]!["name"]);
         Assert.NotNull(progress["value"]!["next"]);
