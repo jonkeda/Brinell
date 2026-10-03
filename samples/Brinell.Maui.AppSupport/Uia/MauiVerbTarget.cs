@@ -76,6 +76,26 @@ internal sealed class MauiVerbTarget : IBrinellVerbTarget
         return MauiVerbDispatcher.Exchange(element, _plan, verb, argument, out result);
     }
 
+    /// <inheritdoc/>
+    public bool TryGetScreenBounds(out BrinellBounds bounds)
+    {
+        bounds = BrinellBounds.Empty;
+
+        if (!_element.TryGetTarget(out var element))
+        {
+            return false;
+        }
+
+        var read = MauiVerbDispatcher.Marshal<BrinellBounds?>(
+            element,
+            () => ElementBounds.TryGetScreenBounds(element, out var b) ? b : null,
+            null,
+            null);
+
+        bounds = read ?? BrinellBounds.Empty;
+        return read is not null;
+    }
+
 
     /// <summary>
     /// Whether this target stands for that element.

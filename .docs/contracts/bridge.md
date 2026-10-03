@@ -27,6 +27,12 @@ test publishes a **gesture bridge**. This is the contract an app author must imp
 - **Republished per page.** An app republishes its bridge between pages, so a verb the app
   did not answer is retried by the call - it is not a missing route
   ([AD-009](../decisions/ad-009-app-bugs-stay-failures.md)).
+- **Joined by `AutomationId`, then by position.** A bridge target carries the element's
+  `AutomationId`, and several live elements may share one (a template used twice on a page).
+  The bridge keeps them all; re-publishing an element replaces only its own target. When
+  several match, the client asks each for the meta verb `GetBounds` (answered for every
+  target, physical pixels) and picks the one whose centre is nearest the real element's,
+  converted from the client's DPI space. Unique ids are not required of the app.
 
 ## Three admission tests before adding a verb
 
@@ -43,3 +49,5 @@ test publishes a **gesture bridge**. This is the contract an app author must imp
 - A verb is added without a read/element-action/app-action classification.
 - The bridge provider ships in a release build.
 - A refusal is signalled with `S_FALSE` instead of a payload or `BRINELL_E_DECLINED`.
+- Registering a target replaces another element's target with the same `AutomationId`, or a
+  client resolves a shared id without comparing bounds.

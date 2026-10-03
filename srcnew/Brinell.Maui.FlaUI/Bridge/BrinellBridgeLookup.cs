@@ -1,3 +1,4 @@
+using System.Drawing;
 using Brinell.Uia;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
@@ -14,9 +15,16 @@ internal static class BrinellBridgeLookup
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session, for its raw-view walker.</param>
     /// <param name="automationId">The <c>AutomationId</c> of the element being acted on.</param>
+    /// <param name="near">
+    /// The real element's screen rectangle, read only when several targets share the
+    /// <c>AutomationId</c>. Without it the first published target is used.
+    /// </param>
     /// <returns>The bridge element, or null.</returns>
     internal static AutomationElement? Find(
-        AutomationElement root, UIA3Automation automation, string automationId)
+        AutomationElement root,
+        UIA3Automation automation,
+        string automationId,
+        Func<Rectangle>? near = null)
     {
         var walker = automation.TreeWalkerFactory.GetRawViewWalker();
 
@@ -27,9 +35,155 @@ internal static class BrinellBridgeLookup
         }
 
         var wanted = BrinellUiaIds.TargetAutomationIdFor(automationId);
+        var matches = new List<AutomationElement>();
 
-        return FirstChildWhere(
-            walker, bridge, e => string.Equals(ReadAutomationId(e), wanted, StringComparison.Ordinal));
+        FirstChildWhere(walker, bridge, child =>
+        {
+            if (string.Equals(ReadAutomationId(child), wanted, StringComparison.Ordinal))
+            {
+                matches.Add(child);
+            }
+
+            return false;
+        });
+
+        return matches.Count switch
+        {
+            0 => null,
+            1 => matches[0],
+            _ => Nearest(root, matches, near),
+        };
+    }
+
+    /// <summary>
+    /// Picks, among targets sharing an <c>AutomationId</c>, the one over the real element.
+    /// </summary>
+    private static AutomationElement Nearest(
+        AutomationElement root, List<AutomationElement> matches, Func<Rectangle>? near)
+    {
+        Rectangle wanted;
+        try
+        {
+            wanted = near?.Invoke() ?? Rectangle.Empty;
+        }
+        catch (Exception)
+        {
+            wanted = Rectangle.Empty;
+        }
+
+        if (wanted.IsEmpty)
+        {
+            return matches[0];
+        }
+
+        // UI Automation gives this process logical pixels when it is not per-monitor DPI aware;
+        // the app answers GetBounds in physical pixels.
+        var (centreX, centreY) = ToPhysical(
+            root, wanted.Left + (wanted.Width / 2.0), wanted.Top + (wanted.Height / 2.0));
+
+        AutomationElement? best = null;
+        var bestDistance = double.MaxValue;
+
+        foreach (var candidate in matches)
+        {
+            if (!TryReadBounds(candidate, out var left, out var top, out var width, out var height))
+            {
+                continue;
+            }
+
+            var dx = left + (width / 2.0) - centreX;
+            var dy = top + (height / 2.0) - centreY;
+            var distance = (dx * dx) + (dy * dy);
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = candidate;
+            }
+        }
+
+        return best ?? matches[0];
+    }
+
+    private static (double X, double Y) ToPhysical(AutomationElement root, double x, double y)
+    {
+        try
+        {
+            var hwnd = root.Properties.NativeWindowHandle.ValueOrDefault;
+            if (hwnd == IntPtr.Zero)
+            {
+                return (x, y);
+            }
+
+            var callerDpi = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext()) switch
+            {
+                Unaware => 96u,
+                SystemAware => GetDpiForSystem(),
+                _ => 0u,
+            };
+
+            var windowDpi = GetDpiForWindow(hwnd);
+            if (callerDpi > 0 && windowDpi > 0)
+            {
+                var factor = (double)windowDpi / callerDpi;
+                return (x * factor, y * factor);
+            }
+        }
+        catch (Exception)
+        {
+            // Unconverted is still right for a per-monitor aware client.
+        }
+
+        return (x, y);
+    }
+
+    private const int Unaware = 0;
+    private const int SystemAware = 1;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetThreadDpiAwarenessContext();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int GetAwarenessFromDpiAwarenessContext(IntPtr context);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForSystem();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    private static bool TryReadBounds(
+        AutomationElement target, out double left, out double top, out double width, out double height)
+    {
+        left = top = width = height = 0;
+
+        if (!target.TryGetBrinellPattern(out var pattern))
+        {
+            return false;
+        }
+
+        string answer;
+        try
+        {
+            if (pattern!.Exchange((int)BrinellVerb.GetBounds, string.Empty, out answer) != HResults.S_OK)
+            {
+                return false;
+            }
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+
+        var parts = answer.Split(',');
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var number = System.Globalization.NumberStyles.Float;
+
+        return parts.Length == 4
+               && double.TryParse(parts[0], number, culture, out left)
+               && double.TryParse(parts[1], number, culture, out top)
+               && double.TryParse(parts[2], number, culture, out width)
+               && double.TryParse(parts[3], number, culture, out height);
     }
 
     /// <summary>

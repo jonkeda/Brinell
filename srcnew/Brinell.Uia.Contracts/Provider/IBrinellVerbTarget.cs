@@ -78,4 +78,9 @@ public interface IBrinellVerbTarget
     /// <param name="result">The result. Set to the empty string when there is none.</param>
     /// <returns>An <see cref="HResults"/> value.</returns>
     int Exchange(BrinellVerb verb, string argument, out string result);
+
+    /// <summary>Reads the element's screen rectangle, for <see cref="BrinellVerb.GetBounds"/>.</summary>
+    /// <param name="bounds">Its rectangle, when this returns true.</param>
+    /// <returns>Whether the element is laid out and its position could be read.</returns>
+    bool TryGetScreenBounds(out BrinellBounds bounds);
 }

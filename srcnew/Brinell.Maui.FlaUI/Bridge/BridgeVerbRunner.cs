@@ -1,3 +1,4 @@
+using System.Drawing;
 using Brinell.Uia;
 using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
@@ -13,16 +14,20 @@ internal static class BridgeVerbRunner
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>The verbs, or empty if there is no bridge target for it.</returns>
     internal static IReadOnlyList<BrinellVerb> Verbs(
-        AutomationElement root, UIA3Automation automation, string? automationId)
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        Func<Rectangle>? near = null)
     {
         if (string.IsNullOrWhiteSpace(automationId))
         {
             return [];
         }
 
-        return BrinellBridgeLookup.Find(root, automation, automationId)?.SupportedVerbs() ?? [];
+        return BrinellBridgeLookup.Find(root, automation, automationId, near)?.SupportedVerbs() ?? [];
     }
 
     /// <summary>Whether an element declares a verb.</summary>
@@ -30,13 +35,15 @@ internal static class BridgeVerbRunner
     /// <param name="automation">The session.</param>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
     /// <param name="verb">The verb.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>Whether the app declared it for this element.</returns>
     internal static bool Supports(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
-        BrinellVerb verb)
-        => Verbs(root, automation, automationId).Contains(verb);
+        BrinellVerb verb,
+        Func<Rectangle>? near = null)
+        => Verbs(root, automation, automationId, near).Contains(verb);
 
     /// <summary>
     /// Sends a verb on whichever of the two contract methods it travels on.
@@ -46,16 +53,18 @@ internal static class BridgeVerbRunner
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
     /// <param name="verb">The verb.</param>
     /// <param name="argument">Its argument, for a verb that takes one.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened, and what the app returned.</returns>
     internal static BridgeVerbResult Send(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
         BrinellVerb verb,
-        string argument = "")
+        string argument = "",
+        Func<Rectangle>? near = null)
         => BrinellVerbs.TransportFor(verb) == BrinellVerbTransport.Exchange
-            ? Exchange(root, automation, automationId, verb, argument)
-            : Invoke(root, automation, automationId, verb);
+            ? Exchange(root, automation, automationId, verb, argument, near)
+            : Invoke(root, automation, automationId, verb, near: near);
 
     /// <summary>
     /// Sends a verb that carries no strings.
@@ -66,6 +75,7 @@ internal static class BridgeVerbRunner
     /// <param name="verb">The verb.</param>
     /// <param name="arg1">The verb's first argument, where it takes one.</param>
     /// <param name="arg2">The verb's second argument, where it takes one.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened.</returns>
     internal static BridgeVerbResult Invoke(
         AutomationElement root,
@@ -73,9 +83,10 @@ internal static class BridgeVerbRunner
         string? automationId,
         BrinellVerb verb,
         int arg1 = 0,
-        int arg2 = 0)
+        int arg2 = 0,
+        Func<Rectangle>? near = null)
     {
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
+        if (!TryResolve(root, automation, automationId, near, out var pattern, out var failure, out _))
         {
             return failure;
         }
@@ -97,15 +108,17 @@ internal static class BridgeVerbRunner
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
     /// <param name="verb">The verb.</param>
     /// <param name="argument">The verb's argument, or empty where it takes none.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened, and what the app returned.</returns>
     internal static BridgeVerbResult Exchange(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
         BrinellVerb verb,
-        string argument = "")
+        string argument = "",
+        Func<Rectangle>? near = null)
     {
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
+        if (!TryResolve(root, automation, automationId, near, out var pattern, out var failure, out _))
         {
             return failure;
         }
@@ -129,6 +142,7 @@ internal static class BridgeVerbRunner
     /// <param name="verb">The verb.</param>
     /// <param name="arg1">The verb's first argument.</param>
     /// <param name="arg2">The verb's second argument.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <param name="declared">Whether the target declared the verb at all.</param>
     /// <returns>What happened.</returns>
     internal static BridgeVerbResult InvokeIfDeclared(
@@ -138,11 +152,12 @@ internal static class BridgeVerbRunner
         BrinellVerb verb,
         int arg1,
         int arg2,
+        Func<Rectangle>? near,
         out bool declared)
     {
         declared = false;
 
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+        if (!TryResolve(root, automation, automationId, near, out var pattern, out var failure,
                 out var target))
         {
             return failure;
@@ -177,6 +192,7 @@ internal static class BridgeVerbRunner
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
     /// <param name="verb">The verb.</param>
     /// <param name="argument">The verb's argument, or empty where it takes none.</param>
+    /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <param name="declared">Whether the target declared the verb at all.</param>
     /// <returns>What happened. Not delivered, with <paramref name="declared"/> false, when the
     /// target does not declare the verb or could not be resolved.</returns>
@@ -186,11 +202,12 @@ internal static class BridgeVerbRunner
         string? automationId,
         BrinellVerb verb,
         string argument,
+        Func<Rectangle>? near,
         out bool declared)
     {
         declared = false;
 
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+        if (!TryResolve(root, automation, automationId, near, out var pattern, out var failure,
                 out var target))
         {
             return failure;
@@ -325,7 +342,7 @@ internal static class BridgeVerbRunner
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
-        BrinellVerb verb,
+        Func<Rectangle>? near,
         out IBrinellAutomationPattern? pattern,
         out BridgeVerbResult failure,
         out AutomationElement? target)
@@ -344,7 +361,7 @@ internal static class BridgeVerbRunner
             return false;
         }
 
-        var element = target = BrinellBridgeLookup.Find(root, automation, automationId);
+        var element = target = BrinellBridgeLookup.Find(root, automation, automationId, near);
 
         if (element is null)
         {

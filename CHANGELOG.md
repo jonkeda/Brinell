@@ -374,6 +374,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- Gesture bridge targets may share an `AutomationId` (`.docs/contracts/bridge.md`).
+  `BrinellUiaBridge.Register` adds instead of replacing; the host withdraws an element's own
+  target before re-publishing it. A new meta verb `GetBounds` (4) is answered for every target,
+  and `IBrinellVerbTarget.TryGetScreenBounds` is required. The FlaUI client picks the target
+  nearest the real element when several match.
 - Presenter runs a suite in a runner process of its own (AD-025): `Brinell.Uat.dll` has an entry
   point and is started in the suite's output with the suite's `runtimeconfig.json` and `deps.json`,
   so a scenario runs from Presenter as under `dotnet test`. Presenter drives it a step at a time
