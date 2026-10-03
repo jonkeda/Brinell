@@ -123,7 +123,18 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// answers it separately through <c>IsVisibleAfterScroll</c>.
     /// </para>
     /// </remarks>
-    public bool Visible => Live(() => !_element.IsOffscreen);
+    public bool Visible => Live(() =>
+    {
+        try
+        {
+            return !_element.IsOffscreen;
+        }
+        catch (global::FlaUI.Core.Exceptions.PropertyNotSupportedException error)
+        {
+            // Every live element supports IsOffscreen; a disconnected WinUI peer reports it unsupported.
+            throw new StaleElementException(platformError: error);
+        }
+    });
 
     /// <inheritdoc />
     public bool Enabled => Live(() => _element.IsEnabled);
