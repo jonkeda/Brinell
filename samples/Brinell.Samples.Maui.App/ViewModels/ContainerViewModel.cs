@@ -16,6 +16,7 @@ public class ContainerViewModel : ParentViewModel
 
     private string _status = NoAction;
     private bool _isRefreshing;
+    private bool _isWrappedRefreshing;
     private string _refreshText = NotRefreshed;
     private int _refreshCount;
 
@@ -55,6 +56,13 @@ public class ContainerViewModel : ParentViewModel
         set => SetProperty(ref _isRefreshing, value);
     }
 
+    /// <summary>The wrapped RefreshView's spinner; its own, so one pull does not start both views.</summary>
+    public bool IsWrappedRefreshing
+    {
+        get => _isWrappedRefreshing;
+        set => SetProperty(ref _isWrappedRefreshing, value);
+    }
+
     /// <summary>Text reflecting how many refreshes have completed.</summary>
     public string RefreshText
     {
@@ -90,6 +98,11 @@ public class ContainerViewModel : ParentViewModel
         {
             SetProperty(ref _isRefreshing, false, nameof(IsRefreshing));
         }
+
+        if (_isWrappedRefreshing)
+        {
+            SetProperty(ref _isWrappedRefreshing, false, nameof(IsWrappedRefreshing));
+        }
     }
 
     private void Reset()
@@ -101,6 +114,11 @@ public class ContainerViewModel : ParentViewModel
         if (_isRefreshing)
         {
             SetProperty(ref _isRefreshing, false, nameof(IsRefreshing));
+        }
+
+        if (_isWrappedRefreshing)
+        {
+            SetProperty(ref _isWrappedRefreshing, false, nameof(IsWrappedRefreshing));
         }
     }
 }
