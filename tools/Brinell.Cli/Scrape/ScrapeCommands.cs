@@ -17,7 +17,7 @@ internal static class ScrapeCommands
 {
     public static Command Build(CliIo io) => new("scrape", "The Scraper: record or explore an app, then draft and verify page objects (docs/guides/scraper.md).")
     {
-        New(io), List(io), Status(io), Check(io), Explore(io), Record(io), Draft(io), Verify(io), Config(io), InstallBrowser(io),
+        New(io), List(io), Status(io), Check(io), Explore(io), Record(io), Draft(io), Verify(io), Resolve(io), DraftTest(io), Config(io), InstallBrowser(io),
     };
 
     private static Command New(CliIo io)
@@ -106,7 +106,7 @@ internal static class ScrapeCommands
     private static Command Status(CliIo io)
     {
         var (solution, project, json) = (Solution(), Project(), Json());
-        var command = new Command("status", "Where a project is in the seven steps, and what to do next.") { project, solution, json };
+        var command = new Command("status", "Where a project is in the eight steps, and what to do next.") { project, solution, json };
         command.Action(io, async (parsed, _) =>
         {
             await using var service = Service(io, parsed.GetValue(solution));
@@ -277,6 +277,71 @@ internal static class ScrapeCommands
             }
 
             return result.Pages.Any(p => p.Outcome == DraftOutcome.Reverted) ? 1 : 0;
+        });
+        return command;
+    }
+
+    // 0 when every action resolved, 1 when there are gaps.
+    private static Command Resolve(CliIo io)
+    {
+        var (solution, project, json) = (Solution(), Project(), Json());
+        var session = new Argument<string>("session") { Description = "The test recording's session id (Recordings/<session>)." };
+        var command = new Command("resolve", "Resolve a test recording's actions to page-object members, verbs and catalog phrases, and list its gaps.") { session, project, solution, json };
+        command.Action(io, async (parsed, _) =>
+        {
+            await using var service = Service(io, parsed.GetValue(solution));
+            var test = service.ResolveActions(ProjectName(service, parsed.GetValue(project), io), parsed.GetValue(session)!);
+            if (parsed.GetValue(json))
+            {
+                await io.Out.WriteLineAsync(ToJson(test)).ConfigureAwait(false);
+            }
+            else
+            {
+                await io.Out.WriteLineAsync($"{test.Name} ({test.Session}), from {test.StartPage} ({test.StartPageObject ?? "no page object"})").ConfigureAwait(false);
+                foreach (var step in test.Steps)
+                {
+                    var said = step.Phrase ?? (step.Member is { } member ? $"{member}.{step.Verb}" : step.Kind);
+                    await io.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture, $"  {step.Event,3} {(step.Gap is null ? "   " : "gap")} {said}")).ConfigureAwait(false);
+                    if (step.Gap is { } gap)
+                        await io.Out.WriteLineAsync($"          {gap.Kind}: {gap.Message}").ConfigureAwait(false);
+                }
+            }
+
+            return test.Gaps.Count > 0 ? 1 : 0;
+        });
+        return command;
+    }
+
+    // 0 when drafted with no gap, 1 when a target could not be drafted, a file was not written, or gaps are marked.
+    private static Command DraftTest(CliIo io)
+    {
+        var (solution, project, json) = (Solution(), Project(), Json());
+        var session = new Argument<string>("session") { Description = "The test recording's session id (Recordings/<session>)." };
+        var target = new Option<string?>("--target") { Description = "xunit, scenario or both. Default: the config's ## Tests Target." };
+        var name = new Option<string?>("--name") { Description = "The test's name. Default: the session's." };
+        var command = new Command("draft-test", "Draft a test recording as an xUnit test, a scenario, or both, by rules.") { session, project, solution, target, name, json };
+        command.Action(io, async (parsed, _) =>
+        {
+            await using var service = Service(io, parsed.GetValue(solution));
+            var chosen = parsed.GetValue(target) is { } text
+                ? TestSettings.ParseTarget(text) ?? throw new ScraperProblem($"--target is xunit, scenario or both, not '{text}'.")
+                : (TestTarget?)null;
+            var result = service.DraftTest(ProjectName(service, parsed.GetValue(project), io), parsed.GetValue(session)!, chosen, parsed.GetValue(name));
+            if (parsed.GetValue(json))
+            {
+                await io.Out.WriteLineAsync(ToJson(result)).ConfigureAwait(false);
+            }
+            else
+            {
+                foreach (var file in result.Files)
+                    await io.Out.WriteLineAsync($"{(file.Written ? "written" : "kept"),-8} {file.Path}{(file.Note is { } note ? $": {note}" : "")}").ConfigureAwait(false);
+                foreach (var problem in result.Problems)
+                    await io.Out.WriteLineAsync($"not drafted: {problem}").ConfigureAwait(false);
+                foreach (var gap in result.Gaps)
+                    await io.Out.WriteLineAsync($"gap, event {gap.Event}: {gap.Gap!.Message}").ConfigureAwait(false);
+            }
+
+            return result.Problems.Count > 0 || result.Gaps.Count > 0 || result.Files.Any(f => !f.Written && f.Note is { } note && !note.StartsWith("Yours", StringComparison.Ordinal)) ? 1 : 0;
         });
         return command;
     }

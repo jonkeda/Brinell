@@ -19,3 +19,16 @@ pattern): the file to write, the only files to read, the facts of the pattern's 
   a container or a collection is a plain `.cs`. Follow `.github/skills/html-control/SKILL.md`.
 - Page objects follow `.github/skills/scrape-pages/SKILL.md`.
 - Report what you made, and any part not found in every occurrence.
+
+## Tests from a recording
+
+The view also sends gap briefs (`test_brief`): a step of a recorded test that did not resolve. A
+brief names the page object and the one file to change, the element in its capture, and the member
+the rules would write.
+
+- Close the gap in the page objects or controls: add the member (in the person's part of a drafted
+  page object, never the `.scraped.cs`), or give a control the verb it lacks. Never edit a drafted
+  test (`*.recorded.cs`, `Features/Recorded/`): it is drafted again over itself.
+- Never invent a scenario phrase: a step no catalog phrase says stays a marked gap.
+- Then `check_code`, `resolve_actions` (the gap is gone), `draft_test` and `run_test` once. Report
+  each gap closed, and any left with why.

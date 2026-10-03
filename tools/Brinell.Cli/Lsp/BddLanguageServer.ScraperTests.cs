@@ -23,6 +23,11 @@ public sealed partial class BddLanguageServer
     public Task<ScraperResult<RecordingEvent?>> ScraperAssert()
         => Answer(() => Scraper.AssertAsync());
 
+    /// <summary><c>brinell/scraper/testBrief</c>: a gap of a test recording as a brief for the agent; the first gaps' when no event is given.</summary>
+    [JsonRpcMethod("brinell/scraper/testBrief")]
+    public ScraperResult<IReadOnlyList<string>> ScraperTestBrief(ScraperTestBriefParams request)
+        => Answer(() => Scraper.TestBriefs(request.Project, request.Session, request.Event));
+
     /// <summary><c>brinell/scraper/draftTest</c>: drafts a test recording as an xUnit test, a scenario or both.</summary>
     [JsonRpcMethod("brinell/scraper/draftTest")]
     public ScraperResult<DraftTestResult> ScraperDraftTest(ScraperTestParams request)
@@ -61,3 +66,6 @@ public sealed partial class BddLanguageServer
 
 /// <summary>A test recording's parameters: the project, the session, and for a draft its target and name.</summary>
 public sealed record ScraperTestParams(string? Project, string Session, string? Target, string? Name);
+
+/// <summary><c>brinell/scraper/testBrief</c>'s parameters: the project, the session, and the gap's event (the first gaps when null).</summary>
+public sealed record ScraperTestBriefParams(string? Project, string Session, int? Event);

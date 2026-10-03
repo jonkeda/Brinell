@@ -994,14 +994,23 @@ internal static class ScraperPage
               el("div", {}, el("b", {}, t.name), " ", el("span", { class: "sc-muted" }, `${t.session}: ${plural(t.actions, "step")}, ${plural(gaps.length, "gap")}`)),
               el("ol", { class: "sc-test-steps" }, ...t.resolved.steps.map(s => el("li", { class: s.gap ? "sc-refused" : "", "data-event": String(s.event) },
                 s.phrase || (s.member ? `${s.member}.${s.verb || "?"}` : s.kind),
-                s.gap ? el("div", { class: "sc-muted" }, s.gap.message) : null))),
+                s.gap ? el("div", { class: "sc-muted" }, s.gap.message, " ", button("Fix with the agent", () => fixGaps(t, s.event), { class: "sc-link", "data-fix-gap": String(s.event) })) : null))),
               ...t.drafts.map(d => el("div", { class: "sc-item", "data-draft": d.target, title: d.path, onclick: () => host.post({ type: "open", path: d.path }) },
                 `${d.target === "Xunit" ? "xUnit test" : "Scenario"}: ${d.path.split(/[\\/]/).pop()}`,
                 d.stale ? el("span", { class: "sc-refused" }, " - the recording changed since: draft again") : null)),
               el("div", { class: "sc-actions" }, target,
                 button("Draft", () => draftTest(t, target.value), { "data-draft-test": t.session }),
-                t.drafts.length ? button("Run once", () => runTest(t), { "data-run-test": t.session }) : null),
+                t.drafts.length ? button("Run once", () => runTest(t), { "data-run-test": t.session }) : null,
+                gaps.length > 1 ? button(`Fix ${Math.min(gaps.length, 5)} gaps with the agent`, () => fixGaps(t, null), { "data-fix-gaps": t.session }) : null),
               el("div", { class: "sc-run", id: `sc-run-${t.session}` }));
+          }
+
+          // The agent fills a gap in the page objects or controls; the test is drafted again after.
+          async function fixGaps(t, event) {
+            const briefs = await answer("testBrief", { project: state.project, session: t.session, event });
+            if (!briefs) return;
+            chat(`Close ${event ? `the gap at event ${event}` : "the gaps"} of the recorded test ${t.name} in ${state.project}, one brief each. Change only page objects and controls, never a drafted test, and never invent a scenario phrase: leave a gap that has none marked. Then check_code, resolve_actions, draft_test and run_test for ${t.session}.\n\n${briefs.join("\n\n---\n\n")}`,
+              "When the agent is done, step 8 resolves the test again.");
           }
 
           async function recordTest(name) {
@@ -1129,9 +1138,9 @@ internal static class ScraperPage
 
           function chatDone() {
             const step = state.step;
-            if (step === 5 || step === 6) showStep();
+            if (step === 5 || step === 6 || step === 8) showStep();
             const notice = $("sc-notice");
-            if (!notice.hidden) notice.firstChild.textContent = `The agent is done.${step === 5 || step === 6 ? ` Step ${step} is checked again.` : ""}`;
+            if (!notice.hidden) notice.firstChild.textContent = `The agent is done.${step === 5 || step === 6 || step === 8 ? ` Step ${step} is checked again.` : ""}`;
           }
 
           // The person's agent and model for this project (the config's when they chose none).

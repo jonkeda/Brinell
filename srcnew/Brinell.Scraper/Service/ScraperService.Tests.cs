@@ -30,6 +30,30 @@ public sealed partial class ScraperService
             .ToArray();
     }
 
+    /// <summary>A recording session's events: its pages and, in a test recording, its actions.</summary>
+    /// <exception cref="ScraperProblem">No such session.</exception>
+    public IReadOnlyList<RecordingEvent> RecordedActions(string? projectName, string session) => SessionOf(Project(projectName), session).Events;
+
+    /// <summary>A gap of a test recording as a brief for the agent (<see cref="TestBrief"/>); the first gaps' briefs when no event is given.</summary>
+    /// <exception cref="ScraperProblem">No such session, or the event is no gap.</exception>
+    public IReadOnlyList<string> TestBriefs(string? projectName, string session, int? @event = null)
+    {
+        var project = Project(projectName);
+        var recorded = SessionOf(project, session);
+        var test = TestResolver.Resolve(project, recorded);
+        try
+        {
+            return @event is { } number ? [TestBrief.Write(project, recorded, test, number)] : TestBrief.WriteFirst(project, recorded, test);
+        }
+        catch (ArgumentException e)
+        {
+            throw new ScraperProblem(e.Message);
+        }
+    }
+
+    private static RecordingSession SessionOf(ScrapeProject project, string session) =>
+        project.Session(session) ?? throw new ScraperProblem($"{project.Name} has no recording session '{session}'. Its sessions are {string.Join(", ", project.Sessions().Select(s => s.Id))}.");
+
     /// <summary>A project's <c>.csproj</c>, which an xUnit draft runs in.</summary>
     /// <exception cref="ScraperProblem">It has none.</exception>
     public string ProjectFile(string? projectName)

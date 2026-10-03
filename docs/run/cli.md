@@ -42,6 +42,8 @@ The Scraper drives Playwright's Chromium. Install it once per machine with
 | `brinell scrape record` | Records by hand in a browser window; `c` and Enter captures, Enter stops (`--by-hand`, `--session`, `--url`) | |
 | `brinell scrape draft [--page <key>]…` | Drafts page objects from the recorded pages | |
 | `brinell scrape verify` | Looks the page objects' members up in the running app | |
+| `brinell scrape resolve <session>` | Resolves a test recording's actions to members, verbs and catalog phrases, and lists its gaps; exit 1 with gaps | |
+| `brinell scrape draft-test <session>` | Drafts a test recording as an xUnit test, a scenario or both (`--target`, `--name`); exit 1 when gaps are marked | |
 | `brinell scrape config get\|set\|add\|remove` | Reads or changes `scraper.config.md`: `set Explore MaxPages 20`, `add "Explore hosts" shop.example` | |
 | `brinell scrape install-browser` | Installs Chromium for the Scraper | |
 | `brinell data validate [file] [--fix]` | Checks every test set and scenario, or one file | [Test Data](../guides/test-data.md) |

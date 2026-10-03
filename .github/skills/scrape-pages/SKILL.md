@@ -53,6 +53,15 @@ read them first.
 7. **The gate.** `check_code` builds the project with its analyzers. Fix every error it reports
    and call it again until it passes. The work is not done before that.
 
+## Tests from a recording
+
+A test recording (`start_recording` with `actions`, or the view's **Record a test**) keeps what the
+user did and the checks they picked. `resolve_actions` maps each action to a page object's member,
+its control's verb and the catalog phrase; what does not resolve is a gap with why. `test_brief`
+gives a gap as a brief. Close it in the page objects or controls (a member, a verb), never in the
+drafted test, and never invent a phrase. Then `check_code`, `resolve_actions`, `draft_test` (an
+xUnit test, a scenario or both, as `## Tests` says) and `run_test` once.
+
 ## Refreshing
 
 `match_controls` says whether a page changed since its page object was made (the header's
