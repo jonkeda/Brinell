@@ -96,6 +96,13 @@ controls):
   keeps, matched by test id, `name`, `id` or label text. The value stays in the browser; the action
   records `Placeholder` (default: the field in camel case, `apiKey`) for you to map to a setting or test
   data. A password field is always a secret, with the placeholder `password`.
+- `Tests` (fields `Target`, `Base`): what a test recording is drafted as, `xunit`, `scenario` or
+  `both`, and the test base an xUnit draft derives from (it gives `Context` and `NavigateToPage(path)`).
+  A new config gets `Target`: `scenario` when the project has a `uat.config.md`, otherwise `xunit`.
+  An xUnit draft goes to `Tests/Recorded/<Name>Tests.recorded.cs`, beside your part `<Name>Tests.cs`,
+  which is written once and never changed; a scenario to `Features/Recorded/<name>.feature.md`. Each
+  starts with what it was recorded from (`// <recorded session=… hash=… />`, or a `Recorded` metadata
+  row), so a draft is drafted again over itself and never over a file you made.
 - `Components` (optional, columns `Match`, `Kind`, `Name`): elements the Scraper cannot tell by itself, named by you. `Match` is `selector: …` or `text: …`; `Kind` is `collection`, `component` or what a test does with it (`text`, `selector`, `toggle`, `range`, `date`, `clickable`, `readable`). They win over its own reading: step 5 offers them by that name, and their brief says so.
 
 `testsnew/Brinell.Blazor.UITests` is an example: its config, its `Recordings/`, and

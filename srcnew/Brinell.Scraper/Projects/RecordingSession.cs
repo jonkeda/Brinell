@@ -177,6 +177,13 @@ public sealed class RecordingSession
         return null;
     }
 
+    /// <summary>A short hash of <c>recording.json</c>: a drafted test names it, to tell when the recording changed since.</summary>
+    public string Hash()
+    {
+        var text = File.ReadAllText(Path.Combine(Folder, FileName)).Replace("\r\n", "\n", StringComparison.Ordinal);
+        return Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)))[..8];
+    }
+
     /// <summary>The snapshot a page event wrote.</summary>
     /// <exception cref="InvalidOperationException">The event has no snapshot.</exception>
     public ScrapeSnapshot ReadSnapshot(RecordingEvent e) =>

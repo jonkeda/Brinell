@@ -91,6 +91,7 @@ public static partial class ProjectMaker
         var host = new Uri(request.StartUrl).Host;
         if (host is not ("localhost" or "127.0.0.1"))
             md.Append($"\n## Explore hosts\n\n| Host |\n| --- |\n| localhost |\n| 127.0.0.1 |\n| {host} |\n");
+        md.Append(ScraperConfigWriter.Tests(TestTarget.Xunit)); // a new project is no UAT suite
         return md.ToString();
     }
 

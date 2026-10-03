@@ -101,8 +101,12 @@ public static class ScraperConfigWriter
     }
 
     /// <summary>A new config for a project: <c>## App</c> with the start URL, and the rest left to the defaults.</summary>
-    public static string New(string startUrl, string platform = "html") =>
-        "# Scraper Config\n\n## App\n\n| Field | Value |\n| --- | --- |\n" + Row(["Platform", platform]) + "\n" + Row(["StartUrl", startUrl]) + "\n";
+    public static string New(string startUrl, string platform = "html", TestTarget target = TestTarget.Xunit) =>
+        "# Scraper Config\n\n## App\n\n| Field | Value |\n| --- | --- |\n" + Row(["Platform", platform]) + "\n" + Row(["StartUrl", startUrl]) + "\n" + Tests(target);
+
+    /// <summary>The <c>## Tests</c> section a new config gets: its Target, visible so it is changed in one place.</summary>
+    public static string Tests(TestTarget target) =>
+        "\n## Tests\n\n| Field | Value |\n| --- | --- |\n" + Row(["Target", TestSettings.Name(target)]) + "\n";
 
     private static string Row(IReadOnlyList<string> cells) => "| " + string.Join(" | ", cells) + " |";
 

@@ -53,6 +53,9 @@ public sealed record ScraperConfig
     /// <summary>The app's own components, as the person names them (<c>## Components</c>): these win over the Scraper's own reading.</summary>
     public IReadOnlyList<ComponentRule> Components { get; init; } = [];
 
+    /// <summary>What a test recording is drafted as, and on what (<c>## Tests</c>).</summary>
+    public TestSettings Tests { get; init; } = new();
+
     /// <summary>How Explore may go through the app: its budget and guards.</summary>
     public ExploreSettings Explore { get; init; } = new();
 
@@ -97,6 +100,19 @@ public sealed record ScraperConfig
                     "Agent" => config with { ChatAgent = value.Length > 0 ? value : null },
                     "Model" => config with { ChatModel = value.Length > 0 ? value : null },
                     var other => throw new FormatException($"Line {row.LineNumber}: '{other}' is not a field of ## Agent (Agent, Model)."),
+                };
+            }
+        }
+        if (sections.TryGetValue("Tests", out var tests))
+        {
+            foreach (var row in tests.Rows)
+            {
+                var value = row.Cells.GetValueOrDefault("Value", "").Trim();
+                config = row.Cells.GetValueOrDefault("Field", "") switch
+                {
+                    "Target" => config with { Tests = config.Tests with { Target = TestSettings.ParseTarget(value) ?? throw new FormatException($"Line {row.LineNumber}: Target is xunit, scenario or both, not '{value}'.") } },
+                    "Base" => config with { Tests = config.Tests with { Base = value.Length > 0 ? value : null } },
+                    var other => throw new FormatException($"Line {row.LineNumber}: '{other}' is not a field of ## Tests (Target, Base)."),
                 };
             }
         }
@@ -149,6 +165,42 @@ public sealed record ScraperConfig
     // A cell may put its value in backticks, so a leading or trailing space survives the table.
     private static string Unquote(string cell) =>
         cell.Length >= 2 && cell[0] == '`' && cell[^1] == '`' ? cell[1..^1] : cell;
+}
+
+/// <summary>What a test recording is drafted as (<c>## Tests</c>).</summary>
+public sealed record TestSettings
+{
+    /// <summary>The draft's default target; null when the config does not say (<see cref="ScrapeProject.TestTarget"/> decides).</summary>
+    public TestTarget? Target { get; init; }
+
+    /// <summary>The test base an xUnit draft's class derives from: it gives <c>Context</c> and <c>NavigateToPage(path)</c>.</summary>
+    public string? Base { get; init; }
+
+    /// <summary>A target's name in the config, or null when it is not one.</summary>
+    public static TestTarget? ParseTarget(string value) => value.Trim().ToLowerInvariant() switch
+    {
+        "xunit" => TestTarget.Xunit,
+        "scenario" => TestTarget.Scenario,
+        "both" => TestTarget.Both,
+        _ => null,
+    };
+
+    /// <summary>A target as the config writes it.</summary>
+    public static string Name(TestTarget target) => target.ToString().ToLowerInvariant();
+}
+
+/// <summary>What a test recording is drafted as.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<TestTarget>))]
+public enum TestTarget
+{
+    /// <summary>An xUnit UI test calling page objects.</summary>
+    Xunit,
+
+    /// <summary>A <c>.feature.md</c> scenario of catalog phrases.</summary>
+    Scenario,
+
+    /// <summary>Both.</summary>
+    Both,
 }
 
 /// <summary>Text that is masked in a snapshot: every match of <paramref name="Pattern"/> becomes <paramref name="Replacement"/>.</summary>

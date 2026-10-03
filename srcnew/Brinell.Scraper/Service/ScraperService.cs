@@ -259,7 +259,7 @@ public sealed partial class ScraperService : IAsyncDisposable
         var path = Path.Combine(full, ScraperConfig.FileName);
         if (File.Exists(path)) throw new ScraperProblem($"{path} is there already.");
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out _)) throw new ScraperProblem($"'{startUrl}' is not an address to start at.");
-        File.WriteAllText(path, ScraperConfigWriter.New(startUrl));
+        File.WriteAllText(path, ScraperConfigWriter.New(startUrl, target: ScrapeProject.DefaultTestTarget(full)));
         return ScrapeProject.Open(full);
     }
 
@@ -618,6 +618,21 @@ public sealed partial class ScraperService : IAsyncDisposable
         return TestResolver.Resolve(project, project.Session(session) ?? throw new ScraperProblem($"{project.Name} has no recording session '{session}'."));
     }
 
+    /// <summary>
+    /// Drafts a test recording as an xUnit test, a scenario or both (<see cref="TestDrafter"/>), into the
+    /// project, and gives what it wrote and its gaps. The target is the project's <c>## Tests</c> setting
+    /// unless one is given.
+    /// </summary>
+    /// <exception cref="ScraperProblem">No such session.</exception>
+    public DraftTestResult DraftTest(string? projectName, string session, TestTarget? target = null, string? name = null)
+    {
+        var project = Project(projectName);
+        var recorded = project.Session(session) ?? throw new ScraperProblem($"{project.Name} has no recording session '{session}'.");
+        var test = TestResolver.Resolve(project, recorded);
+        var draft = TestDrafter.Draft(project, test, new RecordedHeader(recorded.Id, recorded.Hash()), target ?? project.TestTarget, name);
+        return new DraftTestResult(target ?? project.TestTarget, TestDrafter.Write(project, draft), draft.Problems, test.Gaps);
+    }
+
     /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
     public WriteResult WriteCode(string? projectName, string path, string code) => CodeGate.Write(Project(projectName), path, code);
 
@@ -761,6 +776,9 @@ public sealed record ControlMatch(int Node, string Line, IReadOnlyList<string> C
 /// <param name="Captures">How many events the session has: pages, and actions in a test recording.</param>
 /// <param name="Actions">Whether it is a test recording, with the person's actions.</param>
 public sealed record RecordingState(string Project, string Session, string Folder, bool AutoCapture, int Captures, bool Actions = false);
+
+/// <summary>A drafted test: the target, each file written or why not, why a target was not drafted, and the gaps marked in it.</summary>
+public sealed record DraftTestResult(TestTarget Target, IReadOnlyList<DraftWrite> Files, IReadOnlyList<string> Problems, IReadOnlyList<ResolvedStep> Gaps);
 
 /// <summary>A node found on a page: its page key, its number on the page's newest capture, and its outline line.</summary>
 public sealed record SimilarNode(string Page, int Node, string Line);
