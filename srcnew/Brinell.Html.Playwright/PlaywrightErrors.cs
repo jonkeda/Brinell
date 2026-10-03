@@ -6,10 +6,6 @@ namespace Brinell.Html.Playwright;
 /// <summary>
 /// Which Playwright failures mean "the element is gone" and which mean "the browser is gone".
 /// </summary>
-/// <remarks>
-/// Playwright reports both as <see cref="PlaywrightException"/>, told apart only by the message
-/// (differences-from-maui.md items 1 and 2). Anything else is not a signal and stays as it is.
-/// </remarks>
 internal static class PlaywrightErrors
 {
     private static readonly string[] ClosedMarkers =

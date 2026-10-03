@@ -267,10 +267,6 @@ public class ControlObjectAnalyzer
     /// <summary>
     /// Reads [SkipGeneration] from a Core method.
     /// </summary>
-    /// <remarks>
-    /// Matched syntactically, with or without the "Attribute" suffix and with any
-    /// qualification — the same approach the member generators use for their attributes.
-    /// </remarks>
     private static bool HasSkipGenerationAttribute(MethodDeclarationSyntax method)
     {
         return method.AttributeLists
@@ -429,13 +425,6 @@ public class ControlObjectAnalyzer
     /// <summary>
     /// The class's own type, when the class supplies itself as a type argument to its base.
     /// </summary>
-    /// <remarks>
-    /// The self-referencing bases take the concrete type as <c>TSelf</c> so their members can
-    /// return it. An abstract base passes its own <c>TSelf</c> along and is caught by the rule
-    /// above; a concrete class closes the reference with its own name, and its members return
-    /// that same type. Comparison is on syntax alone, ignoring whitespace, because the analyzer
-    /// has no semantic model.
-    /// </remarks>
     /// <returns>The self type (for example <c>Toolbar&lt;TParent&gt;</c>), or null.</returns>
     private static string? ResolveClosedSelfType(ClassDeclarationSyntax classDecl)
     {

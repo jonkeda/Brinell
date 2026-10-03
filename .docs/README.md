@@ -2,7 +2,7 @@
 
 The durable layer to read **before changing Brinell**: decisions, invariants and
 contracts - what must stay true. Not a description of the code; that can be regenerated
-from the source and goes stale. See `.my/documentation/plan.md` for the reasoning.
+from the source and goes stale. The reasoning: [the documentation plan](https://github.com/exact-mobile-apps/test-tooling/blob/fe5d2b66/.my/documentation/plan.md).
 
 How this differs from the other trees:
 

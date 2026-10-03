@@ -7,35 +7,10 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Media;
 /// <summary>
 /// CommunityToolkit.Maui <c>MediaElement</c>: audio and video playback with platform transport
 /// controls.
+/// Driven and read through its transport controls, one media element per scope; the
+/// toolkit's <c>CurrentState</c> is not read, because it stays <c>Opening</c> on Windows.
+/// Routes and platform limits: <c>docs/controls/community-toolkit.md</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Driven and read through its transport controls, not through the element.</b> On Windows the
-/// media element is not in the tree by its AutomationId, but the WinUI transport controls are,
-/// flattened into the page: <c>PlayPauseButton</c> answers Invoke, the seek slider publishes
-/// RangeValue, and the elapsed and remaining times are text. Everything here goes through those,
-/// with no bridge.
-/// </para>
-/// <para>
-/// <b>The parts own the behaviour.</b> <see cref="MediaPlayPauseButton{TScope}"/> knows whether
-/// media plays and how to change it; <see cref="MediaTimeLabel{TScope}"/> reads a time. This
-/// component forwards to them through shortcuts, so each call is the part's own single unit of
-/// work. Only members that need two parts are hand-written here.
-/// </para>
-/// <para>
-/// <b>Not the toolkit's <c>CurrentState</c>.</b> Measured on toolkit 10.0.0 / Windows: after the
-/// transport controls start playback, <c>CurrentState</c> stays <c>Opening</c> and
-/// <c>StateChanged</c> never fires, while the player plays. A state read from the app would be
-/// wrong, so this control reads what the user sees. See <c>docs/controls/community-toolkit.md</c>.
-/// </para>
-/// <para>
-/// <b>Limits.</b> One media element per scope on Windows: the transport ids are fixed, so put each
-/// media element in its own container. Playback controls must be shown
-/// (<c>ShouldShowPlaybackControls</c>). <c>IsPlaying</c> reads the play/pause button's name, which
-/// Windows localizes; it matches the English "Pause". The transport has no stop button, so
-/// <see cref="Stop"/> pauses and seeks to the start. Android publishes none of these ids yet.
-/// </para>
-/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public partial class MediaElement<TScope> : ComponentObjectBase<TScope, MediaElement<TScope>>
     where TScope : IMauiScope<TScope>

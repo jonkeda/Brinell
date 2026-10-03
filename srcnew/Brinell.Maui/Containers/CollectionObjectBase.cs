@@ -6,20 +6,10 @@ namespace Brinell.Maui.Containers;
 
 /// <summary>
 /// Base class for collection objects: a container that also hands out typed items.
+/// It scopes its own non-item controls too (a title, an empty view, a footer). Members that
+/// scroll to realize rows take one scroll step per poll attempt, within the call's budget
+/// (call model R2, R7).
 /// </summary>
-/// <remarks>
-/// <para>
-/// Being a container, a collection scopes its own non-item controls too - a title,
-/// an empty view, a footer - alongside <see cref="Item(int, int?)"/>.
-/// </para>
-/// <para>
-/// Every non-<c>Try</c> member is one call that waits within its budget, and every <c>Try*</c>
-/// member answers about now (R7). Members that scroll to realize rows (<see cref="ScrollToItem"/>,
-/// <see cref="ScrollToEnd"/>, <see cref="WaitForItems"/>, <see cref="ItemWhere"/>,
-/// <see cref="FindItem"/>) take one scroll step per attempt of the call's poll, so the caller's
-/// budget covers the whole loop (R2). See <c>.docs/contracts/call-model.md</c>.
-/// </para>
-/// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
 /// <typeparam name="TSelf">The collection type itself (self-referencing).</typeparam>
 /// <typeparam name="TItem">The item container type.</typeparam>
@@ -949,19 +939,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// collection for chaining.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The row is found by polling, then activated once, as every action is (the control base's
-    /// <c>ActOnce</c>). Any exception from the activation ends the call at once: the row may
-    /// already have been activated, and activating it again could deselect it or navigate twice
-    /// (R0).
-    /// </para>
-    /// <para>
-    /// An activation that answers false is asked again within the budget. That is not a repeated
-    /// action: <see cref="ActivateItemCore"/> answers false only when nothing was activated (a row
-    /// without a size, or a selection the platform refused), which is a row not ready yet - a list
-    /// re-laying out after a change. A row that stays refused fails the call when the budget
-    /// runs out, naming the refusal.
-    /// </para>
+    /// The row is activated once (call model R0). An activation the platform refuses (a row not
+    /// laid out yet) is asked again within the budget, then fails the call naming the refusal.
     /// </remarks>
     public TSelf SelectItem(int index, int? timeoutMs = null)
     {

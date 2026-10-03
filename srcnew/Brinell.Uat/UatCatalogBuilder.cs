@@ -7,10 +7,6 @@ namespace Brinell.Uat;
 /// A control step discovered from a <see cref="BddStepAttribute"/> on a control method. The engine invokes
 /// <see cref="MethodName"/> by name, so no reference to the control type is needed.
 /// </summary>
-/// <remarks>
-/// An item verb names a row with <c>{item}</c>, passed first; the collection finds the row. A verb
-/// without <c>{control}</c> runs on the one control of the current page that declares it.
-/// </remarks>
 internal sealed record UatStepBinding(
     BddEffectiveStepKeyword Keyword,
     string Phrase,

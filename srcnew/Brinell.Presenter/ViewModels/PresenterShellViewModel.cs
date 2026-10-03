@@ -1312,10 +1312,6 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     /// Builds the workspace's project and reloads, so the fixture list and the Pages assembly
     /// reflect what was just built.
     /// </summary>
-    /// <remarks>
-    /// The build's own output is shown verbatim: NETSDK1147 names the missing workload and the
-    /// command that installs it, which is better than anything this could paraphrase.
-    /// </remarks>
     private async Task BuildWorkspaceProjectAsync()
     {
         var project = _projectPath;
@@ -1399,13 +1395,6 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     /// <summary>
     /// The message to show for a failure, with reflection's wrapper removed.
     /// </summary>
-    /// <remarks>
-    /// Constructing a fixture goes through reflection, so anything it throws arrives wrapped in
-    /// a <see cref="System.Reflection.TargetInvocationException" /> whose own message is
-    /// "Exception has been thrown by the target of an invocation" — which says nothing about
-    /// what went wrong. The inner exception is the reason; the wrapper is an implementation
-    /// detail of how the fixture was created.
-    /// </remarks>
     /// <param name="exception">The failure.</param>
     /// <returns>The innermost message, with the outer ones kept when they add anything.</returns>
     private static string Describe(Exception exception)

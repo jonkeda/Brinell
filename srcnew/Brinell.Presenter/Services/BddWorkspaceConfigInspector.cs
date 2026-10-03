@@ -128,11 +128,6 @@ internal static class BddWorkspaceConfigInspector
     /// Derives the target from the fixture's base type, and checks any configured override
     /// against it.
     /// </summary>
-    /// <remarks>
-    /// A derived target cannot disagree with itself, so the config no longer carries one. When
-    /// it does, it is an override — and a row that contradicts the fixture is now detectable
-    /// rather than taken on faith.
-    /// </remarks>
     private static string ResolveTarget(
         BddConfig config,
         IReadOnlyList<BddAssemblyLoadResult> assemblies,
@@ -206,10 +201,6 @@ internal static class BddWorkspaceConfigInspector
     /// <summary>
     /// Resolves the <c>Runtime Project</c> row to the assembly its build produces.
     /// </summary>
-    /// <remarks>
-    /// Evaluation answers before the first build, so "not built" is reported with the path the
-    /// build will write to, rather than as a missing file with nothing to act on.
-    /// </remarks>
     private static BddProjectResolution? ResolveProject(
         string workspacePath,
         BddConfig config,

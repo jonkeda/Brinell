@@ -10,7 +10,6 @@ Deleted topics stay in git history; the last full tree is at
 | --- | --- | --- | --- |
 | [construction/](construction/plan.md) | Exact.Construction's UI test migration onto Brinell | infrastructure in place, Todos not started | 2026-09 |
 | [core/](core/README.md) | One `ICore*` shape for every stack: L2 (busy signal), then the interfaces and bases | draft; L1 done | 2026-09-27 |
-| [documentation/](documentation/plan.md) | The comment policy applied to the code, phase by phase | todo | 2026-09 |
 | [solution/](solution/plan.md) | Every project in `srcnew/Brinell.sln` (53 of 92 today), in folders: core, platforms, Bdd, tools, samples, each test project beside its namesake; the VSIX projects in but not built | steps 1-4 done (91 projects); root `Brinell.sln` kept as a root marker (Q6); step 6, the completeness check, open | 2026-09-28 |
 | [uat/complex/](uat/complex/README.md) | Guidance for service, database and other complex checks; per-user isolation | discussion | 2026-09-27 |
 | [uat/phrases/](uat/phrases/plan.md) | Phrases plan phases 1-8 done, to extract and close; [promote reusable subjects](uat/phrases/subjects-plan.md) (waits for Construction's first UAT suite); [Todo users](uat/phrases/users-plan.md): assignment, "me", the web head | phases done; subjects plan drafted | 2026-09-27 |

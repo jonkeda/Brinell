@@ -9,12 +9,8 @@ namespace Brinell.Html.Collections;
 
 /// <summary>
 /// A container of item rows that hands out typed row objects (design 7.6).
+/// Rows are identified by <see cref="ItemKey"/>: their <c>data-item-key</c>, or their position.
 /// </summary>
-/// <remarks>
-/// Rows are identified by <see cref="ItemKey"/>: their <c>data-item-key</c> when they have one, or
-/// their position. Members without <c>Try</c> wait, as one call each; <c>Try*</c> members answer
-/// about now (R7).
-/// </remarks>
 /// <typeparam name="TParent">The scope the collection is declared in.</typeparam>
 /// <typeparam name="TSelf">The collection type, for fluent chains.</typeparam>
 /// <typeparam name="TItem">The row type.</typeparam>

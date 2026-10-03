@@ -8,11 +8,8 @@ namespace Brinell.Mocking.Analyzers;
 
 /// <summary>
 /// BRINELL001: a mock response body is an anonymous type instead of the API's contract type.
+/// The rule is AD-012.
 /// </summary>
-/// <remarks>
-/// An anonymous body compiles whatever its fields are called, so a stub can serve JSON the app
-/// cannot read and a test still passes for the wrong reason. The rule is AD-012.
-/// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class AnonymousMockBodyAnalyzer : DiagnosticAnalyzer
 {

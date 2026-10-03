@@ -15,21 +15,9 @@ namespace Brinell.Maui.FlaUI;
 /// <summary>
 /// FlaUI-based implementation of <see cref="IMauiElement"/> for Windows platform.
 /// Provides native Windows UI Automation support for MAUI desktop apps.
+/// No physical input and no fallback to it: an action with no UI Automation pattern and no
+/// bridge verb throws, naming the route the app would have to offer (AD-005).
 /// </summary>
-/// <remarks>
-/// <para>
-/// UI Automation patterns are this class's implementation detail, not its API. It used to
-/// implement eight <c>*PatternElement</c> interfaces that controls cast to; controls now ask
-/// <see cref="IMauiElement"/> in terms of what they do, and this class answers from the patterns
-/// (step 107).
-/// </para>
-/// <para>
-/// <b>No real mouse, keyboard, clipboard or foreground, and no fallback to them.</b> Every action
-/// is a UI Automation pattern or a verb the app answers through the Brinell bridge, which is a
-/// hard requirement for MAUI on Windows. An action with neither route throws, naming the route the
-/// app would have to offer - see <c>.docs/decisions/ad-005-physical-input-is-opt-in.md</c>.
-/// </para>
-/// </remarks>
 public sealed class FlaUIMauiElement : IMauiElement
 {
     private readonly AutomationElement? _wrapped;

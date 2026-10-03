@@ -51,8 +51,8 @@ public static class PatternDetector
             }
         }
 
-        // An inner wrapper (a field's control box) starts higher up, at the root that also holds its label
-        // (.my/ScraperEx/control-brief-plan.md, 3.3). A lifted pattern keeps the inner signature, which all
+        // An inner wrapper (a field's control box) starts higher up, at the root that also holds its label.
+        // A lifted pattern keeps the inner signature, which all
         // its occurrences share; the roots' own classes vary (a field's has-c, text-align-undefined). A root
         // that several patterns reach (its own signature, an inner one lifted to it) goes to the pattern
         // with the most occurrences.

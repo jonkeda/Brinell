@@ -420,19 +420,6 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// <summary>
     /// Emits a Wait/Assert pair for a <c>Get*Core</c> that returns a collection.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Collection getters cannot use the default <c>Equals</c> variant: <c>==</c> on
-    /// <c>IReadOnlyList&lt;T&gt;</c> compares references, so the generated assert could never
-    /// pass. That is why <c>SelectorControlBase.GetItemTextsCore</c> was excluded from
-    /// generation and its public member hand-written.
-    /// </para>
-    /// <para>
-    /// Each variant takes the parameter type its question implies rather than the collection
-    /// type: an item for <c>HasItem</c>, an <c>int</c> for <c>Count</c>, the collection only
-    /// for <c>SequenceEquals</c>.
-    /// </para>
-    /// </remarks>
     private void GenerateCollectionVariant(CsWriter writer, MethodInfo coreMethod,
         string propertyName, string comparison, string paramPrefix,
         string nullableReturnType, string lambdaArgs, string fluentReturnType)
@@ -509,11 +496,6 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// <summary>
     /// The item type of a collection return type, for variants that take one item.
     /// </summary>
-    /// <remarks>
-    /// Extracted syntactically from the single type argument — the generator has no semantic
-    /// model. A collection type with no type argument falls back to the collection type
-    /// itself, which fails to compile visibly rather than emitting a wrong signature quietly.
-    /// </remarks>
     private static string ElementTypeOf(string collectionType)
     {
         var open = collectionType.IndexOf('<');

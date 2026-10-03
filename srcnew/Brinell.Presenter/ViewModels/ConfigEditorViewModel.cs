@@ -9,13 +9,8 @@ namespace Brinell.Presenter.ViewModels;
 
 /// <summary>
 /// Edits the two rows a workspace config carries, and shows what the rest derives to.
+/// Save stays enabled while the config is invalid, so half-fixed work is never lost (AD-018).
 /// </summary>
-/// <remarks>
-/// Saving writes through <see cref="BddConfigWriter" />, so untouched text survives, and then
-/// reloads the workspace - the tree carries expansion and selection across. Save stays enabled
-/// while the config is invalid: half-fixing and saving is legitimate, and refusing to write is
-/// how an editor loses work. See AD-018.
-/// </remarks>
 public sealed class ConfigEditorViewModel : ViewModelBase
 {
     private readonly IFixtureInspector _fixtureInspector;

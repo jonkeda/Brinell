@@ -2,20 +2,9 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>
 /// CommunityToolkit.Maui <c>Expander</c>: a header that shows or hides its content when tapped.
+/// Windows needs the app's verb sink (<c>Tap</c>, <c>GetState</c>); Android has no state read.
+/// Routes and platform limits: <c>docs/controls/community-toolkit.md</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Windows needs the app's sink.</b> The expander publishes no ExpandCollapse or Invoke
-/// pattern, and its header tap is a toolkit-internal <c>Tapped</c> handler the bridge cannot
-/// bind. The app declares <c>Tap,GetState</c> on the expander and attaches a sink that toggles
-/// <c>IsExpanded</c> and answers <c>GetState("IsExpanded")</c>; see <c>ToolkitVerbSink</c> in the
-/// sample app and <c>docs/controls/community-toolkit.md</c>.
-/// </para>
-/// <para>
-/// Android and iOS tap the element with touch input. They have no state read, so
-/// <c>IsExpanded</c> answers null there.
-/// </para>
-/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>

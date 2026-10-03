@@ -3,21 +3,6 @@ namespace Brinell.Presenter.ViewModels;
 /// <summary>
 /// The Segoe glyphs the Presenter draws, one name per meaning.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Every codepoint here was verified, not looked up.</b> Each one was checked for presence in
-/// both <c>SegoeIcons.ttf</c> (Segoe Fluent Icons, Windows 11) and <c>segmdl2.ttf</c> (Segoe MDL2
-/// Assets, Windows 10 and 11), and then rendered and eyeballed to confirm the shape means what the
-/// name says. All of them are in both fonts, which is what lets
-/// <c>App.ResolveIconFont</c> fall back from one to the other without changing a value here.
-/// </para>
-/// <para>
-/// <b>These never reach the hidden text mirrors.</b> <c>WorkspaceTreeText</c> and friends are what
-/// the UAT suite asserts against, and they stay plain ASCII - see
-/// <see cref="BddWorkspaceNodeViewModel.DisplayText"/>, which keeps using <c>Icon</c> and
-/// <c>ExpansionText</c> while the on-screen row binds <c>IconGlyph</c> and <c>ExpansionGlyph</c>.
-/// </para>
-/// </remarks>
 internal static class PresenterIcons
 {
     // Toolbar

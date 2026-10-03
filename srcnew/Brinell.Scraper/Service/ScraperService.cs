@@ -454,7 +454,7 @@ public sealed partial class ScraperService : IAsyncDisposable
 
     /// <summary>
     /// The brief for making a control from a pattern: where to write it, what to read, the facts of
-    /// its occurrences and the hints (.my/ScraperEx/control-brief-plan.md).
+    /// its occurrences and the hints.
     /// </summary>
     /// <param name="projectName">The project.</param>
     /// <param name="signature">The pattern's signature.</param>

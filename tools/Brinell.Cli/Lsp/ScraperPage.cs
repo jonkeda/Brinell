@@ -8,7 +8,7 @@ namespace Brinell.Bdd.LanguageServer;
 // brinell/scraper/changed as {type: "changed", ...}, and does "open" (a file), "diff" (two files),
 // "chat" (a prompt for the agent) and "addProject" (into the solution) itself.
 //
-// The view is a workflow of seven steps (.my/ScraperEx/design/workflow-ui.md): each shows its state
+// The view is a workflow of eight steps: each shows its state
 // from brinell/scraper/progress and one primary action; the header says what to do next.
 internal static class ScraperPage
 {
@@ -802,7 +802,7 @@ internal static class ScraperPage
                 el("tr", {}, ...["Control", "From", "Occurs", "Its parts in the recordings", ""].map(h => el("th", {}, h))), ...made) : null];
           }
 
-          // What goes with every brief (.my/ScraperEx/control-brief-plan.md, section 5).
+          // What goes with every brief.
           const BRIEF_RULES = [
             "Read only the files under \"Read only\". Do not search the repository: the brief has the facts. Use get_page_snapshot only to look at an occurrence again.",
             "Decide what the control is from the facts. The hints are a reading of them, not an order: where you see it differently (another base, one control for two variants, other members), say why, and do that.",

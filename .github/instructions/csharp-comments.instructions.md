@@ -5,7 +5,7 @@ applyTo: "**/*.cs"
 # C# comment policy
 
 Write down what the code cannot show; delete what it can. A comment restating what the
-next line does costs maintenance and drifts from the code. See `.my/documentation/plan.md`.
+next line does costs maintenance and drifts from the code. Reasoning: [the documentation plan](https://github.com/exact-mobile-apps/test-tooling/blob/fe5d2b66/.my/documentation/plan.md).
 
 ## Keep
 

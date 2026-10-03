@@ -16,7 +16,7 @@ namespace Brinell.Scraper.Code;
 public sealed record ControlBriefText(string Name, string Text, bool Cut);
 
 /// <summary>
-/// What the agent gets to make a control from a recorded pattern (.my/ScraperEx/control-brief-plan.md):
+/// What the agent gets to make a control from a recorded pattern:
 /// the <b>task</b> (where to write, what to read and nothing else), the <b>facts</b> (where it occurs, an
 /// example outline, its parts and in how many occurrences each is found) and the <b>hints</b>
 /// (<see cref="ControlKind"/>'s reading: a base, members). The model decides; the hints help it.

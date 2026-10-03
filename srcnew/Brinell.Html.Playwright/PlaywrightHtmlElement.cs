@@ -50,10 +50,6 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     /// then is stale (R5), for the poll to find again. Without the cap, a locator whose node was
     /// re-rendered away waits for the rest of the call, and one read ends the poll.
     /// </summary>
-    /// <remarks>
-    /// When the call has less than the cap left, the read gets what is left and a timeout stays a
-    /// timeout: the call's own cut-off.
-    /// </remarks>
     private T Read<T>(Func<float, Task<T>> read)
     {
         var budget = Budget;

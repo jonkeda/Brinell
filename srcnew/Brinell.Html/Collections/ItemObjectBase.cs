@@ -9,12 +9,9 @@ namespace Brinell.Html.Collections;
 /// <summary>
 /// One row of a collection, as a scope for the controls inside it. The row stands for one item
 /// (<see cref="Key"/>) and finds its element again by that key on every lookup (design 7.6).
+/// When its item is gone, a call on the row waits for it, then fails naming it; it never
+/// finds another item's row in its place (call model R0).
 /// </summary>
-/// <remarks>
-/// When its item is no longer in the list, the row reports <see cref="ScopeReadinessState.ItemChanged"/>:
-/// a call on one of its controls waits for the item within its budget, then fails naming it. It
-/// never finds another item's row in its place, which a row kept by position would (R0).
-/// </remarks>
 public abstract class ItemObjectBase<TSelf> : ObjectBase, IHtmlScope<TSelf>
     where TSelf : ItemObjectBase<TSelf>
 {
