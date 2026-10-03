@@ -25,7 +25,7 @@ public sealed class RecorderTests : IAsyncLifetime
         {
             lock (_acted) _acted.Add(action);
         };
-        await _source.StartActionsAsync(["data-testid"]);
+        await _source.StartActionsAsync(new ScrapeActionOptions(["data-testid"], [new ScrapeSecret("api key", "apiKey")]));
         _snapshot = await _source.CaptureAsync();
     }
 
@@ -74,6 +74,21 @@ public sealed class RecorderTests : IAsyncLifetime
         Assert.All(acted, a => Assert.Null(a.Capture));
         Assert.Equal("submit", acted[3].Path![^1].TestId);
         Assert.Equal("html", acted[3].Path![0].Type);
+    }
+
+    [Fact]
+    public async Task A_password_or_a_secret_field_s_value_never_leaves_the_page()
+    {
+        await Page.FillAsync("[data-testid=password]", "hunter2");
+        await Page.FillAsync("[data-testid=key]", "sk-123");
+        await Page.FillAsync("[data-testid=iban]", "NL91ABNA0417164300");
+        await Page.ClickAsync("[data-testid=submit]");
+
+        var acted = await ActedAsync(4);
+
+        Assert.Equal(
+            [("password", null, "password"), ("key", null, "apiKey"), ("iban", "NL91ABNA0417164300", null)],
+            acted.Take(3).Select(a => (TestId(a), a.Value, a.Secret)));
     }
 
     [Fact]

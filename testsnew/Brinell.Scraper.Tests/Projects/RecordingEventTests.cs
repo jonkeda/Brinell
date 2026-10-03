@@ -211,6 +211,39 @@ public sealed class RecordingEventTests : IDisposable
     }
 
     [Fact]
+    public void An_action_s_value_location_and_path_are_masked_and_a_secret_keeps_only_its_placeholder()
+    {
+        var folder = Path.Combine(_root, "Bank.UITests");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "Bank.UITests.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        File.WriteAllText(Path.Combine(folder, ScraperConfig.FileName), """
+            ## Masks
+
+            | Pattern | Replacement |
+            | --- | --- |
+            | `NL\d{2}[A-Z]{4}\d{10}` | `IBAN` |
+            """);
+        var session = ScrapeProject.Open(folder).StartSession("Bank", DateTimeOffset.UnixEpoch);
+
+        var input = session.AddAction(Action(RecordingEvent.InputKind, 4) with
+        {
+            Location = "https://app.example.nl/accounts/NL91ABNA0417164300",
+            Value = "Pay NL91ABNA0417164300",
+            Path = [new() { Type = "input", Name = "Account NL91ABNA0417164300" }],
+        });
+        var secret = session.AddAction(Action(RecordingEvent.InputKind, 5) with { Value = "hunter2", Placeholder = "password" });
+
+        Assert.Equal("Pay IBAN", input.Value);
+        Assert.Equal("https://app.example.nl/accounts/IBAN", input.Location);
+        Assert.Equal("Account IBAN", input.Path![0].Name);
+        Assert.Null(secret.Value);
+        Assert.Equal("password", secret.Placeholder);
+        var json = File.ReadAllText(Path.Combine(session.Folder, RecordingSession.FileName));
+        Assert.DoesNotContain("NL91ABNA0417164300", json);
+        Assert.DoesNotContain("hunter2", json);
+    }
+
+    [Fact]
     public void A_page_assert_and_actions_that_are_not_on_an_element_need_no_node()
     {
         var session = MakeProject().StartSession("User form", DateTimeOffset.UnixEpoch);

@@ -30,8 +30,11 @@ public sealed record ScrapeAction
     /// <summary>The element from the root down, as it was when the person acted.</summary>
     public IReadOnlyList<ScrapePathStep>? Path { get; init; }
 
-    /// <summary>What was typed, chosen or pressed, or a dialog's text.</summary>
+    /// <summary>What was typed, chosen or pressed, or a dialog's text; never a secret's.</summary>
     public string? Value { get; init; }
+
+    /// <summary>For a value typed into a secret field (a password, or one of <see cref="ScrapeActionOptions.Secrets"/>): its placeholder, in place of the value.</summary>
+    public string? Secret { get; init; }
 
     /// <summary>A checkbox's or radio's new state.</summary>
     public bool? Checked { get; init; }
@@ -39,6 +42,16 @@ public sealed record ScrapeAction
     /// <summary>Whether a dialog was accepted.</summary>
     public bool? Accepted { get; init; }
 }
+
+/// <summary>How a source records actions.</summary>
+/// <param name="TestIds">The attributes that hold a test id, for an element's path and to find a secret field.</param>
+/// <param name="Secrets">Fields whose value never leaves the app; a password field is always one.</param>
+public sealed record ScrapeActionOptions(IReadOnlyList<string> TestIds, IReadOnlyList<ScrapeSecret> Secrets);
+
+/// <summary>A field whose value is never recorded: its test id, <c>name</c>, <c>id</c> or label text, and the placeholder recorded instead.</summary>
+/// <param name="Field">The field, matched without regard to case.</param>
+/// <param name="Placeholder">What is recorded in its place, without braces.</param>
+public sealed record ScrapeSecret(string Field, string Placeholder);
 
 /// <summary>The kinds of <see cref="ScrapeAction"/>.</summary>
 public static class ScrapeActionKind

@@ -116,6 +116,42 @@ public sealed class ScraperServiceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_recording_of_a_login_form_holds_no_password_and_no_secret()
+    {
+        File.AppendAllText(Path.Combine(_solution, "tests", "Shop.UITests", ScraperConfig.FileName), """
+
+            ## Secrets
+
+            | Field |
+            | --- |
+            | API key |
+
+            ## Masks
+
+            | Pattern | Replacement |
+            | --- | --- |
+            | `NL\d{2}[A-Z]{4}\d{10}` | `IBAN` |
+            """);
+        var all = EventsAsync(5);
+        var state = await _service.StartRecordingAsync(null, "Login", _site.Url("pages/form.html"), visible: false, actions: true);
+
+        await Browser.FillAsync("[data-testid=password]", "hunter2");
+        await Browser.FillAsync("[data-testid=key]", "sk-123");
+        await Browser.FillAsync("[data-testid=iban]", "NL91ABNA0417164300");
+        await Browser.ClickAsync("[data-testid=submit]");
+        await all;
+        await _service.StopRecordingAsync();
+
+        var text = string.Concat(Directory.GetFiles(state.Folder).Select(File.ReadAllText));
+        Assert.DoesNotContain("hunter2", text);
+        Assert.DoesNotContain("sk-123", text);
+        Assert.DoesNotContain("NL91ABNA0417164300", text);
+        var session = ScrapeProject.Find(state.Folder)!.Session(state.Session)!;
+        Assert.Equal(["password", "apiKey", null], session.Events.Skip(1).Take(3).Select(e => e.Placeholder));
+        Assert.Equal("IBAN", session.Events[3].Value);
+    }
+
+    [Fact]
     public async Task A_page_outside_the_app_is_not_captured()
     {
         var second = CapturedAsync(2);

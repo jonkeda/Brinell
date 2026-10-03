@@ -105,7 +105,7 @@ public sealed partial class ScraperService : IAsyncDisposable
             {
                 // A transition is a navigate action then: its capture follows it in the same order.
                 source.Acted += OnActed;
-                await source.StartActionsAsync(project.Config.TestIds, cancellationToken).ConfigureAwait(false);
+                await source.StartActionsAsync(new ScrapeActionOptions(project.Config.TestIds, project.Config.Secrets), cancellationToken).ConfigureAwait(false);
             }
             else if (autoCapture)
             {
@@ -667,7 +667,8 @@ public sealed partial class ScraperService : IAsyncDisposable
                 Node = action.Node,
                 Capture = action.Node is null ? null : capture?.Number,
                 Path = action.Path,
-                Value = action.Value,
+                Value = action.Secret is null ? action.Value : null,
+                Placeholder = action.Secret,
                 Checked = action.Checked,
                 Accepted = action.Accepted,
             });

@@ -113,7 +113,8 @@ public sealed class RecordingSession
     /// <summary>
     /// Appends an action: a click, a value, a check or another of <see cref="RecordingEvent.ActionKinds"/>.
     /// A value or choice right after a click on the same node replaces the click, and a field's value
-    /// replaces its value just before.
+    /// replaces its value just before. The project's masks are applied first, and a secret keeps only its
+    /// placeholder.
     /// </summary>
     /// <param name="action">The action; its number is assigned here.</param>
     /// <returns>The event as stored.</returns>
@@ -131,6 +132,7 @@ public sealed class RecordingSession
             if (action.Check != AssertCheck.Page && action.Node is null && action.Path is null)
                 throw new ArgumentException($"A '{action.Check}' assert names the node or the path it checks.", nameof(action));
         }
+        action = Redactor.Apply(action, _masks);
         RecordingEvent e;
         if (_events.Count > 0 && Merges(_events[^1], action))
         {

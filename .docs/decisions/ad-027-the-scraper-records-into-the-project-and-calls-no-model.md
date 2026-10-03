@@ -11,7 +11,7 @@ no model of its own:
 | **An agent from its own command line** | Unattended, the agent is its own CLI (Copilot CLI, Claude Code) given only the Brinell MCP server's tools, as `tools/Scripts/scrape-loop.ps1` runs it. Brinell's command line (`scrape explore`, `draft`, `verify`) stays model-free. |
 | **Recordings are files in the UI test project** | A project is scraped when it has a `scraper.config.md`. Its recordings are `Recordings/<session>/` in the project: `recording.json`, an ordered list of events, and one `*.nodes.jsonl` per captured page (one node per line, fields in a fixed order), committed with the code. The index is built in memory; the browser login is under the user's profile, never in the repository. |
 | **The code is the registry** | A generated file starts with `// <scraped page=… from=… hash=… />` or `control=…`. What exists, what it was made from, and whether the page changed since are read from the source, not from a store. |
-| **Nothing typed, nothing unmasked** | A capture never reads what a user typed (`value`). The config's masks are applied before a snapshot is written or shown. |
+| **Nothing typed, nothing unmasked** | A capture never reads what a user typed (`value`). The config's masks are applied before a snapshot is written or shown. **Amended (R7, recording tests):** only the action events of a test recording keep what was typed or chosen, masked before they are written. A password field's value and a `## Secrets` field's (by test id, name, id or label) never leave the browser: the action records a placeholder instead. |
 | **A platform is a source** | `IScrapeSource` and the snapshot model (`ScrapeSnapshot`, `ScrapeNode`) are in `Brinell.Core.Scraping`, with no platform type. Html (Playwright, with Blazor's controls preferred for a Blazor project) is the first source; it is in the engine until a second one needs a project of its own (AD-026, R3). |
 
 **Why:** the WPF Scraper (a window with its own browser, code preview, log viewer and approval UI,
@@ -29,7 +29,8 @@ and not on another, so the guards are the project's settings, not Brinell's. Evi
 - a model call, a prompt sent, or a model SDK in Brinell's Scraper;
 - a corpus database, or recordings outside the project;
 - a registry of generated code beside the code;
-- recording input values; writing a snapshot before its masks are applied;
+- recording input values in a capture, or a password's or a secret field's value anywhere; writing a
+  snapshot or an action before its masks are applied;
 - `write_code` outside the project, or into `Recordings/`, `bin/` or `obj/`.
 - Explore typing a credential or into a field; looser guards than the careful ones by default;
   a host Explore runs against without being named (other than `localhost` and `127.0.0.1`);
@@ -40,7 +41,8 @@ and not on another, so the guards are the project's settings, not Brinell's. Evi
 - a Scraper feature works in one IDE only, or needs a model to be tested;
 - `Brinell.Scraper` references a model SDK, a database or a UI framework;
 - a teammate cannot see from the repository what a page object was made from;
-- a `*.nodes.jsonl` holds a typed value or an unmasked match of a mask.
+- a `*.nodes.jsonl` holds a typed value or an unmasked match of a mask;
+- a `recording.json` holds a password field's or a secret field's value, or an unmasked match of a mask.
 - Explore with a project's default config moves any of the test site's counters
   (`scrape-loop.ps1 -Target test-site`);
 - drafting twice changes a drafted file, or a draft survives that does not build or verify.

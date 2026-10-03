@@ -19,10 +19,10 @@ public interface IScrapeSource : IAsyncDisposable
     /// </summary>
     event EventHandler<ScrapeAction>? Acted;
 
-    /// <summary>Starts raising <see cref="Acted"/>.</summary>
-    /// <param name="testIds">The attributes that hold a test id, for an element's path.</param>
+    /// <summary>Starts raising <see cref="Acted"/>. A secret field's value is not read: its action carries the placeholder.</summary>
+    /// <param name="options">The test id attributes and the secret fields.</param>
     /// <param name="cancellationToken">Cancels the start.</param>
-    Task StartActionsAsync(IReadOnlyList<string> testIds, CancellationToken cancellationToken = default);
+    Task StartActionsAsync(ScrapeActionOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>Stops raising <see cref="Acted"/>.</summary>
     void StopActions();

@@ -117,16 +117,17 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     }
 
     /// <inheritdoc/>
-    public async Task StartActionsAsync(IReadOnlyList<string> testIds, CancellationToken cancellationToken = default)
+    public async Task StartActionsAsync(ScrapeActionOptions options, CancellationToken cancellationToken = default)
     {
         var page = Started();
         if (_pump is null)
         {
             _pump = Task.Run(PumpAsync, CancellationToken.None);
             await _context!.ExposeBindingAsync<string>("__brinellAct", (source, json) => Enqueue(source.Frame, json)).ConfigureAwait(false);
-            await _context.AddInitScriptAsync($"({RecorderScript})({JsonSerializer.Serialize(testIds)});").ConfigureAwait(false);
+            var argument = new { testIds = options.TestIds, secrets = options.Secrets.Select(s => new { field = s.Field, placeholder = s.Placeholder }) };
+            await _context.AddInitScriptAsync($"({RecorderScript})({JsonSerializer.Serialize(argument)});").ConfigureAwait(false);
             foreach (var frame in page.Frames)
-                await TryEvaluateAsync<bool>(frame, RecorderScript, testIds).ConfigureAwait(false);
+                await TryEvaluateAsync<bool>(frame, RecorderScript, argument).ConfigureAwait(false);
         }
         _recordingActions = true;
     }
@@ -205,7 +206,8 @@ public sealed class PlaywrightScrapeSource : IExploreSource
         if (raw?.Kind is null) return null;
         var action = new ScrapeAction
         {
-            Kind = raw.Kind, At = act.At, Location = act.Location, Path = raw.Path, Value = raw.Value, Checked = raw.Checked, Accepted = raw.Accepted,
+            Kind = raw.Kind, At = act.At, Location = act.Location, Path = raw.Path, Value = raw.Secret is null ? raw.Value : null, Secret = raw.Secret,
+            Checked = raw.Checked, Accepted = raw.Accepted,
         };
         if (raw.Id is not { } id) return action;
 
@@ -587,7 +589,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     private sealed record Act(IFrame Frame, string Json, string Location, DateTimeOffset At);
 
     // What recorder.js sends: the element's number in the frame's capture `gen`, and its id in __brinellPending.
-    private sealed record RawAction(string? Kind, int? Id, int? Local, int? Gen, ScrapePathStep[]? Path, string? Value, bool? Checked, bool? Accepted);
+    private sealed record RawAction(string? Kind, int? Id, int? Local, int? Gen, ScrapePathStep[]? Path, string? Value, string? Secret, bool? Checked, bool? Accepted);
 
     private sealed record FrameNode(int N, int P, string? Kind, string? Type, string? Role, string? Name, string? Text, int[]? Box, Dictionary<string, string>? Attr);
 }

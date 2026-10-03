@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Brinell.Core.Scraping;
 using Brinell.Core.Utilities;
 using Brinell.Scraper.Html;
 
@@ -39,6 +40,9 @@ public sealed record ScraperConfig
 
     /// <summary>Text masked before anything is written.</summary>
     public IReadOnlyList<TextMask> Masks { get; init; } = [];
+
+    /// <summary>Fields whose value a test recording never keeps (<c>## Secrets</c>); a password field is always one.</summary>
+    public IReadOnlyList<ScrapeSecret> Secrets { get; init; } = [];
 
     /// <summary>The chat agent (or mode) the Scraper's prompts run in, by default (<c>## Agent</c>, <c>Agent</c>); null for the view's default.</summary>
     public string? ChatAgent { get; init; }
@@ -81,6 +85,8 @@ public sealed record ScraperConfig
             config = config with { TestIds = testIds.Rows.Select(r => r.Cells.GetValueOrDefault("Attribute", "")).Where(a => a.Length > 0).ToArray() };
         if (sections.TryGetValue("Masks", out var masks))
             config = config with { Masks = masks.Rows.Select(Mask).ToArray() };
+        if (sections.TryGetValue("Secrets", out var secrets))
+            config = config with { Secrets = secrets.Rows.Select(Secret).Where(s => s.Field.Length > 0).ToArray() };
         if (sections.TryGetValue("Agent", out var agent))
         {
             foreach (var row in agent.Rows)
@@ -122,6 +128,22 @@ public sealed record ScraperConfig
         {
             throw new FormatException($"Line {row.LineNumber}: '{pattern}' is not a regular expression: {e.Message}", e);
         }
+    }
+
+    // The placeholder is the field's own name in camel case unless the row gives one.
+    private static ScrapeSecret Secret(MarkdownTableRow row)
+    {
+        var field = Unquote(row.Cells.GetValueOrDefault("Field", "")).Trim();
+        var placeholder = Unquote(row.Cells.GetValueOrDefault("Placeholder", "")).Trim().Trim('{', '}');
+        return new ScrapeSecret(field, placeholder.Length > 0 ? placeholder : PlaceholderOf(field));
+    }
+
+    private static string PlaceholderOf(string field)
+    {
+        var words = Regex.Split(field, "[^A-Za-z0-9]+").Where(w => w.Length > 0).ToArray();
+        return words.Length == 0
+            ? "secret"
+            : string.Concat(words.Select((w, i) => i == 0 ? w.ToLowerInvariant() : char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
     }
 
     // A cell may put its value in backticks, so a leading or trailing space survives the table.

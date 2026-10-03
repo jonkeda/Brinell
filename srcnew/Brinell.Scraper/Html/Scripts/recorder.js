@@ -2,7 +2,11 @@
 // choice, a check, Enter/Escape/Tab. Each action goes to the host through window.__brinellAct as JSON;
 // its element is kept in window.__brinellPending under the action's id, and the host looks it up in the
 // last capture (or captures first). Installed once per document; the host ignores it while not recording.
-(testIds) => {
+// A secret field's value never leaves the page: a password field, or one of options.secrets by test id,
+// name, id or label; its action carries the placeholder instead.
+(options) => {
+    const testIds = options.testIds;
+    const secrets = options.secrets || [];
     if (window.__brinellRecorder) return true;
     window.__brinellRecorder = true;
     const pending = window.__brinellPending = window.__brinellPending || {};
@@ -80,10 +84,22 @@
 
     // The value last sent for a field, or its value when it got focus: a change back to it is no action.
     const sent = new WeakMap();
+    const same = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+    const secretOf = el => {
+        const labels = el.labels ? [...el.labels].map(textOf) : [];
+        const keys = [testIdOf(el), el.getAttribute('name'), el.id, ...labels];
+        const secret = secrets.find(s => keys.some(k => same(k, s.field)));
+        if (secret) return secret.placeholder;
+        return el instanceof HTMLInputElement && el.type === 'password' ? 'password' : null;
+    };
+    const valueOf = (el, value) => {
+        const secret = secretOf(el);
+        return secret ? { secret } : { value };
+    };
     const sendValue = el => {
         if (sent.get(el) === el.value) return;
         sent.set(el, el.value);
-        send('input', el, { value: el.value });
+        send('input', el, valueOf(el, el.value));
     };
 
     document.addEventListener('click', ev => {
@@ -111,7 +127,7 @@
     document.addEventListener('change', ev => {
         const el = ev.composedPath()[0];
         if (isToggle(el)) send('check', el, { checked: el.checked });
-        else if (el instanceof HTMLSelectElement) send('select', el, { value: el.selectedOptions.length ? textOf(el.selectedOptions[0]) : '' });
+        else if (el instanceof HTMLSelectElement) send('select', el, valueOf(el, el.selectedOptions.length ? textOf(el.selectedOptions[0]) : ''));
         else if (isText(el)) sendValue(el);
     }, true);
 

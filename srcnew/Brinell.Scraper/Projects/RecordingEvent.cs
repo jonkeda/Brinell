@@ -92,8 +92,14 @@ public sealed record RecordingEvent
     /// <summary>An action's element from the root down, as it was when the person acted.</summary>
     public IReadOnlyList<ScrapePathStep>? Path { get; init; }
 
-    /// <summary>What was typed, chosen, pressed or expected, or a dialog's text.</summary>
+    /// <summary>What was typed, chosen, pressed or expected, or a dialog's text; masked, and never a secret's.</summary>
     public string? Value { get; init; }
+
+    /// <summary>
+    /// For a value typed into a secret field: the placeholder recorded instead (R7), which the person maps
+    /// to a setting or test data.
+    /// </summary>
+    public string? Placeholder { get; init; }
 
     /// <summary>A check action's new state, or the state an assert expects.</summary>
     public bool? Checked { get; init; }

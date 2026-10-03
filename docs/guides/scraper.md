@@ -78,12 +78,24 @@ controls):
 | Pattern | Replacement |
 | --- | --- |
 | `NL\d{2}[A-Z]{4}\d{10}` | `IBAN` |
+
+## Secrets
+
+| Field | Placeholder |
+| --- | --- |
+| API key | |
+| pin-code | pin |
 ```
 
 - `Platform`: `html` or `blazor` (a Blazor project gets the `Brinell.Blazor` controls suggested).
 - `Aliases`: other hosts of the same app; a page elsewhere (a sign-in provider) is not recorded.
 - `Test ids`: the attributes that are test ids, preferred first.
-- `Masks`: text replaced before anything is written; what a user types is never recorded.
+- `Masks`: text replaced before anything is written. A page capture never records what a user typed;
+  only a test recording's actions keep typed values, masked.
+- `Secrets` (optional, columns `Field`, `Placeholder`): fields whose value a test recording never
+  keeps, matched by test id, `name`, `id` or label text. The value stays in the browser; the action
+  records `Placeholder` (default: the field in camel case, `apiKey`) for you to map to a setting or test
+  data. A password field is always a secret, with the placeholder `password`.
 - `Components` (optional, columns `Match`, `Kind`, `Name`): elements the Scraper cannot tell by itself, named by you. `Match` is `selector: …` or `text: …`; `Kind` is `collection`, `component` or what a test does with it (`text`, `selector`, `toggle`, `range`, `date`, `clickable`, `readable`). They win over its own reading: step 5 offers them by that name, and their brief says so.
 
 `testsnew/Brinell.Blazor.UITests` is an example: its config, its `Recordings/`, and
