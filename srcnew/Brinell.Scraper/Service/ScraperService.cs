@@ -4,6 +4,7 @@ using Brinell.Scraper.Explore;
 using Brinell.Scraper.Html;
 using Brinell.Scraper.Projects;
 using Brinell.Scraper.Recordings;
+using Brinell.Scraper.Testing;
 
 namespace Brinell.Scraper.Service;
 
@@ -607,6 +608,14 @@ public sealed partial class ScraperService : IAsyncDisposable
             Remember(project, result);
             return result;
         }
+    }
+
+    /// <summary>Resolves a test recording's actions to page-object members, verbs and phrases, and its gaps (<see cref="TestResolver"/>).</summary>
+    /// <exception cref="ScraperProblem">No such session.</exception>
+    public ResolvedTest ResolveActions(string? projectName, string session)
+    {
+        var project = Project(projectName);
+        return TestResolver.Resolve(project, project.Session(session) ?? throw new ScraperProblem($"{project.Name} has no recording session '{session}'."));
     }
 
     /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
