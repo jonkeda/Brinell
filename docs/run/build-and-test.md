@@ -26,6 +26,8 @@ dotnet build srcnew\Brinell.WinForms\Brinell.WinForms.csproj -f net10.0-windows 
 
 ## Notes
 
-`Brinell.sln` holds every project in the repository, in folders by area. The two
+`Brinell.sln` holds every project in the repository, in folders by area; `SolutionTests` in
+`Brinell.Core.Tests` fails when a project is missing from it (scratch projects under `.my/` are
+left out). The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
