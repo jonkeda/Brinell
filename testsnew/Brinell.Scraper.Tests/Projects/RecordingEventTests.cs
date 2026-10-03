@@ -163,6 +163,54 @@ public sealed class RecordingEventTests : IDisposable
     }
 
     [Fact]
+    public void A_click_then_the_value_or_choice_on_the_same_node_is_the_value_or_choice()
+    {
+        var session = MakeProject().StartSession("User form", DateTimeOffset.UnixEpoch);
+        session.AddPage(Page("https://app.example.nl/userform", "User form"));
+
+        session.AddAction(Action(RecordingEvent.ClickKind, 41));
+        session.AddAction(Action(RecordingEvent.InputKind, 41) with { Value = "Ad" });
+        var input = session.AddAction(Action(RecordingEvent.InputKind, 41) with { Value = "Ada" });
+        session.AddAction(Action(RecordingEvent.ClickKind, 95));
+        var select = session.AddAction(Action(RecordingEvent.SelectKind, 95) with { Value = "Netherlands" });
+        session.AddAction(Action(RecordingEvent.ClickKind, 77));
+        var check = session.AddAction(Action(RecordingEvent.CheckKind, 77) with { Checked = true });
+
+        Assert.Equal([1, 2, 3, 4], session.Events.Select(e => e.Number));
+        Assert.Equal([input, select, check], session.Events.Skip(1));
+        Assert.Equal("Ada", session.Events[1].Value);
+    }
+
+    [Fact]
+    public void Actions_on_other_nodes_or_with_a_capture_between_them_are_kept_apart()
+    {
+        var session = MakeProject().StartSession("User form", DateTimeOffset.UnixEpoch);
+        session.AddPage(Page("https://app.example.nl/userform", "User form"));
+
+        session.AddAction(Action(RecordingEvent.ClickKind, 41));
+        session.AddAction(Action(RecordingEvent.InputKind, 42) with { Value = "Ada" });
+        session.AddAction(Action(RecordingEvent.ClickKind, 43));
+        session.AddPage(Page("https://app.example.nl/userform", "User form"));
+        session.AddAction(Action(RecordingEvent.InputKind, 43) with { Value = "Ada" });
+        session.AddAction(Action(RecordingEvent.ClickKind, 44));
+        session.AddAction(Action(RecordingEvent.ClickKind, 44));
+
+        Assert.Equal(["page", "click", "input", "click", "page", "input", "click", "click"], session.Events.Select(e => e.Kind));
+    }
+
+    [Fact]
+    public void An_action_s_own_capture_comes_before_the_latest_capture_of_its_page()
+    {
+        var session = MakeProject().StartSession("User form", DateTimeOffset.UnixEpoch);
+        var first = session.AddPage(Page("https://app.example.nl/userform", "User form"));
+        session.AddPage(Page("https://app.example.nl/userform", "User form"));
+
+        var click = session.AddAction(Action(RecordingEvent.ClickKind, 1) with { Capture = first.Number });
+
+        Assert.Equal(first, session.CaptureOf(click));
+    }
+
+    [Fact]
     public void A_page_assert_and_actions_that_are_not_on_an_element_need_no_node()
     {
         var session = MakeProject().StartSession("User form", DateTimeOffset.UnixEpoch);

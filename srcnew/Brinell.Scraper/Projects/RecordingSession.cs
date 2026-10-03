@@ -110,8 +110,13 @@ public sealed class RecordingSession
         return e;
     }
 
-    /// <summary>Appends an action: a click, a value, a check or another of <see cref="RecordingEvent.ActionKinds"/>.</summary>
+    /// <summary>
+    /// Appends an action: a click, a value, a check or another of <see cref="RecordingEvent.ActionKinds"/>.
+    /// A value or choice right after a click on the same node replaces the click, and a field's value
+    /// replaces its value just before.
+    /// </summary>
     /// <param name="action">The action; its number is assigned here.</param>
+    /// <returns>The event as stored.</returns>
     /// <exception cref="ArgumentException">It is not an action, an action on an element names neither a node nor a path, or an assert has no known check.</exception>
     public RecordingEvent AddAction(RecordingEvent action)
     {
@@ -126,18 +131,41 @@ public sealed class RecordingSession
             if (action.Check != AssertCheck.Page && action.Node is null && action.Path is null)
                 throw new ArgumentException($"A '{action.Check}' assert names the node or the path it checks.", nameof(action));
         }
-        var e = action with { Number = _events.Count + 1 };
-        _events.Add(e);
+        RecordingEvent e;
+        if (_events.Count > 0 && Merges(_events[^1], action))
+        {
+            e = action with { Number = _events.Count };
+            _events[^1] = e;
+        }
+        else
+        {
+            e = action with { Number = _events.Count + 1 };
+            _events.Add(e);
+        }
         Save();
         return e;
     }
 
+    // A click into a field, then its value, is the value; a field typed into twice is its last value; a
+    // click on a select or checkbox, then the choice, is the choice. Only right after each other: a capture
+    // between them may number the node differently.
+    private static bool Merges(RecordingEvent previous, RecordingEvent next) =>
+        previous.Node is { } node && next.Node == node && previous.Capture == next.Capture && previous.Page == next.Page
+        && (previous.Kind, next.Kind) switch
+        {
+            (RecordingEvent.ClickKind, RecordingEvent.InputKind or RecordingEvent.SelectKind or RecordingEvent.CheckKind) => true,
+            (RecordingEvent.InputKind, RecordingEvent.InputKind) => true,
+            _ => false,
+        };
+
     /// <summary>
-    /// The capture an action's node is in: the latest page event before it with the same page key, or null
-    /// when its page was not captured first.
+    /// The capture an action's node is in: its <see cref="RecordingEvent.Capture"/>, else the latest page
+    /// event before it with the same page key, or null when its page was not captured first.
     /// </summary>
     public RecordingEvent? CaptureOf(RecordingEvent action)
     {
+        if (action.Capture is { } number && number >= 1 && number <= _events.Count && _events[number - 1].Kind == RecordingEvent.PageKind)
+            return _events[number - 1];
         for (var i = action.Number - 2; i >= 0; i--)
         {
             var e = _events[i];

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading.Channels;
 using Brinell.Core.Scraping;
 using Brinell.Scraper.Explore;
 using Microsoft.Playwright;
@@ -24,6 +25,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     private static readonly string SettleScript = Script("settle.js");
     private static readonly string HighlightScript = Script("highlight.js");
     private static readonly string PickScript = Script("pick.js");
+    private static readonly string RecorderScript = Script("recorder.js");
 
     private IPlaywright? _playwright;
     private IBrowserContext? _context;
@@ -34,11 +36,24 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     // Global node number of the last capture -> the frame and its local number there.
     private readonly List<(IFrame Frame, int Local)> _numbers = [];
 
+    // One capture at a time: an action is placed in the capture it was taken against.
+    private readonly SemaphoreSlim _captureLock = new(1, 1);
+    private int _generation;
+    private DateTimeOffset _capturedAt;
+
+    // Actions from every frame, placed one at a time in the order the person took them.
+    private readonly Channel<Act> _acts = Channel.CreateUnbounded<Act>(new() { SingleReader = true });
+    private Task? _pump;
+    private volatile bool _recordingActions;
+
     /// <inheritdoc/>
     public string Platform => "html";
 
     /// <inheritdoc/>
     public event EventHandler<ScrapeTransition>? Transitioned;
+
+    /// <inheritdoc/>
+    public event EventHandler<ScrapeAction>? Acted;
 
     /// <inheritdoc/>
     public event EventHandler<string>? Downloaded;
@@ -80,6 +95,7 @@ public sealed class PlaywrightScrapeSource : IExploreSource
         // With a handler, Playwright no longer dismisses a dialog itself: a confirm is always answered no.
         _page.Dialog += (_, dialog) =>
         {
+            Enqueue(_page.MainFrame, JsonSerializer.Serialize(new { kind = ScrapeActionKind.Dialog, value = dialog.Message, accepted = false }));
             DialogDismissed?.Invoke(this, dialog.Message);
             _ = dialog.DismissAsync();
         };
@@ -89,14 +105,46 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     /// <inheritdoc/>
     public async Task<ScrapeSnapshot> CaptureAsync(CancellationToken cancellationToken = default)
     {
+        await _captureLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await CaptureLockedAsync(settle: true, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _captureLock.Release();
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task StartActionsAsync(IReadOnlyList<string> testIds, CancellationToken cancellationToken = default)
+    {
         var page = Started();
-        await SettleAsync(page, cancellationToken).ConfigureAwait(false);
+        if (_pump is null)
+        {
+            _pump = Task.Run(PumpAsync, CancellationToken.None);
+            await _context!.ExposeBindingAsync<string>("__brinellAct", (source, json) => Enqueue(source.Frame, json)).ConfigureAwait(false);
+            await _context.AddInitScriptAsync($"({RecorderScript})({JsonSerializer.Serialize(testIds)});").ConfigureAwait(false);
+            foreach (var frame in page.Frames)
+                await TryEvaluateAsync<bool>(frame, RecorderScript, testIds).ConfigureAwait(false);
+        }
+        _recordingActions = true;
+    }
+
+    /// <inheritdoc/>
+    public void StopActions() => _recordingActions = false;
+
+    private async Task<ScrapeSnapshot> CaptureLockedAsync(bool settle, CancellationToken cancellationToken)
+    {
+        var page = Started();
+        if (settle) await SettleAsync(page, cancellationToken).ConfigureAwait(false);
+        var generation = ++_generation;
 
         var frames = new Dictionary<IFrame, FrameCapture>();
         foreach (var frame in page.Frames)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (await TryCaptureFrameAsync(frame).ConfigureAwait(false) is { } capture)
+            if (await TryCaptureFrameAsync(frame, generation).ConfigureAwait(false) is { } capture)
                 frames[frame] = capture;
         }
         if (!frames.TryGetValue(page.MainFrame, out var main))
@@ -113,14 +161,96 @@ public sealed class PlaywrightScrapeSource : IExploreSource
         _numbers.Clear();
         var nodes = new List<ScrapeNode>();
         Append(page.MainFrame, main, 1, 0, frames, hosts, nodes);
+        // Two captures never share a time: an action names its capture by it.
+        var at = DateTimeOffset.UtcNow;
+        _capturedAt = at > _capturedAt ? at : _capturedAt.AddTicks(1);
         return new ScrapeSnapshot
         {
             Platform = Platform,
             Location = main.Location,
             Title = main.Title,
-            CapturedAt = DateTimeOffset.UtcNow,
+            CapturedAt = _capturedAt,
             Nodes = nodes,
         };
+    }
+
+    private void Enqueue(IFrame frame, string json)
+    {
+        if (_recordingActions) _acts.Writer.TryWrite(new Act(frame, json, _page?.Url ?? frame.Url, DateTimeOffset.UtcNow));
+    }
+
+    private async Task PumpAsync()
+    {
+        await foreach (var act in _acts.Reader.ReadAllAsync().ConfigureAwait(false))
+        {
+            if (_recordingActions && await TryPlaceAsync(act).ConfigureAwait(false) is { } action)
+                Acted?.Invoke(this, action);
+        }
+    }
+
+    // The element's number in the capture the page had when the person acted; else in the last capture,
+    // if the element is still in it; else in a capture taken now (R2). Null when the page sent something
+    // else.
+    private async Task<ScrapeAction?> TryPlaceAsync(Act act)
+    {
+        RawAction? raw;
+        try
+        {
+            raw = JsonSerializer.Deserialize<RawAction>(act.Json, FrameCapture.Json);
+        }
+        catch (JsonException)
+        {
+            return null; // not the recorder's message
+        }
+        if (raw?.Kind is null) return null;
+        var action = new ScrapeAction
+        {
+            Kind = raw.Kind, At = act.At, Location = act.Location, Path = raw.Path, Value = raw.Value, Checked = raw.Checked, Accepted = raw.Accepted,
+        };
+        if (raw.Id is not { } id) return action;
+
+        await _captureLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            var node = raw.Gen == _generation && raw.Local is { } local ? Global(act.Frame, local) : null;
+            node ??= await TryPendingNodeAsync(act.Frame, id).ConfigureAwait(false);
+            ScrapeSnapshot? capture = null;
+            if (node is null && _page is not null)
+            {
+                // Not settled: the person acted on the page as it was. One that moved on since is not its page.
+                capture = await TryCaptureLockedAsync().ConfigureAwait(false);
+                if (capture is not null && Projects.PageKey.Of(capture.Location) != Projects.PageKey.Of(act.Location)) capture = null;
+                if (capture is not null) node = await TryPendingNodeAsync(act.Frame, id).ConfigureAwait(false);
+            }
+            await TryEvaluateAsync<bool>(act.Frame, "id => { delete (window.__brinellPending || {})[id]; return true; }", id).ConfigureAwait(false);
+            return action with { Node = node, CapturedAt = node is null ? null : _capturedAt, Capture = capture };
+        }
+        finally
+        {
+            _captureLock.Release();
+        }
+    }
+
+    private async Task<int?> TryPendingNodeAsync(IFrame frame, int id) =>
+        Global(frame, await TryEvaluateAsync<int>(frame, "id => (window.__brinellScrapeNodes || []).indexOf((window.__brinellPending || {})[id]) + 1", id).ConfigureAwait(false));
+
+    private async Task<ScrapeSnapshot?> TryCaptureLockedAsync()
+    {
+        try
+        {
+            return await CaptureLockedAsync(settle: false, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is InvalidOperationException or PlaywrightException)
+        {
+            return null; // navigated away while it was read, or closed: the action keeps its path
+        }
+    }
+
+    private int? Global(IFrame frame, int local)
+    {
+        if (local <= 0) return null;
+        var index = _numbers.FindIndex(n => n.Frame == frame && n.Local == local);
+        return index >= 0 ? index + 1 : null;
     }
 
     /// <inheritdoc/>
@@ -279,6 +409,9 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
+        _recordingActions = false;
+        _acts.Writer.TryComplete();
+        if (_pump is not null) await _pump.ConfigureAwait(false);
         if (_context is not null) await _context.CloseAsync().ConfigureAwait(false);
         _playwright?.Dispose();
         _context = null;
@@ -296,13 +429,14 @@ public sealed class PlaywrightScrapeSource : IExploreSource
             ? [$"--remote-debugging-port={port}"]
             : [];
 
-        private IPage Started() => _page ?? throw new InvalidOperationException("The source is not started.");
+    private IPage Started() => _page ?? throw new InvalidOperationException("The source is not started.");
 
     private void OnFrameNavigated(object? sender, IFrame frame)
     {
         // Also raised for pushState and hash changes: a single-page app's page transitions.
         if (frame != _page?.MainFrame || frame.Url == _lastLocation) return;
         _lastLocation = frame.Url;
+        Enqueue(frame, JsonSerializer.Serialize(new { kind = ScrapeActionKind.Navigate }));
         Transitioned?.Invoke(this, new ScrapeTransition(frame.Url));
     }
 
@@ -362,9 +496,9 @@ public sealed class PlaywrightScrapeSource : IExploreSource
         }
     }
 
-        private static async Task<FrameCapture?> TryCaptureFrameAsync(IFrame frame)
+    private static async Task<FrameCapture?> TryCaptureFrameAsync(IFrame frame, int generation)
     {
-        var json = await TryEvaluateAsync<string>(frame, CaptureScript, new { kept = HtmlAttributes.Kept, maxText = MaxText }).ConfigureAwait(false);
+        var json = await TryEvaluateAsync<string>(frame, CaptureScript, new { kept = HtmlAttributes.Kept, maxText = MaxText, gen = generation }).ConfigureAwait(false);
         return json is null ? null : JsonSerializer.Deserialize<FrameCapture>(json, FrameCapture.Json);
     }
 
@@ -449,6 +583,11 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     {
         public static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
     }
+
+    private sealed record Act(IFrame Frame, string Json, string Location, DateTimeOffset At);
+
+    // What recorder.js sends: the element's number in the frame's capture `gen`, and its id in __brinellPending.
+    private sealed record RawAction(string? Kind, int? Id, int? Local, int? Gen, ScrapePathStep[]? Path, string? Value, bool? Checked, bool? Accepted);
 
     private sealed record FrameNode(int N, int P, string? Kind, string? Type, string? Role, string? Name, string? Text, int[]? Box, Dictionary<string, string>? Attr);
 }

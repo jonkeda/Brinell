@@ -7,6 +7,7 @@
     const keptNames = new Set(options.kept);
     const frames = window.__brinellScrapeFrames = new WeakMap();
     const elements = window.__brinellScrapeNodes = [];
+    window.__brinellScrapeGen = options.gen; // which capture the numbers are of, for the recorder
     const nodes = [];
 
     // Vue's scoped-style markers (data-v-1a2b3c4d) change with every build and say nothing about the element.

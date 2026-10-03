@@ -75,8 +75,9 @@ public sealed partial class ScraperService : IAsyncDisposable
     /// <summary>
     /// Opens the recording browser on a project's start URL (or <paramref name="url"/>) and starts a
     /// session. With <paramref name="autoCapture"/>, each page the app moves to is captured once it settles.
+    /// With <paramref name="actions"/>, it is a test recording: what the person does is recorded too, in order.
     /// </summary>
-    public async Task<RecordingState> StartRecordingAsync(string? projectName, string sessionName, string? url = null, bool autoCapture = true, bool visible = true, CancellationToken cancellationToken = default)
+    public async Task<RecordingState> StartRecordingAsync(string? projectName, string sessionName, string? url = null, bool autoCapture = true, bool visible = true, bool actions = false, CancellationToken cancellationToken = default)
     {
         var project = Project(projectName);
         var start = url ?? project.Config.StartUrl;
@@ -99,8 +100,17 @@ public sealed partial class ScraperService : IAsyncDisposable
                 throw;
             }
             var session = project.StartSession(sessionName, DateTimeOffset.Now);
-            _recording = new Recording(project, session, source, autoCapture);
-            if (autoCapture) source.Transitioned += OnTransitioned;
+            _recording = new Recording(project, session, source, autoCapture, actions);
+            if (actions)
+            {
+                // A transition is a navigate action then: its capture follows it in the same order.
+                source.Acted += OnActed;
+                await source.StartActionsAsync(project.Config.TestIds, cancellationToken).ConfigureAwait(false);
+            }
+            else if (autoCapture)
+            {
+                source.Transitioned += OnTransitioned;
+            }
         }
         finally
         {
@@ -153,7 +163,7 @@ public sealed partial class ScraperService : IAsyncDisposable
             return new ExploreResult(ExploreStop.HostRefused, refused, options.DryRun, settings, [], [], [], [], [], [], 0, TimeSpan.Zero);
 
         // The browser opens blank, so nothing of the app loads before the guards are on.
-        await StartRecordingAsync(project.Name, options.DryRun ? "explore-dry-run" : "explore", "about:blank", autoCapture: false, visible: options.Visible, cancellationToken).ConfigureAwait(false);
+        await StartRecordingAsync(project.Name, options.DryRun ? "explore-dry-run" : "explore", "about:blank", autoCapture: false, visible: options.Visible, cancellationToken: cancellationToken).ConfigureAwait(false);
         var recording = _recording!;
         if (recording.Source is not IExploreSource source)
         {
@@ -365,6 +375,8 @@ public sealed partial class ScraperService : IAsyncDisposable
             _recording = null;
             if (stopped is null) return null;
             stopped.Source.Transitioned -= OnTransitioned;
+            stopped.Source.Acted -= OnActed;
+            stopped.Source.StopActions();
             await stopped.Source.DisposeAsync().ConfigureAwait(false);
         }
         finally
@@ -624,6 +636,56 @@ public sealed partial class ScraperService : IAsyncDisposable
         _ = CaptureOnTransitionAsync();
     }
 
+    private void OnActed(object? sender, ScrapeAction action)
+    {
+        if (_recording is { } recording) recording.Then(() => SaveActionAsync(recording, action));
+    }
+
+    // The capture taken for the action first (unless the page is unchanged since its last capture), then
+    // the action in the capture its node is in. A navigation on an auto-capture recording captures after.
+    private async Task SaveActionAsync(Recording recording, ScrapeAction action)
+    {
+        RecordingEvent added;
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_recording != recording) return;
+            RecordingEvent? capture = null;
+            if (action.Capture is { } snapshot && !recording.IsUnchanged(snapshot))
+            {
+                capture = recording.Session.AddPage(snapshot);
+                recording.Remember(snapshot);
+            }
+            if (capture is null && action.Node is not null && action.CapturedAt is { } at)
+                capture = recording.Session.Events.LastOrDefault(e => e.Kind == RecordingEvent.PageKind && e.At == at);
+            added = recording.Session.AddAction(new RecordingEvent
+            {
+                Kind = action.Kind,
+                At = action.At,
+                Location = action.Location,
+                Page = PageKey.Of(action.Location),
+                Node = action.Node,
+                Capture = action.Node is null ? null : capture?.Number,
+                Path = action.Path,
+                Value = action.Value,
+                Checked = action.Checked,
+                Accepted = action.Accepted,
+            });
+        }
+        catch (ArgumentException e)
+        {
+            Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.Failed, recording.State, null, e.Message));
+            return;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+        Changed?.Invoke(this, new ScraperChange(ScraperChangeKind.Acted, recording.State, added));
+        if (action.Kind == ScrapeActionKind.Navigate && recording.AutoCapture && recording.Project.IsOwnPage(action.Location))
+            await CaptureOnTransitionAsync().ConfigureAwait(false);
+    }
+
     private async Task CaptureOnTransitionAsync()
     {
         try
@@ -637,9 +699,11 @@ public sealed partial class ScraperService : IAsyncDisposable
         }
     }
 
-    private sealed class Recording(ScrapeProject project, RecordingSession session, IScrapeSource source, bool autoCapture)
+    private sealed class Recording(ScrapeProject project, RecordingSession session, IScrapeSource source, bool autoCapture, bool actions)
     {
         private readonly Dictionary<string, string> _lastBody = new(StringComparer.Ordinal);
+        private readonly Lock _chainLock = new();
+        private Task _chain = Task.CompletedTask;
 
         public ScrapeProject Project { get; } = project;
 
@@ -647,7 +711,16 @@ public sealed partial class ScraperService : IAsyncDisposable
 
         public IScrapeSource Source { get; } = source;
 
-        public RecordingState State => new(Project.Name, Session.Id, Session.Folder, autoCapture, Session.Events.Count);
+        public bool AutoCapture => autoCapture;
+
+        public RecordingState State => new(Project.Name, Session.Id, Session.Folder, autoCapture, Session.Events.Count, actions);
+
+        // Runs after what was queued before: actions are saved in the order the source raised them.
+        public void Then(Func<Task> next)
+        {
+            lock (_chainLock)
+                _chain = _chain.ContinueWith(_ => next(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+        }
 
         public bool IsUnchanged(ScrapeSnapshot snapshot) =>
             _lastBody.TryGetValue(PageKey.Of(snapshot.Location), out var body) && body == Body(snapshot);
@@ -671,7 +744,13 @@ public sealed record ControlMatches(string Page, string? PageObject, bool? Chang
 public sealed record ControlMatch(int Node, string Line, IReadOnlyList<string> Controls);
 
 /// <summary>A recording in progress.</summary>
-public sealed record RecordingState(string Project, string Session, string Folder, bool AutoCapture, int Captures);
+/// <param name="Project">The project's name.</param>
+/// <param name="Session">The session's id.</param>
+/// <param name="Folder">The session's folder.</param>
+/// <param name="AutoCapture">Whether each page the app moves to is captured.</param>
+/// <param name="Captures">How many events the session has: pages, and actions in a test recording.</param>
+/// <param name="Actions">Whether it is a test recording, with the person's actions.</param>
+public sealed record RecordingState(string Project, string Session, string Folder, bool AutoCapture, int Captures, bool Actions = false);
 
 /// <summary>A node found on a page: its page key, its number on the page's newest capture, and its outline line.</summary>
 public sealed record SimilarNode(string Page, int Node, string Line);
@@ -685,6 +764,9 @@ public enum ScraperChangeKind
 
     /// <summary>A page was captured.</summary>
     Captured,
+
+    /// <summary>The person took an action in a test recording: the change's event is the action.</summary>
+    Acted,
 
     /// <summary>A recording stopped.</summary>
     Stopped,

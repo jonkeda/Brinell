@@ -75,6 +75,46 @@ public sealed class ScraperServiceTests : IAsyncLifetime
         Assert.True(Directory.Exists(state.Folder));
     }
 
+    // Completes when the session has `count` events, pages and actions together.
+    private Task EventsAsync(int count)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _service.Changed += (_, change) =>
+        {
+            if (change.Recording?.Captures >= count) done.TrySetResult();
+            if (change.Kind == ScraperChangeKind.Failed) done.TrySetException(new InvalidOperationException(change.Message));
+        };
+        return done.Task.WaitAsync(Limit);
+    }
+
+    [Fact]
+    public async Task A_test_recording_keeps_the_actions_in_order_each_in_the_capture_of_its_node()
+    {
+        var note = EventsAsync(6);
+        var all = EventsAsync(9);
+        var state = await _service.StartRecordingAsync(null, "User form", _site.Url("pages/form.html"), visible: false, actions: true);
+        Assert.True(state.Actions);
+
+        await Browser.FillAsync("[data-testid=first-name]", "Ada");
+        await Browser.ClickAsync("[data-testid=colour]");
+        await Browser.ClickAsync("[data-testid=colour-red]");
+        await Browser.ClickAsync("[data-testid=add-note]");
+        await Browser.ClickAsync("[data-testid=note]");
+        await note; // a person does not leave the page faster than the note's click is recorded
+        await Browser.ClickAsync("[data-testid=to-account]");
+        await all;
+        await _service.StopRecordingAsync();
+
+        var session = ScrapeProject.Find(Path.Combine(_solution, "tests", "Shop.UITests"))!.Session(state.Session)!;
+        Assert.Equal(
+            ["page", "input", "select", "click", "page", "click", "click", "navigate", "page"],
+            session.Events.Select(e => e.Kind));
+        string? TestId(RecordingEvent e) => session.CaptureOf(e) is { } capture ? session.ReadSnapshot(capture)[e.Node!.Value].Attribute("data-testid") : null;
+        Assert.Equal(["first-name", "colour", "add-note", "note", "to-account"], session.Events.Where(e => e.Node is not null).Select(TestId));
+        Assert.Equal(5, session.CaptureOf(session.Events[5])!.Number); // the note was captured for its click
+        Assert.Equal("/pages/account.html", session.Events[^1].Page);
+    }
+
     [Fact]
     public async Task A_page_outside_the_app_is_not_captured()
     {

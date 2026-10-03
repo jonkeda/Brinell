@@ -13,6 +13,20 @@ public interface IScrapeSource : IAsyncDisposable
     /// <summary>Raised when the page or window changed and has settled: a snapshot can be taken.</summary>
     event EventHandler<ScrapeTransition>? Transitioned;
 
+    /// <summary>
+    /// Raised, in order, for each action the person takes while actions are recorded. An action on an
+    /// element that came after the last capture carries a capture taken for it.
+    /// </summary>
+    event EventHandler<ScrapeAction>? Acted;
+
+    /// <summary>Starts raising <see cref="Acted"/>.</summary>
+    /// <param name="testIds">The attributes that hold a test id, for an element's path.</param>
+    /// <param name="cancellationToken">Cancels the start.</param>
+    Task StartActionsAsync(IReadOnlyList<string> testIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Stops raising <see cref="Acted"/>.</summary>
+    void StopActions();
+
     /// <summary>Opens the app or page to record.</summary>
     Task StartAsync(ScrapeStart start, CancellationToken cancellationToken = default);
 

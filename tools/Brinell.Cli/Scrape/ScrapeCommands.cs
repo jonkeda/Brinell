@@ -226,7 +226,7 @@ internal static class ScrapeCommands
             }
 
             await using var service = Service(io, parsed.GetValue(solution));
-            var state = await service.StartRecordingAsync(ProjectName(service, parsed.GetValue(project), io), parsed.GetValue(session)!, parsed.GetValue(url), autoCapture: !parsed.GetValue(byHand), visible: true, cancellationToken).ConfigureAwait(false);
+            var state = await service.StartRecordingAsync(ProjectName(service, parsed.GetValue(project), io), parsed.GetValue(session)!, parsed.GetValue(url), autoCapture: !parsed.GetValue(byHand), visible: true, cancellationToken: cancellationToken).ConfigureAwait(false);
             await io.Error.WriteLineAsync($"Recording {state.Project} into {state.Folder}. Browse in the window; c and Enter captures this page, Enter on its own stops.").ConfigureAwait(false);
             while (await io.In.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line && line.Trim().Length > 0)
             {

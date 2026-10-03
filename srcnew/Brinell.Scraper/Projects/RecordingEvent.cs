@@ -1,4 +1,5 @@
 using System.Globalization;
+using Brinell.Core.Scraping;
 using System.Text.Json.Serialization;
 
 namespace Brinell.Scraper.Projects;
@@ -13,25 +14,25 @@ public sealed record RecordingEvent
     public const string PageKind = "page";
 
     /// <summary>A click on <see cref="Node"/>.</summary>
-    public const string ClickKind = "click";
+    public const string ClickKind = ScrapeActionKind.Click;
 
     /// <summary>A field's final <see cref="Value"/> after one visit.</summary>
-    public const string InputKind = "input";
+    public const string InputKind = ScrapeActionKind.Input;
 
     /// <summary>An option chosen in a select or list box: <see cref="Node"/> is the select, <see cref="Value"/> the option's text.</summary>
-    public const string SelectKind = "select";
+    public const string SelectKind = ScrapeActionKind.Select;
 
     /// <summary>A checkbox or radio set to <see cref="Checked"/>.</summary>
-    public const string CheckKind = "check";
+    public const string CheckKind = ScrapeActionKind.Check;
 
     /// <summary>Enter, Escape or Tab, in <see cref="Value"/>; other keys are part of an input.</summary>
-    public const string KeyKind = "key";
+    public const string KeyKind = ScrapeActionKind.Key;
 
     /// <summary>The app went to <see cref="Location"/>; the page capture follows it.</summary>
-    public const string NavigateKind = "navigate";
+    public const string NavigateKind = ScrapeActionKind.Navigate;
 
     /// <summary>A browser dialog with the text <see cref="Value"/>, <see cref="Accepted"/> or dismissed.</summary>
-    public const string DialogKind = "dialog";
+    public const string DialogKind = ScrapeActionKind.Dialog;
 
     /// <summary>A check the person picked: <see cref="Check"/> on <see cref="Node"/>, expecting <see cref="Value"/>.</summary>
     public const string AssertKind = "assert";
@@ -80,13 +81,16 @@ public sealed record RecordingEvent
     public int Nodes { get; init; }
 
     /// <summary>
-    /// An action's element: its number in the page's latest capture (<see cref="RecordingSession.CaptureOf"/>),
-    /// or null when it is not in that capture and <see cref="Path"/> describes it instead.
+    /// An action's element: its number in its capture (<see cref="RecordingSession.CaptureOf"/>), or null
+    /// when no capture holds it and only <see cref="Path"/> describes it.
     /// </summary>
     public int? Node { get; init; }
 
-    /// <summary>An action's element from the root down, when no capture holds it.</summary>
-    public IReadOnlyList<NodePathStep>? Path { get; init; }
+    /// <summary>The page event <see cref="Node"/> is in; null for the latest capture of <see cref="Page"/> before it.</summary>
+    public int? Capture { get; init; }
+
+    /// <summary>An action's element from the root down, as it was when the person acted.</summary>
+    public IReadOnlyList<ScrapePathStep>? Path { get; init; }
 
     /// <summary>What was typed, chosen, pressed or expected, or a dialog's text.</summary>
     public string? Value { get; init; }
@@ -112,25 +116,6 @@ public sealed record RecordingEvent
     public override string ToString() => Node is { } node
         ? string.Create(CultureInfo.InvariantCulture, $"{Number} {Kind} {Page} #{node}")
         : string.Create(CultureInfo.InvariantCulture, $"{Number} {Kind} {Page}");
-}
-
-/// <summary>One level of an element's path from the root: what identifies it among its siblings.</summary>
-public sealed record NodePathStep
-{
-    /// <summary>The tag name or control type.</summary>
-    public string Type { get; init; } = "";
-
-    /// <summary>Its test id, in the project's test id attribute.</summary>
-    public string? TestId { get; init; }
-
-    /// <summary>Its accessibility role.</summary>
-    public string? Role { get; init; }
-
-    /// <summary>Its accessible name.</summary>
-    public string? Name { get; init; }
-
-    /// <summary>Its classes, space-separated.</summary>
-    public string? Classes { get; init; }
 }
 
 /// <summary>The checks an assert can make (R5).</summary>
