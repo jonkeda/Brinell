@@ -275,12 +275,15 @@ export class ScenarioTests implements vscode.Disposable {
     return new Promise((resolve) => {
       const child = spawn(command, args, { cwd: folder?.uri.fsPath, env, windowsHide: true });
       this.process = child;
+      // The testhost prints its "Process Id" line twice; a second attach would fail and cancel the run.
+      const attached = new Set<string>();
       const line = (data: Buffer) => {
         const text = data.toString();
         this.output.append(text);
         run?.appendOutput(text.replace(/\r?\n/g, "\r\n"));
         const attach = debug ? /Process Id:\s*(\d+)/.exec(text) : null;
-        if (attach && run) {
+        if (attach && run && !attached.has(attach[1])) {
+          attached.add(attach[1]);
           void vscode.debug.startDebugging(folder, { name: "Brinell BDD testhost", type: "coreclr", request: "attach", processId: attach[1] }).then((started) => {
             if (!started) {
               run.appendOutput("The C# debugger did not attach; the run is cancelled. Install the C# extension.\r\n");

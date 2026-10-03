@@ -226,6 +226,8 @@ internal sealed class BddRunController
             process.StartInfo.EnvironmentVariables["VSTEST_DEBUG_NOBP"] = "1";
         }
 
+        // The testhost prints its "Process Id" line twice; a second attach to it fails and would cancel the run.
+        var attaching = new HashSet<int>();
         var exited = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         process.OutputDataReceived += (_, e) => Line(e.Data);
         process.ErrorDataReceived += (_, e) => Line(e.Data);
@@ -260,6 +262,14 @@ internal sealed class BddRunController
             if (debug && TesthostProcess.Match(line) is { Success: true } match)
             {
                 var id = int.Parse(match.Groups["id"].Value, System.Globalization.CultureInfo.InvariantCulture);
+                lock (attaching)
+                {
+                    if (!attaching.Add(id))
+                    {
+                        return;
+                    }
+                }
+
                 _package.JoinableTaskFactory.RunAsync(() => AttachAsync(id)).FileAndForget("Brinell/PreviewDebugAttach");
             }
         }
