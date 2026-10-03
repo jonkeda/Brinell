@@ -55,7 +55,7 @@ It's made for UI acceptance tests of apps with Brinell page objects.
 | Reports | Cucumber Messages and an HTML formatter; many third-party reporters read Messages | `<scenario>__result.json`, screenshots on failure and the shared artifact layout (AD-007); timings and an accessibility audit from the MAUI Windows driver |
 | Retry of flaky scenarios | community plugins | none, on purpose (AD-009: app bugs stay failures) |
 | Traceability | tags | the `Journey` field, and the journey coverage check that every journey has a test in each tier |
-| IDE | Visual Studio extension, Rider plugin, Cucumber extensions for VS Code | none yet ([VS Code](tools/vscode-extension.md) and [Visual Studio](tools/visualstudio-extension.md) proposals); the Presenter works without an IDE |
+| IDE | Visual Studio extension, Rider plugin, Cucumber extensions for VS Code | Brinell BDD for VS Code and Visual Studio (`docs/guides/vscode-extension.md`, `docs/guides/visual-studio-preview.md`); the Presenter works without an IDE |
 | Demo and stepping | none | the **Presenter**: loads a UAT project, runs a scenario step by step with pacing, places the app, shows the catalog and pages (AD-018) |
 | Ecosystem | large: Cucumber tooling, formatters, plugins, SpecFlow migration | this repo |
 

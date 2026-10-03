@@ -3,8 +3,8 @@
 Status: **phases 1 and 2 built** (1.1-2.4), phase 3 built (3.1-3.4), phase 4 in progress (CodeLens, quick fixes, views, config and data files, Copilot MCP, VS Code client, attach to the app, packaging built; DAP not built); checklists 6.1-6.3
 and the spike (phase 0) not run. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
 feature and step files, `Features/`, `Brinell.Bdd` under `Brinell.Uat`, and step definitions.
-Builds on the proposal [visualstudio-extension.md](visualstudio-extension.md) and on
-[vscode-extension.md](vscode-extension.md) for everything the two IDEs share. This plan sets the
+Builds on the proposal [visualstudio-extension.md](https://github.com/exact-mobile-apps/test-tooling/blob/f763a497/.my/uat/tools/visualstudio-extension.md) and on
+[vscode-extension.md](https://github.com/exact-mobile-apps/test-tooling/blob/d004f50f/.my/uat/tools/vscode-extension.md) for everything the two IDEs share. This plan sets the
 **order**: the preview first, then running and debugging, then the editor, then the rest. Where
 this plan and the proposal differ, this plan holds (the differences are listed in section 3).
 

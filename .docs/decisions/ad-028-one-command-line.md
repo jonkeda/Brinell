@@ -15,8 +15,8 @@ Everything Brinell runs from a command line is a command of it:
 **Why:** there were four entry points (`brinell-data`, the language server with no arguments,
 `--mcp`, `--preview` and `scrape`, and `Brinell.Generator`), each parsing its own way, two of them
 reached by a path into `bin/Debug`. One name is one thing to install and to find with `--help`.
-Merging them adds no project (AD-026, R2: one process, one project). Evidence: the design,
-`.my/cli/design.md`, linked at its last commit when the topic closes.
+Merging them adds no project (AD-026, R2: one process, one project). Evidence:
+[the design](https://github.com/exact-mobile-apps/test-tooling/blob/0c519980/.my/cli/design.md).
 
 **Ruled out:**
 - a second tool beside `brinell` (`brinell-data`), or an alias for it;

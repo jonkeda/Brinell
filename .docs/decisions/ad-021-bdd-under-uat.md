@@ -26,7 +26,7 @@ and projects alike:
 
 A Bdd tool may use `Brinell.Uat`: the workspace builds a UI suite's catalogs through it, as a
 general tool handles the specialization too. The run address trait is `BddScenario`. The
-first move kept the old names; they followed on 2026-09-28 (`.my/uat/rename/plan.md`).
+first move kept the old names; they followed on 2026-09-28 ([the rename plan](https://github.com/exact-mobile-apps/test-tooling/blob/fb07253b/.my/uat/rename/plan.md)).
 
 A step-definition project with no UI (the Todo sample's TestSupport) references `Brinell.Bdd`
 only. A service suite still runs on `UatScenarioTestBase`, because refusing a UI step (AD-020,
