@@ -1,6 +1,6 @@
 # Recording tests
 
-Status: **decided**, 2026-10-03. Q2 is a setting; Q1 and Q3-Q7 as proposed (section 8).
+Status: **built, steps 1-8**, 2026-10-03 (section 9). Q2 is a setting; Q1 and Q3-Q7 as proposed (section 8). Step 9 is the owner's, by hand; step 10 is later.
 
 A person uses the app and the Scraper records what they do. Each recorded action is resolved to the
 page and the control it hit. From that, the Scraper drafts a test: an xUnit UI test that calls page
@@ -161,3 +161,18 @@ Steps 1 to 5 need no IDE and no model. They make the whole pipeline testable fro
 | Q5 | Can one recording become several tests (split at each navigation)? | No for now: one recording is one test. The person records again, or edits |
 | Q6 | Should requests the app made be offered as checks (`the server received …`)? | Later. The request guard already sees them, but it needs the Backend subject (uat/complex) |
 | Q7 | Should Construction (MAUI) come before Bouw7 (Html)? | Html first: the browser and every step up to Verify are built. MAUI waits for the UI Automation source |
+
+## 9. Built
+
+| Step | Commit | What differs from the plan |
+| --- | --- | --- |
+| 1 | Event model | Actions also carry `capture` (the page event their node is in) and `accepted` (a dialog); `CaptureOf` falls back to the latest capture of the page |
+| 2 | `recorder.js`, `Acted` | An action's own capture is taken unsettled and kept only while still on its page; else the path (R2). Browser tests run on the test site's `pages/form.html`, not on the Blazor sample's User Form |
+| 3 | R7 | A secret never leaves the browser: `recorder.js` sends its placeholder. `## Secrets` has `Field` and an optional `Placeholder` |
+| 4 | Resolution | Verbs come from Brinell.Html's controls by reflection (Brinell.Blazor's share their names); the step-name rule moved to `Brinell.Core` (`StepNames`) |
+| 5 | Drafting | `## Tests` also has `Base`, the class an xUnit draft's person's part derives from. A secret is an environment variable in the xUnit test and a gap in the scenario: a step cannot name a setting yet. Checked on the Blazor sample: built, ran green, `validate_scenario` valid |
+| 6 | Assert | The toolbar is in a shadow root; Assert is also on the view's strip |
+| 7 | The view's Tests step | **Run once runs in the server** (`dotnet test` with the class, or the scenario's address from `brinell/runTarget`), not the IDE's test UI: the view, MCP and the command line run a draft the same way. A suite whose scenario class is `[Theory]` cannot run one scenario; the view says so. Tried through a stand-in host; not inside VS Code or Visual Studio |
+| 8 | Briefs, MCP, CLI, agent | Also `run_test` (MCP). Checked with Claude in the agent's place over MCP on the User Form (a contact radio with no member); not with Copilot or Claude Code as the agent |
+
+Open: step 9 (Bouw7 in Visual Studio, by hand); the Tests step tried inside both IDEs; step 10.
