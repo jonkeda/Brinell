@@ -8,29 +8,35 @@ namespace Brinell.Maui.Testing;
 /// </summary>
 public class NavigationRecovery
 {
+    private const int ProbeIntervalMs = 50;
+
     private readonly IMauiTestContext _context;
     private readonly IScreenshotService? _screenshotService;
     private readonly HashSet<INavigablePage> _navigablePages = new();
     private readonly List<Func<bool>> _rootChecks = [];
-    private readonly int _pageDetectionTimeoutMs;
+    private readonly int _settleTimeoutMs;
     private readonly int _postNavigationDelayMs;
 
+    /// <param name="context">The test context.</param>
+    /// <param name="screenshotService">Captures a screenshot when recovery fails.</param>
+    /// <param name="settleTimeoutMs">How long to wait for a known state after each step back.</param>
+    /// <param name="postNavigationDelayMs">How long to wait for a known state after going back from a page no registration recognises.</param>
     public NavigationRecovery(
         IMauiTestContext context,
         IScreenshotService? screenshotService = null,
-        int pageDetectionTimeoutMs = 500,
+        int settleTimeoutMs = 2000,
         int postNavigationDelayMs = 300)
     {
         _context = context;
         _screenshotService = screenshotService;
-        _pageDetectionTimeoutMs = pageDetectionTimeoutMs;
+        _settleTimeoutMs = settleTimeoutMs;
         _postNavigationDelayMs = postNavigationDelayMs;
     }
 
     /// <summary>
     /// Registers pages that can be detected and left during recovery.
     /// </summary>
-    /// <param name="pages">Navigable page instances.</param>
+    /// <param name="pages">Navigable page instances; probed with a zero timeout.</param>
     public void RegisterPages(params INavigablePage[] pages)
     {
         foreach (var page in pages)
@@ -42,7 +48,9 @@ public class NavigationRecovery
     /// <summary>
     /// Registers a root-state predicate.
     /// </summary>
-    /// <param name="isRoot">Predicate that returns true when app is in a valid root state.</param>
+    /// <param name="isRoot">
+    /// Answers now, without waiting: recovery polls it together with the other checks.
+    /// </param>
     public void RegisterRootCheck(Func<bool> isRoot)
     {
         _rootChecks.Add(isRoot);
@@ -55,30 +63,35 @@ public class NavigationRecovery
     /// <returns>True when root state is reached.</returns>
     public bool TryReturnToRoot(int maxAttempts = 5)
     {
+        INavigablePage? departed = null;
+        var settleMs = 0;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            if (IsAtRoot())
+            var (atRoot, currentPage) = WaitForKnownState(departed, settleMs);
+            if (atRoot)
             {
                 return true;
             }
 
-            var currentPage = _navigablePages.FirstOrDefault(page => page.IsLoaded(_pageDetectionTimeoutMs));
             if (currentPage != null)
             {
                 if (!currentPage.TryLeave())
                 {
                     _context.NavigateBack();
                 }
+
+                departed = currentPage;
+                settleMs = _settleTimeoutMs;
             }
             else
             {
                 _context.NavigateBack();
+                departed = null;
+                settleMs = _postNavigationDelayMs;
             }
-
-            Thread.Sleep(_postNavigationDelayMs);
         }
 
-        var recovered = IsAtRoot();
+        var recovered = WaitForKnownState(departed, settleMs).AtRoot;
         if (!recovered)
         {
             _screenshotService?.Capture("NavigationRecovery", nameof(TryReturnToRoot), "recovery_failed_after_max_attempts");
@@ -87,13 +100,34 @@ public class NavigationRecovery
         return recovered;
     }
 
-    private bool IsAtRoot()
+    // A page being left can still answer during its exit transition, so it does not count until it is gone.
+    private (bool AtRoot, INavigablePage? Page) WaitForKnownState(INavigablePage? departed, int budgetMs)
     {
-        if (_rootChecks.Count == 0)
+        var deadline = Environment.TickCount64 + budgetMs;
+        while (true)
         {
-            return false;
-        }
+            if (departed == null || !departed.IsLoaded(0))
+            {
+                if (IsAtRoot())
+                {
+                    return (true, null);
+                }
 
-        return _rootChecks.Any(rootCheck => rootCheck());
+                var page = _navigablePages.FirstOrDefault(candidate => candidate.IsLoaded(0));
+                if (page != null)
+                {
+                    return (false, page);
+                }
+            }
+
+            if (Environment.TickCount64 >= deadline)
+            {
+                return (false, null);
+            }
+
+            Thread.Sleep(ProbeIntervalMs);
+        }
     }
+
+    private bool IsAtRoot() => _rootChecks.Any(rootCheck => rootCheck());
 }
