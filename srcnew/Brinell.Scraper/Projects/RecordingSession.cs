@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Brinell.Core.Scraping;
@@ -8,8 +7,8 @@ namespace Brinell.Scraper.Projects;
 
 /// <summary>
 /// One recording session: a folder with <c>recording.json</c>, the ordered list of what happened, and a
-/// snapshot file (and screenshot) per captured page. Today every event is a page capture; recorded
-/// actions will be events in the same list.
+/// snapshot file (and screenshot) per captured page. A test recording has the person's actions in the
+/// same list, each pointing at a node of its page's latest capture.
 /// </summary>
 public sealed class RecordingSession
 {
@@ -111,6 +110,43 @@ public sealed class RecordingSession
         return e;
     }
 
+    /// <summary>Appends an action: a click, a value, a check or another of <see cref="RecordingEvent.ActionKinds"/>.</summary>
+    /// <param name="action">The action; its number is assigned here.</param>
+    /// <exception cref="ArgumentException">It is not an action, an action on an element names neither a node nor a path, or an assert has no known check.</exception>
+    public RecordingEvent AddAction(RecordingEvent action)
+    {
+        if (!RecordingEvent.ActionKinds.Contains(action.Kind))
+            throw new ArgumentException($"'{action.Kind}' is not an action kind.", nameof(action));
+        if (RecordingEvent.ElementKinds.Contains(action.Kind) && action.Node is null && action.Path is null)
+            throw new ArgumentException($"A {action.Kind} names the node or the path it acted on.", nameof(action));
+        if (action.Kind == RecordingEvent.AssertKind)
+        {
+            if (action.Check is null || !AssertCheck.All.Contains(action.Check))
+                throw new ArgumentException($"An assert's check is one of {string.Join(", ", AssertCheck.All)}, not '{action.Check}'.", nameof(action));
+            if (action.Check != AssertCheck.Page && action.Node is null && action.Path is null)
+                throw new ArgumentException($"A '{action.Check}' assert names the node or the path it checks.", nameof(action));
+        }
+        var e = action with { Number = _events.Count + 1 };
+        _events.Add(e);
+        Save();
+        return e;
+    }
+
+    /// <summary>
+    /// The capture an action's node is in: the latest page event before it with the same page key, or null
+    /// when its page was not captured first.
+    /// </summary>
+    public RecordingEvent? CaptureOf(RecordingEvent action)
+    {
+        for (var i = action.Number - 2; i >= 0; i--)
+        {
+            var e = _events[i];
+            if (e.Kind == RecordingEvent.PageKind && e.Snapshot is not null && e.Page == action.Page)
+                return e;
+        }
+        return null;
+    }
+
     /// <summary>The snapshot a page event wrote.</summary>
     /// <exception cref="InvalidOperationException">The event has no snapshot.</exception>
     public ScrapeSnapshot ReadSnapshot(RecordingEvent e) =>
@@ -130,47 +166,4 @@ public sealed class RecordingSession
 
         public List<RecordingEvent>? Events { get; set; }
     }
-}
-
-/// <summary>One thing that happened in a recording session.</summary>
-public sealed record RecordingEvent
-{
-    /// <summary>The kind of a page capture.</summary>
-    public const string PageKind = "page";
-
-    /// <summary>Its number in the session, from 1.</summary>
-    public int Number { get; init; }
-
-    /// <summary>What it is: <see cref="PageKind"/> today.</summary>
-    public string Kind { get; init; } = PageKind;
-
-    /// <summary>When it happened.</summary>
-    public DateTimeOffset At { get; init; }
-
-    /// <summary>Where the app was.</summary>
-    public string Location { get; init; } = "";
-
-    /// <summary>The page's key (<see cref="PageKey"/>).</summary>
-    public string Page { get; init; } = "";
-
-    /// <summary>The page's title.</summary>
-    public string Title { get; init; } = "";
-
-    /// <summary>What the user called the page, if anything.</summary>
-    public string? Name { get; init; }
-
-    /// <summary>The snapshot file, in the session folder.</summary>
-    public string? Snapshot { get; init; }
-
-    /// <summary>The screenshot file, in the session folder.</summary>
-    public string? Screenshot { get; init; }
-
-    /// <summary>How many nodes the snapshot has.</summary>
-    public int Nodes { get; init; }
-
-    /// <summary>The name to show: the user's, else the title, else the page key.</summary>
-    public string DisplayName => Name ?? (Title.Length > 0 ? Title : Page);
-
-    /// <inheritdoc/>
-    public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Number} {Kind} {Page}");
 }
