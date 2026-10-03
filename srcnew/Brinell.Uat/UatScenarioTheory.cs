@@ -19,6 +19,7 @@ public sealed class UatScenarioTheoryAttribute : TheoryAttribute
 
 /// <summary>Finds the cases of a <see cref="UatScenarioTheoryAttribute"/>: one <see cref="UatScenarioTestCase"/> per row.</summary>
 /// <param name="diagnosticMessageSink">Where discovery reports problems.</param>
+// xUnit v2 only: a move to v3 redoes this discoverer (v3 lets a case set its own source location).
 public sealed class UatScenarioTheoryDiscoverer(IMessageSink diagnosticMessageSink) : TheoryDiscoverer(diagnosticMessageSink)
 {
     /// <inheritdoc />

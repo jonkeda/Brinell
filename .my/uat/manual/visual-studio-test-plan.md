@@ -6,8 +6,9 @@ alone takes about 30 minutes.
 
 The extension's code has automated tests for its engine side (the language server). Nothing
 automated has ever opened it in Visual Studio. This plan is that check. It replaces checklists
-6.1-6.3 of [visualstudio-plan.md](../tools/visualstudio-plan.md), and answers its spike questions
-S1-S6 (section 13).
+6.1-6.3 of the [extension plan](https://github.com/exact-mobile-apps/test-tooling/blob/e7c990c9/.my/uat/tools/visualstudio-plan.md) (built; its decisions are
+[AD-022](../../../.docs/decisions/ad-022-the-ides-run-the-gates-engine.md)), and answers its spike
+questions S1-S6 (section 13).
 
 What each feature should do is described in the user guide,
 [docs/guides/visual-studio-preview.md](../../../docs/guides/visual-studio-preview.md). When this
@@ -222,14 +223,14 @@ Only with GitHub Copilot, Visual Studio 17.14 or later.
 
 Write what you saw; these have no pass or fail.
 
-| # | Question | What you saw |
-| --- | --- | --- |
-| S1 | Would anything above need a feature the in-process extension has and an out-of-process one lacks? (Background: the extension is in-process.) Note anything that felt slow or froze Visual Studio. | |
-| S2 | Did Markdown still work in feature files: its colours, and Visual Studio's own Markdown preview? Did the semantic colours (E-3) show? | |
-| S3 | Did runs from the preview show up in Test Explorer's results? (They are not expected to; note it.) | |
-| S4 | From B-9: did the debugger stop in the test host before your breakpoint? | |
-| S5 | In Test Explorer, does **Go To Test** (or double-click) on a scenario open the `.feature.md` at its heading? | |
-| S6 | From P-13 and P-14: focus, keys, dock and undock. | |
+| # | Question | If not, the change to make | What you saw |
+| --- | --- | --- | --- |
+| S1 | Would anything above need a feature the in-process extension has and an out-of-process one lacks? (Background: the extension is in-process.) Note anything that felt slow or froze Visual Studio. | Stay in-process (VSSDK); nothing to change. | |
+| S2 | Did Markdown still work in feature files: its colours, and Visual Studio's own Markdown preview? Did the semantic colours (E-3) show? | A content type of our own for `*.feature.md` and `*.steps.md`, derived from Markdown (not `*.feature`, which Reqnroll's extension owns), and semantic colours through a classifier fed by the server. | |
+| S3 | Did runs from the preview show up in Test Explorer's results? (They are not expected to; note it.) | Nothing: the preview runs `dotnet test` and writes the Output pane. | |
+| S4 | From B-9: did the debugger stop in the test host before your breakpoint? | Start the test host ourselves with `vstest.console` under the debugger. | |
+| S5 | In Test Explorer, does **Go To Test** (or double-click) on a scenario open the `.feature.md` at its heading? | Our own *Go to scenario* on the case, from its `BddScenario` trait. | |
+| S6 | From P-13 and P-14: focus, keys, dock and undock. | Fix each issue in the preview window. | |
 
 ## 14. Results
 
@@ -253,5 +254,5 @@ When done:
 1. Put the results and the findings (each with its screenshot and Output pane text) in a
    `results-<date>.md` beside this file.
 2. Write a line in [.my/README.md](../../README.md).
-3. Any failure becomes a fix. When everything passes, the plan's next step is to extract and
-   delete (visualstudio-plan.md, section 5).
+3. Any failure becomes a fix. When everything passes, move what the run teaches to AD-022 or the
+   guide, then delete this plan.
