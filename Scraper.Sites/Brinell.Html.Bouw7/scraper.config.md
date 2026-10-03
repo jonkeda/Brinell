@@ -8,7 +8,7 @@ Vue2
 | Field | Value |
 | --- | --- |
 | Platform | html |
-| StartUrl | https://login-acc.bouw7.nl/ |
+| StartUrl | https://start-acc.bouw7.nl/ |
 | Namespace | Brinell.Html.Bouw7.Pages |
 | Pages | Pages |
 
@@ -27,3 +27,11 @@ Vue2
 | Host |
 | --- |
 | element.eleme.io |
+| login-acc.bouw7.nl |
+| start-acc.bouw7.nl |
+
+## Never visit
+
+| Url |
+| --- |
+| /invoice |

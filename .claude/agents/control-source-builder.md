@@ -27,7 +27,7 @@ progress table) plus code.
 **survey** - Identify the package and the version that matches the repo's target framework
 (check `~/.nuget/packages` first). List view types from the package's XML docs or assembly.
 Write the plan's "Current state", "Control inventory" (with base class, interface, likely
-route, priority) and phase sections, using `.my/communitytoolkit/plan.md` as the template.
+route, priority) and phase sections, using [the CommunityToolkit plan](https://github.com/exact-mobile-apps/test-tooling/blob/8ad62ed2/.my/communitytoolkit/plan.md) as the template.
 Change no code.
 
 **groundwork** - Carry out Phase 0 of the plan exactly. Verify with a solution build, the

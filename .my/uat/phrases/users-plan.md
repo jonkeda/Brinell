@@ -276,7 +276,7 @@ and namespaces are built. The decisions below are the starting point, not settle
 
 - **The user form exercises controls the Todo app has not used**: `RadioButton`, `Stepper`,
   `Slider`, `TimePicker`, `CheckBox` enabling a `DatePicker`. Some may show gaps in Brinell's
-  controls, especially on Android (Picker is still broken there, `.my/android/plan.md` A1; Stepper
+  controls, especially on Android (Picker is still broken there, [the Android plan](https://github.com/exact-mobile-apps/test-tooling/blob/ec96de1f/.my/android/plan.md) A1; Stepper
   and Slider are A2-A3). That is the point of the fields; the gaps are fixed in Brinell's controls
   when the tests are written, never worked around in the app.
 - **`decimal` and `TimeOnly` in SQLite** have no native type. Store the rate as integer cents and

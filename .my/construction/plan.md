@@ -8,7 +8,7 @@ stays in the Construction repo; **Brinell is referenced as a NuGet package set**
 `Todos` module is the PoC: it lands first, end-to-end, and locks the pattern the other
 modules follow.
 
-Follows the shape of [.my/communitytoolkit/plan.md](../communitytoolkit/plan.md): current
+Follows the shape of [the CommunityToolkit plan](https://github.com/exact-mobile-apps/test-tooling/blob/8ad62ed2/.my/communitytoolkit/plan.md): current
 state → inventory → phases with progress.
 
 ## Read this first

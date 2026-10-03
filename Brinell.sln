@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12224.323 insiders
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 Core", "1 Core", "{F926390A-A9F2-73C9-94DE-38AB7C1B91FB}"
 EndProject
@@ -185,27 +185,27 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Samples.Todo.Mixed.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6179C45D-8404-4AE3-9899-8842A0977564}"
 	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-		Directory.Build.props = Directory.Build.props
-		Directory.Packages.props = Directory.Packages.props
 		.editorconfig = .editorconfig
-		srcnew\Directory.Build.props = srcnew\Directory.Build.props
-		srcnew\Directory.Packages.props = srcnew\Directory.Packages.props
 		AGENTS.md = AGENTS.md
 		CHANGELOG.md = CHANGELOG.md
 		.github\workflows\ci.yml = .github\workflows\ci.yml
+		Directory.Build.props = Directory.Build.props
+		srcnew\Directory.Build.props = srcnew\Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		srcnew\Directory.Packages.props = srcnew\Directory.Packages.props
+		global.json = global.json
 		.github\workflows\release.yml = .github\workflows\release.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VS Code", "VS Code", "{0B1E8AE0-C141-4119-9CDC-EF4DEA1F7423}"
 	ProjectSection(SolutionItems) = preProject
-		tools\Brinell.Bdd.VsCode\package.json = tools\Brinell.Bdd.VsCode\package.json
-		tools\Brinell.Bdd.VsCode\README.md = tools\Brinell.Bdd.VsCode\README.md
-		tools\Brinell.Bdd.VsCode\tsconfig.json = tools\Brinell.Bdd.VsCode\tsconfig.json
-		tools\Brinell.Bdd.VsCode\src\extension.ts = tools\Brinell.Bdd.VsCode\src\extension.ts
-		tools\Brinell.Bdd.VsCode\src\preview.ts = tools\Brinell.Bdd.VsCode\src\preview.ts
-		tools\Brinell.Bdd.VsCode\src\tests.ts = tools\Brinell.Bdd.VsCode\src\tests.ts
 		tools\Brinell.Bdd.VsCode\src\breakpoints.ts = tools\Brinell.Bdd.VsCode\src\breakpoints.ts
+		tools\Brinell.Bdd.VsCode\src\extension.ts = tools\Brinell.Bdd.VsCode\src\extension.ts
+		tools\Brinell.Bdd.VsCode\package.json = tools\Brinell.Bdd.VsCode\package.json
+		tools\Brinell.Bdd.VsCode\src\preview.ts = tools\Brinell.Bdd.VsCode\src\preview.ts
+		tools\Brinell.Bdd.VsCode\README.md = tools\Brinell.Bdd.VsCode\README.md
+		tools\Brinell.Bdd.VsCode\src\tests.ts = tools\Brinell.Bdd.VsCode\src\tests.ts
+		tools\Brinell.Bdd.VsCode\tsconfig.json = tools\Brinell.Bdd.VsCode\tsconfig.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Recording", "srcnew\Brinell.Recording\Brinell.Recording.csproj", "{8A1AD1F4-23A7-4623-9BEA-B20413A14026}"
@@ -215,6 +215,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Narrator.Windows", "srcnew\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj", "{4C98F5FF-3C58-476E-9110-D538802FB617}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Bdd.Workspace", "srcnew\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj", "{7B5A9556-5775-4547-A980-6AF187C0F581}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6 Scraper.Sites", "6 Scraper.Sites", "{3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.Bouw7", "Scraper.Sites\Brinell.Html.Bouw7\Brinell.Html.Bouw7.csproj", "{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.Blazor", "Scraper.Sites\Brinell.Html.Blazor\Brinell.Html.Blazor.csproj", "{FE19D476-CF3D-78F5-83F4-79284740E38C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.Plain", "Scraper.Sites\Brinell.Html.Plain\Brinell.Html.Plain.csproj", "{C655993E-53C3-877D-59A8-45576743FBCA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.React", "Scraper.Sites\Brinell.Html.React\Brinell.Html.React.csproj", "{278C031B-BDF7-8A04-B250-05886C10EE14}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.Vue2", "Scraper.Sites\Brinell.Html.Vue2\Brinell.Html.Vue2.csproj", "{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1150,6 +1162,66 @@ Global
 		{7B5A9556-5775-4547-A980-6AF187C0F581}.Release|x64.Build.0 = Release|Any CPU
 		{7B5A9556-5775-4547-A980-6AF187C0F581}.Release|x86.ActiveCfg = Release|Any CPU
 		{7B5A9556-5775-4547-A980-6AF187C0F581}.Release|x86.Build.0 = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|x64.Build.0 = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3}.Release|x86.Build.0 = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|x64.Build.0 = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Debug|x86.Build.0 = Debug|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|x64.ActiveCfg = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|x64.Build.0 = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|x86.ActiveCfg = Release|Any CPU
+		{FE19D476-CF3D-78F5-83F4-79284740E38C}.Release|x86.Build.0 = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|x64.Build.0 = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Debug|x86.Build.0 = Debug|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|x64.ActiveCfg = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|x64.Build.0 = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|x86.ActiveCfg = Release|Any CPU
+		{C655993E-53C3-877D-59A8-45576743FBCA}.Release|x86.Build.0 = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|x64.Build.0 = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Debug|x86.Build.0 = Debug|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|x64.ActiveCfg = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|x64.Build.0 = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|x86.ActiveCfg = Release|Any CPU
+		{278C031B-BDF7-8A04-B250-05886C10EE14}.Release|x86.Build.0 = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|x64.Build.0 = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Debug|x86.Build.0 = Debug|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|x64.ActiveCfg = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|x64.Build.0 = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|x86.ActiveCfg = Release|Any CPU
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1242,5 +1314,13 @@ Global
 		{DABA0FFF-497E-471A-AB5D-81D6D5524FF9} = {B7C5C26E-E12D-BAD5-692F-0906FB740D89}
 		{0B1E8AE0-C141-4119-9CDC-EF4DEA1F7423} = {8D7A9EAD-6855-AC16-94D9-B0A74537A323}
 		{7B5A9556-5775-4547-A980-6AF187C0F581} = {8B104E00-A3D1-9900-0256-223418DD51E2}
+		{2D772DBD-FE50-50A8-4DDE-17C4D04520C3} = {3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}
+		{FE19D476-CF3D-78F5-83F4-79284740E38C} = {3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}
+		{C655993E-53C3-877D-59A8-45576743FBCA} = {3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}
+		{278C031B-BDF7-8A04-B250-05886C10EE14} = {3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}
+		{6FAFC77E-1443-38DB-EE5D-F67B1A46FF47} = {3BEDFC79-FD21-49DC-8ABB-ED602928CDAE}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BA30356B-516B-4AA8-A3AF-BB4DF94D3013}
 	EndGlobalSection
 EndGlobal

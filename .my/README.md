@@ -8,8 +8,6 @@ Deleted topics stay in git history; the last full tree is at
 
 | Topic | What is open | Status | Updated |
 | --- | --- | --- | --- |
-| [android/](android/plan.md) | Every Android UI failure fixed or explained; TOD.07.15 on an emulator (step 9) | doing: baseline taken | 2026-09-27 |
-| [communitytoolkit/](communitytoolkit/plan.md) | Android runs of the toolkit controls; the agent template for the next control source | Windows done | 2026-09-27 |
 | [construction/](construction/plan.md) | Exact.Construction's UI test migration onto Brinell | infrastructure in place, Todos not started | 2026-09 |
 | [core/](core/README.md) | One `ICore*` shape for every stack: L2 (busy signal), then the interfaces and bases | draft; L1 done | 2026-09-27 |
 | [documentation/](documentation/plan.md) | The comment policy applied to the code, phase by phase | todo | 2026-09 |

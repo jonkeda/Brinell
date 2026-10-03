@@ -35,7 +35,7 @@ Ask for the agent by name, with the step and the folder, for example
 | 4 | `build .my/<library> <Control>` | One control: sample, page object, tests, `.tpl.cs`, generate, build, run that control's tests. Fills in its progress row. | Read the row and the generated API. Commit. Repeat for the next control. |
 | 5 | `closeout .my/<library>` | The full UI suite, `docs/controls/<library>.md` linked from the docs index, a CHANGELOG entry. | Close the `.my/<library>/` topic: anything a user needs is now in `docs/`. |
 
-`.my/communitytoolkit/plan.md` is the worked example the agent copies; read it to see what a
+[The CommunityToolkit plan](https://github.com/exact-mobile-apps/test-tooling/blob/8ad62ed2/.my/communitytoolkit/plan.md) is the worked example the agent copies; read it to see what a
 finished plan looks like.
 
 ## What The Agent Will Not Do
