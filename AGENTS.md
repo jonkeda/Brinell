@@ -109,7 +109,7 @@ for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
 
 ## Docs Rules
 
-Four trees, each with one job:
+Five trees, each with one job:
 
 - **`.docs/`** - decisions, invariants and contracts: what must stay true. Read it before
   changing Brinell. A decision is recorded **once**, here, never also in code prose.
@@ -118,6 +118,8 @@ Four trees, each with one job:
   When the work is done: extract, then delete. Move its decisions to `.docs/` and anything a
   user needs to `docs/`, repoint the links, then delete the topic. An AD that needs the
   evidence links to it at its last commit. Code comments never point into `.my/`.
+- `.guides/` - user guides: step-by-step how-tos for a task, such as adding controls for a new
+  control library. Linked from `docs/README.md`.
 - `docs2/` - historical archive.
 
 - Keep links valid and relative.
