@@ -76,7 +76,37 @@ public static class ScrapeActionKind
 
     /// <summary>A browser dialog was shown and answered.</summary>
     public const string Dialog = "dialog";
+
+    /// <summary>A check the person picked (<see cref="ScrapeAssert"/>).</summary>
+    public const string Assert = "assert";
 }
+
+/// <summary>The checks an assert makes (R5).</summary>
+public static class ScrapeCheck
+{
+    /// <summary>The element is visible.</summary>
+    public const string Visible = "visible";
+
+    /// <summary>The element has the text.</summary>
+    public const string Text = "text";
+
+    /// <summary>The field has the value.</summary>
+    public const string Value = "value";
+
+    /// <summary>The checkbox or switch has the state.</summary>
+    public const string Checked = "checked";
+
+    /// <summary>The app is on the page.</summary>
+    public const string Page = "page";
+}
+
+/// <summary>A check the person picked in the app: an element (none for <see cref="ScrapeCheck.Page"/>), what to check, and what it showed.</summary>
+/// <param name="Location">Where the app was.</param>
+/// <param name="Node">The element's number in the last capture; null for a page check.</param>
+/// <param name="Check">One of <see cref="ScrapeCheck"/>.</param>
+/// <param name="Value">The text or value it showed, for a text or value check.</param>
+/// <param name="Checked">Its state, for a checked check.</param>
+public sealed record ScrapeAssert(string Location, int? Node, string Check, string? Value, bool? Checked);
 
 /// <summary>One level of an element's path from the root: what identifies it among its siblings.</summary>
 public sealed record ScrapePathStep

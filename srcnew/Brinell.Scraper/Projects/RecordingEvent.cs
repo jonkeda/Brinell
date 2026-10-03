@@ -35,7 +35,7 @@ public sealed record RecordingEvent
     public const string DialogKind = ScrapeActionKind.Dialog;
 
     /// <summary>A check the person picked: <see cref="Check"/> on <see cref="Node"/>, expecting <see cref="Value"/>.</summary>
-    public const string AssertKind = "assert";
+    public const string AssertKind = ScrapeActionKind.Assert;
 
     /// <summary>Every kind of action.</summary>
     public static IReadOnlySet<string> ActionKinds { get; } = new HashSet<string>(StringComparer.Ordinal)
@@ -128,19 +128,19 @@ public sealed record RecordingEvent
 public static class AssertCheck
 {
     /// <summary>The element is visible.</summary>
-    public const string Visible = "visible";
+    public const string Visible = ScrapeCheck.Visible;
 
     /// <summary>The element has the text <see cref="RecordingEvent.Value"/>.</summary>
-    public const string Text = "text";
+    public const string Text = ScrapeCheck.Text;
 
     /// <summary>The field has the value <see cref="RecordingEvent.Value"/>.</summary>
-    public const string Value = "value";
+    public const string Value = ScrapeCheck.Value;
 
     /// <summary>The checkbox is <see cref="RecordingEvent.Checked"/>.</summary>
-    public const string Checked = "checked";
+    public const string Checked = ScrapeCheck.Checked;
 
     /// <summary>The app is on the page <see cref="RecordingEvent.Page"/>.</summary>
-    public const string Page = "page";
+    public const string Page = ScrapeCheck.Page;
 
     /// <summary>Every check.</summary>
     public static IReadOnlySet<string> All { get; } = new HashSet<string>(StringComparer.Ordinal) { Visible, Text, Value, Checked, Page };

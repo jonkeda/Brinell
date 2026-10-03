@@ -33,7 +33,7 @@
     }
 
     function capture(el, parent) {
-        if (skip.has(el.tagName) || el.id === '__brinell_highlight') return;
+        if (skip.has(el.tagName) || el.id === '__brinell_highlight' || el.id === '__brinell_toolbar') return;
         const rect = el.getBoundingClientRect();
         const attr = {};
         for (const a of el.attributes)

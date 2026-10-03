@@ -26,6 +26,23 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     private static readonly string HighlightScript = Script("highlight.js");
     private static readonly string PickScript = Script("pick.js");
     private static readonly string RecorderScript = Script("recorder.js");
+    private static readonly string ToolbarScript = Script("toolbar.js");
+
+    // What an element shows, for the checks an assert offers: its text, a field's value (never a
+    // password's), and a checkbox's or switch's state.
+    private const string FactsScript = """
+        n => {
+            const el = (window.__brinellScrapeNodes || [])[n - 1];
+            if (!el || !el.getAttribute) return null;
+            const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 200);
+            const toggle = el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio');
+            let value = null;
+            if (el instanceof HTMLSelectElement) value = el.selectedOptions.length ? el.selectedOptions[0].text.trim() : '';
+            else if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !toggle && el.type !== 'password')) value = el.value;
+            const checked = toggle ? el.checked : el.hasAttribute('aria-checked') ? el.getAttribute('aria-checked') === 'true' : null;
+            return JSON.stringify({ text, value, checked });
+        }
+        """;
 
     private IPlaywright? _playwright;
     private IBrowserContext? _context;
@@ -54,6 +71,9 @@ public sealed class PlaywrightScrapeSource : IExploreSource
 
     /// <inheritdoc/>
     public event EventHandler<ScrapeAction>? Acted;
+
+    /// <inheritdoc/>
+    public event EventHandler<string>? Commanded;
 
     /// <inheritdoc/>
     public event EventHandler<string>? Downloaded;
@@ -128,12 +148,44 @@ public sealed class PlaywrightScrapeSource : IExploreSource
             await _context.AddInitScriptAsync($"({RecorderScript})({JsonSerializer.Serialize(argument)});").ConfigureAwait(false);
             foreach (var frame in page.Frames)
                 await TryEvaluateAsync<bool>(frame, RecorderScript, argument).ConfigureAwait(false);
+            // The toolbar's buttons: on a thread of their own, so Stop can close the browser that raised it.
+            await _context.ExposeBindingAsync<string>("__brinellCommand", (_, command) => Task.Run(() => Commanded?.Invoke(this, command))).ConfigureAwait(false);
+            await _context.AddInitScriptAsync($"({ToolbarScript})();").ConfigureAwait(false);
+            await TryEvaluateAsync<bool>(page.MainFrame, ToolbarScript, null).ConfigureAwait(false);
         }
         _recordingActions = true;
     }
 
     /// <inheritdoc/>
     public void StopActions() => _recordingActions = false;
+
+    /// <inheritdoc/>
+    public async Task<ScrapeAssert?> PickAssertAsync(CancellationToken cancellationToken = default)
+    {
+        var page = Started();
+        if (await PickAsync(cancellationToken).ConfigureAwait(false) is not { } node) return null;
+        var (frame, local) = _numbers[node - 1];
+        var json = await TryEvaluateAsync<string?>(frame, FactsScript, local).ConfigureAwait(false);
+        var facts = json is null ? null : JsonSerializer.Deserialize<Facts>(json, FrameCapture.Json);
+        if (facts is null) return null; // the element went away while it was picked
+        string? check;
+        using (cancellationToken.Register(() => _ = TryEvaluateAsync<bool>(page.MainFrame, "() => { if (window.__brinellChooseCancel) window.__brinellChooseCancel(); return true; }", null)))
+            check = await TryEvaluateAsync<string?>(page.MainFrame, "f => window.__brinellChooseCheck(f)", new { text = facts.Text, value = facts.Value, @checked = facts.Checked }).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return check switch
+        {
+            ScrapeCheck.Page => new ScrapeAssert(page.Url, null, check, null, null),
+            ScrapeCheck.Visible => new ScrapeAssert(page.Url, node, check, null, null),
+            ScrapeCheck.Text => new ScrapeAssert(page.Url, node, check, facts.Text, null),
+            ScrapeCheck.Value => new ScrapeAssert(page.Url, node, check, facts.Value, null),
+            ScrapeCheck.Checked => new ScrapeAssert(page.Url, node, check, null, facts.Checked),
+            _ => null,
+        };
+    }
+
+    /// <inheritdoc/>
+    public Task ShowCountAsync(int actions, CancellationToken cancellationToken = default) =>
+        _page is null ? Task.CompletedTask : TryEvaluateAsync<bool>(_page.MainFrame, "n => window.__brinellToolbarCount ? window.__brinellToolbarCount(n) : true", actions);
 
     private async Task<ScrapeSnapshot> CaptureLockedAsync(bool settle, CancellationToken cancellationToken)
     {
@@ -587,6 +639,8 @@ public sealed class PlaywrightScrapeSource : IExploreSource
     }
 
     private sealed record Act(IFrame Frame, string Json, string Location, DateTimeOffset At);
+
+    private sealed record Facts(string? Text, string? Value, bool? Checked);
 
     // What recorder.js sends: the element's number in the frame's capture `gen`, and its id in __brinellPending.
     private sealed record RawAction(string? Kind, int? Id, int? Local, int? Gen, ScrapePathStep[]? Path, string? Value, string? Secret, bool? Checked, bool? Accepted);

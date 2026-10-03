@@ -102,7 +102,11 @@
         send('input', el, valueOf(el, el.value));
     };
 
+    // The toolbar's own clicks, and a click that picks an element for an assert, are not the person's actions.
+    const ours = ev => !!window.__brinellPickCancel || ev.composedPath().some(e => e.id === '__brinell_toolbar');
+
     document.addEventListener('click', ev => {
+        if (ours(ev)) return;
         let el = ev.composedPath()[0];
         if (!(el instanceof Element)) return;
         if (el instanceof SVGElement) while (el.ownerSVGElement) el = el.ownerSVGElement; // an icon is one node
@@ -120,11 +124,13 @@
     }, true);
 
     document.addEventListener('focusin', ev => {
+        if (ours(ev)) return;
         const el = ev.composedPath()[0];
         if (isText(el)) sent.set(el, el.value);
     }, true);
 
     document.addEventListener('change', ev => {
+        if (ours(ev)) return;
         const el = ev.composedPath()[0];
         if (isToggle(el)) send('check', el, { checked: el.checked });
         else if (el instanceof HTMLSelectElement) send('select', el, valueOf(el, el.selectedOptions.length ? textOf(el.selectedOptions[0]) : ''));
@@ -132,7 +138,7 @@
     }, true);
 
     document.addEventListener('keydown', ev => {
-        if (!['Enter', 'Escape', 'Tab'].includes(ev.key) || ev.repeat) return;
+        if (!['Enter', 'Escape', 'Tab'].includes(ev.key) || ev.repeat || ours(ev)) return;
         const el = ev.composedPath()[0];
         if (ev.key === 'Enter' && el instanceof HTMLTextAreaElement) return; // a new line, part of the value
         if (isText(el)) sendValue(el); // the value comes before the key that submits or leaves it

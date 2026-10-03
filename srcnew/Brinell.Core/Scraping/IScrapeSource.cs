@@ -27,6 +27,18 @@ public interface IScrapeSource : IAsyncDisposable
     /// <summary>Stops raising <see cref="Acted"/>.</summary>
     void StopActions();
 
+    /// <summary>Raised when the person uses the test recording's toolbar: <c>assert</c> or <c>stop</c>.</summary>
+    event EventHandler<string>? Commanded;
+
+    /// <summary>
+    /// Lets the person click an element of the last capture, then choose a check of what it shows; null
+    /// when they cancel.
+    /// </summary>
+    Task<ScrapeAssert?> PickAssertAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Shows how many actions are recorded on the toolbar.</summary>
+    Task ShowCountAsync(int actions, CancellationToken cancellationToken = default);
+
     /// <summary>Opens the app or page to record.</summary>
     Task StartAsync(ScrapeStart start, CancellationToken cancellationToken = default);
 

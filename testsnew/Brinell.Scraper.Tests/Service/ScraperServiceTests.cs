@@ -115,6 +115,83 @@ public sealed class ScraperServiceTests : IAsyncLifetime
         Assert.Equal("/pages/account.html", session.Events[^1].Page);
     }
 
+    // The person's moves in the recording browser for an assert: Assert on the toolbar, an element, a check.
+    private async Task AssertOnAsync(string element, string check)
+    {
+        await Browser.ClickAsync("#__brinell_toolbar [data-command=assert]");
+        await Browser.WaitForFunctionAsync("() => !!window.__brinellPickCancel");
+        await Browser.ClickAsync(element);
+        await Browser.WaitForFunctionAsync("() => !!window.__brinellChooseCancel");
+        await Browser.ClickAsync($"#__brinell_toolbar [data-check={check}]");
+    }
+
+    private RecordingSession Session(RecordingState state) => ScrapeProject.Find(state.Folder)!.Session(state.Session)!;
+
+    [Fact]
+    public async Task An_assert_from_the_toolbar_records_the_check_the_person_chose_on_the_element_they_clicked()
+    {
+        var asserted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var asserts = 0;
+        _service.Changed += (_, change) =>
+        {
+            if (change.Captured?.Kind == RecordingEvent.AssertKind && Interlocked.Increment(ref asserts) == 4) asserted.TrySetResult();
+            if (change.Kind == ScraperChangeKind.Failed) asserted.TrySetException(new InvalidOperationException(change.Message));
+        };
+        var state = await _service.StartRecordingAsync(null, "Asserts", _site.Url("pages/form.html"), visible: false, actions: true);
+        await Browser.FillAsync("[data-testid=first-name]", "Ada");
+        await Browser.ClickAsync("[data-testid=submit]");
+
+        await AssertOnAsync("[data-testid=confirmation]", "text");
+        await AssertOnAsync("[data-testid=terms]", "checked");
+        await AssertOnAsync("[data-testid=first-name]", "value");
+        await AssertOnAsync("[data-testid=form-title]", "page");
+        await asserted.Task.WaitAsync(Limit);
+        await _service.StopRecordingAsync();
+
+        var session = Session(state);
+        var recorded = session.Events.Where(e => e.Kind == RecordingEvent.AssertKind).ToArray();
+        Assert.Equal(
+            [(AssertCheck.Text, "confirmation", "Thanks, Ada", null), (AssertCheck.Checked, "terms", null, false), (AssertCheck.Value, "first-name", "Ada", null), (AssertCheck.Page, null, null, null)],
+            recorded.Select(a => (a.Check, a.Node is { } n ? session.ReadSnapshot(session.CaptureOf(a)!)[n].Attribute("data-testid") : null, a.Value, a.Checked)));
+        Assert.DoesNotContain(session.Events, e => e.Kind == RecordingEvent.ClickKind && e.Node is { } n && session.ReadSnapshot(session.CaptureOf(e)!)[n].Attribute("data-testid") is "confirmation" or "form-title");
+    }
+
+    [Fact]
+    public async Task The_toolbar_counts_the_actions_is_not_captured_and_stops_the_recording()
+    {
+        var two = EventsAsync(3);
+        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _service.Changed += (_, change) => { if (change.Kind == ScraperChangeKind.Stopped) stopped.TrySetResult(); };
+        var state = await _service.StartRecordingAsync(null, "Toolbar", _site.Url("pages/form.html"), visible: false, actions: true);
+
+        await Browser.FillAsync("[data-testid=first-name]", "Ada");
+        await Browser.ClickAsync("[data-testid=submit]");
+        await two;
+        await Browser.WaitForFunctionAsync("() => document.getElementById('__brinell_toolbar').shadowRoot.querySelector('[data-count]').textContent === '2'");
+        await Browser.ClickAsync("#__brinell_toolbar [data-command=stop]");
+        await stopped.Task.WaitAsync(Limit);
+
+        var session = Session(state);
+        Assert.Null(_service.Active);
+        Assert.Equal(["page", "input", "click"], session.Events.Select(e => e.Kind));
+        Assert.DoesNotContain(session.ReadSnapshot(session.Events[0]).Nodes, n => n.Attribute("id") == "__brinell_toolbar");
+    }
+
+    [Fact]
+    public async Task Escape_while_choosing_a_check_records_nothing()
+    {
+        var state = await _service.StartRecordingAsync(null, "Cancelled", _site.Url("pages/form.html"), visible: false, actions: true);
+        var assert = _service.AssertAsync();
+        await Browser.WaitForFunctionAsync("() => !!window.__brinellPickCancel");
+        await Browser.ClickAsync("[data-testid=form-title]");
+        await Browser.WaitForFunctionAsync("() => !!window.__brinellChooseCancel");
+        await Browser.Keyboard.PressAsync("Escape");
+
+        Assert.Null(await assert.WaitAsync(Limit));
+        await _service.StopRecordingAsync();
+        Assert.DoesNotContain(Session(state).Events, e => e.IsAction);
+    }
+
     [Fact]
     public async Task A_recording_of_a_login_form_holds_no_password_and_no_secret()
     {
