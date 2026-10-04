@@ -339,7 +339,8 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
     private void OnEnterBreakMode(EnvDTE.dbgEventReason reason, ref EnvDTE.dbgExecutionAction executionAction)
     {
-        if (IsPaused)
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (IsPausedHere())
         {
             _package.JoinableTaskFactory.StartOnIdle(ShowPausedStep).FileAndForget("Brinell/PausedStep");
         }
@@ -348,11 +349,34 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void OnStepOver(string guid, int id, object customIn, object customOut, ref bool cancelDefault)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (IsPaused)
+        if (IsPausedHere())
         {
             cancelDefault = true;
             Move("over");
         }
+    }
+
+    // Only a pause the debugger is in now: a test process killed while paused leaves the file
+    // behind, and F10 in any later debugging must stay Visual Studio's own.
+    private bool IsPausedHere()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_paused?["process"]?.Value<int>() is not { } process ||
+            Package.GetGlobalService(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte ||
+            dte.Debugger.CurrentMode != EnvDTE.dbgDebugMode.dbgBreakMode)
+        {
+            return false;
+        }
+
+        foreach (EnvDTE.Process debugged in dte.Debugger.DebuggedProcesses)
+        {
+            if (debugged.ProcessID == process)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static JObject? ReadPaused(string path)
