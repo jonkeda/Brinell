@@ -72,6 +72,27 @@ From the proposal, with its questions settled as their leanings:
 | 0.1 | **Visual Studio builds the suite's project, not the solution** (F1): `BuildAsync` uses `IVsSolutionBuildManager.StartSimpleUpdateProjectConfiguration` for the suite's project (the run target already names it). Run and Debug both. | `BddRunController.cs` | With `Brinell.sln` open, a Run builds Todo's projects only (Output pane); owner times it before/after. | |
 | 0.2 | **Skip a build nothing needs** (F2), Visual Studio: no build when the suite's project is up to date (`IVsBuildableProjectCfg`/`QueryStartUpToDateCheck`, or remember the last successful build and the projects changed since). VS Code: the same with a cheap check (`dotnet build` of an up-to-date project still costs ~10 s, so track saves/builds per project). | `BddRunController.cs`; `tests.ts` | A second Run with nothing changed goes straight to `dotnet test`; a C# change still builds. |  |
 
+### Phase T: tests that drive the IDE side, so steps are checked without the owner
+
+Layers, cheapest first (the reasoning: the four bugs of section 6 were all in what only an IDE
+does; layers 1 and 2 already exist and catch none of them):
+
+| Layer | What | Where | Runs |
+| --- | --- | --- | --- |
+| 1 | engine and runner | `Brinell.Bdd.Tests`, `Brinell.Uat.Tests` (exist) | every step |
+| 2 | language server over JSON-RPC (`ServerHarness`) | `Brinell.Cli.Tests/Lsp` (exists: preview with runs, results changed, run targets) | every step |
+| 3 | **the preview page in Chromium**, through Brinell.Html page objects (dogfooding): an IDE stand-in loads `BddPreview.HostPage`, sends the IDE's messages, records what the page sends, maps the results host to a folder as WebView2 does | `testsnew/Brinell.Bdd.Workspace.UITests` (new) | every step; headless |
+| 4 | VS Code extension in a real VS Code (`@vscode/test-electron`) | `tools/Brinell.Bdd.VsCode/test` | from step 1.5; opens a window |
+| 5 | Visual Studio extension inside a real Visual Studio (`[IdeFact]`, Microsoft.VisualStudio.Extensibility.Testing.Xunit), its own root suffix so the owner's Exp instance is untouched | `tools/Brinell.Bdd.VisualStudio.Tests` (new; built with VS MSBuild, outside `dotnet build`) | on demand; ~1 min a start; desktop; one UI process at a time |
+| 6 | dogfood UAT: the IDE as an app under test, Visual Studio's shell through Brinell.Wpf (FlaUI) and the preview's WebView2 through Brinell.Html over CDP | later (3.5) | on demand |
+
+| # | Step | Files | Done when | Progress |
+| --- | --- | --- | --- | --- |
+| T.1 | **Layer 3**: the project, the IDE stand-in (`PreviewIde`), the page object (`ScenarioPreviewPage`), and tests for what exists: an update renders; a paused message shows the bar, the step text and marks the step; Step into only at a call, Step out only inside one; a move button sends `debug {move}`; going on hides the bar; `running {paused: true}` marks the heading "paused"; a breakpoint click sends `toggleBreak`. In `Brinell.sln`. | `testsnew/Brinell.Bdd.Workspace.UITests/` | the tests pass headless; `SolutionTests` passes | **done**: 6 tests, 32 s headless; the paused-label test fails on the script before 8131cee5 |
+| T.2 | **Layer 5 spike**: does `[IdeFact]` run on Visual Studio 18 Insiders with this VSIX? One test: start VS under a root suffix `BrinellTest`, install the VSIX, open `samples/Todo/Brinell.Samples.Todo.slnx`, open TOD.01, the Scenario Preview shows bound. Write the finding here; if it does not run, the fallback is layer 6's FlaUI + CDP for the same test. | `tools/Brinell.Bdd.VisualStudio.Tests/` | one green test, or the finding and the chosen fallback | |
+| T.3 | **Layer 5: yesterday's Debug as a test**: breakpoint on TOD.01.1 line 24, Debug from the preview, wait for break mode (DTE), assert `bdd-paused.json` names line 24 and the active document is the feature file at line 24; F10; paused at line 25; Continue; the scenario's result is written. Would have caught 5239365c, 4116aacd and f40b01aa. | same | green, once, with no other UI test process running | |
+| T.4 | Each later step's "Done when" names its layer 2/3/5 check next to the owner's. | this file | | |
+
 ### Phase 1: Step through (D1-D5)
 
 | # | Step | Files | Done when | Progress |
