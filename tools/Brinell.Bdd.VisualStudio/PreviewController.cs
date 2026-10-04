@@ -53,6 +53,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private CancellationTokenSource? _typing;
     private ScenarioPreviewControl? _explorer;
     private FileSystemWatcher? _pausedWatcher;
+
+    // Held so their handlers stay subscribed (DTE events are dropped with their object).
+    private EnvDTE.DebuggerEvents? _debuggerEvents;
+    private EnvDTE.CommandEvents? _stepOverEvents;
     private JObject? _paused;
     private string _explorerView = "steps";
     private string? _explorerSuite;
@@ -89,6 +93,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         VSColorTheme.ThemeChanged += OnThemeChanged;
         BddBreakpointStore.Instance.Changed += OnBreakpointsChanged;
         WatchPaused();
+        await WatchDebuggerAsync();
 
         ErrorHandler.ThrowOnFailure(_selection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_DocumentFrame, out var frame));
         await TrackAsync(frame, cancellationToken);
@@ -178,6 +183,15 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         Detach();
         _pausedWatcher?.Dispose();
+        if (_debuggerEvents is not null)
+        {
+            _debuggerEvents.OnEnterBreakMode -= OnEnterBreakMode;
+        }
+
+        if (_stepOverEvents is not null)
+        {
+            _stepOverEvents.BeforeExecute -= OnStepOver;
+        }
         _typing?.Cancel();
         _server?.Dispose();
     }
@@ -267,15 +281,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         var file = SourceOf(running);
         var line = paused["line"]?.Value<int>() ?? 1;
-        if (File.Exists(file))
-        {
-            VsShellUtilities.OpenDocument(_package, file, Guid.Empty, out _, out _, out _, out var textView);
-            if (textView is not null && line >= 1)
-            {
-                textView.SetCaretPos(line - 1, 0);
-                textView.CenterLines(line - 1, 1);
-            }
-        }
+        ShowPausedStep();
 
         foreach (var (control, path) in _views.ToList())
         {
@@ -289,6 +295,63 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 calls = paused["calls"]?.ToObject<string[]>() ?? [],
                 here = string.Equals(path ?? file, file, StringComparison.OrdinalIgnoreCase),
             });
+        }
+    }
+
+    // The paused step in its feature file, at its line. Visual Studio shows the C# line it stopped
+    // at (the engine's Debugger.Break) when it enters break mode, so this runs again after that.
+    private void ShowPausedStep()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_paused is not { } paused || (string?)paused["file"] is not { } running)
+        {
+            return;
+        }
+
+        var file = SourceOf(running);
+        var line = paused["line"]?.Value<int>() ?? 1;
+        if (File.Exists(file))
+        {
+            VsShellUtilities.OpenDocument(_package, file, Guid.Empty, out _, out _, out _, out var textView);
+            if (textView is not null && line >= 1)
+            {
+                textView.SetCaretPos(line - 1, 0);
+                textView.CenterLines(line - 1, 1);
+            }
+        }
+    }
+
+    // Break mode at a scenario step: the feature file comes back in front once Visual Studio has
+    // shown its own location. F10 there is the BDD Step over (F11 still goes into the step's C#).
+    private async Task WatchDebuggerAsync()
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
+        {
+            return;
+        }
+
+        _debuggerEvents = dte.Events.DebuggerEvents;
+        _debuggerEvents.OnEnterBreakMode += OnEnterBreakMode;
+        _stepOverEvents = dte.Events.CommandEvents[VSConstants.GUID_VSStandardCommandSet97.ToString("B"), (int)VSConstants.VSStd97CmdID.StepOver];
+        _stepOverEvents.BeforeExecute += OnStepOver;
+    }
+
+    private void OnEnterBreakMode(EnvDTE.dbgEventReason reason, ref EnvDTE.dbgExecutionAction executionAction)
+    {
+        if (IsPaused)
+        {
+            _package.JoinableTaskFactory.StartOnIdle(ShowPausedStep).FileAndForget("Brinell/PausedStep");
+        }
+    }
+
+    private void OnStepOver(string guid, int id, object customIn, object customOut, ref bool cancelDefault)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (IsPaused)
+        {
+            cancelDefault = true;
+            Move("over");
         }
     }
 
