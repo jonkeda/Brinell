@@ -12,7 +12,7 @@ public sealed class BddExplorerWindow : ToolWindowPane
         : base(null)
     {
         Caption = "BDD Explorer";
-        Control = new ScenarioPreviewControl();
+        Control = new ScenarioPreviewControl("BDD Explorer");
         Content = Control;
     }
 

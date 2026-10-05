@@ -20,7 +20,7 @@ public sealed class ScenarioPreviewWindow : ToolWindowPane
         : base(null)
     {
         Caption = "Scenario Preview";
-        Control = new ScenarioPreviewControl();
+        Control = new ScenarioPreviewControl(Caption);
         Content = Control;
     }
 
@@ -47,13 +47,19 @@ public sealed class ScenarioPreviewControl : UserControl
     private static bool _loaderSet;
 
     private readonly WebView2 _web = new();
+    private readonly string _title;
     private readonly List<string> _pending = [];
     private bool _ready;
     private string? _mappedResults;
     private Task? _initializing;
 
     /// <summary>Creates the control; the WebView2 starts when <see cref="InitializeAsync"/> is called.</summary>
-    public ScenarioPreviewControl() => Content = _web;
+    /// <param name="title">The page's title: which view it is, for DevTools and the IDE tests (CDP).</param>
+    public ScenarioPreviewControl(string title)
+    {
+        _title = title;
+        Content = _web;
+    }
 
     /// <summary>A message from the page: <c>reveal</c>, <c>pickSuite</c>, <c>ready</c>.</summary>
     public event EventHandler<JObject>? MessageReceived;
@@ -131,6 +137,7 @@ public sealed class ScenarioPreviewControl : UserControl
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.WebMessageReceived += OnWebMessage;
+        await core.AddScriptToExecuteOnDocumentCreatedAsync($"addEventListener('DOMContentLoaded', () => document.title = {JsonConvert.SerializeObject(_title)});");
         core.NavigateToString(hostPage);
     }
 

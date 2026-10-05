@@ -106,7 +106,7 @@ internal sealed class BddPreviewMargin : DockPanel, IWpfTextViewMargin
     // The width the last preview was dragged to, for the next one.
     private static double _width = 520;
 
-    private readonly ScenarioPreviewControl _preview = new();
+    private readonly ScenarioPreviewControl _preview = new("Scenario Preview (margin)");
     private bool _disposed;
 
     public BddPreviewMargin(string path)

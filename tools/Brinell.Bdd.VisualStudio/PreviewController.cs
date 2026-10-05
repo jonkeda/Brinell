@@ -340,6 +340,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void OnEnterBreakMode(EnvDTE.dbgEventReason reason, ref EnvDTE.dbgExecutionAction executionAction)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
+
+        // Read here, not left to the file watcher: the engine writes the file before it breaks, and
+        // the watcher's event can come after break mode, too late to bring the feature file back.
+        _paused = ReadPaused(BddBreakpointStore.Instance.PausedPath);
         if (IsPausedHere())
         {
             _package.JoinableTaskFactory.StartOnIdle(ShowPausedStep).FileAndForget("Brinell/PausedStep");
@@ -392,20 +396,30 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }
     }
 
-    // The run's file is the build output's copy: the source is the file at the same path under the
-    // active file's Features folder, as the engine matches breakpoints.
+    // The run's file is the build output's copy (<project>\bin\...\Features\<file>): the source is the
+    // project's own Features\<file>. Failing that, the same path under the active file's Features
+    // folder, as the engine matches breakpoints; never the copy when a source exists, since an edit
+    // there is lost at the next build. At a break the active file is often Visual Studio's C#.
     private string SourceOf(string running)
     {
         const string Features = "\\Features\\";
+        const string Bin = "\\bin\\";
         var at = running.LastIndexOf(Features, StringComparison.OrdinalIgnoreCase);
-        var mine = _path?.LastIndexOf(Features, StringComparison.OrdinalIgnoreCase) ?? -1;
-        if (at < 0 || mine < 0)
+        if (at < 0)
         {
             return running;
         }
 
-        var source = Path.Combine(_path!.Substring(0, mine + Features.Length), running.Substring(at + Features.Length));
-        return File.Exists(source) ? source : running;
+        var relative = running.Substring(at + Features.Length);
+        var bin = running.LastIndexOf(Bin, at, StringComparison.OrdinalIgnoreCase);
+        if (bin >= 0 && Path.Combine(running.Substring(0, bin), "Features", relative) is var project && File.Exists(project))
+        {
+            return project;
+        }
+
+        var mine = _path?.LastIndexOf(Features, StringComparison.OrdinalIgnoreCase) ?? -1;
+        var source = mine < 0 ? null : Path.Combine(_path!.Substring(0, mine + Features.Length), relative);
+        return source is not null && File.Exists(source) ? source : running;
     }
 
     // The active document changed: follow it when it is a feature or step file; otherwise the

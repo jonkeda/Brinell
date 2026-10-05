@@ -12,7 +12,7 @@ public sealed class ScraperWindow : ToolWindowPane
         : base(null)
     {
         Caption = "Scraper";
-        Control = new ScenarioPreviewControl();
+        Control = new ScenarioPreviewControl("Scraper");
         Content = Control;
     }
 
