@@ -15,10 +15,10 @@ public sealed class BddOptionsPage : DialogPage
     [Description("Where Record puts its videos. Empty: TestResults\\recordings of the suite's results.")]
     public string RecordingsFolder { get; set; } = string.Empty;
 
-    /// <summary>The voice, by (part of) its name; empty for the system's default.</summary>
+    /// <summary>The voice, by (part of) its name, or <c>azure:&lt;voice&gt;</c>; empty for the default.</summary>
     [Category("Recording")]
     [DisplayName("Voice")]
-    [Description("The voice a recording speaks with, by (part of) its name, when the video script names none. Empty: the system's default voice.")]
+    [Description("The voice a recording speaks with, by (part of) its name, when the video script names none: a Windows voice, or a cloud voice as azure:<voice> (azure:coral; its key in voice.secrets.json). Empty: the cloud voice when one is set up, else the system's default voice.")]
     public string Voice { get; set; } = string.Empty;
 
     /// <summary>The wait after a step, in milliseconds.</summary>

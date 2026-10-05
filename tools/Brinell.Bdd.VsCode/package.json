@@ -132,7 +132,7 @@
         "brinellBdd.voice": {
           "type": "string",
           "default": "",
-          "description": "The voice a recording speaks with, by (part of) its name, when the video script names none. Empty: the system's default voice."
+          "description": "The voice a recording speaks with, by (part of) its name, when the video script names none: a Windows voice, or a cloud voice as azure:<voice> (azure:coral; its key in voice.secrets.json). Empty: the cloud voice when one is set up, else the system's default voice."
         },
         "brinellBdd.beat": {
           "type": "number",

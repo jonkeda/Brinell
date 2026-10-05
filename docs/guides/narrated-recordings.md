@@ -10,8 +10,9 @@ step. Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotne
 - **ffmpeg**, on `PATH` or named by `BRINELL_FFMPEG`: it encodes the video, lays in the voice and
   joins the scenes. Windows: `winget install Gyan.FFmpeg.Essentials`, then a new terminal. Record
   checks for it first and says so when it is missing.
-- **A voice** (Windows): the voices in Settings, Time and language, Speech. Without one, lines are
-  timed from their words and shown as captions only.
+- **A voice**: a Windows voice (Settings, Time and language, Speech), or a cloud voice
+  ([Cloud Voice](#cloud-voice)). Without one, lines are timed from their words and shown as
+  captions only.
 - A suite whose test class uses `[UatScenarioTheory]`, so scenarios run by their address.
 
 ## A Video Script
@@ -44,7 +45,8 @@ That was the list.
 | Part | Means |
 | --- | --- |
 | `# Video:` | the video's title |
-| `Voice`, `Beat` | the voice by (part of) its name, and the wait after each step in ms; the settings when left out |
+| `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for a cloud voice), and the wait after each step in ms; the settings when left out |
+| `Instructions` | how a cloud voice says the lines (its tone); the settings when left out |
 | `## Scene:` | a chapter; one scenario, run and recorded |
 | `Scenario:` | the scenario's address: its file relative to the suite's config, `#`, its name with every run of other characters as one `-` (the `BddScenario` trait) |
 | paragraph before the table | said before the first step |
@@ -81,8 +83,54 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRINELL_RECORD_OUT` | the scenes folder, for a host that names the video |
 | `BRINELL_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
 | `BRINELL_VOICE`, `BRINELL_BEAT` | the voice and the beat (ms), when the script does not say |
+| `BRINELL_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
+| `BRINELL_VOICE_KEY`, `BRINELL_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
 | `BRINELL_RECORDERS` | a folder with `Brinell.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
+
+## Cloud Voice
+
+Azure OpenAI's text to speech (`gpt-4o-mini-tts`) speaks the lines when a script, `BRINELL_VOICE`
+or the IDEs' Voice setting names `azure:<voice>` (`azure:coral`, `azure:alloy`, `azure:sage`, ...),
+or names no voice while a cloud voice is set up. It sounds the same on every machine and works for
+every platform's runs. A script can set its tone:
+
+```markdown
+| Field | Value |
+| --- | --- |
+| Voice | azure:coral |
+| Instructions | calm and friendly, a product demo |
+```
+
+Its endpoint and key go in `voice.secrets.json`, which git ignores; `voice.secrets.example.json` at
+the repository root shows its shape:
+
+```json
+{
+  "endpoint": "https://<resource>.openai.azure.com",
+  "deployment": "gpt-4o-mini-tts",
+  "apiVersion": "2025-03-01-preview",
+  "key": "<the resource's key>",
+  "voice": "coral"
+}
+```
+
+The first of these that has an endpoint and a key is used:
+
+1. `BRINELL_VOICE_KEY`, `BRINELL_VOICE_ENDPOINT` (and `BRINELL_VOICE_DEPLOYMENT`,
+   `BRINELL_VOICE_API_VERSION`): for a build agent, from its secret store; they override the file.
+2. `voice.secrets.json` beside the suite's `uat.config.md`, or in a folder above it up to the
+   repository's root.
+3. `%USERPROFILE%\.brinell\voice.secrets.json`: one key for every repository, outside them all. The
+   place to start with. (A repository other than Brinell ignores the file only if its own
+   `.gitignore` says so: `**/voice.secrets.json`.)
+
+The key goes only into the request's `api-key` header; it is never in a log, a timeline or a
+message. A line is asked for once: clips are kept in `%LOCALAPPDATA%\Brinell\speech-cache` by
+their voice, instructions and text, so recording a scene again costs nothing. A recording that
+names a cloud voice fails when none is set up, or when the service refuses (the message says
+why); it never falls back to another voice. `BRINELL_VOICE_INSTRUCTIONS` gives the tone when the
+script does not.
 
 ## What You Get
 
