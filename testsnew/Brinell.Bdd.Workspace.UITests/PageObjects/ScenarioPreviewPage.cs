@@ -33,6 +33,14 @@ public sealed class ScenarioPreviewPage(IHtmlTestContext context) : HtmlPageObje
     /// <param name="line">The step's line, 1-based.</param>
     public ButtonControl<ScenarioPreviewPage> StepKeyword(int line) => new(this, $".uat-step[data-line='{line}'] > .uat-kw");
 
+    /// <summary>A scenario's Run button.</summary>
+    /// <param name="headingLine">The scenario heading's line, 1-based.</param>
+    public ButtonControl<ScenarioPreviewPage> Run(int headingLine) => new(this, $".uat-run[data-run='{headingLine}']:not([data-debug])");
+
+    /// <summary>A scenario's Debug button.</summary>
+    /// <param name="headingLine">The scenario heading's line, 1-based.</param>
+    public ButtonControl<ScenarioPreviewPage> Debug(int headingLine) => new(this, $".uat-run[data-debug][data-run='{headingLine}']");
+
     /// <summary>The scenario whose heading is on a line.</summary>
     /// <param name="line">The heading's line, 1-based.</param>
     public LabelControl<ScenarioPreviewPage> Scenario(int line) => new(this, $".uat-scenario[data-line='{line}']");
