@@ -73,8 +73,12 @@ public sealed partial class PresenterShellViewModel
         }
     }
 
-    /// <summary>The voices on this machine, the default first.</summary>
-    public IReadOnlyList<string> VoiceChoices { get; } = [DefaultVoiceChoice, .. WindowsSpeech.Voices];
+    private static readonly IReadOnlyList<string> WindowsVoices = WindowsSpeech.Voices;
+
+    /// <summary>The voices on this machine, the default first, then the cloud voices when one is set up.</summary>
+    public IReadOnlyList<string> VoiceChoices => _cloud.IsSetUp
+        ? [DefaultVoiceChoice, .. WindowsVoices, .. CloudVoices.Select(voice => Brinell.Narrator.AzureOpenAiSpeech.Prefix + voice)]
+        : [DefaultVoiceChoice, .. WindowsVoices];
 
     /// <summary>The voice setting, by its name on the Settings page.</summary>
     public string VoiceChoice

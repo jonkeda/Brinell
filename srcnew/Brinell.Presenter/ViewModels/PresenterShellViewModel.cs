@@ -90,7 +90,9 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         IScenarioPreviewService? previewService = null,
         PresenterBreakpointStore? breakpoints = null,
         IPresenterWindowService? windowService = null,
-        IPresenterRecorder? recorder = null)
+        IPresenterRecorder? recorder = null,
+        string? userFolder = null,
+        Func<string, string?>? readVariable = null)
     {
         _workspaceService = workspaceService;
         _windowService = windowService;
@@ -146,6 +148,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         _speed = settings.Speed;
         ExecutionDelayMilliseconds = _speeds.Of(_speed);
         InitializeRecording(settings, recorder);
+        InitializeCloudVoice(userFolder ?? Environment.GetEnvironmentVariable(UserFolderVariable), readVariable);
         InitializeNarrator();
         ApplyTheme();
 
@@ -555,7 +558,13 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     public string? WorkspacePath
     {
         get => _workspacePath;
-        private set => SetProperty(ref _workspacePath, value);
+        private set
+        {
+            if (SetProperty(ref _workspacePath, value) && _userFolder is not null)
+            {
+                RefreshCloudVoicePlace();
+            }
+        }
     }
 
     public string WorkspaceSummaryText

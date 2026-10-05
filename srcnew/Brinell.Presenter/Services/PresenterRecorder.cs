@@ -93,6 +93,14 @@ public interface IPresenterRecorder
     /// <param name="voice">The voice, by (part of) its name; null for the default.</param>
     /// <param name="cancellationToken">Stops it.</param>
     Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken);
+
+    /// <summary>Speaks a line aloud with a cloud voice's settings as entered, before they are saved.</summary>
+    /// <param name="text">The line.</param>
+    /// <param name="voice">The cloud voice, <c>azure:&lt;name&gt;</c>.</param>
+    /// <param name="secrets">The settings to try.</param>
+    /// <param name="cancellationToken">Cancels the speech.</param>
+    /// <exception cref="VoiceServiceException">The service could not make the line; its message says why.</exception>
+    Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 /// <inheritdoc />
@@ -225,6 +233,15 @@ public sealed class PresenterRecorder : IPresenterRecorder
     {
         var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken).ConfigureAwait(false);
         return new PresenterRecorded(stitched.Video, true, stitched.Warnings);
+    }
+
+    /// <inheritdoc />
+    public async Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
+        Directory.CreateDirectory(folder);
+        var clip = await Speech.ClipAsync(new AzureOpenAiSpeech(secrets), text, voice, Path.Combine(folder, "try-cloud.wav"), cancellationToken).ConfigureAwait(false);
+        await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

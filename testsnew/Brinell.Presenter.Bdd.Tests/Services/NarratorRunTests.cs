@@ -14,10 +14,13 @@ public sealed class NarratorRunTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "BrinellNarratorRun", Guid.NewGuid().ToString("N"));
     private readonly string _feature;
     private readonly string _script;
+    private readonly string _home;
 
     public NarratorRunTests()
     {
         Directory.CreateDirectory(Path.Combine(_root, "Features"));
+        _home = Path.Combine(_root, "home");
+        Directory.CreateDirectory(_home);
         File.WriteAllText(Path.Combine(_root, "uat.config.md"), "# UAT Config\n");
         _feature = Path.Combine(_root, "Features", "greeting.feature.md");
         File.WriteAllText(
@@ -150,8 +153,92 @@ public sealed class NarratorRunTests : IDisposable
         Assert.Equal("The open script asks for Microsoft Jenny: that voice is used for it.", shell.ScriptVoiceNote);
     }
 
-    private PresenterShellViewModel Shell(IBddExecutionService execution)
-        => new(new Workspace(_root, _feature), execution, new NoPicker(), new MemorySettings(), recorder: new NoRecorder());
+    [Fact]
+    public void CloudVoice_SavedForMe_IsTheUsersFile_AndTheKeyIsNotKept()
+    {
+        var shell = Shell(new FailingExecutionService());
+        Assert.Equal("Not set up.", shell.CloudVoiceState);
+        Assert.DoesNotContain("azure:coral", shell.VoiceChoices);
+
+        shell.CloudEndpointText = "https://voice.openai.azure.com";
+        shell.CloudDefaultVoice = "coral";
+        shell.CloudKeyText = CloudKey;
+        shell.SaveCloudVoiceCommand.Execute(null);
+
+        var file = Path.Combine(_home, ".brinell", VoiceSecrets.FileName);
+        Assert.Equal(CloudKey, VoiceSecrets.Find(null, NoVariables, _home)?.Key);
+        Assert.Equal($"Set up from {file}.", shell.CloudVoiceState);
+        Assert.Equal(string.Empty, shell.CloudKeyText);
+        Assert.Equal("Key set: leave empty to keep it", shell.CloudKeyPlaceholder);
+        Assert.Contains("azure:coral", shell.VoiceChoices);
+        Assert.DoesNotContain(
+            typeof(PresenterShellViewModel).GetProperties().Where(property => property.PropertyType == typeof(string) && property.GetIndexParameters().Length == 0),
+            property => property.GetValue(shell) is string text && text.Contains(CloudKey, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CloudVoice_AWorkspaceInNoRepository_CannotHoldTheFile()
+    {
+        var shell = Shell(new FailingExecutionService());
+
+        shell.CloudSaveForWorkspace = true;
+
+        Assert.False(shell.CanSaveCloudForWorkspace);
+        Assert.False(shell.CloudSaveForWorkspace);
+        Assert.Equal(Path.Combine(_home, ".brinell", VoiceSecrets.FileName), shell.CloudSavePath);
+        Assert.Equal("This workspace is in no git repository: save it for this machine instead.", shell.CloudWorkspaceNote);
+    }
+
+    [Fact]
+    public void CloudVoice_Try_SpeaksWithTheFieldsAsTheyAre_BeforeASave()
+    {
+        var recorder = new NoRecorder();
+        var shell = Shell(new FailingExecutionService(), recorder);
+        shell.CloudEndpointText = "https://voice.openai.azure.com";
+        shell.CloudDefaultVoice = "sage";
+        shell.CloudKeyText = CloudKey;
+
+        shell.TryCloudVoiceCommand.Execute(null);
+
+        var (voice, secrets) = Assert.Single(recorder.TriedCloud);
+        Assert.Equal("azure:sage", voice);
+        Assert.Equal(CloudKey, secrets.Key);
+        Assert.Equal(VoiceSecrets.DefaultDeployment, secrets.Deployment);
+        Assert.Equal("Spoken in azure:sage.", shell.CloudVoiceStatus);
+        Assert.False(File.Exists(Path.Combine(_home, ".brinell", VoiceSecrets.FileName)));
+    }
+
+    [Fact]
+    public void CloudVoice_Remove_AsksOnce_ThenDeletesTheFile()
+    {
+        var file = Path.Combine(_home, ".brinell", VoiceSecrets.FileName);
+        VoiceSecrets.Save(file, "https://voice.openai.azure.com", null, null, CloudKey, null);
+        var shell = Shell(new FailingExecutionService());
+
+        shell.RemoveCloudVoiceCommand.Execute(null);
+        Assert.True(File.Exists(file));
+        Assert.Equal("Click again to delete", shell.RemoveCloudVoiceText);
+
+        shell.RemoveCloudVoiceCommand.Execute(null);
+        Assert.False(File.Exists(file));
+        Assert.Equal("Not set up.", shell.CloudVoiceState);
+    }
+
+    [Fact]
+    public void CloudVoice_SetUpByTheEnvironment_SaysSo()
+    {
+        var shell = Shell(new FailingExecutionService(), readVariable: name => name is VoiceSecrets.KeyVariable or VoiceSecrets.EndpointVariable ? "set" : null);
+
+        Assert.True(shell.IsCloudVoiceSetUp);
+        Assert.Equal($"Set up from the environment ({VoiceSecrets.KeyVariable}, {VoiceSecrets.EndpointVariable}).", shell.CloudVoiceState);
+    }
+
+    private const string CloudKey = "secret-key-123";
+
+    private static string? NoVariables(string name) => null;
+
+    private PresenterShellViewModel Shell(IBddExecutionService execution, NoRecorder? recorder = null, Func<string, string?>? readVariable = null)
+        => new(new Workspace(_root, _feature), execution, new NoPicker(), new MemorySettings(), recorder: recorder ?? new NoRecorder(), userFolder: _home, readVariable: readVariable ?? NoVariables);
 
     private sealed class FailingExecutionService : IBddExecutionService
     {
@@ -235,5 +322,13 @@ public sealed class NarratorRunTests : IDisposable
         }
 
         public List<string?> Tried { get; } = [];
+
+        public List<(string Voice, VoiceSecrets Secrets)> TriedCloud { get; } = [];
+
+        public Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken)
+        {
+            TriedCloud.Add((voice, secrets));
+            return Task.CompletedTask;
+        }
     }
 }
