@@ -174,13 +174,13 @@ public sealed class CloudVoiceTests : IDisposable
     [Fact]
     public void ACloudVoice_IsChosenByItsName_AndWithoutSettings_FailsNamingWhereItLooked()
     {
-        var failure = Assert.Throws<VoiceNotConfiguredException>(() => Narrator.Speech.Find("azure:coral", folder: _suite, read: NoVariables));
+        var failure = Assert.Throws<VoiceNotConfiguredException>(() => Narrator.Speech.Find("azure:coral", folder: _suite, read: NoVariables, home: _home));
         Assert.Contains(Path.Combine(_suite, VoiceSecrets.FileName), failure.Message, StringComparison.Ordinal);
 
         var agent = Variables((VoiceSecrets.KeyVariable, Key), (VoiceSecrets.EndpointVariable, Endpoint));
-        Assert.IsType<AzureOpenAiSpeech>(Narrator.Speech.Find("azure:coral", folder: _suite, read: agent));
-        Assert.IsType<AzureOpenAiSpeech>(Narrator.Speech.Find(null, folder: _suite, read: agent));
-        Assert.IsNotType<AzureOpenAiSpeech>(Narrator.Speech.Find("Microsoft Zira", folder: _suite, read: agent));
+        Assert.IsType<AzureOpenAiSpeech>(Narrator.Speech.Find("azure:coral", folder: _suite, read: agent, home: _home));
+        Assert.IsType<AzureOpenAiSpeech>(Narrator.Speech.Find(null, folder: _suite, read: agent, home: _home));
+        Assert.IsNotType<AzureOpenAiSpeech>(Narrator.Speech.Find("Microsoft Zira", folder: _suite, read: agent, home: _home));
     }
 
     [Fact]

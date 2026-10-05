@@ -60,17 +60,18 @@ public static class Speech
     /// <param name="instructions">How a cloud voice says its lines; null for its own way.</param>
     /// <param name="folder">The suite's folder, where the cloud voice's settings are looked for first.</param>
     /// <param name="read">Reads an environment variable; the process's by default.</param>
+    /// <param name="home">The user's folder; <c>%USERPROFILE%</c> by default.</param>
     /// <exception cref="VoiceNotConfiguredException">A cloud voice is named, and no settings were found for it.</exception>
-    public static ISpeechSynthesizer? Find(string? voice, string? instructions = null, string? folder = null, Func<string, string?>? read = null)
+    public static ISpeechSynthesizer? Find(string? voice, string? instructions = null, string? folder = null, Func<string, string?>? read = null, string? home = null)
     {
-        var secrets = voice is null || AzureOpenAiSpeech.Owns(voice) ? VoiceSecrets.Find(folder, read) : null;
+        var secrets = voice is null || AzureOpenAiSpeech.Owns(voice) ? VoiceSecrets.Find(folder, read, home) : null;
         if (secrets is not null)
         {
             return new AzureOpenAiSpeech(secrets) { Instructions = instructions };
         }
 
         // A named cloud voice never quietly becomes another voice: the scene would differ for the wrong reason.
-        return AzureOpenAiSpeech.Owns(voice) ? throw new VoiceNotConfiguredException(voice!, VoiceSecrets.Places(folder)) : Discover();
+        return AzureOpenAiSpeech.Owns(voice) ? throw new VoiceNotConfiguredException(voice!, VoiceSecrets.Places(folder, home)) : Discover();
     }
 
     /// <summary>
