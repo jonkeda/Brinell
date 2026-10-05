@@ -8,7 +8,7 @@ namespace Brinell.Narrator;
 public sealed record BddVideoScriptParse(BddVideoScript? Script, IReadOnlyList<BddDiagnostic> Diagnostics);
 
 /// <summary>
-/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Beat),
+/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Instructions, Beat),
 /// then <c>## Scene: name</c> sections, each with a <c>Scenario:</c> line, an intro paragraph, a
 /// <c>Step | Say</c> table and an outro paragraph.
 /// </summary>
@@ -47,6 +47,7 @@ public static class BddVideoScriptParser
 
         string? title = null;
         string? voice = null;
+        string? instructions = null;
         TimeSpan? beat = null;
         var scenes = new List<BddVideoScene>();
         SceneBuilder? scene = null;
@@ -117,7 +118,7 @@ public static class BddVideoScriptParser
             return new BddVideoScriptParse(null, diagnostics);
         }
 
-        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes), diagnostics);
+        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions }, diagnostics);
 
         void Finish()
         {
@@ -147,6 +148,9 @@ public static class BddVideoScriptParser
                 case "voice":
                     voice = cells[1].Length > 0 ? cells[1] : null;
                     break;
+                case "instructions":
+                    instructions = cells[1].Length > 0 ? cells[1] : null;
+                    break;
                 case "beat" when int.TryParse(cells[1], NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds):
                     beat = TimeSpan.FromMilliseconds(milliseconds);
                     break;
@@ -154,7 +158,7 @@ public static class BddVideoScriptParser
                     Report(BddDiagnosticSeverity.Error, BadValueCode, $"Beat is the milliseconds to wait after a step, a whole number: not '{cells[1]}'.", number);
                     break;
                 default:
-                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice and Beat are.", number);
+                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice, Instructions and Beat are.", number);
                     break;
             }
         }

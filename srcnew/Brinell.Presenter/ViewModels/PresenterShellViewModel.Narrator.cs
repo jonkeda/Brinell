@@ -285,7 +285,8 @@ public sealed partial class PresenterShellViewModel
                     scene.Hash,
                     recordedScript.Voice ?? _voice,
                     recordedScript.Beat ?? TimeSpan.FromMilliseconds(_beat),
-                    _speakAloud);
+                    _speakAloud,
+                    recordedScript.Instructions);
                 RecordingStatus = $"Speaking scene {scene.Number}: {scene.Scene.Name}";
                 try
                 {

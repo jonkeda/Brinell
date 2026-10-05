@@ -22,6 +22,9 @@
 **/TestSettings/secrets/*
 !**/TestSettings/secrets/*.example.json
 
+# The narrator's cloud voice: its key (voice.secrets.example.json shows the shape)
+**/voice.secrets.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

@@ -52,6 +52,28 @@ public static class Speech
     }
 
     /// <summary>
+    /// The synthesizer that owns a voice: a cloud voice (<c>azure:coral</c>) when its settings are
+    /// found (<see cref="VoiceSecrets"/>), otherwise a platform voice (<see cref="Discover()"/>). With no
+    /// voice named, a configured cloud voice comes first. Null when there is no voice at all.
+    /// </summary>
+    /// <param name="voice">The voice; null for the default.</param>
+    /// <param name="instructions">How a cloud voice says its lines; null for its own way.</param>
+    /// <param name="folder">The suite's folder, where the cloud voice's settings are looked for first.</param>
+    /// <param name="read">Reads an environment variable; the process's by default.</param>
+    /// <exception cref="VoiceNotConfiguredException">A cloud voice is named, and no settings were found for it.</exception>
+    public static ISpeechSynthesizer? Find(string? voice, string? instructions = null, string? folder = null, Func<string, string?>? read = null)
+    {
+        var secrets = voice is null || AzureOpenAiSpeech.Owns(voice) ? VoiceSecrets.Find(folder, read) : null;
+        if (secrets is not null)
+        {
+            return new AzureOpenAiSpeech(secrets) { Instructions = instructions };
+        }
+
+        // A named cloud voice never quietly becomes another voice: the scene would differ for the wrong reason.
+        return AzureOpenAiSpeech.Owns(voice) ? throw new VoiceNotConfiguredException(voice!, VoiceSecrets.Places(folder)) : Discover();
+    }
+
+    /// <summary>
     /// Makes a clip: the voice's WAV and its length, or with no synthesizer, no WAV and a length
     /// estimated from the words, so the pace and the captions still work.
     /// </summary>

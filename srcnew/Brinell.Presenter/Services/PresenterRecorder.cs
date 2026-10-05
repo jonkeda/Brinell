@@ -27,7 +27,8 @@ public sealed record PresenterRecorded(string Video, bool Narrated, IReadOnlyLis
 /// <param name="Voice">The voice, by (part of) its name; null for the default.</param>
 /// <param name="Beat">The wait after a step.</param>
 /// <param name="SpeakAloud">Whether each line is also played while the run waits for it.</param>
-public sealed record PresenterSceneRequest(BddVideoScenePlan Plan, int Number, string Folder, string Hash, string? Voice, TimeSpan Beat, bool SpeakAloud);
+/// <param name="Instructions">How a cloud voice says the lines; null for its own way.</param>
+public sealed record PresenterSceneRequest(BddVideoScenePlan Plan, int Number, string Folder, string Hash, string? Voice, TimeSpan Beat, bool SpeakAloud, string? Instructions = null);
 
 /// <summary>Records Presenter's runs, the way a gate run with <c>BRINELL_RECORD</c> does.</summary>
 public interface IPresenterRecorder
@@ -127,8 +128,8 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var beat = settings.Beat;
         if (BddRecordings.FindScene(workspacePath, featureFile, scenarioName) is { } found)
         {
-            var speech = new WindowsSpeech();
-            clips = await BddSceneClips.SpeakAsync(found.Scene, speech.IsAvailable ? speech : null, found.Script.Voice ?? settings.Voice, sceneFolder, cancellationToken).ConfigureAwait(false);
+            var voice = found.Script.Voice ?? settings.Voice;
+            clips = await BddSceneClips.SpeakAsync(found.Scene, Speech.Find(voice, found.Script.Instructions, workspacePath), voice, sceneFolder, cancellationToken).ConfigureAwait(false);
             name = found.Scene.Scene.Name;
             beat = found.Script.Beat ?? beat;
         }
@@ -145,8 +146,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
     public async Task<bool> RehearseAsync(PresenterUatExecutionSession session, BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);
-        var speech = new WindowsSpeech();
-        if (!speech.IsAvailable)
+        if (Speech.Find(voice) is not { } speech)
         {
             return false;
         }
@@ -172,8 +172,8 @@ public sealed class PresenterRecorder : IPresenterRecorder
 
         // A scene recorded again replaces its earlier recording, whatever this one comes to.
         TryDelete(scene.Folder);
-        var speech = new WindowsSpeech();
-        var clips = await BddSceneClips.SpeakAsync(scene.Plan, speech.IsAvailable ? speech : null, scene.Voice, scene.Folder, cancellationToken).ConfigureAwait(false);
+        var speech = Speech.Find(scene.Voice, scene.Instructions, scene.Folder);
+        var clips = await BddSceneClips.SpeakAsync(scene.Plan, speech, scene.Voice, scene.Folder, cancellationToken).ConfigureAwait(false);
         session.Said = Play;
         await session.RecordAsync(new BddRunnerRecord(scene.Number, scene.Plan.Scene.Name, scene.Plan.Address, scene.Folder, scene.Hash, Clips(clips), scene.Beat.TotalMilliseconds, scene.SpeakAloud)).ConfigureAwait(false);
         _scene = session;
@@ -230,8 +230,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
     /// <inheritdoc />
     public async Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken)
     {
-        var speech = new WindowsSpeech();
-        if (!speech.IsAvailable)
+        if (Speech.Find(voice) is not { } speech)
         {
             return false;
         }

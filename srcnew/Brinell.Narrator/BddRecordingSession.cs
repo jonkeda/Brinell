@@ -29,6 +29,9 @@ public sealed class BddRecordingSession
     /// <summary>The voice, when the script does not name one.</summary>
     public const string VoiceVariable = "BRINELL_VOICE";
 
+    /// <summary>How a cloud voice says the lines, when the script does not say.</summary>
+    public const string InstructionsVariable = "BRINELL_VOICE_INSTRUCTIONS";
+
     /// <summary>The beat in milliseconds, when the script does not say.</summary>
     public const string BeatVariable = "BRINELL_BEAT";
 
@@ -55,13 +58,15 @@ public sealed class BddRecordingSession
     /// <param name="synthesizer">The voice; null to estimate the lines' lengths only.</param>
     /// <param name="voice">The voice's name, when the script names none.</param>
     /// <param name="beat">The beat, when the script does not say.</param>
-    public BddRecordingSession(string configDirectory, BddVideoScriptCheck? script, string scenesFolder, ISpeechSynthesizer? synthesizer, string? voice, TimeSpan beat)
+    /// <param name="instructions">How a cloud voice says the lines, when the script does not say.</param>
+    public BddRecordingSession(string configDirectory, BddVideoScriptCheck? script, string scenesFolder, ISpeechSynthesizer? synthesizer, string? voice, TimeSpan beat, string? instructions = null)
     {
         _configDirectory = configDirectory ?? throw new ArgumentNullException(nameof(configDirectory));
         Script = script;
         ScenesFolder = scenesFolder ?? throw new ArgumentNullException(nameof(scenesFolder));
         _synthesizer = synthesizer;
         Voice = script?.Script?.Voice ?? voice;
+        Instructions = script?.Script?.Instructions ?? instructions;
         Beat = script?.Script?.Beat ?? beat;
     }
 
@@ -76,6 +81,9 @@ public sealed class BddRecordingSession
 
     /// <summary>The voice's name; null for the default voice.</summary>
     public string? Voice { get; }
+
+    /// <summary>How a cloud voice says the lines; null for its own way.</summary>
+    public string? Instructions { get; }
 
     /// <summary>The wait after a step.</summary>
     public TimeSpan Beat { get; }
@@ -126,7 +134,10 @@ public sealed class BddRecordingSession
         var beat = int.TryParse(read(BeatVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds)
             ? TimeSpan.FromMilliseconds(milliseconds)
             : DefaultBeat;
-        return new BddRecordingSession(configDirectory, script, scenes, Speech.Discover(), read(VoiceVariable), beat) { KeepScenes = keep };
+        var voice = script?.Script?.Voice ?? read(VoiceVariable);
+        var instructions = script?.Script?.Instructions ?? read(InstructionsVariable);
+        var synthesizer = Speech.Find(voice, instructions, configDirectory, read);
+        return new BddRecordingSession(configDirectory, script, scenes, synthesizer, voice, beat, instructions) { KeepScenes = keep };
     }
 
     /// <summary>
@@ -154,7 +165,7 @@ public sealed class BddRecordingSession
                 var number = IndexOf(scenes, plan.Scene) + 1;
                 var folder = SceneFolder(number);
                 var clips = await BddSceneClips.SpeakAsync(plan, _synthesizer, Voice, folder, cancellationToken).ConfigureAwait(false);
-                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat) { Hash = BddKeptScenes.Hash(plan, Voice, Beat) };
+                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat) { Hash = BddKeptScenes.Hash(plan, Voice, Beat, Instructions) };
             }
         }
 

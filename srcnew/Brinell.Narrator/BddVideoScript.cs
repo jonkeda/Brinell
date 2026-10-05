@@ -11,6 +11,9 @@ namespace Brinell.Narrator;
 /// <param name="Scenes">The scenes, in the order they play.</param>
 public sealed record BddVideoScript(string FilePath, string Title, string? Voice, TimeSpan? Beat, IReadOnlyList<BddVideoScene> Scenes)
 {
+    /// <summary>How a cloud voice says the lines, e.g. "calm and friendly"; null for the settings'.</summary>
+    public string? Instructions { get; init; }
+
     /// <summary>The extension of a video script.</summary>
     public const string Extension = ".video.md";
 

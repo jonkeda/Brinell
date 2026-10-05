@@ -56,7 +56,8 @@ public static class BddKeptScenes
     /// <param name="plan">The scene.</param>
     /// <param name="voice">The voice it is spoken in; null for the default.</param>
     /// <param name="beat">The wait after a step.</param>
-    public static string Hash(BddVideoScenePlan plan, string? voice, TimeSpan beat)
+    /// <param name="instructions">How a cloud voice says the lines; null for none.</param>
+    public static string Hash(BddVideoScenePlan plan, string? voice, TimeSpan beat, string? instructions = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
         var text = new StringBuilder();
@@ -68,6 +69,13 @@ public static class BddKeptScenes
         Add(plan.Scene.Outro);
         Add(voice);
         Add(((long)beat.TotalMilliseconds).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        // Only when there are any, so a scene kept before instructions existed is not out of date.
+        if (instructions is not null)
+        {
+            Add("instructions: " + instructions);
+        }
+
         foreach (var step in plan.Steps)
         {
             Add(BddVideoScriptCheck.Written(step));
