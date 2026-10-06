@@ -251,7 +251,11 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// reading was tried and blocked the one press that dismisses such a page, so the judgement
     /// stays with the caller, which can see what it expected to be on screen.
     /// </remarks>
-    public void NavigateBack() => _driver.Navigate().Back();
+    public void NavigateBack()
+    {
+        using var mark = Brinell.Core.Recording.Interactions.Report(Brinell.Core.Recording.InteractionKind.Key, () => System.Drawing.Rectangle.Empty, key: "Back");
+        _driver.Navigate().Back();
+    }
 
     /// <summary>
     /// The toolbar's up button, which a <c>NavigationPage</c> shows on every page above its root.

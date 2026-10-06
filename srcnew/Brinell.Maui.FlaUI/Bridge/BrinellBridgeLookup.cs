@@ -105,14 +105,42 @@ internal static class BrinellBridgeLookup
         return best ?? matches[0];
     }
 
+    /// <summary>
+    /// A bridge target's screen rectangle, from its <c>GetBounds</c>, in this process's units (as UI
+    /// Automation gives them): for a recorded video's touch mark on a control the tree cannot show.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The app publishes no such target, or it does not answer.</exception>
+    internal static Rectangle TargetBounds(AutomationElement root, UIA3Automation automation, string automationId)
+    {
+        if (Find(root, automation, automationId) is not { } target
+            || !TryReadBounds(target, out var left, out var top, out var width, out var height))
+        {
+            throw new InvalidOperationException($"'{automationId}' answers no bounds on the bridge.");
+        }
+
+        var factor = PhysicalPerCaller(root);
+        return Rectangle.FromLTRB(
+            (int)Math.Round(left / factor),
+            (int)Math.Round(top / factor),
+            (int)Math.Round((left + width) / factor),
+            (int)Math.Round((top + height) / factor));
+    }
+
     private static (double X, double Y) ToPhysical(AutomationElement root, double x, double y)
+    {
+        var factor = PhysicalPerCaller(root);
+        return (x * factor, y * factor);
+    }
+
+    // Physical pixels per pixel of this process: 1 for a per-monitor aware client.
+    private static double PhysicalPerCaller(AutomationElement root)
     {
         try
         {
             var hwnd = root.Properties.NativeWindowHandle.ValueOrDefault;
             if (hwnd == IntPtr.Zero)
             {
-                return (x, y);
+                return 1;
             }
 
             var callerDpi = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext()) switch
@@ -125,8 +153,7 @@ internal static class BrinellBridgeLookup
             var windowDpi = GetDpiForWindow(hwnd);
             if (callerDpi > 0 && windowDpi > 0)
             {
-                var factor = (double)windowDpi / callerDpi;
-                return (x * factor, y * factor);
+                return (double)windowDpi / callerDpi;
             }
         }
         catch (Exception)
@@ -134,7 +161,7 @@ internal static class BrinellBridgeLookup
             // Unconverted is still right for a per-monitor aware client.
         }
 
-        return (x, y);
+        return 1;
     }
 
     private const int Unaware = 0;

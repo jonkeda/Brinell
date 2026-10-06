@@ -85,7 +85,7 @@ public sealed class BddSceneRecordingTests : IDisposable
         }
 
         await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = recording }).RunAsync(Scenarios.Bind());
-        using (Interactions.Report(InteractionKind.Tap, () => new System.Drawing.Rectangle(110, 220, 40, 30), "SyncButton"))
+        using (Interactions.Report(InteractionKind.Tap, () => new System.Drawing.Rectangle(110, 220, 40, 30), () => "SyncButton"))
         {
         }
 

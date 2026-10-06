@@ -26,7 +26,7 @@ public sealed class InteractionsTests
         using (Interactions.Begin(log))
         {
             // A double click that runs as a gesture, which reports too: one interaction.
-            using (Interactions.Report(InteractionKind.DoubleTap, () => new Rectangle(10, 20, 30, 40), "Row"))
+            using (Interactions.Report(InteractionKind.DoubleTap, () => new Rectangle(10, 20, 30, 40), () => "Row"))
             {
                 using (Interactions.Report(InteractionKind.Tap, () => new Rectangle(0, 0, 1, 1)))
                 {
@@ -43,6 +43,23 @@ public sealed class InteractionsTests
         Assert.Equal("Row", log.Taken[0].Label);
         Assert.Equal(new Point(200, 380), log.Taken[1].To);
         Assert.Null(Interactions.Log);
+    }
+
+    [Fact]
+    public void ASwipeWithADirectionOnly_IsDrawnAcrossTheMiddleHalfOfItsTarget()
+    {
+        var log = new Log();
+        using (Interactions.Begin(log))
+        {
+            using (Interactions.ReportSwipe(() => new Rectangle(0, 100, 400, 400), dx: 0, dy: 1))
+            {
+            }
+        }
+
+        var swipe = Assert.Single(log.Taken);
+        Assert.Equal(InteractionKind.Swipe, swipe.Kind);
+        Assert.Equal(new Point(200, 200), swipe.From);
+        Assert.Equal(new Point(200, 400), swipe.To);
     }
 
     [Fact]

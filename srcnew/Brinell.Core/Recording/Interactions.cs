@@ -99,12 +99,26 @@ public static class Interactions
     /// </summary>
     /// <param name="kind">What is done.</param>
     /// <param name="bounds">Reads the target's rectangle; only called while recording.</param>
-    /// <param name="label">The target's AutomationId or name.</param>
+    /// <param name="label">Reads the target's AutomationId or name; only called while recording.</param>
     /// <param name="from">Where a swipe starts.</param>
     /// <param name="to">Where a swipe ends.</param>
     /// <param name="duration">How long the action lasts.</param>
     /// <param name="key">The key's name, for <see cref="InteractionKind.Key"/>.</param>
-    public static Scope Report(InteractionKind kind, Func<Rectangle> bounds, string? label = null, Point? from = null, Point? to = null, TimeSpan duration = default, string? key = null)
+    public static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label = null, Point? from = null, Point? to = null, TimeSpan duration = default, string? key = null)
+        => Report(kind, bounds, label, _ => (from, to), duration, key);
+
+    /// <summary>
+    /// Reports a swipe that has a direction but no points (a bridge's <c>SwipeDown</c>): it is drawn
+    /// across the middle half of its target, in that direction.
+    /// </summary>
+    /// <param name="bounds">Reads the target's rectangle; only called while recording.</param>
+    /// <param name="dx">-1, 0 or 1: left or right.</param>
+    /// <param name="dy">-1, 0 or 1: up or down.</param>
+    /// <param name="label">Reads the target's AutomationId or name; only called while recording.</param>
+    public static Scope ReportSwipe(Func<Rectangle> bounds, int dx, int dy, Func<string?>? label = null)
+        => Report(InteractionKind.Swipe, bounds, label, rectangle => (Across(rectangle, -dx, -dy), Across(rectangle, dx, dy)), default, null);
+
+    private static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label, Func<Rectangle, (Point? From, Point? To)> path, TimeSpan duration, string? key)
     {
         ArgumentNullException.ThrowIfNull(bounds);
         if (Log is not { } log)
@@ -112,25 +126,33 @@ public static class Interactions
             return default;
         }
 
-        if (_depth++ == 0 && TryRead(bounds) is { } rectangle)
+        if (_depth++ == 0 && TryRead(bounds, out var rectangle))
         {
-            log.Add(new Interaction(kind, Stopwatch.GetTimestamp(), rectangle) { From = from, To = to, Duration = duration, Label = label, Key = key });
+            var (from, to) = path(rectangle);
+            var name = label is not null && TryRead(label, out var read) ? read : null;
+            log.Add(new Interaction(kind, Stopwatch.GetTimestamp(), rectangle) { From = from, To = to, Duration = duration, Label = name, Key = key });
         }
 
         return new Scope(counted: true);
     }
 
-    // A rectangle that cannot be read (the element went stale) leaves no mark: a recording never fails a step.
-    private static Rectangle? TryRead(Func<Rectangle> bounds)
+    // A point a quarter of the way out from the centre, in a direction.
+    private static Point Across(Rectangle bounds, int dx, int dy)
+        => new(bounds.X + (bounds.Width / 2) + (dx * bounds.Width / 4), bounds.Y + (bounds.Height / 2) + (dy * bounds.Height / 4));
+
+    // A target that cannot be read (the element went stale) leaves no mark: a recording never fails a step.
+    private static bool TryRead<T>(Func<T> read, out T value)
     {
         try
         {
-            return bounds();
+            value = read();
+            return true;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            Debug.WriteLine($"Interactions: the target's bounds could not be read ({exception.Message}); no mark.");
-            return null;
+            Debug.WriteLine($"Interactions: the target could not be read ({exception.Message}); no mark.");
+            value = default!;
+            return false;
         }
     }
 
