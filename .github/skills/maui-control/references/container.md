@@ -71,6 +71,11 @@ Do not re-declare these:
   with Core methods for whatever the base does not supply (`IsEnabledCore`, `PullToRefreshCore`).
 - **Scoping is strict.** Children resolve only under the root, never in the parent. That is the
   point of a container; do not add a fallback.
+- **Fixed part ids.** For an app component with several parts, the page sets one id on the
+  instance and the component gives its parts fixed ids (`Value`, `Clear`, `Title`). The
+  container finds them under the instance root. Never compose a part id from the instance id
+  (`Name_Value`) or ask the app for a bindable property that only names a part. Ids that carry
+  data identity (`Action_{id}`, row roots) are fine.
 - **A member that needs a child and the root** is hand-written as plain calls in sequence, with
   a remark naming both (R4):
 

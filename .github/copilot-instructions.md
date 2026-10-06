@@ -9,15 +9,16 @@ These instructions apply to the Brinell submodule.
 - Samples: `samples/`
 - Active docs: `docs/`
 - Previous docs archive: `docs2/`
-- Planning/research notes: `.my/reports/`
+- Planning notes for work in flight: `.my/` (index in `.my/README.md`)
 
 Use [AGENTS.md](../AGENTS.md) as the local entry point.
 
 ## Skills
 
 Task workflows live in [skills/](skills/): `maui-control` (create a MAUI ControlObject),
-`maui-ui-test` (write MAUI UI tests and page objects) and `convert-control` (convert a
-control to the generator format). Before one of those tasks, read its `SKILL.md` and the
+`maui-ui-test` (write MAUI UI tests and page objects), `convert-control` (convert a
+control to the generator format), `html-control` (create an Html or Blazor ControlObject)
+and `html-ui-test` (write Html and Blazor UI tests and page objects). Before one of those tasks, read its `SKILL.md` and the
 reference it points to; if your tool does not load skills, open them directly.
 
 ## Build And Test
@@ -25,14 +26,18 @@ reference it points to; if your tool does not load skills, open them directly.
 Commands are from the Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Uat.Tests\Brinell.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
 ```
 
 Use the focused platform run guides under `docs/run/` for UI tests.
-`srcnew\Brinell.sln` is a broad compile check, not a complete project inventory.
+`Brinell.sln` holds every project in the repository, in folders by area. The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
 ## Architecture Rules
 

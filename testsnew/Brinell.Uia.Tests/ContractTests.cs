@@ -246,6 +246,7 @@ public class ContractTests
             BrinellVerb.None,
             BrinellVerb.GetCapabilities,
             BrinellVerb.GetProtocolVersion,
+            BrinellVerb.GetBounds,
             BrinellVerb.Ping,
             BrinellVerb.IsFocused,
             BrinellVerb.GetText,

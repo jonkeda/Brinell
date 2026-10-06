@@ -225,6 +225,9 @@ internal sealed class BridgeTargetProvider
 
             case BrinellVerb.Ping:
                 return _target.IsAvailable ? HResults.S_OK : HResults.UIA_E_ELEMENTNOTAVAILABLE;
+
+            case BrinellVerb.GetBounds:
+                return ReadBounds(out result);
         }
 
         if (!_target.IsAvailable)
@@ -246,6 +249,34 @@ internal sealed class BridgeTargetProvider
         catch (Exception)
         {
             result = string.Empty;
+            return HResults.E_FAIL;
+        }
+    }
+
+    private int ReadBounds(out string result)
+    {
+        result = string.Empty;
+
+        if (!_target.IsAvailable)
+        {
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        try
+        {
+            if (!_target.TryGetScreenBounds(out var bounds))
+            {
+                return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+            }
+
+            result = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0},{1},{2},{3}",
+                bounds.Left, bounds.Top, bounds.Width, bounds.Height);
+            return HResults.S_OK;
+        }
+        catch (Exception)
+        {
             return HResults.E_FAIL;
         }
     }

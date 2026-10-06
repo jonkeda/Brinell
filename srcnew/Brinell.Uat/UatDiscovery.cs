@@ -19,15 +19,15 @@ public static class UatDiscovery
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        List<UatDiagnostic> diagnostics = [];
+        List<BddDiagnostic> diagnostics = [];
         List<UatPageBinding> pages = [];
         List<UatCommandBinding> commands = [];
-        var catalog = new UatCommandCatalog();
+        var catalog = new BddCommandCatalog();
 
         var types = assemblies
             .SelectMany(GetLoadableTypes)
             .Where(type => type is { IsAbstract: false, IsClass: true } && type.IsVisible)
-            .Where(type => type.GetCustomAttribute<UatIgnoreAttribute>() is null)
+            .Where(type => type.GetCustomAttribute<BddIgnoreAttribute>() is null)
             .ToArray();
 
         foreach (var type in types.Where(type => IsPageType(type, options)))
@@ -42,9 +42,20 @@ public static class UatDiscovery
             pages.Add(new UatPageBinding(pageName, type, controls));
         }
 
-        foreach (var method in types.SelectMany(GetCandidateMethods))
+        // A step on a control method is a control verb, not a phrase.
+        var controlTypes = pages
+            .SelectMany(page => page.Controls)
+            .Select(control => control.ControlType)
+            .ToHashSet();
+
+        foreach (var method in types
+                     .Where(type => !controlTypes.Contains(type) && !IsControlObjectType(type))
+                     .SelectMany(GetCandidateMethods))
         {
-            foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
+            // A broken phrase stays in the catalog and fails the step that uses it (AD-016); here it
+            // is only a warning.
+            var (phrases, unmatchable) = BddPhraseDeclarations.Of(method, inferWithoutAttribute: false);
+            foreach (var phrase in phrases)
             {
                 var command = new UatCommandBinding(
                     phrase.Phrase,
@@ -52,11 +63,25 @@ public static class UatDiscovery
                     $"{method.DeclaringType!.FullName}.{method.Name}",
                     method);
                 commands.Add(command);
-
-                foreach (var keyword in ExpandKeywords(phrase.Keyword))
+                catalog.Register(phrase.Keyword, phrase.Phrase, command.CommandId, parameters: phrase.Parameters, problem: phrase.Problem);
+                if (phrase.Problem is { } problem)
                 {
-                    catalog.Register(keyword, phrase.Phrase, command.CommandId);
+                    diagnostics.Add(new BddDiagnostic(
+                        BddDiagnosticSeverity.Warning,
+                        problem.Code,
+                        $"The phrase '{phrase.Phrase}' from {problem.Declaration} {problem.Message}",
+                        new BddSourceLocation(null, 1)));
                 }
+            }
+
+            foreach (var declaration in unmatchable)
+            {
+                catalog.AddUnmatchable(declaration);
+                diagnostics.Add(new BddDiagnostic(
+                    BddDiagnosticSeverity.Warning,
+                    declaration.Problem.Code,
+                    $"{declaration.Problem.Declaration} {declaration.Problem.Message}",
+                    new BddSourceLocation(null, 1)));
             }
         }
 
@@ -70,13 +95,13 @@ public static class UatDiscovery
     private static IReadOnlyList<UatControlBinding> DiscoverControls(
         Type pageType,
         UatDiscoveryOptions options,
-        ICollection<UatDiagnostic> diagnostics)
+        ICollection<BddDiagnostic> diagnostics)
     {
         List<UatControlBinding> controls = [];
         foreach (var property in pageType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.GetIndexParameters().Length > 0 ||
-                property.GetCustomAttribute<UatIgnoreAttribute>() is not null ||
+                property.GetCustomAttribute<BddIgnoreAttribute>() is not null ||
                 !IsControlProperty(property, options))
             {
                 continue;
@@ -125,14 +150,14 @@ public static class UatDiscovery
             return true;
         }
 
-        if (property.PropertyType.GetInterfaces().Any(IsControlObjectInterface))
+        if (IsControlObjectType(property.PropertyType))
         {
             return true;
         }
 
         if (property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Any(method => method.GetCustomAttributes<UatActionAttribute>().Any() ||
-                           method.GetCustomAttributes<UatPhraseAttribute>().Any()))
+                           method.GetCustomAttributes<BddStepAttribute>().Any()))
         {
             return true;
         }
@@ -141,6 +166,11 @@ public static class UatDiscovery
                !options.RequireExplicitUatAttributes &&
                (UatNameInference.HasKnownSuffix(property.Name) ||
                 UatNameInference.HasKnownSuffix(property.PropertyType.Name));
+    }
+
+    private static bool IsControlObjectType(Type type)
+    {
+        return type.GetInterfaces().Any(IsControlObjectInterface);
     }
 
     private static bool IsControlObjectInterface(Type type)
@@ -169,15 +199,8 @@ public static class UatDiscovery
     {
         return type
             .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
-            .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null)
-            .Where(method => method.GetCustomAttributes<UatPhraseAttribute>().Any());
-    }
-
-    private static IEnumerable<UatEffectiveStepKeyword> ExpandKeywords(UatEffectiveStepKeyword? keyword)
-    {
-        return keyword.HasValue
-            ? [keyword.Value]
-            : Enum.GetValues<UatEffectiveStepKeyword>();
+            .Where(method => method.GetCustomAttribute<BddIgnoreAttribute>() is null)
+            .Where(method => method.GetCustomAttributes<BddStepAttribute>().Any());
     }
 
     private static IReadOnlyList<Type> GetLoadableTypes(Assembly assembly)
@@ -194,49 +217,46 @@ public static class UatDiscovery
 
     private static void AddDuplicatePageDiagnostics(
         IReadOnlyList<UatPageBinding> pages,
-        ICollection<UatDiagnostic> diagnostics)
+        ICollection<BddDiagnostic> diagnostics)
     {
         foreach (var duplicate in pages.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
         {
-            diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
+            diagnostics.Add(new BddDiagnostic(
+                BddDiagnosticSeverity.Error,
                 "UATD001",
                 $"Duplicate UAT page name '{duplicate.Key}'.",
-                new UatSourceLocation(null, 1)));
+                new BddSourceLocation(null, 1)));
         }
     }
 
     private static void AddDuplicateControlDiagnostics(
         IReadOnlyList<UatPageBinding> pages,
-        ICollection<UatDiagnostic> diagnostics)
+        ICollection<BddDiagnostic> diagnostics)
     {
         foreach (var page in pages)
         {
             foreach (var duplicate in page.Controls.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
             {
-                diagnostics.Add(new UatDiagnostic(
-                    UatDiagnosticSeverity.Error,
+                diagnostics.Add(new BddDiagnostic(
+                    BddDiagnosticSeverity.Error,
                     "UATD002",
                     $"Duplicate UAT control name '{duplicate.Key}' on page '{page.Name}'.",
-                    new UatSourceLocation(null, 1)));
+                    new BddSourceLocation(null, 1)));
             }
         }
     }
 
     private static void AddDuplicatePhraseDiagnostics(
         IReadOnlyList<UatCommandBinding> commands,
-        ICollection<UatDiagnostic> diagnostics)
+        ICollection<BddDiagnostic> diagnostics)
     {
-        var expanded = commands.SelectMany(command => ExpandKeywords(command.Keyword)
-            .Select(keyword => new { command.Phrase, Keyword = keyword }));
-
-        foreach (var duplicate in expanded.GroupBy(x => $"{x.Keyword}:{x.Phrase}", StringComparer.Ordinal).Where(x => x.Count() > 1))
+        foreach (var duplicate in commands.GroupBy(x => $"{x.Keyword}:{x.Phrase}", StringComparer.Ordinal).Where(x => x.Count() > 1))
         {
-            diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
+            diagnostics.Add(new BddDiagnostic(
+                BddDiagnosticSeverity.Error,
                 "UATD003",
                 $"Duplicate UAT command phrase '{duplicate.First().Phrase}' for keyword '{duplicate.First().Keyword}'.",
-                new UatSourceLocation(null, 1)));
+                new BddSourceLocation(null, 1)));
         }
     }
 }
@@ -244,10 +264,10 @@ public static class UatDiscovery
 public sealed record UatDiscoveryResult(
     IReadOnlyList<UatPageBinding> Pages,
     IReadOnlyList<UatCommandBinding> Commands,
-    UatCommandCatalog Catalog,
-    IReadOnlyList<UatDiagnostic> Diagnostics)
+    BddCommandCatalog Catalog,
+    IReadOnlyList<BddDiagnostic> Diagnostics)
 {
-    public bool Success => Diagnostics.All(x => x.Severity != UatDiagnosticSeverity.Error);
+    public bool Success => Diagnostics.All(x => x.Severity != BddDiagnosticSeverity.Error);
 }
 
 public sealed record UatPageBinding(
@@ -264,6 +284,6 @@ public sealed record UatControlBinding(
 
 public sealed record UatCommandBinding(
     string Phrase,
-    UatEffectiveStepKeyword? Keyword,
+    BddEffectiveStepKeyword Keyword,
     string CommandId,
     MethodInfo Method);

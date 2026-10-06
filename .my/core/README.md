@@ -4,7 +4,7 @@ Start here.
 
 | File | What it is | Authoritative for |
 | --- | --- | --- |
-| [plan.md](plan.md) | Steps, order, status, verification | **what to do next, and what is done** |
+| [plan.md](plan.md) | Steps, order, status, verification. L1 (the leaf layer) is done; L2 is next | **what to do next, and what is done** |
 | [design.md](design.md) | The new interfaces, the calls layer, the exceptions, using **`ICore*`** names throughout | **what to build** |
 | [naming.md](naming.md) | The full rename table (existing Core name -> new `ICore*` name; per-stack aliases) | **what things are called** |
 | [migration.md](migration.md) | Per-stack playbook: MAUI, Html, WPF, WinForms, NativeAndroid, Stride | **how each stack moves** |
@@ -13,13 +13,13 @@ Start here.
 ## Origin
 
 This document supersedes the "move down" draft in
-[`../stale-readiness/move-down.md`](../stale-readiness/move-down.md) with one change: the
+[`../stale-readiness/move-down.md`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/move-down.md) with one change: the
 common layer uses **new names** (`ICoreElement`, `ICoreDriver`, `ICoreScope`, ...) instead of
 reusing the existing `IElement<T>`, `IDriver<T>`, `IElementScope<T>` and friends.
 
 The rest of the move-down draft still holds: MAUI passed its steps 0-9 on its own interfaces
 (`IMauiElement`, `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext`); Html has a
-planned slice in [`../html/`](../html/) that will land on its own `IHtml*` interfaces; the other
+planned slice in [`../html/`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/) that will land on its own `IHtml*` interfaces; the other
 stacks (NativeAndroid, WPF, WinForms, Stride) still use Core's old interfaces.
 
 **The new names let the two layers coexist.** The old `Brinell.Core.Interfaces.IElement<T>`

@@ -191,7 +191,7 @@ the LLM draft `*.uat.md` scenarios. Human edits and commits. The LLM is a
 Guardrails:
 - Every generated scenario must carry a `Traces: CON.03.x` metadata field.
 - The LLM may only use phrases from the Brinell vocabulary
-  ([uat-phrases-and-flows.md](../../Brinell/docs/guides/uat-phrases-and-flows.md));
+  ([uat-step-definitions.md](../../Brinell/docs/guides/uat-step-definitions.md));
   if it needs a new phrase, that's a signal to add a phrase, not to hand-roll code.
 - Prefer one happy path + the critical edge per journey; push permutations to
   Tier-2 tables/unit tests.

@@ -55,6 +55,7 @@ public class TodoEditPage(IMauiTestContext context) : PageObjectBase<TodoEditPag
     public Label<SectionCard<TodoEditPage>> TitleError => BasicsCard.Label("TodoEdit_TitleError");
 
     /// <summary>The notes.</summary>
+    [UatName("Notes")]
     public Editor<SectionCard<TodoEditPage>> Notes => new(BasicsCard, "TodoEdit_Notes");
 
     /// <summary>Whether the todo has a due date.</summary>

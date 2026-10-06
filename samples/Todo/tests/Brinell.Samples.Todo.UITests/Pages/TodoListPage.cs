@@ -1,4 +1,6 @@
+using Brinell.Core.Testing;
 using Brinell.Samples.Todo.UITests.Containers;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.UITests.Pages;
 
@@ -20,7 +22,12 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     public ToolbarButton<AppRoot> SyncButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Sync"));
 
     /// <summary>Opens a new, empty edit page.</summary>
+    [UatNavigatesTo(typeof(TodoEditPage))]
     public ToolbarButton<AppRoot> AddButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Add"));
+
+    /// <summary>Opens the users (TOD.11).</summary>
+    [UatNavigatesTo(typeof(UserListPage))]
+    public ToolbarButton<AppRoot> UsersButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Users"));
 
     /// <summary>The status filter: All, Open, In progress, Done.</summary>
     public Picker<TodoListPage> Filter => new(this, "TodoList_Filter");
@@ -29,10 +36,22 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     public Label<TodoListPage> LastSync => new(this, "TodoList_LastSync");
 
     /// <summary>Loading, Empty, Error, or the rows.</summary>
+    [UatName("List")]
     public TodoListState State => new(this, "TodoList_State");
 
     /// <summary>The rows.</summary>
     public TodoList Todos => new(this, "TodoList_Items");
+
+    /// <summary>"Nothing to do", in the Empty state.</summary>
+    [UatName("Empty Message")]
+    public Label<TodoListState> EmptyMessage => State.EmptyLabel;
+
+    /// <summary>What went wrong, in the Error state.</summary>
+    [UatName("Error Message")]
+    public Label<TodoListState> ErrorMessage => State.ErrorLabel;
+
+    /// <summary>Retries the sync, in the Error state.</summary>
+    public Button<TodoListState> RetryButton => State.Retry;
 
     /// <summary>Opens a new, empty edit page.</summary>
     public TodoEditPage Add()
@@ -42,6 +61,7 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     }
 
     /// <summary>Creates a todo with this title through the edit page, and returns to the list.</summary>
+    [BddWhen("I create a todo {title}")]
     public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 
     /// <summary>Starts a sync.</summary>
@@ -54,6 +74,13 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     {
         SyncButton.Click();
         return this;
+    }
+
+    /// <summary>Opens the users.</summary>
+    public UserListPage OpenUsers()
+    {
+        UsersButton.Click();
+        return UserListPage.Arrived(Context);
     }
 
     /// <summary>Opens the detail page of the row with this title.</summary>

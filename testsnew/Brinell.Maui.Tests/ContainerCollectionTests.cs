@@ -1,5 +1,5 @@
+using Brinell.Core.Scopes;
 using Brinell.Maui.Containers;
-using Brinell.Maui.Scopes;
 
 namespace Brinell.Maui.Tests;
 

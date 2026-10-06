@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The BDD CodeLens on C# members (phase 4). Visual Studio runs CodeLens providers in its own
+       CodeLens process, so this is an assembly of its own, carried in the VSIX as a
+       CodeLensComponent. It holds no engine types: it asks the extension, which asks the server. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>Brinell.Bdd.VisualStudio.CodeLens</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <EnableSourceLink>false</EnableSourceLink>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" ExcludeAssets="runtime" />
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+
+</Project>

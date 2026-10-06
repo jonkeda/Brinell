@@ -1,3 +1,4 @@
+using Brinell.Core.Testing;
 using Brinell.Maui.Containers;
 using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Text;

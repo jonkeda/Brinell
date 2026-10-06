@@ -17,14 +17,13 @@ needs something they do not offer, add it there first; never reach past them.
 2. **Write the test** (shape below) using only page-object members.
 3. **If the sample app lacks what the test needs**, add it to `samples/Brinell.Samples.Maui.App`
    with `AutomationId`s and a status label that shows the result, then rebuild the app:
-   `dotnet build srcnew\Brinell.sln -v:minimal /nr:false` builds it, including the Windows exe
+   `dotnet build Brinell.sln -v:minimal /nr:false` builds it, including the Windows exe
    the fixture launches.
 4. **Run the smallest tier that can fail**:
    `dotnet test testsnew\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj --filter "Control=Foo"`.
    One UI test process at a time, and never build while it runs. Tier 2b
-   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Brinell.sln` does
-   not build; in a fresh checkout build it first:
-   `dotnet build samples\Brinell.Samples.Maui.ShellApp\Brinell.Samples.Maui.ShellApp.csproj -f net10.0-windows10.0.19041.0 -v:minimal /nr:false`.
+   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Brinell.sln`
+   builds too.
 
 ## Test shape
 

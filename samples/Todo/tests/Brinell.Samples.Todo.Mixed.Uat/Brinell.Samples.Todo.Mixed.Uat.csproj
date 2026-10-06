@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.Mixed.Uat</RootNamespace>
+    <Description>UAT scenarios that use Todo apps of several heads at once: each step runs on the app of the user it names.</Description>
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <!-- The apps, their page objects and the one backend, shared with the mixed UI tests. -->
+    <ProjectReference Include="..\Brinell.Samples.Todo.TestSupport.Apps\Brinell.Samples.Todo.TestSupport.Apps.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- RootDirectory null puts artifacts in the repository's TestResults (AD-007). -->
+    <None Include="brinell.maui.config.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
+</Project>

@@ -36,4 +36,10 @@ public class MauiTestContextOptions
     /// <see cref="NearMissSettings.Default"/>.
     /// </summary>
     public NearMissSettings? NearMiss { get; init; }
+
+    /// <summary>
+    /// A name for the context in call logs, such as the app's name when a test runs several
+    /// (<c>Daan's PC</c>). If null, the logs say <c>Test</c>.
+    /// </summary>
+    public string? Name { get; init; }
 }

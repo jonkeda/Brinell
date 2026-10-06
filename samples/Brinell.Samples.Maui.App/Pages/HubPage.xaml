@@ -9,7 +9,6 @@
     four pages had to be registered as routes instead.
 
     A flat list has neither problem, and no navigation stack to leak state between tests.
-    See .my/maui/sample-app-navigation-redesign.md.
 
     The buttons are built in code-behind from SamplePages.All rather than listed here, so
     adding a page stays a one-line change to the registry.

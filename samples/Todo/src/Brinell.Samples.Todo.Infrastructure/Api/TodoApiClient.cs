@@ -3,28 +3,104 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Brinell.Samples.Todo.Contracts;
 using Brinell.Samples.Todo.Core.Models;
+using Brinell.Samples.Todo.Core.Rules;
+using Brinell.Samples.Todo.Core.Services;
 using Brinell.Samples.Todo.Core.Sync;
 
 namespace Brinell.Samples.Todo.Infrastructure.Api;
 
 /// <summary>
-/// <see cref="ITodoApi"/> over HTTP.
+/// <see cref="ITodoApi"/> and <see cref="IUserApi"/> over HTTP.
 /// </summary>
 /// <remarks>
 /// Turns every failure into a <see cref="TodoApiException"/> naming what went wrong, so the sync
 /// and the list page can tell "the server is down" from "the network is" from "the key is wrong".
+/// A user the server refuses is a <see cref="UserRejectedException"/> with the server's messages
+/// per field.
 /// </remarks>
-public sealed class TodoApiClient(HttpClient http) : ITodoApi
+public sealed class TodoApiClient(HttpClient http) : ITodoApi, IUserApi
 {
+    /// <inheritdoc />
+    Task<IReadOnlyList<User>> IUserApi.GetAllAsync(CancellationToken cancellationToken)
+        => SendAsync(async () =>
+        {
+            using var response = await http.GetAsync(Relative(TodoApi.UsersPath), cancellationToken).ConfigureAwait(false);
+            await ThrowIfFailedAsync(response).ConfigureAwait(false);
+
+            var dtos = await response.Content
+                .ReadFromJsonAsync<List<UserDto>>(TodoApi.JsonOptions, cancellationToken).ConfigureAwait(false);
+
+            return (IReadOnlyList<User>)(dtos ?? []).Select(UserMapping.ToUser).ToList();
+        }, cancellationToken);
+
+    /// <inheritdoc />
+    Task<User> IUserApi.PutAsync(User user, CancellationToken cancellationToken)
+        => SendAsync(async () =>
+        {
+            using var response = await http
+                .PutAsJsonAsync(Relative(TodoApi.UserPath(user.Id)), UserMapping.ToDto(user), TodoApi.JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict
+                && await ReadFieldErrorsAsync(response, cancellationToken).ConfigureAwait(false) is { Count: > 0 } errors)
+            {
+                throw new UserRejectedException(errors);
+            }
+
+            await ThrowIfFailedAsync(response).ConfigureAwait(false);
+
+            var stored = await response.Content
+                .ReadFromJsonAsync<UserDto>(TodoApi.JsonOptions, cancellationToken).ConfigureAwait(false)
+                ?? throw new TodoApiException(SyncError.ServerError, $"PUT {TodoApi.UserPath(user.Id)} answered without a body.");
+
+            return UserMapping.ToUser(stored);
+        }, cancellationToken);
+
+    // A validation problem document: { "errors": { "name": ["..."] } }. Anything else is not a
+    // refusal by field, and is reported as a server error by the caller.
+    private static async Task<IReadOnlyList<UserFieldError>> ReadFieldErrorsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            if (!document.RootElement.TryGetProperty("errors", out var errors) || errors.ValueKind != JsonValueKind.Object)
+            {
+                return [];
+            }
+
+            return errors.EnumerateObject()
+                .Where(field => Enum.TryParse<UserField>(field.Name, ignoreCase: true, out _))
+                .Select(field => new UserFieldError(
+                    Enum.Parse<UserField>(field.Name, ignoreCase: true),
+                    field.Value.EnumerateArray().Select(message => message.GetString()).FirstOrDefault() ?? string.Empty))
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>
-    /// Creates the <see cref="HttpClient"/> the client expects: base address, key header, timeout.
+    /// Creates the <see cref="HttpClient"/> the client expects: base address, key header, timeout,
+    /// and the client header when <paramref name="clientId"/> is set.
     /// </summary>
-    public static HttpClient CreateHttpClient(string baseUrl, string apiKey, TimeSpan timeout, HttpMessageHandler? handler = null)
+    public static HttpClient CreateHttpClient(
+        string baseUrl,
+        string apiKey,
+        TimeSpan timeout,
+        HttpMessageHandler? handler = null,
+        string? clientId = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         client.Timeout = timeout;
         client.DefaultRequestHeaders.Add(TodoApi.ApiKeyHeader, apiKey);
+        if (clientId is not null)
+        {
+            client.DefaultRequestHeaders.Add(TodoApi.ClientHeader, clientId);
+        }
+
         return client;
     }
 

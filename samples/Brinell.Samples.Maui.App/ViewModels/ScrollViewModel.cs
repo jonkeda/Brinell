@@ -6,7 +6,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <remarks>
 /// The status label sits at the very top and the buttons are spread down a long page, so a test
 /// that presses one and then reads the label must scroll in both directions. That is the whole
-/// point of the page — see <c>.my/maui/finding-android-offscreen-elements-leave-the-tree.md</c>.
+/// point of the page: on Android an element scrolled off screen leaves the automation tree.
 /// </remarks>
 public class ScrollViewModel : ParentViewModel
 {

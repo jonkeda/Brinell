@@ -32,7 +32,10 @@ before, stop here.
    invariant). Number a new record `ad-0NN` after the highest existing one.
 
 5. **Point at the evidence, do not copy it.** The plan/analysis/measurement lives in
-   `.my/<work>/`. Link it; do not restate it in the decision.
+   `.my/<work>/` while the work is in flight. Link it; do not restate it in the decision.
+   `.my/` topics are deleted when the work is done, so link at a commit
+   (`https://github.com/exact-mobile-apps/test-tooling/blob/<hash>/.my/...`), not by
+   relative path.
 
 6. **Leave a marker in code only where the site is surprising:** one line,
    `// see AD-0NN`. Never paste the decision into a `<remarks>` block - that is the prose

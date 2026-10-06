@@ -29,9 +29,9 @@ public class TextAreaControlTests
     }
 
     [Fact]
-    public void AppendText_FocusesAndSendsKeys()
+    public void Append_FocusesAndSendsKeys()
     {
-        _page.TestTextArea.AppendText("appended");
+        _page.TestTextArea.Append("appended");
 
         _mockElement.Verify(e => e.Focus(), Times.Once);
         _mockElement.Verify(e => e.SendKeys("appended", It.IsAny<Brinell.Core.TextInputMethod>()), Times.Once);

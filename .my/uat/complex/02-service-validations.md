@@ -33,7 +33,7 @@ public sealed class ServicePhrases : UatPhraseClassBase
     private readonly MockApiServer _backend;
     public ServicePhrases(MockApiServer backend) => _backend = backend;
 
-    [UatPhrase(UatEffectiveStepKeyword.Then, "a {method} to {path} should have been sent")]
+    [UatPhrase(BddEffectiveStepKeyword.Then, "a {method} to {path} should have been sent")]
     public Task AssertRequestSent(string method, string path, CancellationToken ct)
         // WaitForRequestAsync throws TimeoutException (listing what did arrive) if none comes.
         => _backend.WaitForRequestAsync(method, path, cancellationToken: ct);
@@ -56,7 +56,7 @@ Then every request should carry the API key
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "every request should carry the API key")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "every request should carry the API key")]
 public void AssertApiKeyOnAllRequests()
 {
     foreach (var request in _backend.Requests())
@@ -78,7 +78,7 @@ Then the created todo on the server should have title "Ship it"
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "the created todo on the server should have title {title}")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "the created todo on the server should have title {title}")]
 public Task AssertCreatedTitle(string title, CancellationToken ct)
     => _backend.WaitForRequestAsync(
         method: null, path: "*",
@@ -105,7 +105,7 @@ And no write request should have been sent
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "the app should push before it pulls")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "the app should push before it pulls")]
 public void AssertPushBeforePull()
 {
     var log = _backend.Requests();
@@ -115,10 +115,10 @@ public void AssertPushBeforePull()
     Assert.True(lastWrite < 0 || (firstPull >= 0 && lastWrite < firstPull), "A write was sent after the pull.");
 }
 
-[UatPhrase(UatEffectiveStepKeyword.When, "I clear the recorded requests")]
+[UatPhrase(BddEffectiveStepKeyword.When, "I clear the recorded requests")]
 public void ClearRequests() => _backend.ResetRequests();
 
-[UatPhrase(UatEffectiveStepKeyword.Then, "no write request should have been sent")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "no write request should have been sent")]
 public void AssertNoWrites()
     => Assert.Equal(0,
         _backend.RequestCount("PUT", "*")
@@ -151,7 +151,7 @@ Then I should see "Buy milk"
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Given, "the server fails the next sync with {status}")]
+[UatPhrase(BddEffectiveStepKeyword.Given, "the server fails the next sync with {status}")]
 public void FailNextSync(int status)
     // FailsFirst fails the given number of calls, then falls through to the success body,
     // so the Retry recovers with no extra "server recovers" step.

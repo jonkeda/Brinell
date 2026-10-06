@@ -3,6 +3,10 @@ using Brinell.Html.Interfaces;
 
 namespace Brinell.Html.Controls.Toggle;
 
+/// <summary>
+/// HTML radio button control. Wraps one &lt;input type="radio"&gt;; for a group read as one
+/// selector, use <c>RadioGroupControl</c>.
+/// </summary>
 public class RadioButtonControl<TScope> : ToggleControlBase<TScope>
     where TScope : IHtmlScope<TScope>
 {
@@ -16,8 +20,6 @@ public class RadioButtonControl<TScope> : ToggleControlBase<TScope>
     {
     }
 
-    public TScope Select()
-    {
-        return SetChecked(true);
-    }
+    /// <summary>Selects the radio button. An alias for <c>Check</c>.</summary>
+    public TScope Select(int? timeoutMs = null) => Check(timeoutMs);
 }

@@ -1,0 +1,79 @@
+@implements IDisposable
+
+@*
+    A button bound to a command, the way a MAUI Command binding is: it is enabled from
+    CanExecute, and asks again only when the command raises CanExecuteChanged. Re-rendering the
+    page does not re-ask, so a command that forgets to raise it leaves the button stuck here as
+    it does in the MAUI app - which is what TOD.04.4's R0 proof relies on.
+*@
+<button type="button"
+        data-testid="@AutomationId"
+        class="@Class"
+        disabled="@(!_canExecute)"
+        @onclick="ExecuteAsync">@ChildContent</button>
+
+@code {
+    private bool _canExecute;
+    private IRelayCommand? _subscribed;
+
+    /// <summary>The command.</summary>
+    [Parameter, EditorRequired]
+    public IRelayCommand Command { get; set; } = null!;
+
+    /// <summary>The command parameter.</summary>
+    [Parameter]
+    public object? Parameter { get; set; }
+
+    /// <summary>The test id.</summary>
+    [Parameter, EditorRequired]
+    public string AutomationId { get; set; } = null!;
+
+    /// <summary>The CSS class.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>The button's content.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Command))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.CanExecuteChanged -= OnCanExecuteChanged;
+        }
+
+        _subscribed = Command;
+        _subscribed.CanExecuteChanged += OnCanExecuteChanged;
+        _canExecute = Command.CanExecute(Parameter);
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.CanExecuteChanged -= OnCanExecuteChanged;
+        }
+    }
+
+    private Task ExecuteAsync()
+        => Command is IAsyncRelayCommand command ? command.ExecuteAsync(Parameter) : Execute();
+
+    private Task Execute()
+    {
+        Command.Execute(Parameter);
+        return Task.CompletedTask;
+    }
+
+    private void OnCanExecuteChanged(object? sender, EventArgs e)
+        => _ = InvokeAsync(() =>
+        {
+            _canExecute = Command.CanExecute(Parameter);
+            StateHasChanged();
+        });
+}

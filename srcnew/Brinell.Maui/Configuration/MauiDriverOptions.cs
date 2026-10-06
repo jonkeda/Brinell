@@ -74,6 +74,13 @@ public class MauiDriverOptions
     /// </para>
     /// </remarks>
     public Dictionary<string, string> LaunchSettings { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Where this app's window goes on Windows (<c>right</c>, <c>offscreen</c>, <c>secondary</c>,
+    /// <c>left-half</c>, <c>right-half</c>), for this launch only: two apps of one test can be
+    /// placed side by side. If null, <c>BRINELL_AUT_PLACE</c> decides, as for every app.
+    /// </summary>
+    public string? Placement { get; set; }
     
     /// <summary>
     /// Timeout settings for waits and polling.

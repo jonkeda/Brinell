@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
-    The list. Ids are the contract with the page objects: see .my/TodoApp/plan.md, section 2.
+    The list. Ids are the contract with the page objects: renaming one breaks them.
 
     TodoList_State is a CommunityToolkit StateContainer. Its default content is the list; the
     Loading, Empty and Error views each carry their own AutomationId, which is how Brinell's
@@ -19,6 +19,7 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Sync" AutomationId="TodoList_Sync" Command="{Binding SyncCommand}" />
         <ToolbarItem Text="Add" AutomationId="TodoList_Add" Command="{Binding AddCommand}" />
+        <ToolbarItem Text="Users" AutomationId="TodoList_Users" Command="{Binding UsersCommand}" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="12">

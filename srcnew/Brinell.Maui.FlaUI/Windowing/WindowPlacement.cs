@@ -5,7 +5,8 @@ using static Brinell.Maui.FlaUI.Windowing.NativeMethods;
 namespace Brinell.Maui.FlaUI.Windowing;
 
 /// <summary>
-/// Puts the app under test where the harness asked: <c>BRINELL_AUT_PLACE</c>.
+/// Puts the app under test where the harness asked: <c>BRINELL_AUT_PLACE</c> in the app's launch
+/// environment (<c>MauiDriverOptions.Placement</c>), or else in the test process's.
 /// </summary>
 internal static class WindowPlacement
 {
@@ -22,18 +23,24 @@ internal static class WindowPlacement
 
         /// <summary>A non-primary monitor, falling back to <see cref="Right"/> when there is none.</summary>
         Secondary,
+
+        /// <summary>The left half of the primary work area: one of two apps side by side.</summary>
+        LeftHalf,
+
+        /// <summary>The right half of the primary work area: the other of two apps side by side.</summary>
+        RightHalf,
     }
 
     /// <summary>Applies the requested placement, if any, and writes the placement report.</summary>
-    internal static void ApplyRequested(AppWindow window)
+    internal static void ApplyRequested(AppWindow window, IReadOnlyDictionary<string, string>? launchEnvironment = null)
     {
-        var placement = ReadRequestedPlacement(out var unknownValue);
+        var placement = ReadRequestedPlacement(launchEnvironment, out var unknownValue);
 
         if (unknownValue != null)
         {
             WriteReport(
                 Rectangle.Empty, Rectangle.Empty, AutPlacement.Default, "not supported",
-                $"BRINELL_AUT_PLACE='{unknownValue}' is not one of right, offscreen, secondary.");
+                $"BRINELL_AUT_PLACE='{unknownValue}' is not one of right, offscreen, secondary, left-half, right-half.");
             return;
         }
 
@@ -94,11 +101,13 @@ internal static class WindowPlacement
         }
     }
 
-    private static AutPlacement ReadRequestedPlacement(out string? unknownValue)
+    private static AutPlacement ReadRequestedPlacement(IReadOnlyDictionary<string, string>? launchEnvironment, out string? unknownValue)
     {
         unknownValue = null;
 
-        var requested = Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE");
+        var requested = launchEnvironment is not null && launchEnvironment.TryGetValue("BRINELL_AUT_PLACE", out var perLaunch)
+            ? perLaunch
+            : Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE");
         if (!string.IsNullOrWhiteSpace(requested))
         {
             switch (requested.Trim().ToLowerInvariant())
@@ -106,6 +115,8 @@ internal static class WindowPlacement
                 case "right": return AutPlacement.Right;
                 case "offscreen": return AutPlacement.OffScreen;
                 case "secondary": return AutPlacement.Secondary;
+                case "left-half": return AutPlacement.LeftHalf;
+                case "right-half": return AutPlacement.RightHalf;
                 default:
                     // A typo should not silently leave the window where it was, and should not
                     // end the run either. Record it and place nothing.
@@ -134,6 +145,16 @@ internal static class WindowPlacement
             effective = AutPlacement.OffScreen;
             presenter = workArea;
             return ComputeOffScreenBounds(window);
+        }
+
+        if (placement is AutPlacement.LeftHalf or AutPlacement.RightHalf)
+        {
+            effective = placement;
+            presenter = Rectangle.Empty;
+            var half = workArea.Width / 2;
+            return placement == AutPlacement.LeftHalf
+                ? new Rectangle(workArea.Left, workArea.Top, half, workArea.Height)
+                : new Rectangle(workArea.Left + half, workArea.Top, workArea.Width - half, workArea.Height);
         }
 
         if (placement == AutPlacement.Secondary && TryGetSecondaryWorkArea(out var secondary))

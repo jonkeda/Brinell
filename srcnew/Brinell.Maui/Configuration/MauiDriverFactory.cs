@@ -19,6 +19,8 @@ public static class MauiDriverFactory
     /// </summary>
     private const string AppiumAssemblyName = "Appium.Net";
 
+    private const string PlacementVariable = "BRINELL_AUT_PLACE";
+
     private static Type? _appiumDriverType;
     private static Type? _flaUIDriverType;
     
@@ -77,7 +79,15 @@ public static class MauiDriverFactory
         {
             var ctor = driverType.GetConstructor([typeof(string), typeof(string), typeof(IReadOnlyDictionary<string, string>)])
                        ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string, IReadOnlyDictionary) constructor not found");
-            return (IMauiDriver)ctor.Invoke([options.AppPath, null, options.LaunchSettings]);
+            // The placement travels with the launch, as the app's own settings do: the driver reads
+            // it from the launch environment before the process-wide BRINELL_AUT_PLACE.
+            var environment = new Dictionary<string, string>(options.LaunchSettings, StringComparer.Ordinal);
+            if (!string.IsNullOrWhiteSpace(options.Placement))
+            {
+                environment[PlacementVariable] = options.Placement;
+            }
+
+            return (IMauiDriver)ctor.Invoke([options.AppPath, null, environment]);
         }
 
         throw new ArgumentException(

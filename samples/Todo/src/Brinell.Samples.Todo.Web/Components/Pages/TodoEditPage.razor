@@ -1,0 +1,66 @@
+@page "/edit"
+@inherits ViewModelPage<TodoEditViewModel>
+@inject TodoEditViewModel Model
+
+@*
+    New and edit. Cancel asks about unsaved changes (TOD.04.4). Ids as in TodoEditPage.xaml; the
+    due-date switch is a checkbox with role="switch".
+*@
+<PageTitle>@Model.PageTitle</PageTitle>
+
+<div class="page" data-testid="TodoEditPage">
+    <div class="toolbar">
+        <h1>@Model.PageTitle</h1>
+        <CommandButton Command="Model.CancelCommand" AutomationId="TodoEdit_Cancel">Cancel</CommandButton>
+        <CommandButton Command="Model.SaveCommand" AutomationId="TodoEdit_Save">Save</CommandButton>
+    </div>
+
+    <SectionCard AutomationId="TodoEdit_Basics" Header="Basics">
+        <input data-testid="TodoEdit_Title"
+               aria-label="Title"
+               placeholder="Title"
+               @bind="Model.Title"
+               @bind:event="oninput" />
+        @if (Model.HasTitleError)
+        {
+            <span data-testid="TodoEdit_TitleError" class="error" role="alert">@Model.TitleError</span>
+        }
+        <textarea data-testid="TodoEdit_Notes"
+                  aria-label="Notes"
+                  placeholder="Notes"
+                  @bind="Model.Notes"
+                  @bind:event="oninput"></textarea>
+    </SectionCard>
+
+    <SectionCard AutomationId="TodoEdit_Schedule" Header="Schedule">
+        <div class="schedule">
+            <label>
+                <input type="checkbox" role="switch" data-testid="TodoEdit_HasDue" @bind="Model.HasDueDate" />
+                Due date
+            </label>
+            <input type="date"
+                   data-testid="TodoEdit_Due"
+                   aria-label="Due date"
+                   disabled="@(!Model.HasDueDate)"
+                   @bind="Model.DueDate"
+                   @bind:format="yyyy-MM-dd" />
+        </div>
+    </SectionCard>
+
+    <h2 class="label">Status</h2>
+    <TodoStatusView AutomationId="TodoEdit_Status" @bind-Status="Model.Status" IsPastDue="Model.IsPastDue" />
+</div>
+
+@code {
+    /// <summary>The todo to edit, from <c>?id=</c>; none for a new todo.</summary>
+    [SupplyParameterFromQuery(Name = TodoRoutes.IdParameter)]
+    public Guid? Id { get; set; }
+
+    protected override TodoEditViewModel ViewModel => Model;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _ = Model.LoadAsync(Id);
+    }
+}

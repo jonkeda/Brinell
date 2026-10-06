@@ -37,7 +37,7 @@ Sub-steps:
    `StaleElementException` still catches). Or use type aliases (`using StaleElementException =
    Brinell.Core.Automation.Exceptions.CoreStaleElementException;` in `GlobalUsings.cs`).
 7. **Verify.** `Brinell.Maui.Tests`, `Brinell.Maui.Uat.Tests`, `Brinell.Maui.UITests` full
-   Windows run; the Android baseline subset; `Brinell.Presenter.Uat.Tests`.
+   Windows run; the Android baseline subset; `Brinell.Presenter.Bdd.Tests`.
 
 **Skills:** `.github/skills/maui-control/references/*` and `.github/skills/maui-ui-test/`
 update their type references from `IMauiElement` to `ICoreElement` where the member is the

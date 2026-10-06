@@ -63,8 +63,7 @@ public class HubPage : PageObjectBase<HubPage>
     /// Every control here is genuinely on the hub, so all of them resolve only while the hub is
     /// loaded. The back button that returns to the hub used to live here too, and did not belong:
     /// it is attached to whichever page is open, so the hub reports not-loaded at exactly the
-    /// moment it was wanted. It now resolves from the app root in <c>MauiFixture</c> — see
-    /// <c>.my/fix/rca-page-readiness-gate.md</c>.
+    /// moment it was wanted. It now resolves from the app root in <c>MauiFixture</c>.
     /// </remarks>
     /// <summary>The hub's title label.</summary>
     public Label<HubPage> Title => new(this, "PageHubTitle");

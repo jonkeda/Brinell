@@ -24,7 +24,7 @@ public sealed class StressFactAttribute : FactAttribute
 }
 
 /// <summary>
-/// The reproduction behind <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
+/// Reproduces UI Automation retiring the app window element under page churn, and pins the fix.
 /// </summary>
 /// <remarks>
 /// <para>

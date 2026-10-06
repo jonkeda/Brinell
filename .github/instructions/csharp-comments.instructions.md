@@ -5,7 +5,7 @@ applyTo: "**/*.cs"
 # C# comment policy
 
 Write down what the code cannot show; delete what it can. A comment restating what the
-next line does costs maintenance and drifts from the code. See `.my/documentation/plan.md`.
+next line does costs maintenance and drifts from the code. Reasoning: [the documentation plan](https://github.com/exact-mobile-apps/test-tooling/blob/fe5d2b66/.my/documentation/plan.md).
 
 ## Keep
 
@@ -23,11 +23,13 @@ next line does costs maintenance and drifts from the code. See `.my/documentatio
 
 - `<remarks>` that restates what the code does, on any member.
 - Any XML doc on `private` and `internal` members - nothing consumes it.
-- History and rationale in prose. That belongs in `.docs/` (decisions/contracts) or `.my/`
-  (work in flight), where it is reviewed and corrected in one place.
+- History and rationale in prose. That belongs in `.docs/` (decisions/contracts), where it
+  is reviewed and corrected in one place.
+- A pointer into `.my/`. Plans end and are deleted; a `// why` names an AD or a contract, or
+  says its reason itself in one line.
 
 ## Where durable prose goes
 
 - A decision (rules something out): `.docs/decisions/`. Record it **once**.
 - A contract or invariant: `.docs/contracts/`, `.docs/invariants.md`.
-- Work in flight (plans, analyses): `.my/`.
+- Work in flight (plans, analyses): `.my/`. Code does not link to it.

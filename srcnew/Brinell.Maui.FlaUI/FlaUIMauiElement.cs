@@ -15,21 +15,9 @@ namespace Brinell.Maui.FlaUI;
 /// <summary>
 /// FlaUI-based implementation of <see cref="IMauiElement"/> for Windows platform.
 /// Provides native Windows UI Automation support for MAUI desktop apps.
+/// No physical input and no fallback to it: an action with no UI Automation pattern and no
+/// bridge verb throws, naming the route the app would have to offer (AD-005).
 /// </summary>
-/// <remarks>
-/// <para>
-/// UI Automation patterns are this class's implementation detail, not its API. It used to
-/// implement eight <c>*PatternElement</c> interfaces that controls cast to; controls now ask
-/// <see cref="IMauiElement"/> in terms of what they do, and this class answers from the patterns
-/// (step 107).
-/// </para>
-/// <para>
-/// <b>No real mouse, keyboard, clipboard or foreground, and no fallback to them.</b> Every action
-/// is a UI Automation pattern or a verb the app answers through the Brinell bridge, which is a
-/// hard requirement for MAUI on Windows. An action with neither route throws, naming the route the
-/// app would have to offer - see <c>.docs/decisions/ad-005-physical-input-is-opt-in.md</c>.
-/// </para>
-/// </remarks>
 public sealed class FlaUIMauiElement : IMauiElement
 {
     private readonly AutomationElement? _wrapped;
@@ -123,7 +111,18 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// answers it separately through <c>IsVisibleAfterScroll</c>.
     /// </para>
     /// </remarks>
-    public bool Visible => Live(() => !_element.IsOffscreen);
+    public bool Visible => Live(() =>
+    {
+        try
+        {
+            return !_element.IsOffscreen;
+        }
+        catch (global::FlaUI.Core.Exceptions.PropertyNotSupportedException error)
+        {
+            // Every live element supports IsOffscreen; a disconnected WinUI peer reports it unsupported.
+            throw new StaleElementException(platformError: error);
+        }
+    });
 
     /// <inheritdoc />
     public bool Enabled => Live(() => _element.IsEnabled);
@@ -1311,7 +1310,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// Whether the app under test declared this gesture on this element.
     /// </summary>
     private bool DeclaresGesture(MauiGesture gesture)
-        => GestureRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, gesture);
+        => GestureRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, gesture, BridgeNear);
 
     /// <inheritdoc />
     /// <remarks>
@@ -1323,7 +1322,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// The app publishes no bridge, this element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(MauiGesture gesture)
-        => GestureRunner.Perform(_driver.RootElement, _driver.Automation, AutomationId, gesture);
+        => GestureRunner.Perform(
+            _driver.RootElement, _driver.Automation, AutomationId, gesture, near: BridgeNear);
 
     /// <inheritdoc />
     /// <remarks>
@@ -1377,7 +1377,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     {
         var answer = BridgeVerbRunner.SendIfDeclared(
             _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.GetState, property,
-            out var declared);
+            BridgeNear, out var declared);
 
         if (!declared)
         {
@@ -1471,7 +1471,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     {
         var answer = BridgeVerbRunner.InvokeIfDeclared(
             _driver.RootElement, _driver.Automation, AutomationId,
-            BrinellVerb.ScrollToIndex, index, 0, out var declared);
+            BrinellVerb.ScrollToIndex, index, 0, BridgeNear, out var declared);
 
         if (!declared)
         {
@@ -1513,7 +1513,8 @@ public sealed class FlaUIMauiElement : IMauiElement
             AutomationId,
             BrinellVerb.ScrollToIndex,
             index,
-            0);
+            0,
+            BridgeNear);
 
         if (!answer.Delivered)
         {
@@ -1632,7 +1633,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     private void SelectIndexThroughTheApp(int index)
     {
         var outcome = BridgeVerbRunner.Invoke(
-            _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.SelectIndex, index);
+            _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.SelectIndex, index,
+            near: BridgeNear);
 
         if (outcome.Delivered)
         {
@@ -1856,7 +1858,10 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <returns>Whether the app performed it.</returns>
     private bool TryBridge(BrinellVerb verb, int arg1, int arg2)
         => BridgeVerbRunner.Invoke(
-            _driver.RootElement, _driver.Automation, AutomationId, verb, arg1, arg2).Delivered;
+            _driver.RootElement, _driver.Automation, AutomationId, verb, arg1, arg2, BridgeNear).Delivered;
+
+    /// <summary>This element's screen rectangle, to pick its target among ones sharing the id.</summary>
+    private Rectangle BridgeNear() => _wrapped?.BoundingRectangle ?? Rectangle.Empty;
 
     /// <summary>
     /// Whether the app under test declares this verb on this element.
@@ -1864,7 +1869,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <param name="verb">The verb.</param>
     /// <returns>Whether the bridge would carry it.</returns>
     private bool BridgeDeclares(BrinellVerb verb)
-        => BridgeVerbRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, verb);
+        => BridgeVerbRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, verb, BridgeNear);
 
     /// <summary>Sends a verb with an argument, and says whether the app performed it.</summary>
     /// <param name="verb">The verb to send.</param>
@@ -1874,7 +1879,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     private bool TryBridge(BrinellVerb verb, string argument, out string result)
     {
         var outcome = BridgeVerbRunner.Send(
-            _driver.RootElement, _driver.Automation, AutomationId, verb, argument);
+            _driver.RootElement, _driver.Automation, AutomationId, verb, argument, BridgeNear);
 
         result = outcome.Value;
         return outcome.Delivered;

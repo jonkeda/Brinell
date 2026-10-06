@@ -1,0 +1,47 @@
+using Brinell.Html.Controls.Buttons;
+using Brinell.Html.Controls.Display;
+
+namespace Brinell.Bdd.Workspace.UITests.PageObjects;
+
+/// <summary>The Scenario Preview page, as Visual Studio's and VS Code's webviews show it.</summary>
+public sealed class ScenarioPreviewPage(IHtmlTestContext context) : HtmlPageObjectBase<ScenarioPreviewPage>(context)
+{
+    /// <summary>"Parsed only", or "Bound in" a suite.</summary>
+    public LabelControl<ScenarioPreviewPage> BindState => new(this, "#uat-state");
+
+    /// <summary>The bar a debugged run shows while paused at a step.</summary>
+    public LabelControl<ScenarioPreviewPage> PausedBar => new(this, "#uat-paused");
+
+    /// <summary>Where the run is paused, in words.</summary>
+    public LabelControl<ScenarioPreviewPage> PausedAt => new(this, "#uat-paused-at");
+
+    public ButtonControl<ScenarioPreviewPage> Continue => new(this, "#uat-paused [data-move='continue']");
+
+    public ButtonControl<ScenarioPreviewPage> StepOver => new(this, "#uat-paused [data-move='over']");
+
+    public ButtonControl<ScenarioPreviewPage> StepInto => new(this, "#uat-paused [data-move='into']");
+
+    public ButtonControl<ScenarioPreviewPage> StepOut => new(this, "#uat-paused [data-move='out']");
+
+    public ButtonControl<ScenarioPreviewPage> Stop => new(this, "#uat-paused [data-move='stop']");
+
+    /// <summary>The step on a line of the file.</summary>
+    /// <param name="line">The step's line, 1-based.</param>
+    public LabelControl<ScenarioPreviewPage> Step(int line) => new(this, $".uat-step[data-line='{line}']");
+
+    /// <summary>A step's keyword, the gutter a click sets or clears its breakpoint in.</summary>
+    /// <param name="line">The step's line, 1-based.</param>
+    public ButtonControl<ScenarioPreviewPage> StepKeyword(int line) => new(this, $".uat-step[data-line='{line}'] > .uat-kw");
+
+    /// <summary>A scenario's Run button.</summary>
+    /// <param name="headingLine">The scenario heading's line, 1-based.</param>
+    public ButtonControl<ScenarioPreviewPage> Run(int headingLine) => new(this, $".uat-run[data-run='{headingLine}']:not([data-debug])");
+
+    /// <summary>A scenario's Debug button.</summary>
+    /// <param name="headingLine">The scenario heading's line, 1-based.</param>
+    public ButtonControl<ScenarioPreviewPage> Debug(int headingLine) => new(this, $".uat-run[data-debug][data-run='{headingLine}']");
+
+    /// <summary>The scenario whose heading is on a line.</summary>
+    /// <param name="line">The heading's line, 1-based.</param>
+    public LabelControl<ScenarioPreviewPage> Scenario(int line) => new(this, $".uat-scenario[data-line='{line}']");
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>User form</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <!-- A test recording's page: native fields, a custom list box and switch, an element added after the
+       page was captured, a confirm dialog and a link away. -->
+  <header>
+    <h1 data-testid="form-title">User form</h1>
+    <nav><a href="account.html" data-testid="to-account">Account</a></nav>
+  </header>
+
+  <main>
+    <form data-testid="user-form" onsubmit="event.preventDefault(); submitted();">
+      <label for="first-name">First name</label>
+      <input id="first-name" name="firstName" data-testid="first-name">
+
+      <label for="password">Password</label>
+      <input id="password" type="password" data-testid="password">
+      <label for="key">API key</label>
+      <input id="key" data-testid="key">
+      <label for="iban">IBAN</label>
+      <input id="iban" data-testid="iban">
+
+      <label data-testid="terms-label"><input type="checkbox" name="terms" data-testid="terms"> I accept the terms</label>
+
+      <label for="country">Country</label>
+      <select id="country" data-testid="country">
+        <option value="">Choose</option>
+        <option value="nl">Netherlands</option>
+        <option value="be">Belgium</option>
+      </select>
+
+      <button type="button" role="combobox" aria-controls="colour-list" aria-expanded="false" data-testid="colour"
+              onclick="document.getElementById('colour-list').hidden = false">Colour</button>
+      <ul id="colour-list" role="listbox" hidden>
+        <li role="option" data-testid="colour-red" onclick="this.parentElement.hidden = true">Red</li>
+        <li role="option" data-testid="colour-blue" onclick="this.parentElement.hidden = true">Blue</li>
+      </ul>
+
+      <div role="switch" aria-checked="false" tabindex="0" data-testid="notify"
+           onclick="const s = this; setTimeout(() => s.setAttribute('aria-checked', s.getAttribute('aria-checked') === 'true' ? 'false' : 'true'), 50)">Notify me</div>
+
+      <button type="button" data-testid="add-note"
+              onclick="const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Note'; b.dataset.testid = 'note'; document.getElementById('notes').appendChild(b)">Add note</button>
+      <div id="notes" data-testid="notes"></div>
+      <button type="button" data-testid="add-toast"
+              onclick="const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Dismiss'; b.dataset.testid = 'toast'; b.onclick = () => b.remove(); document.getElementById('notes').appendChild(b)">Add toast</button>
+
+      <button type="button" data-testid="leave" onclick="confirm('Leave this form?')">Leave</button>
+      <button type="submit" data-testid="submit">Submit</button>
+    </form>
+    <p data-testid="confirmation" hidden></p>
+  </main>
+
+  <script>
+    function submitted() {
+      const p = document.querySelector('[data-testid=confirmation]');
+      p.textContent = 'Thanks, ' + document.getElementById('first-name').value;
+      p.hidden = false;
+    }
+  </script>
+</body>
+</html>

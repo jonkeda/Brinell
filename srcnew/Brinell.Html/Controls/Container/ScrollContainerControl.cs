@@ -1,6 +1,6 @@
+using Brinell.Core.Calls;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
-using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Container;
 
@@ -17,7 +17,7 @@ public class ScrollContainerControl<TParent, TScope> : ContainerBase<TParent, TS
 
     public TScope ScrollToTop()
     {
-        ContainerRoot.ScrollIntoView();
+        ContainerRoot.ScrollIntoView(CallBudget.RemainingOr(DefaultTimeoutMs));
         return Self;
     }
 
@@ -30,20 +30,6 @@ public class ScrollContainerControl<TParent, TScope> : ContainerBase<TParent, TS
 
         element.Swipe(centerX, centerY, centerX - deltaX, centerY - deltaY);
 
-        return Self;
-    }
-
-    public async Task<TScope> ScrollToTopAsync()
-    {
-        var root = ContainerRoot;
-        if (root is IAsyncHtmlElement asyncRoot)
-        {
-            await asyncRoot.ScrollIntoView().ConfigureAwait(false);
-        }
-        else
-        {
-            root.ScrollIntoView();
-        }
         return Self;
     }
 }

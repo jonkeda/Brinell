@@ -59,5 +59,5 @@ public class CheckBoxControlTests : SemanticControlTestsBase
 - Run: `dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false`
   (seconds; no app, no UI).
 
-Generator behaviour (what a template emits) is tested in `testsnew/Brinell.Generator.Tests`,
+Generator behaviour (what a template emits) is tested in `testsnew/Brinell.Cli.Tests` (`Generate/`),
 not here.

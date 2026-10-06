@@ -7,6 +7,7 @@ namespace Brinell.Uat;
 public sealed class UatRuntime
 {
     private readonly UatReflectionRuntime _reflectionRuntime;
+    private readonly object _root;
 
     public UatRuntime(
         object root,
@@ -16,9 +17,10 @@ public sealed class UatRuntime
         ArgumentNullException.ThrowIfNull(root);
         ArgumentException.ThrowIfNullOrWhiteSpace(configFilePath);
 
+        _root = root;
         ConfigFilePath = Path.GetFullPath(configFilePath);
         ConfigDirectory = Path.GetDirectoryName(ConfigFilePath) ?? Directory.GetCurrentDirectory();
-        Config = UatConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
+        Config = BddConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
         ValidateConfig(root, Config, ConfigFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
         Composition = ResolveComposition(root);
         _reflectionRuntime = Composition is null
@@ -30,15 +32,77 @@ public sealed class UatRuntime
 
     public string ConfigDirectory { get; }
 
-    public UatConfig Config { get; }
+    public BddConfig Config { get; }
 
     public TestComposition? Composition { get; }
 
     public string DiscoveryReport => string.Join(Environment.NewLine, _reflectionRuntime.DescribeDiscovery());
 
-    public UatCommandCatalog CreateCommandCatalog()
+    public BddCommandCatalog CreateCommandCatalog()
     {
-        return _reflectionRuntime.CreateCommandCatalog();
+        var catalog = _reflectionRuntime.CreateCommandCatalog();
+        if (_root is IBddSessionHost host)
+        {
+            UatSessionSteps.Register(catalog, host, Config);
+        }
+
+        return catalog;
+    }
+
+    /// <summary>
+    /// The catalogs a document binds against: <paramref name="defaultCatalog"/> for the fixture's
+    /// own app and the apps of its head, and one more per head an app of the <c>Apps</c> table
+    /// brings (<see cref="IBddSessionHost.CompositionFor"/>).
+    /// </summary>
+    /// <param name="defaultCatalog">The fixture's own catalog; <see cref="CreateCommandCatalog"/> when null.</param>
+    public BddCatalogSet CreateCatalogSet(BddCommandCatalog? defaultCatalog = null)
+    {
+        defaultCatalog ??= CreateCommandCatalog();
+        var suiteHead = Config.Runtime.TryGetValue(BddConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } trimmed
+            ? trimmed
+            : null;
+
+        Dictionary<string, BddCommandCatalog> byHead = new(StringComparer.OrdinalIgnoreCase);
+        List<UatReflectionRuntime> runtimes = [_reflectionRuntime];
+        if (_root is IBddSessionHost host)
+        {
+            foreach (var app in Config.Apps)
+            {
+                var appHead = app.Head ?? suiteHead;
+                if (appHead is null || byHead.ContainsKey(appHead) || host.CompositionFor(app.Name) is not { } composition)
+                {
+                    continue;
+                }
+
+                var runtime = UatReflectionRuntime.FromComposition(_root, composition);
+                var catalog = runtime.CreateCommandCatalog();
+                UatSessionSteps.Register(catalog, host, Config);
+                byHead[appHead] = catalog;
+                runtimes.Add(runtime);
+            }
+        }
+
+        var reserved = runtimes
+            .SelectMany(runtime => runtime.Pages)
+            .SelectMany(page => page.Controls.Select(control => control.Name).Append(page.Name));
+        return new BddCatalogSet(defaultCatalog, Config.Apps, suiteHead, byHead, reserved) { Usings = Config.Usings };
+    }
+
+    /// <summary>Gives a scenario's context what it needs to switch apps.</summary>
+    /// <param name="context">The context.</param>
+    public void ConfigureContext(BddExecutionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (_root is IBddSessionHost host)
+        {
+            context.SessionHost = host;
+        }
+
+        context.Apps = Config.Apps;
+        if (_root is IBddClock clock)
+        {
+            context.Clock = clock;
+        }
     }
 
     public IServiceScope? CreateScope()
@@ -46,7 +110,7 @@ public sealed class UatRuntime
         return Composition?.CreateScope();
     }
 
-    public static void ConfigureScope(UatExecutionContext context, IServiceProvider serviceProvider)
+    public static void ConfigureScope(BddExecutionContext context, IServiceProvider serviceProvider)
     {
         UatReflectionRuntime.SetServiceProvider(context, serviceProvider);
     }
@@ -78,7 +142,7 @@ public sealed class UatRuntime
 
     private static void ValidateConfig(
         object root,
-        UatConfig config,
+        BddConfig config,
         string configFilePath,
         UatRuntimeValidationOptions options)
     {

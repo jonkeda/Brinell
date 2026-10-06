@@ -61,10 +61,11 @@ conversion procedure.
    `Confirm(read, done, timeoutMs)`; move part behaviour to the part (see the
    component reference).
 
-8. **Generate and build** (from the Brinell root):
+8. **Generate and build** (from the Brinell root; for an Html or Blazor control run
+   `tools\Scripts\CreateHtml.Bat` instead):
    ```
    tools\Scripts\CreateMaui.Bat
-   dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+   dotnet build Brinell.sln -v:minimal /nr:false
    ```
    `CreateMaui.Bat` rebuilds the generator and regenerates every `.tpl.cs` under the `Controls`
    folders of `Brinell.Maui` and `Brinell.Maui.CommunityToolkit`. For a file elsewhere, run the

@@ -164,18 +164,23 @@ internal static class VerbBindings
                             : HResults.BRINELL_E_DECLINED);
                 }
 
-                // Then pull-to-refresh, which is a downward swipe and nothing else.
-                if (element is RefreshView && verb == BrinellVerb.SwipeDown)
+                // Then pull-to-refresh, which is a downward swipe and nothing else. A ContentView
+                // that wraps a RefreshView declares it for its content, one level deep.
+                if (verb == BrinellVerb.SwipeDown && RefreshTarget(element) is not null)
                 {
                     return new VerbBinding(verb, (target, _, _) =>
                     {
-                        var view = (RefreshView)target;
+                        if (RefreshTarget(target) is not { } view)
+                        {
+                            return HResults.BRINELL_E_DECLINED;
+                        }
 
                         // A refresh already running is a real state of the app, and reporting it
                         // as success would let a test assert a refresh it did not cause. That was
                         // the intent behind S_FALSE here, and S_FALSE never delivered it: the
-                        // client read S_OK and asserted the refresh anyway.
-                        if (view.IsRefreshing)
+                        // client read S_OK and asserted the refresh anyway. A disabled view is
+                        // one a user cannot pull.
+                        if (view.IsRefreshing || !view.IsEnabled)
                         {
                             return HResults.BRINELL_E_DECLINED;
                         }
@@ -300,4 +305,15 @@ internal static class VerbBindings
                     ? null
                     : new CommandBinding(recognizer.Command, recognizer.CommandParameter))
                 .FirstOrDefault(found => found is not null);
+
+    /// <summary>
+    /// The RefreshView a SwipeDown on this element pulls: the element itself, or the direct
+    /// content of a ContentView.
+    /// </summary>
+    internal static RefreshView? RefreshTarget(VisualElement element) => element switch
+    {
+        RefreshView view => view,
+        ContentView { Content: RefreshView view } => view,
+        _ => null,
+    };
 }

@@ -8,13 +8,12 @@ and a first page-object style test.
 Working directory: Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
-Use `srcnew\Brinell.sln` as the broad active compile check. It covers many
-source, sample, and test projects, but it is not a complete project inventory.
-The top-level `Brinell.sln` includes a different slice plus tools and can fail
-for tool-specific restore rules.
+`Brinell.sln` holds every project in the repository, in folders by area. The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
 ## Add Packages
 

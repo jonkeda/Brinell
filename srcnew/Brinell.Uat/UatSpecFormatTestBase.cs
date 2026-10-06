@@ -4,41 +4,41 @@ public abstract class UatSpecFormatTestBase
 {
     protected virtual IReadOnlyList<string> RequiredMetadata { get; } =
     [
-        UatMetadataFields.App,
-        UatMetadataFields.Area,
-        UatMetadataFields.Target,
-        UatMetadataFields.Tags,
-        UatMetadataFields.Mode,
-        UatMetadataFields.Requires,
-        UatMetadataFields.Priority,
-        UatMetadataFields.Evidence
+        BddMetadataFields.App,
+        BddMetadataFields.Area,
+        BddMetadataFields.Target,
+        BddMetadataFields.Tags,
+        BddMetadataFields.Mode,
+        BddMetadataFields.Requires,
+        BddMetadataFields.Priority,
+        BddMetadataFields.Evidence
     ];
 
     protected virtual string? ExpectedApp => null;
 
     protected virtual string? ExpectedTarget => null;
 
-    protected virtual string ConfigFilePath => UatScenarioSource.GetConfigFilePath();
+    protected virtual string ConfigFilePath => BddScenarioSource.GetConfigFilePath();
 
     protected virtual Type? RuntimeRootType => null;
 
     protected static IEnumerable<object[]> GetScenarioFiles(
-        string folderName = "Scenarios",
+        string folderName = BddFileFormat.FeatureFolder,
         string? configurationFilter = null)
     {
-        return UatScenarioSource.GetScenarioFileTheoryData(
+        return BddScenarioSource.GetScenarioFileTheoryData(
             folderName,
             configurationFilter: configurationFilter);
     }
 
     protected void AssertUatFileParsesAndContainsRequiredMetadata(string filePath)
     {
-        var parse = UatMarkdownParser.ParseFile(filePath);
+        var parse = BddMarkdownParser.ParseFile(filePath);
 
         if (!parse.Success || parse.Document is null)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+                BddDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
         }
 
         foreach (var field in RequiredMetadata)
@@ -53,12 +53,12 @@ public abstract class UatSpecFormatTestBase
 
         if (!string.IsNullOrWhiteSpace(ExpectedApp))
         {
-            AssertMetadataEquals(parse.Document, filePath, UatMetadataFields.App, ExpectedApp);
+            AssertMetadataEquals(parse.Document, filePath, BddMetadataFields.App, ExpectedApp);
         }
 
         if (!string.IsNullOrWhiteSpace(ExpectedTarget))
         {
-            AssertMetadataEquals(parse.Document, filePath, UatMetadataFields.Target, ExpectedTarget);
+            AssertMetadataEquals(parse.Document, filePath, BddMetadataFields.Target, ExpectedTarget);
         }
 
         if (parse.Document.Scenarios.Count == 0)
@@ -76,39 +76,40 @@ public abstract class UatSpecFormatTestBase
 
     protected void AssertUatFileBindsThroughCatalog(string filePath)
     {
-        var parse = UatMarkdownParser.ParseFile(filePath);
-        if (!parse.Success || parse.Document is null)
+        var file = BddScenarioFiles.Load(filePath);
+        if (!file.Success)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+                BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
-        var bind = UatBinder.Bind(parse.Document, CreateCatalog());
+        var bind = file.Bind(new BddCatalogSet(CreateCatalog()));
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(bind.Diagnostics));
+                BddDiagnosticsFormatter.FormatDiagnostics(bind.Diagnostics));
         }
     }
 
     protected void AssertUatConfigParses()
     {
-        AssertConfig(UatConfigParser.ParseFile(ConfigFilePath, GetReportingSuiteName()));
+        AssertConfig(BddConfigParser.ParseFile(ConfigFilePath, GetReportingSuiteName()));
     }
 
-    protected virtual UatCommandCatalog CreateCatalog()
+    protected virtual BddCommandCatalog CreateCatalog()
     {
         var catalog = UatSpecCommandCatalog.CreateDefault();
         if (RuntimeRootType is { } runtimeRootType)
         {
             UatReflectionRuntime.RegisterCompositionPhrases(catalog, runtimeRootType);
             UatReflectionRuntime.RegisterRootPhrases(catalog, runtimeRootType);
+            catalog.IsGeneric = false;
         }
 
         return catalog;
     }
 
-    protected virtual void AssertConfig(UatConfig config)
+    protected virtual void AssertConfig(BddConfig config)
     {
     }
 
@@ -118,7 +119,7 @@ public abstract class UatSpecFormatTestBase
     }
 
     private static void AssertMetadataEquals(
-        UatDocument document,
+        BddDocument document,
         string filePath,
         string field,
         string expected)

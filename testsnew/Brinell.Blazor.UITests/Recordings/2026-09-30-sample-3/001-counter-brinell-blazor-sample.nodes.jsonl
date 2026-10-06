@@ -1,0 +1,47 @@
+{"platform":"html","location":"http://localhost:5180/counter","title":"Counter - Brinell Blazor Sample","capturedAt":"2026-09-30T18:27:59.6865436+00:00","nodes":46}
+{"n":1,"p":0,"type":"html","box":[0,0,1521,874]}
+{"n":2,"p":1,"type":"body","box":[8,8,1505,858],"attr":{"data-busy":"false"}}
+{"n":3,"p":2,"type":"div","box":[8,8,1505,858],"attr":{"class":"page"}}
+{"n":4,"p":3,"type":"div","box":[8,8,283,858],"attr":{"class":"sidebar"}}
+{"n":5,"p":4,"type":"div","box":[24,24,250,504],"attr":{"class":"nav-menu","data-automation-id":"NavMenu"}}
+{"n":6,"p":5,"type":"nav","box":[24,24,250,504],"attr":{"class":"flex-column"}}
+{"n":7,"p":6,"type":"div","box":[24,24,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":8,"p":7,"type":"a","text":"Home","box":[24,32,250,34],"attr":{"class":"nav-link","data-automation-id":"NavHome","href":"","id":"nav-home"}}
+{"n":9,"p":8,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-house-door-fill"}}
+{"n":10,"p":6,"type":"div","box":[24,74,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":11,"p":10,"type":"a","text":"Counter","box":[24,82,250,34],"attr":{"aria-current":"page","class":"nav-link active","data-automation-id":"NavCounter","href":"counter","id":"nav-counter"}}
+{"n":12,"p":11,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-plus-square-fill"}}
+{"n":13,"p":6,"type":"div","box":[24,125,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":14,"p":13,"type":"a","text":"Login","box":[24,133,250,34],"attr":{"class":"nav-link","data-automation-id":"NavLogin","href":"login","id":"nav-login"}}
+{"n":15,"p":14,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-fill"}}
+{"n":16,"p":6,"type":"div","box":[24,175,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":17,"p":16,"type":"a","text":"Dashboard","box":[24,183,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDashboard","href":"dashboard","id":"nav-dashboard"}}
+{"n":18,"p":17,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-speedometer2"}}
+{"n":19,"p":6,"type":"div","box":[24,226,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":20,"p":19,"type":"a","text":"User Form","box":[24,234,250,34],"attr":{"class":"nav-link","data-automation-id":"NavUserForm","href":"userform","id":"nav-userform"}}
+{"n":21,"p":20,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-lines-fill"}}
+{"n":22,"p":6,"type":"div","box":[24,276,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":23,"p":22,"type":"a","text":"Data Table","box":[24,284,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDataTable","href":"datatable","id":"nav-datatable"}}
+{"n":24,"p":23,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-table"}}
+{"n":25,"p":6,"type":"div","box":[24,326,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":26,"p":25,"type":"a","text":"Media Gallery","box":[24,334,250,34],"attr":{"class":"nav-link","data-automation-id":"NavMediaGallery","href":"mediagallery","id":"nav-mediagallery"}}
+{"n":27,"p":26,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-images"}}
+{"n":28,"p":6,"type":"div","box":[24,377,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":29,"p":28,"type":"a","text":"Navigation","box":[24,385,250,34],"attr":{"class":"nav-link","data-automation-id":"NavNavigation","href":"navigation","id":"nav-navigation"}}
+{"n":30,"p":29,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-signpost-split-fill"}}
+{"n":31,"p":6,"type":"div","box":[24,427,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":32,"p":31,"type":"a","text":"Validation","box":[24,435,250,34],"attr":{"class":"nav-link","data-automation-id":"NavValidation","href":"validation","id":"nav-validation"}}
+{"n":33,"p":32,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-check-circle-fill"}}
+{"n":34,"p":6,"type":"div","box":[24,478,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":35,"p":34,"type":"a","text":"Advanced","box":[24,486,250,34],"attr":{"class":"nav-link","data-automation-id":"NavAdvanced","href":"advanced","id":"nav-advanced"}}
+{"n":36,"p":35,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-gear-wide-connected"}}
+{"n":37,"p":3,"type":"main","box":[291,8,1222,858]}
+{"n":38,"p":37,"type":"article","box":[291,8,1222,173],"attr":{"class":"content px-4"}}
+{"n":39,"p":38,"type":"h1","text":"Counter","box":[291,47,1222,36],"attr":{"data-testid":"counter-title","tabindex":"-1"}}
+{"n":40,"p":38,"type":"p","role":"status","text":"Current count: 0","box":[291,104,1222,18],"attr":{"data-testid":"count-display"}}
+{"n":41,"p":38,"type":"button","text":"Click me","box":[291,139,66,21],"attr":{"class":"btn btn-primary","data-testid":"increment-btn"}}
+{"n":42,"p":38,"type":"div","box":[291,160,1222,21],"attr":{"class":"mt-3"}}
+{"n":43,"p":42,"type":"button","text":"Reset","box":[291,160,50,21],"attr":{"class":"btn btn-secondary","data-testid":"reset-btn"}}
+{"n":44,"p":2,"type":"div","text":"An unhandled error has occurred.","attr":{"data-nosnippet":"","id":"blazor-error-ui"}}
+{"n":45,"p":44,"type":"a","text":"Reload","attr":{"class":"reload","href":"."}}
+{"n":46,"p":44,"type":"span","text":"\uD83D\uDDD9","attr":{"class":"dismiss"}}

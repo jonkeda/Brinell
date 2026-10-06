@@ -1,0 +1,8 @@
+// One valid shelf with two books.
+{
+  "$schema": "./testdata.schema.json",
+  "books": [
+    { "id": 1, "title": "First", "genre": "Novel" },
+    { "id": 2, "title": "Second", "genre": "Poetry" }
+  ]
+}

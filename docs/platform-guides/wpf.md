@@ -6,8 +6,7 @@ Brinell automates WPF through FlaUI.
 
 - `srcnew/Brinell.Wpf`
 - `testsnew/Brinell.Wpf.Tests`
-- `testsnew/Brinell.Wpf.UITests`
-- `testsnew/Brinell.Wpf.Uat.Tests`
+- `testsnew/Brinell.Wpf.UITests` (the UI tests and the UAT suite)
 - `samples/Brinell.Samples.Wpf.App`
 
 ## Rules

@@ -1,18 +1,21 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Recording;
 using Brinell.Core.Settings;
+using Brinell.Narrator;
+using Brinell.Recording;
 
 namespace Brinell.Uat;
 
 public abstract class UatScenarioTestBase<TFixture>
     where TFixture : class
 {
-    private static readonly JsonSerializerOptions ReportJsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    // One recording session per suite per test process: every scenario of the run shares its scenes folder.
+    private static readonly ConcurrentDictionary<string, Lazy<BddRecordingSession?>> Recordings = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Lazy<ScreenRecorders> Recorders = new(ScreenRecorders.Discover);
 
     protected UatScenarioTestBase(TFixture fixture)
     {
@@ -21,15 +24,15 @@ public abstract class UatScenarioTestBase<TFixture>
 
     protected TFixture Fixture { get; }
 
-    protected virtual string ConfigFilePath => UatScenarioSource.GetConfigFilePath();
+    protected virtual string ConfigFilePath => BddScenarioSource.GetConfigFilePath();
 
     protected virtual UatRuntimeValidationOptions RuntimeValidation => UatRuntimeValidationOptions.Default;
 
-    protected virtual UatConfig? GetRunConfig(UatRuntime runtime) => runtime.Config;
+    protected virtual BddConfig? GetRunConfig(UatRuntime runtime) => runtime.Config;
 
     protected virtual ITestSettingsProvider CreateSettingsProvider() => new JsonTestSettingsProvider();
 
-    protected virtual TestSettings ResolveScenarioSettings(UatBoundScenario scenario, UatRuntime runtime)
+    protected virtual TestSettings ResolveScenarioSettings(BddBoundScenario scenario, UatRuntime runtime)
     {
         ArgumentNullException.ThrowIfNull(scenario);
         ArgumentNullException.ThrowIfNull(runtime);
@@ -45,15 +48,18 @@ public abstract class UatScenarioTestBase<TFixture>
     }
 
     protected virtual void ConfigureScenarioContext(
-        UatExecutionContext context,
-        UatBoundScenario scenario,
+        BddExecutionContext context,
+        BddBoundScenario scenario,
         UatRuntime runtime)
     {
         context.SetSettings(ResolveScenarioSettings(scenario, runtime));
     }
 
-    protected virtual void BeforeScenario(UatBoundScenario scenario)
+    /// <summary>Called before each scenario; by default the fixture's <see cref="IUatScenarioLifecycle"/>, when it has one.</summary>
+    /// <param name="scenario">The scenario about to run.</param>
+    protected virtual void BeforeScenario(BddBoundScenario scenario)
     {
+        (Fixture as IUatScenarioLifecycle)?.BeforeScenario(scenario);
     }
 
     protected virtual string EvidenceTestClassName => GetType().Name;
@@ -62,7 +68,7 @@ public abstract class UatScenarioTestBase<TFixture>
 
     protected virtual int EvidenceScenarioNameMaxLength => 80;
 
-    protected virtual string? CaptureEvidenceOnFailure(UatBoundScenario scenario)
+    protected virtual string? CaptureEvidenceOnFailure(BddBoundScenario scenario)
     {
         var screenshotService = GetScreenshotService();
         return screenshotService?.Capture(
@@ -71,41 +77,121 @@ public abstract class UatScenarioTestBase<TFixture>
             EvidenceDescription);
     }
 
-    protected virtual bool IsAcceptableResult(UatScenarioExecutionResult execution) =>
+    /// <summary>
+    /// What the app shows, for a recording (<c>BRINELL_RECORD</c>): the fixture, when it is
+    /// <see cref="IRecordable"/>, else its first public property that is (its test context).
+    /// </summary>
+    protected virtual RecordingTarget? RecordingTarget => UatRecording.TargetOf(Fixture);
+
+    protected virtual bool IsAcceptableResult(BddScenarioExecutionResult execution) =>
         execution.Result.Passed || execution.Result.Skipped;
 
     protected static IEnumerable<object[]> GetScenarioFiles(
-        string folderName = "Scenarios",
+        string folderName = BddFileFormat.FeatureFolder,
         string? configurationFilter = null)
     {
-        return UatScenarioSource.GetScenarioFileTheoryData(
+        return BddScenarioSource.GetScenarioFileTheoryData(
             folderName,
             configurationFilter: configurationFilter);
     }
 
+    /// <summary>One theory case per scenario, <c>[filePath, scenarioName]</c>; run each with <see cref="RunUatScenarioAsync"/>.</summary>
+    protected static IEnumerable<object[]> GetScenarioTheoryData(
+        string folderName = BddFileFormat.FeatureFolder,
+        string? configurationFilter = null)
+    {
+        return BddScenarioSource.GetScenarioTheoryData(
+            folderName,
+            configurationFilter: configurationFilter);
+    }
+
+    /// <summary>
+    /// Called before the first scenario of a file runs, and again whenever the file changes: the
+    /// place to load what the file's metadata asks for, such as its <c>TestData</c>. By default the
+    /// fixture's <see cref="IUatScenarioLifecycle"/>, when it has one.
+    /// </summary>
+    /// <param name="document">The file, as parsed.</param>
+    protected virtual void BeforeFile(BddDocument document)
+    {
+        (Fixture as IUatScenarioLifecycle)?.BeforeFile(document);
+    }
+
+    [DebuggerNonUserCode] // see RunBoundScenarioAsync
     protected async Task RunUatFileAsync(
         string filePath,
         CancellationToken cancellationToken = default)
     {
+        EnterFile(filePath);
         var context = BindUatFile(filePath);
 
         foreach (var scenario in context.Document.Scenarios)
         {
-            var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
-                .ConfigureAwait(false);
+            await RunBoundScenarioAsync(context, scenario, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
-            RecordScenarioResult(context, scenario, execution);
+    /// <summary>Runs one scenario of a file and asserts it passes.</summary>
+    /// <param name="filePath">The scenario file.</param>
+    /// <param name="scenarioName">The scenario's name, as <see cref="GetScenarioTheoryData"/> gives it.</param>
+    /// <param name="cancellationToken">Cancels the run.</param>
+    [DebuggerNonUserCode] // see RunBoundScenarioAsync
+    protected async Task RunUatScenarioAsync(
+        string filePath,
+        string scenarioName,
+        CancellationToken cancellationToken = default)
+    {
+        EnterFile(filePath);
+        var context = BindUatFile(filePath);
+        var matches = context.Document.Scenarios.Where(scenario => scenario.Source.Name == scenarioName).ToList();
+        if (matches.Count != 1)
+        {
+            throw new InvalidOperationException(matches.Count == 0
+                ? $"'{filePath}' has no scenario named '{scenarioName}'. It has: {string.Join(", ", context.Document.Scenarios.Select(s => $"'{s.Source.Name}'"))}."
+                : $"'{filePath}' has {matches.Count} scenarios named '{scenarioName}'. Give each scenario a name of its own.");
+        }
 
-            if (!IsAcceptableResult(execution))
-            {
-                throw new InvalidOperationException(
-                    UatDiagnosticsFormatter.FormatResults(
-                        execution.Result,
-                        execution.Context,
-                        context.Runtime.DiscoveryReport,
-                        context.Catalog,
-                        execution.EvidencePath));
-            }
+        await RunBoundScenarioAsync(context, matches[0], cancellationToken).ConfigureAwait(false);
+    }
+
+    // xUnit creates a test-class instance per case, so the file last entered is kept per closed type.
+    private static string? _currentFile;
+
+    // Before binding: BeforeFile may restart the app, and binding reads the fixture's composition.
+    private void EnterFile(string filePath)
+    {
+        var fullPath = Path.GetFullPath(filePath);
+        if (_currentFile == fullPath || BddMarkdownParser.ParseFile(filePath).Document is not { } document)
+        {
+            return;
+        }
+
+        BeforeFile(document);
+        _currentFile = fullPath;
+    }
+
+    // Library code to the debugger, with its callers: a failed scenario is shown in the preview and
+    // Test Explorer, so Visual Studio must not stop on the exception that fails the test for xUnit.
+    [DebuggerNonUserCode]
+    private async Task RunBoundScenarioAsync(
+        UatBoundFileContext context,
+        BddBoundScenario scenario,
+        CancellationToken cancellationToken)
+    {
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
+            .ConfigureAwait(false);
+
+        RecordScenarioResult(context, scenario, execution, started.Elapsed);
+
+        if (!IsAcceptableResult(execution))
+        {
+            throw new InvalidOperationException(
+                BddDiagnosticsFormatter.FormatResults(
+                    execution.Result,
+                    execution.Context,
+                    context.Runtime.DiscoveryReport,
+                    context.Catalog,
+                    execution.EvidencePath));
         }
     }
 
@@ -121,12 +207,13 @@ public abstract class UatScenarioTestBase<TFixture>
         }
 
         var scenario = context.Document.Scenarios[0];
+        var started = System.Diagnostics.Stopwatch.StartNew();
         var execution = await RunScenarioAsync(scenario, context.Runtime, CancellationToken.None)
             .ConfigureAwait(false);
 
-        RecordScenarioResult(context, scenario, execution);
+        RecordScenarioResult(context, scenario, execution, started.Elapsed);
 
-        var details = UatDiagnosticsFormatter.FormatResults(
+        var details = BddDiagnosticsFormatter.FormatResults(
             execution.Result,
             execution.Context,
             context.Runtime.DiscoveryReport,
@@ -149,19 +236,55 @@ public abstract class UatScenarioTestBase<TFixture>
         }
     }
 
+    /// <summary>
+    /// Binds a scenario file that must fail binding, without running it, and checks the bind
+    /// diagnostics contain each expected text.
+    /// </summary>
+    /// <param name="filePath">The scenario file.</param>
+    /// <param name="expectedDiagnostics">Texts the formatted bind diagnostics must contain.</param>
+    protected void RunExpectedBindFailureUatFile(
+        string filePath,
+        params string[] expectedDiagnostics)
+    {
+        var file = BddScenarioFiles.Load(filePath);
+        if (!file.Success)
+        {
+            throw new InvalidOperationException(
+                BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+        }
+
+        var runtime = CreateRuntime();
+        var catalog = CreateCommandCatalog(runtime);
+        var bind = file.Bind(runtime.CreateCatalogSet(catalog));
+        if (bind.Success)
+        {
+            throw new InvalidOperationException($"Expected '{filePath}' to fail binding, but it bound.");
+        }
+
+        var details = BddDiagnosticsFormatter.FormatBindFailure(bind.Diagnostics, runtime.DiscoveryReport, catalog);
+        foreach (var expected in expectedDiagnostics.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            if (!details.Contains(expected, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Expected bind diagnostics to contain '{expected}'.{Environment.NewLine}{details}");
+            }
+        }
+    }
+
     protected virtual UatRuntime CreateRuntime()
     {
         return new UatRuntime(Fixture, ConfigFilePath, RuntimeValidation);
     }
 
-    protected virtual UatCommandCatalog CreateCommandCatalog(UatRuntime runtime)
+    protected virtual BddCommandCatalog CreateCommandCatalog(UatRuntime runtime)
     {
         ArgumentNullException.ThrowIfNull(runtime);
         return runtime.CreateCommandCatalog();
     }
 
-    protected virtual Task<UatScenarioExecutionResult> RunScenarioAsync(
-        UatBoundScenario scenario,
+    protected virtual Task<BddScenarioExecutionResult> RunScenarioAsync(
+        BddBoundScenario scenario,
         UatRuntime runtime,
         CancellationToken cancellationToken)
     {
@@ -169,29 +292,55 @@ public abstract class UatScenarioTestBase<TFixture>
         return RunScenarioWithScopeAsync(scenario, runtime, scope, cancellationToken);
     }
 
-    private async Task<UatScenarioExecutionResult> RunScenarioWithScopeAsync(
-        UatBoundScenario scenario,
+    private async Task<BddScenarioExecutionResult> RunScenarioWithScopeAsync(
+        BddBoundScenario scenario,
         UatRuntime runtime,
         IDisposable? scope,
         CancellationToken cancellationToken)
     {
         using (scope)
         {
-            return await UatScenarioExecutor.RunAsync(
+            var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
+            await using var recording = session is null ? null : await RecordingFor(session, scenario, cancellationToken).ConfigureAwait(false);
+            var execution = await BddScenarioExecutor.RunAsync(
                 scenario,
                 GetRunConfig(runtime),
                 BeforeScenario,
                 context =>
                 {
+                    runtime.ConfigureContext(context);
                     ConfigureScenarioContext(context, scenario, runtime);
                     if (scope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
                     {
                         UatRuntime.ConfigureScope(context, serviceScope.ServiceProvider);
                     }
+
+                    if (recording is not null)
+                    {
+                        context.Pacer = recording;
+                    }
                 },
                 CaptureEvidenceOnFailure,
                 cancellationToken).ConfigureAwait(false);
+            if (recording is not null)
+            {
+                await session!.FinishAsync(recording, cancellationToken).ConfigureAwait(false);
+            }
+
+            return execution;
         }
+    }
+
+    // The scene this scenario records under BRINELL_RECORD; null when the run does not record it.
+    private async Task<BddSceneRecording?> RecordingFor(BddRecordingSession session, BddBoundScenario scenario, CancellationToken cancellationToken)
+    {
+        if (scenario.Source.Source.FilePath is not { } featureFile)
+        {
+            return null;
+        }
+
+        var scene = await session.SceneForAsync(featureFile, scenario.Source.Name, cancellationToken).ConfigureAwait(false);
+        return scene is null ? null : new BddSceneRecording(scene, () => RecordingTarget, Recorders.Value);
     }
 
     protected virtual IScreenshotService? GetScreenshotService()
@@ -211,7 +360,7 @@ public abstract class UatScenarioTestBase<TFixture>
             : null;
     }
 
-    protected virtual string FormatEvidenceScenarioName(UatBoundScenario scenario)
+    protected virtual string FormatEvidenceScenarioName(BddBoundScenario scenario)
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
@@ -226,57 +375,24 @@ public abstract class UatScenarioTestBase<TFixture>
 
     private void RecordScenarioResult(
         UatBoundFileContext context,
-        UatBoundScenario scenario,
-        UatScenarioExecutionResult execution)
+        BddBoundScenario scenario,
+        BddScenarioExecutionResult execution,
+        TimeSpan duration)
     {
         try
         {
             var status = GetScenarioStatus(execution.Result);
             var directory = context.Runtime.Config.Reporting.OutputDirectory;
             Directory.CreateDirectory(directory);
-            var reportPath = Path.Combine(
-                directory,
-                $"{FormatEvidenceScenarioName(scenario)}__result.json");
-            var includeTrace = context.Runtime.Config.Reporting.IncludeRuntimeTrace;
-            object[] steps = includeTrace
-                ? execution.Result.Steps.Select(step => (object)new
-                {
-                    status = step.Status.ToString(),
-                    source = step.Invocation.Step.Source.ToString(),
-                    keyword = step.Invocation.Step.EffectiveKeyword.ToString(),
-                    commandId = step.Invocation.CommandId,
-                    text = step.Invocation.Step.Text,
-                    message = step.Message
-                }).ToArray()
-                : [];
-            string[] diagnostics = includeTrace
-                ? execution.Context.Diagnostics.ToArray()
-                : [];
-            object[] commandCatalog = includeTrace
-                ? context.Catalog.Patterns.Select(pattern => (object)new
-                {
-                    keyword = pattern.Keyword.ToString(),
-                    phrase = pattern.Phrase,
-                    commandId = pattern.CommandId
-                }).ToArray()
-                : [];
+            var file = scenario.Source.Source.FilePath;
+            var reportPath = Path.Combine(directory, UatScenarioReport.FileName(file, FormatEvidenceScenarioName(scenario)));
+            var trace = context.Runtime.Config.Reporting.IncludeRuntimeTrace
+                ? new UatReportTrace(context.Catalog, context.Runtime.DiscoveryReport)
+                : null;
 
-            var report = new
-            {
-                scenario = scenario.Source.Name,
-                status,
-                tags = scenario.Source.Tags,
-                evidencePath = execution.EvidencePath,
-                skipReason = execution.Result.SkipDecision?.Reason,
-                steps,
-                diagnostics,
-                discovery = includeTrace
-                    ? context.Runtime.DiscoveryReport
-                    : null,
-                commandCatalog
-            };
+            File.WriteAllText(reportPath, UatScenarioReport.Build(scenario, execution, status, duration, context.Runtime.ConfigDirectory, trace));
 
-            File.WriteAllText(reportPath, JsonSerializer.Serialize(report, ReportJsonOptions));
+            // The suite, file and line let a tool find the newest run of a file's scenarios (P5, AD-007).
             TestArtifactManifestWriter.RecordArtifact(
                 reportPath,
                 "uat-scenario",
@@ -286,7 +402,10 @@ public abstract class UatScenarioTestBase<TFixture>
                 {
                     ["target"] = context.Runtime.Config.Runtime.TryGetValue("Target", out var target) ? target : null,
                     ["fixture"] = context.Runtime.Config.Runtime.TryGetValue("Fixture", out var fixture) ? fixture : null,
-                    ["evidencePath"] = execution.EvidencePath
+                    ["evidencePath"] = execution.EvidencePath,
+                    ["suite"] = GetType().Assembly.GetName().Name,
+                    ["file"] = file is null ? null : Path.GetRelativePath(context.Runtime.ConfigDirectory, Path.GetFullPath(file)).Replace('\\', '/'),
+                    ["line"] = scenario.Source.Source.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 });
         }
         catch
@@ -294,8 +413,7 @@ public abstract class UatScenarioTestBase<TFixture>
             // Report writing should not change scenario outcome.
         }
     }
-
-    private static string GetScenarioStatus(UatScenarioRunResult result)
+    private static string GetScenarioStatus(BddScenarioRunResult result)
     {
         if (result.Passed)
         {
@@ -307,34 +425,34 @@ public abstract class UatScenarioTestBase<TFixture>
             return "skipped";
         }
 
-        return result.Steps.Any(step => step.Status == UatStepResultStatus.Canceled)
+        return result.Steps.Any(step => step.Status == BddStepResultStatus.Canceled)
             ? "canceled"
             : "failed";
     }
 
-    private static string? GetScenarioId(UatBoundScenario scenario)
+    private static string? GetScenarioId(BddBoundScenario scenario)
     {
         return scenario.Source.Tags
-            .Select(UatTagConventions.NormalizeTag)
+            .Select(BddTagConventions.NormalizeTag)
             .FirstOrDefault(tag => tag.StartsWith("uat-", StringComparison.OrdinalIgnoreCase));
     }
 
     private UatBoundFileContext BindUatFile(string filePath)
     {
-        var parse = UatMarkdownParser.ParseFile(filePath);
-        if (!parse.Success || parse.Document is null)
+        var file = BddScenarioFiles.Load(filePath);
+        if (!file.Success)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+                BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
         var runtime = CreateRuntime();
         var catalog = CreateCommandCatalog(runtime);
-        var bind = UatBinder.Bind(parse.Document, catalog);
+        var bind = file.Bind(runtime.CreateCatalogSet(catalog));
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatBindFailure(
+                BddDiagnosticsFormatter.FormatBindFailure(
                     bind.Diagnostics,
                     runtime.DiscoveryReport,
                     catalog));
@@ -345,6 +463,6 @@ public abstract class UatScenarioTestBase<TFixture>
 
     private sealed record UatBoundFileContext(
         UatRuntime Runtime,
-        UatCommandCatalog Catalog,
-        UatBoundDocument Document);
+        BddCommandCatalog Catalog,
+        BddBoundDocument Document);
 }

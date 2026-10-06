@@ -32,15 +32,15 @@ public class TableControlTests
         };
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "thead th"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "thead th")))
             .Returns(headerElements.AsReadOnly());
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "tbody tr"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "tbody tr")))
             .Returns(rowElements.AsReadOnly());
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value.StartsWith("tbody tr:nth-child(")), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value.StartsWith("tbody tr:nth-child("))))
             .Returns(cellElements.AsReadOnly());
 
         _page = new TestPage(_mockContext.Object);
@@ -49,13 +49,13 @@ public class TableControlTests
     [Fact]
     public void RowCount_ReturnsCorrectCount()
     {
-        Assert.Equal(2, _page.TestTable.RowCount);
+        Assert.Equal(2, _page.TestTable.GetRowCount());
     }
 
     [Fact]
     public void ColumnCount_ReturnsHeaderCount()
     {
-        Assert.Equal(3, _page.TestTable.ColumnCount);
+        Assert.Equal(3, _page.TestTable.GetColumnCount());
     }
 
     [Fact]
@@ -86,6 +86,8 @@ public class TableControlTests
     public void GetRowTexts_ReturnsRow()
     {
         var texts = _page.TestTable.GetRowTexts(0);
+
+        Assert.NotNull(texts);
 
         Assert.Equal(2, texts.Count);
         Assert.Equal("Cell1", texts[0]);

@@ -11,9 +11,9 @@ public sealed class UatSpecCompositionTests
         var directory = CreateTempDirectory();
         try
         {
-            var scenarioFilePath = Path.Combine(directory, "composition-spec.uat.md");
+            var scenarioFilePath = Path.Combine(directory, "composition-spec.feature.md");
             File.WriteAllText(scenarioFilePath, """
-                # UAT: Composition Spec
+                # Feature: Composition Spec
 
                 ## Metadata
 
@@ -31,7 +31,9 @@ public sealed class UatSpecCompositionTests
                 @smoke
                 ## Scenario: Phrase class binding
 
+                ```gherkin
                 When I run the composition-only phrase
+                ```
                 """);
             var harness = new SpecCompositionHarness();
 
@@ -51,16 +53,16 @@ public sealed class UatSpecCompositionTests
     }
 
     [TestModuleScan(typeof(UatSpecCompositionTests), NamespacePrefix = "Brinell.Uat.Tests.SpecCompositionCases")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class SpecCompositionFixture
     {
     }
 
-    [UatPhraseClass]
-    [UatIgnore]
-    public sealed class SpecCompositionPhrases : UatPhraseClassBase
+    [BddStepDefinitions]
+    [BddIgnore]
+    public sealed class SpecCompositionPhrases : BddStepDefinitionsBase
     {
-        [UatPhrase(UatEffectiveStepKeyword.When, "I run the composition-only phrase")]
+        [BddWhen("I run the composition-only phrase")]
         public void RunCompositionOnlyPhrase()
         {
         }

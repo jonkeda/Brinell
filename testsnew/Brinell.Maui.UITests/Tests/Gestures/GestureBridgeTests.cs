@@ -113,6 +113,31 @@ public class GestureBridgeTests
         return Task.CompletedTask;
     }
 
+    /// <summary>A ContentView declaring SwipeDown refreshes the RefreshView that is its content.</summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    public Task SwipeDown_OnRefreshWrapper_RunsTheRefresh()
+    {
+        _fixture.Context.Driver.PerformGesture("TestWrappedRefreshView", MauiGesture.SwipeDown);
+
+        Page.RefreshText.WaitText("refreshed 1", TestConstants.DefaultTestTimeoutMs);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>A disabled RefreshView is one a user cannot pull, so the bridge declines it.</summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    public Task SwipeDown_OnDisabledRefresh_IsDeclined()
+    {
+        // Declared on the bridge, so the throw below is the app declining, not a missing route.
+        Assert.True(_fixture.Context.Driver.SupportsGesture("TestDisabledRefreshView", MauiGesture.SwipeDown));
+        Assert.ThrowsAny<Exception>(() =>
+            _fixture.Context.Driver.PerformGesture("TestDisabledRefreshView", MauiGesture.SwipeDown));
+
+        Page.RefreshText.WaitText("not refreshed", TestConstants.DefaultTestTimeoutMs);
+
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// The swipe verb reaches <c>SwipeView.Open</c>, and reports whether Windows shows anything
     /// for it.
@@ -183,7 +208,7 @@ public class GestureBridgeTests
         // The question and the command, in that order and kept apart. Asking is allowed to
         // answer no; performing is not - it throws. There used to be a TryPerformGesture that
         // was the two glued together, and gluing them is what let a caller carry on as though
-        // the gesture had happened. See .my/fix/design-actions-do-not-try.md.
+        // the gesture had happened.
         Assert.False(driver.SupportsGesture("TestSwipeView", MauiGesture.Pinch));
 
         var failure = Assert.ThrowsAny<NotSupportedException>(

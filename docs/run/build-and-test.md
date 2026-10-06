@@ -5,7 +5,7 @@ Working directory: Brinell root.
 ## Framework Build
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
 ## Focused Unit Tests
@@ -26,7 +26,8 @@ dotnet build srcnew\Brinell.WinForms\Brinell.WinForms.csproj -f net10.0-windows 
 
 ## Notes
 
-Use `srcnew\Brinell.sln` as the broad active compile check. It is not a complete
-inventory. The top-level `Brinell.sln` includes a different project slice plus
-tools and may fail for tool-specific restore policies even when the framework
-projects build.
+`Brinell.sln` holds every project in the repository, in folders by area; `SolutionTests` in
+`Brinell.Core.Tests` fails when a project is missing from it (scratch projects under `.my/` are
+left out). The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.

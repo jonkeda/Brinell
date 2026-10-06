@@ -2,7 +2,7 @@
 
 The durable layer to read **before changing Brinell**: decisions, invariants and
 contracts - what must stay true. Not a description of the code; that can be regenerated
-from the source and goes stale. See `.my/documentation/plan.md` for the reasoning.
+from the source and goes stale. The reasoning: [the documentation plan](https://github.com/exact-mobile-apps/test-tooling/blob/fe5d2b66/.my/documentation/plan.md).
 
 How this differs from the other trees:
 
@@ -28,12 +28,31 @@ How this differs from the other trees:
 - [AD-007: Shared artifact layout](decisions/ad-007-shared-artifact-layout.md)
 - [AD-008: Gestures and semantic actions go through UI Automation](decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
 - [AD-009: App bugs stay failures](decisions/ad-009-app-bugs-stay-failures.md)
-- [AD-010: MAUI ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
+- [AD-010: MAUI and Html ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
 - [AD-011: UAT step vocabulary is declared by attributes on Core interfaces](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+- [AD-012: Test data is typed, validated, and chosen by the scenario file](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
+- [AD-013: Html controls have MAUI's shape](decisions/ad-013-html-controls-have-mauis-shape.md)
+- [AD-014: One scenario file serves every head](decisions/ad-014-one-scenario-file-serves-every-head.md)
+- [AD-015: A step's subject picks its app](decisions/ad-015-a-steps-subject-picks-its-app.md)
+- [AD-016: Phrase arguments are typed by the method](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
+- [AD-017: Callable phrases are sequences, not programs](decisions/ad-017-callable-phrases-are-sequences-not-programs.md)
+- [AD-018: The Presenter workspace is the UAT project](decisions/ad-018-the-presenter-workspace-is-the-uat-project.md)
+- [AD-019: Phrases have scopes and namespaces](decisions/ad-019-phrases-have-scopes-and-namespaces.md)
+- [AD-020: A tier is a head](decisions/ad-020-a-tier-is-a-head.md)
+- [AD-021: Brinell.Bdd under Brinell.Uat](decisions/ad-021-bdd-under-uat.md)
+- [AD-022: The IDEs run the gate's engine](decisions/ad-022-the-ides-run-the-gates-engine.md)
+- [AD-023: A feature file is Markdown; Gherkin is fenced](decisions/ad-023-a-feature-file-is-markdown.md)
+- [AD-024: A recording is a paced gate run](decisions/ad-024-a-recording-is-a-paced-gate-run.md)
+- [AD-025: A suite runs in a process of its own](decisions/ad-025-a-suite-runs-in-a-process-of-its-own.md)
+- [AD-026: A project earns its place](decisions/ad-026-a-project-earns-its-place.md)
+- [AD-027: The Scraper records into the project and calls no model](decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md)
+- [AD-028: One command line](decisions/ad-028-one-command-line.md)
 
 ## Contracts
 
-- [Call model](contracts/call-model.md) - one call, one budget, one log pair (R0-R9).
+- [Call model](contracts/call-model.md) - one call, one budget, one log pair (R0-R9); MAUI and Html.
 - [Control object](contracts/control-object.md) - the `.tpl.cs` / `.gen.cs` contract,
   act-once and `Confirm`.
 - [Bridge](contracts/bridge.md) - `GestureAutomation.Verbs`: what an app must publish.
+- [Apps in a test](contracts/uat-apps-host.md) - `TestAppSet` and `IUatAppsHost`: one table of apps, started
+  lazily, evidence from every started app.

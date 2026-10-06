@@ -9,7 +9,6 @@ namespace Brinell.Maui.Tests.Semantic;
 /// SelectionItem, then Invoke, then a pointer click, first one that reported success. The
 /// ladder is gone, and so is the question it answered. A control no longer discovers how to
 /// activate itself; it states it, and the element implements that statement per platform.
-/// See <c>.my/fix/design-controls-know-how-to-click.md</c>.
 /// </para>
 /// <para>
 /// <b>What is worth asserting changed with it.</b> The old tests checked which rung ran for a

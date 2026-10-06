@@ -27,8 +27,24 @@ public sealed class TestComposition
         Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(fixture);
+        return ForFixture(fixture, TestCompositionDiscoveryOptions.FromFixture(fixture.GetType()), configureServices);
+    }
 
-        var options = TestCompositionDiscoveryOptions.FromFixture(fixture.GetType());
+    /// <summary>
+    /// A composition of the modules <paramref name="options"/> names rather than the fixture's own
+    /// scans: one head's pages and phrases, for a fixture that runs apps of several heads.
+    /// </summary>
+    /// <param name="fixture">The fixture, registered as a singleton with its interfaces.</param>
+    /// <param name="options">The assemblies and namespaces to discover.</param>
+    /// <param name="configureServices">More services, such as the app's test context.</param>
+    public static TestComposition ForFixture(
+        object fixture,
+        TestCompositionDiscoveryOptions options,
+        Action<IServiceCollection>? configureServices = null)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        ArgumentNullException.ThrowIfNull(options);
+
         var catalog = TestCompositionCatalog.Discover(options);
         var services = new ServiceCollection();
 
@@ -108,7 +124,10 @@ public sealed class TestCompositionCatalog
                     ResolvePageName(type, pageAttribute),
                     type,
                     pageAttribute?.Lifetime ?? ServiceLifetime.Scoped,
-                    type.Assembly.Location));
+                    type.Assembly.Location)
+                {
+                    Namespace = Brinell.Core.Testing.BddNamespaceAttribute.Of(type),
+                });
                 continue;
             }
 
@@ -222,8 +241,9 @@ public sealed class TestCompositionCatalog
         IReadOnlyList<TestPageDescriptor> pages,
         ICollection<string> diagnostics)
     {
+        // One name in two namespaces is two pages; a scenario sees at most one of them.
         foreach (var duplicate in pages
-                     .GroupBy(page => page.Name, StringComparer.OrdinalIgnoreCase)
+                     .GroupBy(page => page.Namespace is { Length: > 0 } ns ? $"{ns}/{page.Name}" : page.Name, StringComparer.OrdinalIgnoreCase)
                      .Where(group => group.Count() > 1))
         {
             diagnostics.Add($"Duplicate test page name '{duplicate.Key}'.");
@@ -253,16 +273,23 @@ public sealed class TestCompositionDiscoveryOptions
             .GetCustomAttributes<TestModuleScanAttribute>()
             .ToArray();
 
-        if (scans.Length == 0)
-        {
-            return new TestCompositionDiscoveryOptions([fixtureType.Assembly], []);
-        }
+        return scans.Length == 0
+            ? new TestCompositionDiscoveryOptions([fixtureType.Assembly], [])
+            : FromScans(scans);
+    }
 
-        var assemblies = scans
+    /// <summary>The modules <paramref name="scans"/> name, as <c>[TestModuleScan]</c> on a fixture would.</summary>
+    /// <param name="scans">One scan per module.</param>
+    public static TestCompositionDiscoveryOptions FromScans(IEnumerable<TestModuleScanAttribute> scans)
+    {
+        ArgumentNullException.ThrowIfNull(scans);
+        var all = scans.ToArray();
+
+        var assemblies = all
             .Select(scan => scan.AssemblyMarkerType.Assembly)
             .Distinct()
             .ToArray();
-        var namespacePrefixes = scans
+        var namespacePrefixes = all
             .Select(scan => scan.NamespacePrefix)
             .Where(prefix => !string.IsNullOrWhiteSpace(prefix))
             .Select(prefix => prefix!)
@@ -282,7 +309,11 @@ public sealed record TestPageDescriptor(
     string Name,
     Type PageType,
     ServiceLifetime Lifetime,
-    string SourcePath);
+    string SourcePath)
+{
+    /// <summary>The page's UAT namespace (<see cref="Brinell.Core.Testing.BddNamespaceAttribute"/>); null for none.</summary>
+    public string? Namespace { get; init; }
+}
 
 public sealed record TestServiceDescriptor(
     Type Type,

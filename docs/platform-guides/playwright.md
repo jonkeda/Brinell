@@ -9,14 +9,18 @@ modern browser automation.
 - `srcnew/Brinell.Html.Playwright`
 - `srcnew/Brinell.Blazor`
 - `testsnew/Brinell.Blazor.Tests`
-- `testsnew/Brinell.Html.UITests`
-- `testsnew/Brinell.Blazor.UITests`
+- `testsnew/Brinell.Html.UITests` (the UI tests and the UAT suite)
+- `testsnew/Brinell.Blazor.UITests` (the UI tests and the UAT suite)
+- `samples/Todo/tests/Brinell.Samples.Todo.Web.UITests`, `samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`
 
 ## Rules
 
 - Keep browser and page lifecycle in fixtures.
 - Keep selectors inside page objects and controls.
-- Prefer Playwright waits and Brinell state checks over fixed delays.
+- Wait through Brinell members (`WaitX`, `AssertX`), never with fixed delays. A member is one
+  synchronous call with one budget, as on MAUI; there is no async API.
+- Html controls have MAUI's members and names (`AssertTextContains`, `SetText`, `Enter`,
+  `SelectByText`, `AssertSelectedText`), so a test or a UAT scenario reads the same on both.
 - Save traces under the shared artifact layout when enabled.
 
 ## Run

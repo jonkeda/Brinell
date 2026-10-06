@@ -50,8 +50,7 @@ public sealed class BrinellUiaBridge : IDisposable
     private readonly Lock _gate = new();
     private readonly uint _ownerThreadId;
 
-    private readonly Dictionary<string, BridgeTargetProvider> _targets =
-        new(StringComparer.Ordinal);
+    private readonly List<BridgeTargetProvider> _targets = [];
 
     private IntPtr _hwnd;
     private int _nextRuntimeId = 1;
@@ -124,12 +123,13 @@ public sealed class BrinellUiaBridge : IDisposable
     }
 
     /// <summary>
-    /// Publishes a target, replacing any previous one with the same <c>AutomationId</c>.
+    /// Publishes a target alongside any others with the same <c>AutomationId</c>.
     /// </summary>
     /// <remarks>
-    /// Replacement rather than rejection, because the common cause of a duplicate is the same
-    /// element being loaded a second time after navigation. Failing that case would mean a
-    /// bridge that works until the user goes back to a page.
+    /// Added, not replaced: the same template can be used more than once on a page, so one
+    /// <c>AutomationId</c> can stand for several live elements. A client tells them apart with
+    /// <see cref="BrinellVerb.GetBounds"/>. A host that publishes the same element again must
+    /// first withdraw it with <see cref="Unregister(string, Func{IBrinellVerbTarget, bool})"/>.
     /// </remarks>
     /// <param name="target">The target to publish.</param>
     public void Register(IBrinellVerbTarget target)
@@ -139,24 +139,18 @@ public sealed class BrinellUiaBridge : IDisposable
 
         lock (_gate)
         {
-            if (_targets.TryGetValue(target.AutomationId, out var existing))
-            {
-                // Retired, not disconnected - see Unregister.
-                existing.Retire();
-            }
-
-            _targets[target.AutomationId] = new BridgeTargetProvider(_root, target, _nextRuntimeId++);
+            _targets.Add(new BridgeTargetProvider(_root, target, _nextRuntimeId++));
             PublishChildren();
         }
     }
 
-    /// <summary>Removes a target, if it is published.</summary>
-    /// <param name="automationId">The <c>AutomationId</c> the target was published under.</param>
+    /// <summary>Removes every target published under an <c>AutomationId</c>.</summary>
+    /// <param name="automationId">The <c>AutomationId</c> the targets were published under.</param>
     /// <returns>Whether anything was removed.</returns>
     public bool Unregister(string automationId) => Unregister(automationId, _ => true);
 
     /// <summary>
-    /// Removes a target only if the one currently published still satisfies
+    /// Removes the targets under an <c>AutomationId</c> that satisfy
     /// <paramref name="stillTheSameTarget"/>.
     /// </summary>
     /// <remarks>
@@ -164,10 +158,9 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <b>This exists because of navigation order.</b> A UI framework generally loads the
     /// incoming page before it unloads the outgoing one, so an element that registers on load
     /// and unregisters on unload produces: new element registers, old element unregisters - and
-    /// the second call removes the first one's registration, because they share an
-    /// <c>AutomationId</c>. The result is a bridge that works on the first visit to a page and
-    /// is empty on every visit after, which reads as an intermittent fault rather than an
-    /// ordering one.
+    /// an unregister by <c>AutomationId</c> alone would remove the newcomer too. The result is a
+    /// bridge that works on the first visit to a page and is empty on every visit after, which
+    /// reads as an intermittent fault rather than an ordering one.
     /// </para>
     /// <para>
     /// So an unregister has to prove it is removing its own registration, not its successor's.
@@ -175,7 +168,7 @@ public sealed class BrinellUiaBridge : IDisposable
     /// </remarks>
     /// <param name="automationId">The <c>AutomationId</c> the target was published under.</param>
     /// <param name="stillTheSameTarget">
-    /// Given the currently published target, whether it is the one the caller means to remove.
+    /// Given a published target, whether it is one the caller means to remove.
     /// </param>
     /// <returns>Whether anything was removed.</returns>
     public bool Unregister(string automationId, Func<IBrinellVerbTarget, bool> stillTheSameTarget)
@@ -190,43 +183,50 @@ public sealed class BrinellUiaBridge : IDisposable
 
         lock (_gate)
         {
-            if (!_targets.TryGetValue(automationId, out var published)
-                || !stillTheSameTarget(published.Target))
+            var removed = _targets.FindAll(published =>
+                string.Equals(published.Target.AutomationId, automationId, StringComparison.Ordinal)
+                && stillTheSameTarget(published.Target));
+
+            if (removed.Count == 0)
             {
                 return false;
             }
 
-            _targets.Remove(automationId);
+            foreach (var published in removed)
+            {
+                _targets.Remove(published);
 
-            // RETIRED, NOT DISCONNECTED - and this is the root cause of the "app freeze".
-            //
-            // UiaDisconnectProvider was called here, on every page unload. Measured under a
-            // stress walk of 150 page changes: with it, UI Automation retired the client's element
-            // for the app's top-level window seven or eight times - every later lookup through
-            // that element answered UIA_E_ELEMENTNOTAVAILABLE and the driver, which held it for
-            // the whole run, went blind. Without it: zero. A disconnect evidently invalidates more
-            // than the one provider it names.
-            //
-            // What the disconnect was for still matters, so it is kept where it matters: when the
-            // bridge itself goes, a provider left connected to a dead window is what hangs clients
-            // (step 28), and Teardown still disconnects. A target withdrawn while its window lives
-            // is a different case - its provider is still hosted and still answers, so retiring it
-            // makes a stale reference fail promptly without touching UI Automation's connection.
-            // See .my/fix/rca-app-freeze-was-a-stale-root.md.
-            published.Retire();
+                // RETIRED, NOT DISCONNECTED - and this is the root cause of the "app freeze".
+                //
+                // UiaDisconnectProvider was called here, on every page unload. Measured under a
+                // stress walk of 150 page changes: with it, UI Automation retired the client's
+                // element for the app's top-level window seven or eight times - every later lookup
+                // through that element answered UIA_E_ELEMENTNOTAVAILABLE and the driver, which
+                // held it for the whole run, went blind. Without it: zero. A disconnect evidently
+                // invalidates more than the one provider it names.
+                //
+                // What the disconnect was for still matters, so it is kept where it matters: when
+                // the bridge itself goes, a provider left connected to a dead window is what hangs
+                // clients (step 28), and Teardown still disconnects. A target withdrawn while its
+                // window lives is a different case - its provider is still hosted and still
+                // answers, so retiring it makes a stale reference fail promptly without touching
+                // UI Automation's connection.
+                published.Retire();
+            }
+
             PublishChildren();
             return true;
         }
     }
 
-    /// <summary>The <c>AutomationId</c>s currently published.</summary>
+    /// <summary>The <c>AutomationId</c>s currently published, once per target.</summary>
     public IReadOnlyCollection<string> RegisteredTargets
     {
         get
         {
             lock (_gate)
             {
-                return _targets.Keys.ToArray();
+                return _targets.Select(t => t.Target.AutomationId).ToArray();
             }
         }
     }
@@ -290,7 +290,7 @@ public sealed class BrinellUiaBridge : IDisposable
 
             _disposed = true;
 
-            foreach (var provider in _targets.Values)
+            foreach (var provider in _targets)
             {
                 Disconnect(provider);
             }
@@ -342,7 +342,7 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <summary>Rebuilds the root's child snapshot and tells any listening client.</summary>
     private void PublishChildren()
     {
-        _root.SetChildren([.. _targets.Values]);
+        _root.SetChildren([.. _targets]);
 
         if (!UiaNativeMethods.UiaClientsAreListening())
         {

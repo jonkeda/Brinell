@@ -11,7 +11,7 @@ namespace Brinell.Maui.Controls.Range;
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from RangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
 /// Overrides SetValueCore to clamp the value to the slider's range before the element sets it -
-/// through RangeValue on Windows, with arrow keys on Android and iOS.
+/// through RangeValue on Windows, through the accessibility set-progress action on Android.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 

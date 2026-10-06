@@ -18,4 +18,11 @@
     <PackageReference Include="WireMock.Net" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- BRINELL001 (AD-012) ships in the package as an analyzer, so every consumer gets it. -->
+    <ProjectReference Include="..\Brinell.Mocking.Analyzers\Brinell.Mocking.Analyzers.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="..\Brinell.Mocking.Analyzers\bin\$(Configuration)\netstandard2.0\Brinell.Mocking.Analyzers.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
 </Project>

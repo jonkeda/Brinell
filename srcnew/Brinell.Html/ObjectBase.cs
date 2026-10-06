@@ -1,11 +1,12 @@
-using System.Diagnostics;
-using Brinell.Core.Utilities;
+using System.Runtime.CompilerServices;
+using Brinell.Core.Calls;
+using Brinell.Core.Scopes;
 using Brinell.Html.Interfaces;
 
 namespace Brinell.Html;
 
 /// <summary>
-/// Base class for HTML page objects and controls.
+/// Base class for HTML page objects, containers and controls.
 /// </summary>
 public abstract class ObjectBase
 {
@@ -15,65 +16,37 @@ public abstract class ObjectBase
 
     protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
 
-    protected bool Poll(Func<bool> condition, int timeoutMs)
+    /// <summary>The name this object's own calls are logged under.</summary>
+    protected virtual string ScopeName => GetType().Name;
+
+    /// <summary>
+    /// A scope-level wait as one call (R1): polls <paramref name="probe"/> until it reports Done or
+    /// the budget runs out. Answers false when it ran out, or throws what
+    /// <paramref name="fail"/> builds from the last readiness seen.
+    /// </summary>
+    private protected bool RunProbe(
+        Func<Observation> probe,
+        int budgetMs,
+        Func<ScopeReadiness, Exception>? fail = null,
+        [CallerMemberName] string? caller = null)
     {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        caller ??= nameof(RunProbe);
+        return new ControlCall(Context.Logger, Context.Name, Context.NearMiss, ScopeName, ScopeName).Run(caller, null, budgetMs, Context.Timeouts.Animation, attempt =>
         {
-            try
+            if (Poller.Until(_ => probe(), attempt, PollingIntervalMs))
             {
-                if (condition())
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Ignore exceptions while polling.
+                return true;
             }
 
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-
-        try
-        {
-            return condition();
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    protected async Task<bool> PollAsync(Func<Task<bool>> condition, int timeoutMs)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            try
+            var last = attempt.Log.Last;
+            if (fail != null)
             {
-                if (await condition().ConfigureAwait(false))
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Ignore exceptions while polling.
+                throw fail(last.Scope ?? new ScopeReadiness(ScopeName, ScopeReadinessState.NotLoaded, last.ToString()));
             }
 
-            await Task.Delay(PollingIntervalMs).ConfigureAwait(false);
-        }
-
-        try
-        {
-            return await condition().ConfigureAwait(false);
-        }
-        catch
-        {
-            return false;
-        }
+            return last.Kind == ObservationKind.Failed && last.Error is { } error
+                ? throw attempt.Log.Unexpected(error, $"'{ScopeName}'", budgetMs)
+                : false;
+        }, succeeded: ok => ok);
     }
 }

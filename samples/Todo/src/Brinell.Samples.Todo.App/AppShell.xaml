@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    One root page and two pushed routes; no tabs and no flyout, so none of the tab-bar
+    One root page and four pushed routes (todo detail and edit, users and user edit); no tabs and no flyout, so none of the tab-bar
     differences between Windows and Android that made the sample app leave Shell apply here.
 -->
 <Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"

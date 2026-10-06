@@ -7,7 +7,8 @@ public class WinFormsSampleFixture : WinFormsTestFixtureBase
 {
     protected override string GetDefaultAppPath()
     {
-        var testDir = AppContext.BaseDirectory;
+        // From this assembly's folder, wherever the suite runs (AD-025).
+        var testDir = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(WinFormsSampleFixture).Assembly);
         var appPath = Path.GetFullPath(Path.Combine(
             testDir, "..", "..", "..", "..", "..",
             "samples", "Brinell.Samples.WinForms.App", "bin",

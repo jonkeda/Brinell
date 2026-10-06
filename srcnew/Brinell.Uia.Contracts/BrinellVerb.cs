@@ -36,6 +36,15 @@ public enum BrinellVerb
     /// <summary>Succeeds and does nothing. Proves the round trip without side effects.</summary>
     Ping = 3,
 
+    /// <summary>
+    /// Returns the target's screen rectangle as "left,top,width,height" in physical pixels.
+    /// </summary>
+    /// <remarks>
+    /// Answered for every target, declared or not, so a client can tell apart targets that share
+    /// an <c>AutomationId</c>.
+    /// </remarks>
+    GetBounds = 4,
+
     // ---- 100-199: gestures ---------------------------------------------------------
 
     /// <summary>Single tap.</summary>
@@ -303,6 +312,7 @@ public static class BrinellVerbs
         // answer rather than an arbitrary one.
         BrinellVerb.GetCapabilities => BrinellVerbTransport.Exchange,
         BrinellVerb.GetProtocolVersion => BrinellVerbTransport.Exchange,
+        BrinellVerb.GetBounds => BrinellVerbTransport.Exchange,
         BrinellVerb.Ping => BrinellVerbTransport.Invoke,
 
         // Focus. IsFocused answers with a string, the other two do not.
@@ -394,6 +404,7 @@ public static class BrinellVerbs
         // Meta: discovery and liveness, asked of the bridge rather than of the app.
         BrinellVerb.GetCapabilities => BrinellVerbKind.Read,
         BrinellVerb.GetProtocolVersion => BrinellVerbKind.Read,
+        BrinellVerb.GetBounds => BrinellVerbKind.Read,
         BrinellVerb.Ping => BrinellVerbKind.Read,
 
         // Reads. Each names a question about current state; none of them changes it.

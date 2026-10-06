@@ -15,13 +15,22 @@ that can prove it, and every test traced back to a user journey. It shows:
 
 ## The app
 
-Three pages in a Shell, with a local SQLite store that syncs with `Todo.Api`:
+Five pages in a Shell, with a local SQLite store that syncs with `Todo.Api`:
 
 | Page | What it does |
 | --- | --- |
-| List | All todos, a status filter, Sync, Add. Empty, Loading and Error states (CommunityToolkit `StateContainer`). |
+| List | All todos, a status filter, Sync, Add, Users. Empty, Loading and Error states (CommunityToolkit `StateContainer`). |
 | Detail | One todo in three `SectionCard`s (details, notes, sync state), Next status, Edit, Delete (with confirmation). |
 | Edit | Title (required, at most 100 characters), notes, an optional due date, status. Cancel asks before discarding changes. |
+| Users | The users, available ones first, each with role and state (Expired, On leave, Inactive). Add; tap to edit. Read-only offline. |
+| User edit | One field of each kind a test drives: name and email (`Entry`), status (`RadioButton`s), an optional end date (`CheckBox` + `DatePicker`), role (`Picker`), hours (`Stepper`), hourly rate (`1,250.75`), start of day (`TimePicker`), reminders (`Switch`), workload (`Slider`), notes (`Editor`). Save shows every error on its field. |
+
+Users are managed by the server: a change goes straight to `PUT /api/users/{id}`, which checks
+the same rules as the app, and the app caches the answer. A sync fetches the users before the
+todos. Users are not linked to todos yet; the `team` test set has one user in each state. The
+UI tests are `UsersJourneyTests` (MAUI, Windows) and the UAT scenarios `TOD.11-manage-users.feature.md`,
+whose `Using | Users` reaches the users pages and phrases in the `Users` namespace; the web head
+has no users pages yet.
 
 Two custom controls, each with a matching ControlObject on the test side:
 
@@ -39,13 +48,17 @@ Two custom controls, each with a matching ControlObject on the test side:
 | `src/…Infrastructure` | SQLite repository, API client, sync service, launch settings. |
 | `src/…Api` | `Todo.Api`, the backend: a minimal API with its own SQLite file. |
 | `src/…App` | The MAUI app (Windows and Android). |
+| `src/…Web` | The web head: the same app in Blazor Server, on the same `Core`, `Contracts` and `Infrastructure`. See "The web head" below. |
 | `tests/…UnitTests` | Tier 1. |
 | `tests/…IntegrationTests` | Tier 2: headless, against WireMock and SQLite; the contract tests against the real API. |
-| `tests/…TestSupport` | Scenarios (`Scenarios/*.json`), the WireMock fake of the API, temp databases. |
+| `tests/…TestSupport` | Test sets (`TestData/*.json`), the WireMock fake of the API, temp databases. |
 | `tests/…UITests` | Tiers 3 and 4 on Windows: page objects, ControlObjects, fixtures, tests. |
 | `tests/…UITests.Mobile` | The same UI test sources, built for Android (Appium). |
 | `tests/…Uat` | Markdown UAT scenarios over tier 3's app and page objects. |
 | `tests/…JourneyCoverage` | The journey coverage report. |
+| `tests/…TestSupport.Apps` | Several apps of any head on one backend: `apps.md` and `TodoAppsFixture`, shared by the two mixed projects. See "Several apps in one test" below. |
+| `tests/…Mixed.UITests` | UI tests that drive Windows, web and Android apps at once. |
+| `tests/…Mixed.Uat` | UAT scenarios that do the same: `Daan taps Save` runs on Daan's app. |
 | `manual/charters.md` | Tier 5. |
 
 ## The five tiers
@@ -154,8 +167,8 @@ changes, these fail before the hermetic UI tests can pass against a stale fake.
 
 ### 3. UI hermetic: one example on the real screen
 
-The fixture seeds a database from a scenario (`TestSupport/Scenarios/three-todos.json`), starts
-WireMock with the scenario's server half, and launches the app with launch settings pointing
+The fixture seeds a database from a test set (`TestSupport/TestData/three-todos.json`), starts
+WireMock with the test set's server half, and launches the app with launch settings pointing
 at both. The test only uses page objects. `UITests/Tests/Journeys/CreateEditJourneyTests.cs`:
 
 ```csharp
@@ -230,13 +243,13 @@ half of CH-2: a save is all or nothing (`ASave_IsAllOrNothing_ToAReaderOnAnother
 When a charter finds something reproducible, it moves down into an automated tier, and the
 charter records where it went.
 
-## UAT: the journeys, in Markdown
+## Feature: the journeys, in Markdown
 
-`tests/Brinell.Samples.Todo.Uat` runs [`Scenarios/*.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios)
+`tests/Brinell.Samples.Todo.Uat` runs [`Features/*.feature.md`](tests/Brinell.Samples.Todo.Uat/Features)
 against the same hermetic app tier 3 uses - WireMock backend, seeded database - but the test
 is the Markdown, not C#:
 
-```markdown
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page
@@ -247,7 +260,7 @@ And Todos should have todo "Write the report"
 ```
 
 `Add`, `Title`, `Save` and `Todos` are members of `TodoListPage` and `TodoEditPage`; the verbs
-are `[UatStep]` attributes on the control methods they call, so the vocabulary and the code
+are `[BddWhen]` / `[BddThen]` attributes on the control methods they call, so the vocabulary and the code
 that runs it are one declaration
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). Two verbs are
 Todo's own: `I advance {control} to {value}` and `{control} should show status {value}`,
@@ -256,11 +269,14 @@ declared on `TodoStatus`.
 The acceptance backbone is
 [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md), a plain
 checklist of what a user must be able to do. It is not `journeys.md`: that one decides *where*
-a behaviour is tested, this one states *what* the user can do, and each scenario names the
-subtask it proves in its `Journey` metadata.
+a behaviour is tested, this one states *what* the user can do. There is one file per
+journey (`Features/TOD.02-create-a-todo.feature.md`, `TOD.04-...`, `TOD.05-...`), with one scenario
+per subtask, named and tagged with its id (`@TOD.02.3`).
 
-Four scenarios ship today - create, create-needs-title, cancel, set-status - covering
-TOD.02.2, TOD.02.3, TOD.04.3 and TOD.05.1. The checklist marks the rest honestly: `[!]` where
+Each file names its starting data in `TestData` metadata (`one-todo`, from `TestSupport/TestData/`;
+`DefaultTestData` in `uat.config.md` is the fallback), and steps such as `the database should have todos` check what the app
+stored. Every scenario is its own test case. Today that is TOD.02 complete (02.1, 02.2, 02.3,
+02.5) plus TOD.04.3 and TOD.05.1. The checklist marks the rest honestly: `[!]` where
 another tier already proves it (rule tables, sync, persistence), `[-]` where UAT cannot
 (real hardware, a real network, a human). Windows only; Android UAT and a live-backend UAT
 are out of scope.
@@ -270,7 +286,7 @@ running app.
 
 ## Test data: scenarios, not a database bridge
 
-A scenario (`TestSupport/Scenarios/*.json`) has a local half and a server half, plus a pinned
+A test set (`TestSupport/TestData/*.json`) has a local half and a server half, plus a pinned
 "now":
 
 - The **local half** goes into a fresh SQLite file, created by the app's own `TodoDatabase`
@@ -278,6 +294,9 @@ A scenario (`TestSupport/Scenarios/*.json`) has a local half and a server half, 
 - The **server half** loads into `TodoServerStub`, a stateful WireMock fake of `Todo.Api`. A test
   changes it per test (a 500, a delay, a failure that recovers), and the fixture resets it
   between tests.
+- **Users** are optional: `users` is what the server has, and `localUsers` what the device has
+  cached. Leave `localUsers` out for a device that has synced; `[]` for one that never fetched
+  users.
 
 The app receives the file path, the backend URL, the clock and the sync switches as launch
 settings (`MauiDriverOptions.LaunchSettings`). On Windows they are environment variables of the
@@ -295,6 +314,9 @@ From `samples/Todo`:
 dotnet test tests/Brinell.Samples.Todo.UnitTests
 dotnet test tests/Brinell.Samples.Todo.IntegrationTests
 dotnet test tests/Brinell.Samples.Todo.JourneyCoverage
+
+# The test sets (TestSupport/TestData), from the command line - see docs/guides/test-data.md.
+cd tests/Brinell.Samples.Todo.Uat; pwsh ../../../../tools/Scripts/brinell.ps1 data validate; cd ../..
 
 # Tier 3 on Windows: build the app first; the fixture finds it under src/…App/bin.
 dotnet build src/Brinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
@@ -318,6 +340,76 @@ have nothing to do with the app.
 To try the app by hand, start `dotnet run --project src/Brinell.Samples.Todo.Api` (it listens
 on port 5080) and then run the app.
 
+## The web head
+
+`src/Brinell.Samples.Todo.Web` is the same app in the browser: Blazor Server with interactive
+server rendering. It reuses the MAUI app's view models, rules, sync and SQLite store unchanged.
+Only navigation, dialogs and the pages are its own. Its test ids are the MAUI AutomationIds
+(`data-testid="TodoEdit_Title"`), so both heads offer page objects the same contract. It exists to
+prove Brinell.Html on a real app, and later to run the MAUI and web apps against one backend in
+one test ([apps in a test](../../.docs/contracts/uat-apps-host.md)).
+
+- **One host process is one device.** It reads the same launch settings as the MAUI app
+  (`TODO_DB_PATH`, `TODO_API_BASEURL`, `TODO_NOW`, ...) from its environment, and has its own
+  SQLite file. Two hosts are two devices. Two browser tabs on one host share one app.
+- **Who sent it.** Set `TODO_CLIENT_ID` (on either head) and every request carries it in
+  `X-Todo-Client`. WireMock records the header. `Todo.Api` keeps an in-memory log of accepted
+  requests with their client (`RunningTodoApi.Requests`). See TOD.07.10.
+- **Busy signal.** `<body data-busy>` is `true` while the page's view model is busy.
+
+To try it, start the API as above, then:
+
+```bash
+dotnet run --project src/Brinell.Samples.Todo.Web    # http://localhost:5090
+```
+
+Its UI tests are `tests/Brinell.Samples.Todo.Web.UITests`: the TOD journeys through Html page
+objects, hermetic (WireMock, a seeded database, a pinned clock) and live (the real `Todo.Api`,
+with `BRINELL_UAT_LIVE_API=1`). The fixtures start the web head themselves on a free port, so
+nothing needs to be running first:
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Web.UITests
+```
+
+The UAT scenarios run on the web head too: `tests/Brinell.Samples.Todo.Web.Uat` runs the same
+`Features/*.feature.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
+page objects with the MAUI member names. It also has a scenario with two devices on one backend
+(`TOD.07-two-devices.feature.md`: `Alice taps Sync`, then `Bob taps Sync` and sees her todo):
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Web.Uat
+```
+
+### Several apps in one test
+
+`tests/Brinell.Samples.Todo.TestSupport.Apps/apps.md` lists the apps a test can use - Daan and Gus
+on Windows, Eva on Android, Finn and Hana in a browser - all on one fake backend, each with its
+own database, `X-Todo-Client` and clock (`ClockOffsetMinutes`). `TodoAppsFixture` starts an app
+the first time a test asks for it: two Windows apps go side by side, left and right.
+
+`tests/Brinell.Samples.Todo.Mixed.UITests` uses them as variables:
+
+```csharp
+var daan = apps.Maui("Daan");
+var finn = apps.Web("Finn");
+daan.List.CreateTodo(title).Sync();
+apps.WaitForTodoFrom(daan, title);
+finn.List.Sync().Todos.AssertRow(title);
+```
+
+`tests/Brinell.Samples.Todo.Mixed.Uat` reads the same table, and each step runs on the app of the
+user it names (`When Daan taps Save`, `Then Finn should be on the Todo List page`); see
+`Features/TOD.07-mixed.feature.md`. A failure captures every started app, one folder each. The
+Android test and scenario run only with the emulator and `BRINELL_ANDROID=1`.
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Mixed.UITests
+dotnet test tests/Brinell.Samples.Todo.Mixed.Uat
+```
+
+Build the MAUI app for Windows first, as for tier 3.
+
 ### On Android
 
 Start an emulator and an Appium server (`127.0.0.1:4723`, UiAutomator2 driver). Then, from
@@ -337,20 +429,26 @@ rest (26 tests) pass on both platforms.
 ## The journey coverage report
 
 `tests/Brinell.Samples.Todo.JourneyCoverage` reads [journeys.md](journeys.md), reads every
-test's traits by reflection (nothing runs, nothing launches), and fails when:
+test's traits by reflection and parses every scenario file (nothing runs, nothing launches), and
+fails when:
 
 - a subtask has no test in a tier `journeys.md` assigns it to;
 - a subtask marked **M** is not named in `manual/charters.md`;
 - a `Journey` trait names a subtask that does not exist (a typo);
-- a test has no `Pyramid` trait;
+- a test has no `Pyramid` trait, or a scenario no `@TOD.xx.y` tag;
 - the pyramid inverts: unit cases must outnumber hermetic UI cases, and those must outnumber
   live ones.
 
 It writes the full matrix, with every subtask, tier and covering test, to
 `TestResults/<run-id>/suites/TodoJourneyCoverage/journey-coverage.md`.
 
+A scenario counts like a test: its `@TOD.xx.y` tags are its subtasks, and each head it runs on
+gives a tier. `@service` is Integration (the headless suite in `IntegrationTests/Service`); a UI
+head, or no head tag, is UiHermetic. A scenario tagged `@service @maui` counts in both.
+
 To add a behaviour: add its subtask to `journeys.md` with the lowest tier that can prove it,
-write the test with its `Journey` and `Pyramid` traits, and let the report confirm they match.
+write the test with its `Journey` and `Pyramid` traits (or the scenario with its tags), and let
+the report confirm they match.
 
 ## Rules the tests follow
 

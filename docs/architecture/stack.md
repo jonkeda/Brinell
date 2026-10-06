@@ -41,7 +41,7 @@ Use xUnit `Assert`. FluentAssertions is banned in test projects by
 | `APPIUM_APP_PATH` | App executable or package path |
 | `APPIUM_DEVICE_NAME` | Device/emulator name |
 | `WPF_APP_PATH`, `WINFORMS_APP_PATH` | Desktop sample/app executable paths |
-| `BLAZOR_APP_URL`, `BLAZOR_APP_PATH`, `HTML_APP_PATH` | Web and Blazor test host inputs |
+| `BLAZOR_APP_URL`, `BLAZOR_APP_PATH`, `HTML_APP_PATH` | Web and Blazor test host inputs. `BLAZOR_APP_URL` is optional: without it the UI tests start the sample themselves |
 | `HEADLESS`, `BROWSER_TYPE` | Browser run mode |
 | `STRIDE_APP_PATH` | Stride app executable path |
 | `BRINELL_AUTOMATION` | Enables Brinell automation hooks where supported |

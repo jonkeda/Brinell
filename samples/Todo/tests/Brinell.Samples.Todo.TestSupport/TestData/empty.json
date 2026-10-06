@@ -1,0 +1,7 @@
+// Nothing anywhere: a first launch against a server with no todos.
+{
+  "$schema": "./testdata.schema.json",
+  "now": "2026-03-10T09:00:00Z",
+  "server": [],
+  "local": []
+}

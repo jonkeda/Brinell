@@ -70,7 +70,7 @@ Artifact indexing is best effort and must not fail the test run.
 
 ## UAT Reporting
 
-UAT reporting uses `UatConfig.Reporting.OutputDirectory`. If omitted, it uses
+UAT reporting uses `BddConfig.Reporting.OutputDirectory`. If omitted, it uses
 the provider's `UatDirectory`.
 
 Supported path tokens:

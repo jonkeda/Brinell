@@ -15,6 +15,13 @@
     <PackageReference Include="coverlet.collector" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- BRINELL001: mock response bodies are contract types, not anonymous objects (AD-012). Brinell.Mocking
+       is a project reference here, so its analyzer is added by hand; the package carries it itself. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../../../srcnew/Brinell.Mocking.Analyzers/Brinell.Mocking.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <!-- xUnit Assert only (AD-006). -->
   <Target Name="CheckBannedPackages" BeforeTargets="ResolvePackageAssets">
     <Error Condition="@(PackageReference->AnyHaveMetadataValue('Identity', 'FluentAssertions'))"

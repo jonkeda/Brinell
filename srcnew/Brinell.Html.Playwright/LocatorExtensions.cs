@@ -8,9 +8,15 @@ internal static class LocatorExtensions
     public static ILocator ToPlaywrightLocator(PlaywrightTestContext context, Locator locator)
     {
         ArgumentNullException.ThrowIfNull(context);
+        return ToPlaywrightLocator(context.InternalPage, context.InternalFrame, locator);
+    }
+
+    public static ILocator ToPlaywrightLocator(IPage page, IFrame? frame, Locator locator)
+    {
+        ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(locator);
 
-        var root = Scope(context.InternalPage, context.InternalFrame, "*");
+        var root = Scope(page, frame, "*");
 
         if (locator.Parent != null)
         {

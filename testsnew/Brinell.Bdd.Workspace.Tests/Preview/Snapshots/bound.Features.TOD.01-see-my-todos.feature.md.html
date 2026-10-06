@@ -1,0 +1,176 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.01-see-my-todos.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.01 See my todos</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Brinell.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>List</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.01</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>empty</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, list</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.01.1</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@list</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.01.1 Opening the app shows the list; a loading state shows first, then the content"><span class="uat-kw">Scenario</span> TOD.01.1 Opening the app shows the list; a loading state shows first, then the content</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step uat-bound" data-line="18" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="19" data-binds="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="20">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="22"><td>Buy bread</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="23" data-binds="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerIsSlow &#183; Backend" title="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerIsSlow &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server answers after 2 seconds</span>
+</li>
+<li class="uat-step uat-bound" data-line="24" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="25" data-binds="binds to Builtin.StateContainer.AssertShowsState" title="binds to Builtin.StateContainer.AssertShowsState"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Loading state</span>
+</li>
+<li class="uat-step uat-bound" data-line="26" data-binds="binds to Builtin.StateContainer.AssertShowsState &#183; page Todo List" title="binds to Builtin.StateContainer.AssertShowsState &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">the list should show the Content state</span>
+</li>
+<li class="uat-step uat-bound" data-line="27" data-binds="binds to Builtin.AssertRow &#183; page Todo List" title="binds to Builtin.AssertRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Buy bread&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="30"><span class="uat-tag">@TOD.01.2</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@list</span></p>
+<h2 class="uat-scenario" data-line="31" data-scenario="TOD.01.2 Each row shows its title, due date and status"><span class="uat-kw">Scenario</span> TOD.01.2 Each row shows its title, due date and status</h2>
+<ol class="uat-steps" data-line="33">
+<li class="uat-step uat-bound" data-line="34" data-binds="calls Step: the synced list has todos" title="calls Step: the synced list has todos"><span class="uat-kw">Given</span><span class="uat-text">the synced list has todos</span>
+<table class="uat-table" data-line="35">
+<thead><tr><th>Title</th><th>Status</th><th>Due Date</th></tr></thead>
+<tbody>
+<tr data-line="37"><td>Post the letters</td><td>Open</td><td>+2d</td></tr>
+<tr data-line="38"><td>Paint the fence</td><td>In Progress</td><td></td></tr>
+</tbody>
+</table>
+<details class="uat-call"><summary>Step: the synced list has todos (4 steps)</summary>
+<ol class="uat-call-steps">
+<li class="uat-step uat-bound" data-source="Todo.steps.md:6" data-depth="1" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span></li>
+<li class="uat-step uat-bound" data-source="Todo.steps.md:7" data-depth="1" title="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span></li>
+<li class="uat-step uat-bound" data-source="Todo.steps.md:9" data-depth="1" title="binds to Builtin.Control.Tap"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span></li>
+<li class="uat-step uat-bound" data-source="Todo.steps.md:10" data-depth="1" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span></li>
+</ol>
+</details>
+</li>
+<li class="uat-step uat-bound" data-line="39" data-binds="binds to Builtin.AssertRows &#183; page Todo List" title="binds to Builtin.AssertRows &#183; page Todo List"><span class="uat-kw">Then</span><span class="uat-text">the list should show <span class="uat-value">&quot;Post the letters&quot;</span> and <span class="uat-value">&quot;Paint the fence&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="40" data-binds="calls Step for each row: each todo shows its status" title="calls Step for each row: each todo shows its status"><span class="uat-kw">And</span><span class="uat-text">each todo shows its status</span>
+<table class="uat-table" data-line="41">
+<thead><tr><th>Title</th><th>Status</th></tr></thead>
+<tbody>
+<tr data-line="43"><td>Post the letters</td><td>Open</td></tr>
+<tr data-line="44"><td>Paint the fence</td><td>In progress</td></tr>
+</tbody>
+</table>
+<details class="uat-call"><summary>Step for each row: each todo shows its status (2 steps)</summary>
+<ol class="uat-call-steps">
+<li class="uat-step uat-bound" data-source="Todo.steps.md:21" data-depth="1" title="binds to Builtin.AssertRowStatus"><span class="uat-kw">Then</span><span class="uat-text"><span class="uat-row">row 1</span> the todo Post the letters should show status Open</span></li>
+<li class="uat-step uat-bound" data-source="Todo.steps.md:21" data-depth="1" title="binds to Builtin.AssertRowStatus"><span class="uat-kw">Then</span><span class="uat-text"><span class="uat-row">row 2</span> the todo Paint the fence should show status In progress</span></li>
+</ol>
+</details>
+</li>
+<li class="uat-step uat-bound" data-line="45" data-binds="binds to Builtin.AssertRowDue &#183; page Todo List" title="binds to Builtin.AssertRowDue &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Post the letters&quot;</span> should show a due date</span>
+</li>
+<li class="uat-step uat-bound" data-line="46" data-binds="binds to Builtin.AssertRowDue &#183; page Todo List" title="binds to Builtin.AssertRowDue &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Paint the fence&quot;</span> should show no due date</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="49"><span class="uat-tag">@TOD.01.3</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@list</span></p>
+<h2 class="uat-scenario" data-line="50" data-scenario="TOD.01.3 With no todos the list shows &quot;Nothing to do&quot; and Add stays reachable"><span class="uat-kw">Scenario</span> TOD.01.3 With no todos the list shows &quot;Nothing to do&quot; and Add stays reachable</h2>
+<ol class="uat-steps" data-line="52">
+<li class="uat-step uat-bound" data-line="53" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="54" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="55" data-binds="binds to Builtin.StateContainer.AssertShowsState" title="binds to Builtin.StateContainer.AssertShowsState"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Empty state</span>
+</li>
+<li class="uat-step uat-bound" data-line="56" data-binds="binds to Builtin.Control.AssertText &#183; page Todo List" title="binds to Builtin.Control.AssertText &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Empty Message should equal <span class="uat-value">&quot;Nothing to do&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="57" data-binds="binds to Builtin.Control.AssertEnabled &#183; page Todo List" title="binds to Builtin.Control.AssertEnabled &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Add should be enabled</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="60"><span class="uat-tag">@TOD.01.4</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@list</span> <span class="uat-tag">@windows</span></p>
+<h2 class="uat-scenario" data-line="61" data-scenario="TOD.01.4 Filtering by status shows only the matching rows"><span class="uat-kw">Scenario</span> TOD.01.4 Filtering by status shows only the matching rows</h2>
+<ol class="uat-steps" data-line="63">
+<li class="uat-step uat-bound" data-line="64" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="65" data-binds="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="66">
+<thead><tr><th>Title</th><th>Status</th></tr></thead>
+<tbody>
+<tr data-line="68"><td>Mow the lawn</td><td>Open</td></tr>
+<tr data-line="69"><td>Sand the door</td><td>InProgress</td></tr>
+<tr data-line="70"><td>Return books</td><td>Done</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="71" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="72" data-binds="binds to Builtin.AssertRow" title="binds to Builtin.AssertRow"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Return books&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="73" data-binds="binds to Builtin.Control.SelectByText &#183; page Todo List" title="binds to Builtin.Control.SelectByText &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I select <span class="uat-value">&quot;Done&quot;</span> from Filter</span>
+</li>
+<li class="uat-step uat-bound" data-line="74" data-binds="binds to Builtin.AssertRow &#183; page Todo List" title="binds to Builtin.AssertRow &#183; page Todo List"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Return books&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="75" data-binds="binds to Builtin.AssertNoRow &#183; page Todo List" title="binds to Builtin.AssertNoRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Mow the lawn&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="76" data-binds="binds to Builtin.AssertNoRow &#183; page Todo List" title="binds to Builtin.AssertNoRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Sand the door&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="79"><span class="uat-tag">@TOD.01.6</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@list</span></p>
+<h2 class="uat-scenario" data-line="80" data-scenario="TOD.01.6 A row with unsynced changes shows the pending marker"><span class="uat-kw">Scenario</span> TOD.01.6 A row with unsynced changes shows the pending marker</h2>
+<ol class="uat-steps" data-line="82">
+<li class="uat-step uat-bound" data-line="83" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="84" data-binds="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Brinell.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="85">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="87"><td>Clean gutter</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="88" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="89" data-binds="binds to Builtin.AssertPending" title="binds to Builtin.AssertPending"><span class="uat-kw">Then</span><span class="uat-text">the todo <span class="uat-value">&quot;Clean gutter&quot;</span> should be synced</span>
+</li>
+<li class="uat-step uat-bound" data-line="90" data-binds="binds to Brinell.Samples.Todo.UITests.Pages.TodoListPage.CreateTodo &#183; page Todo List" title="binds to Brinell.Samples.Todo.UITests.Pages.TodoListPage.CreateTodo &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I create a todo <span class="uat-value">&quot;Oil the hinges&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="91" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="92" data-binds="binds to Builtin.AssertPending &#183; page Todo List" title="binds to Builtin.AssertPending &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Oil the hinges&quot;</span> should be waiting to sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="93" data-binds="binds to Builtin.AssertPending &#183; page Todo List" title="binds to Builtin.AssertPending &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Clean gutter&quot;</span> should be synced</span>
+</li>
+<li class="uat-step uat-bound" data-line="94" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="95" data-binds="binds to Builtin.AssertPending" title="binds to Builtin.AssertPending"><span class="uat-kw">Then</span><span class="uat-text">the todo <span class="uat-value">&quot;Oil the hinges&quot;</span> should be synced</span>
+</li>
+</ol>
+</article>

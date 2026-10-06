@@ -54,8 +54,7 @@ public interface IMauiDriver : IDiagnosticDriver, IDisposable
     /// <exception cref="PlatformNotSupportedException">Shell has not been mapped on this platform.</exception>
     ShellChromeLocators ShellChrome
         => throw new PlatformNotSupportedException(
-            $"Shell chrome has not been mapped for {GetType().Name}. Dump the tree and map it - "
-            + "see .my/navigation/design-shell-sample-app.md.");
+            $"Shell chrome has not been mapped for {GetType().Name}. Dump the tree and map it in ShellChrome.");
 
     #endregion
 

@@ -6,14 +6,8 @@ namespace Brinell.Presenter.Services;
 
 /// <summary>
 /// Asks MSBuild where a project's output goes, by evaluation only.
+/// It runs no build or restore, so a clean answer is not evidence the project builds (AD-018).
 /// </summary>
-/// <remarks>
-/// <c>-getProperty</c> with no target runs no build and no restore, so this answers in about
-/// half a second even for a project that has never been built — which is the point: it says
-/// where the output <em>will</em> be. It also never touches workloads, so a clean answer here
-/// is not evidence the project can build. See
-/// <c>.my/present/startup/00-presenter-workspace-design.md</c>.
-/// </remarks>
 public sealed class MsBuildProjectEvaluator : IProjectEvaluator
 {
     private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromSeconds(60);

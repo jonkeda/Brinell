@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
+using Brinell.Bdd.Preview;
 using Brinell.Presenter.Commands;
 using Brinell.Presenter.Models;
 using Brinell.Presenter.Services;
@@ -7,16 +9,16 @@ using Brinell.Uat;
 
 namespace Brinell.Presenter.ViewModels;
 
-public sealed class PresenterShellViewModel : ViewModelBase
+public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHost
 {
-    private readonly IUatExecutionService _executionService;
+    private readonly IBddExecutionService _executionService;
     private readonly IFolderPickerService _folderPickerService;
     private readonly IPresenterUserSettingsService _settingsService;
-    private readonly List<UatWorkspaceNodeViewModel> _allWorkspaceNodes = [];
+    private readonly List<BddWorkspaceNodeViewModel> _allWorkspaceNodes = [];
     private readonly List<PresenterStepTiming> _stepTimings = [];
-    private readonly IUatWorkspaceService _workspaceService;
+    private readonly IBddWorkspaceService _workspaceService;
     private PresenterUatExecutionSession? _activeSession;
-    private UatScenarioViewModel? _activeScenario;
+    private BddScenarioViewModel? _activeScenario;
     private string _allWorkspaceTreeText = string.Empty;
     private string _autPlacementText = string.Empty;
     private string _commandCatalogText = string.Empty;
@@ -25,17 +27,19 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private CancellationTokenSource? _executionCancellation;
     private int _executionDelayMilliseconds = 250;
     private string _executionDelayText = "250";
+    private PresenterSpeed _speed;
+    private PresenterSpeeds _speeds = new();
     private string _executionTimingText = string.Empty;
     private bool _isRecentFoldersExpanded;
-    private bool _isSelectionExpanded = true;
+    private bool _isSelectionExpanded;
     private string _recentFoldersText = "No recent folders";
     private double _runProgress;
     private string _scenarioListText = string.Empty;
     private PresenterRunExecutionOptions? _activeRunOptions;
     private string _runScopeText = string.Empty;
-    private UatScenarioViewModel? _selectedScenario;
+    private BddScenarioViewModel? _selectedScenario;
     private string _selectedTab = TreeTabName;
-    private UatWorkspaceNodeViewModel? _selectedWorkspaceNode;
+    private BddWorkspaceNodeViewModel? _selectedWorkspaceNode;
     private string _selectedWorkspaceNodeDetailsText = "No selection";
     private string _statusSummary = "No workspace loaded";
     private PresenterTheme _theme = PresenterTheme.System;
@@ -43,7 +47,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _workspaceConfigText = string.Empty;
     private string _workspaceName = "No workspace";
     private string? _workspacePath;
-    private UatWorkspaceNodeViewModel? _workspaceRoot;
+    private BddWorkspaceNodeViewModel? _workspaceRoot;
     private string _workspaceSummaryText = string.Empty;
     private string _workspaceTreeText = string.Empty;
     private readonly IProjectBuilder _projectBuilder = new MsBuildProjectBuilder();
@@ -52,6 +56,22 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _buildConfiguration = "Debug";
     private string _platform = "windows";
     private bool _isBuilding;
+    private bool _isScenariosExpanded = true;
+    private bool _isStepsExpanded = true;
+    private BddStepRowViewModel? _currentRow;
+    private BddCatalogSet? _catalogs;
+    private readonly IScenarioPreviewService? _preview;
+    private readonly PresenterBreakpointStore _breakpoints;
+    private bool _isMoving;
+    private readonly IPresenterWindowService? _windowService;
+    private PresenterDock _dock;
+    private bool _isPresentMode;
+    private bool _needsBuild;
+    private object? _placementSnapshot;
+    private PresenterAppWindow _appWindow;
+    private PresenterRunEnd _runEnd;
+    private PresenterUatExecutionSession? _endedSession;
+    private bool _placedThisRun;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
 
@@ -60,14 +80,28 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private const string DiagnosticsTabName = "Diagnostics";
     private const string DiscoveryTabName = "Discovery";
     private const string CommandCatalogTabName = "Command Catalog";
+    private const string SettingsTabName = "Settings";
 
     public PresenterShellViewModel(
-        IUatWorkspaceService workspaceService,
-        IUatExecutionService executionService,
+        IBddWorkspaceService workspaceService,
+        IBddExecutionService executionService,
         IFolderPickerService folderPickerService,
-        IPresenterUserSettingsService settingsService)
+        IPresenterUserSettingsService settingsService,
+        IScenarioPreviewService? previewService = null,
+        PresenterBreakpointStore? breakpoints = null,
+        IPresenterWindowService? windowService = null,
+        IPresenterRecorder? recorder = null)
     {
         _workspaceService = workspaceService;
+        _windowService = windowService;
+        _breakpoints = breakpoints ?? new PresenterBreakpointStore();
+        _preview = previewService;
+        if (_preview is not null)
+        {
+            _preview.Ready += RefreshPreview;
+            _preview.Message += OnPreviewMessage;
+        }
+
         _executionService = executionService;
         _folderPickerService = folderPickerService;
         _settingsService = settingsService;
@@ -75,10 +109,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync);
         ToggleRecentFoldersCommand = new RelayCommand(() => IsRecentFoldersExpanded = !IsRecentFoldersExpanded);
         ReloadCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
-        ValidateCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
-        RunCommand = new AsyncRelayCommand(RunSelectedNodeAsync);
+        RunCommand = new AsyncRelayCommand(RunAsync, () => !_isMoving);
         StopCommand = new RelayCommand(Stop);
-        NextStepCommand = new AsyncRelayCommand(NextStepAsync, () => WorkspacePath is not null);
+        NextStepCommand = new AsyncRelayCommand(StepAsync, () => WorkspacePath is not null && !_isMoving);
+        StepIntoCommand = new AsyncRelayCommand(() => MoveAsync(PresenterMove.Into), () => IsPaused && CurrentRow?.IsCall == true);
+        StepOutCommand = new AsyncRelayCommand(() => MoveAsync(PresenterMove.Out), () => IsPaused && CurrentRow?.IsInCall == true);
+        RestartCommand = new AsyncRelayCommand(RestartAsync, () => WorkspacePath is not null && !_isMoving);
         ToggleSelectionCommand = new RelayCommand(() => IsSelectionExpanded = !IsSelectionExpanded);
         ShowTreeTabCommand = new RelayCommand(() => SelectedTab = TreeTabName);
         ShowConfigTabCommand = new RelayCommand(() => SelectedTab = ConfigTabName);
@@ -87,6 +123,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
         ShowCommandCatalogTabCommand = new RelayCommand(() => SelectedTab = CommandCatalogTabName);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         BuildCommand = new AsyncRelayCommand(BuildWorkspaceProjectAsync, () => !_isBuilding);
+        ToggleScenariosCommand = new RelayCommand(() => IsScenariosExpanded = !IsScenariosExpanded);
+        ToggleStepsCommand = new RelayCommand(() => IsStepsExpanded = !IsStepsExpanded);
+        OpenPreviewCommand = new RelayCommand(OpenPreview, () => _preview is not null);
+        ShowPresentModeCommand = new RelayCommand(() => IsPresentMode = true);
+        ShowWorkspaceModeCommand = new RelayCommand(() => IsPresentMode = false);
+        ToggleDockCommand = new RelayCommand(ToggleDock);
+        CycleSpeedCommand = new RelayCommand(CycleSpeed);
+        ShowSettingsCommand = new RelayCommand(() => SelectedTab = IsSettingsTabSelected ? TreeTabName : SettingsTabName);
 
         ConfigEditor = new ConfigEditorViewModel(
             new FixtureInspector(),
@@ -95,6 +139,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
         var settings = _settingsService.Load();
         _theme = settings.Theme;
+        _dock = settings.Dock;
+        _appWindow = settings.AppWindow;
+        _runEnd = settings.RunEnd;
+        _speeds = settings.Speeds ?? new PresenterSpeeds();
+        _speed = settings.Speed;
+        ExecutionDelayMilliseconds = _speeds.Of(_speed);
+        InitializeRecording(settings, recorder);
+        InitializeNarrator();
         ApplyTheme();
 
         if (Application.Current is { } application)
@@ -109,20 +161,287 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// <summary>The Config tab's editor for the workspace's two config rows.</summary>
     public ConfigEditorViewModel ConfigEditor { get; }
 
-    public ObservableCollection<UatFileViewModel> Files { get; } = [];
+    public ObservableCollection<BddFileViewModel> Files { get; } = [];
 
-    public ObservableCollection<UatScenarioViewModel> Scenarios { get; } = [];
+    public ObservableCollection<BddScenarioViewModel> Scenarios { get; } = [];
 
-    public ObservableCollection<UatStepViewModel> Steps { get; } = [];
+    public ObservableCollection<BddStepViewModel> Steps { get; } = [];
+
+    /// <summary>The selected scenario's step list: its steps, and a row for each <c>## Step:</c> call.</summary>
+    public ObservableCollection<BddStepRowViewModel> StepRows { get; } = [];
+
+    /// <summary>The row the run is paused before, or running; null when no run is on.</summary>
+    public BddStepRowViewModel? CurrentRow
+    {
+        get => _currentRow;
+        private set
+        {
+            var previous = _currentRow;
+            if (SetProperty(ref _currentRow, value))
+            {
+                if (previous is not null)
+                {
+                    previous.IsCurrent = false;
+                }
+
+                if (value is not null)
+                {
+                    value.IsCurrent = true;
+                }
+
+                UpdateStepListText();
+            }
+        }
+    }
+
+    public bool IsScenariosExpanded
+    {
+        get => _isScenariosExpanded;
+        set
+        {
+            if (SetProperty(ref _isScenariosExpanded, value))
+            {
+                OnPropertyChanged(nameof(ScenariosExpanderGlyph));
+                OnPropertyChanged(nameof(IsScenarioTreeVisible));
+            }
+        }
+    }
+
+    public string ScenariosExpanderGlyph => IsScenariosExpanded ? PresenterIcons.ChevronUp : PresenterIcons.ChevronDown;
+
+    public bool IsStepsExpanded
+    {
+        get => _isStepsExpanded;
+        set
+        {
+            if (SetProperty(ref _isStepsExpanded, value))
+            {
+                OnPropertyChanged(nameof(StepsExpanderGlyph));
+            }
+        }
+    }
+
+    public string StepsExpanderGlyph => IsStepsExpanded ? PresenterIcons.ChevronUp : PresenterIcons.ChevronDown;
+
+    /// <summary>The Steps header: the selected scenario's name.</summary>
+    public string StepsHeaderText => SelectedScenario is { } scenario ? $"Steps: {scenario.Name}" : "Steps";
+
+    /// <summary>
+    /// Present mode: the scenarios, the steps and the moves, nothing else. Workspace mode adds
+    /// opening folders, building, the config and the diagnostics. A workspace that loads cleanly
+    /// opens in Present mode; one with problems in Workspace mode.
+    /// </summary>
+    public bool IsPresentMode
+    {
+        get => _isPresentMode;
+        set
+        {
+            // Present or Workspace: either leaves Narrator mode.
+            SetNarratorMode(false);
+            if (SetProperty(ref _isPresentMode, value))
+            {
+                OnPropertyChanged(nameof(IsWorkspaceMode));
+                if (value)
+                {
+                    SelectedTab = TreeTabName;
+                }
+            }
+        }
+    }
+
+    public bool IsWorkspaceMode => !IsPresentMode && !IsNarratorMode;
+
+    public ICommand ShowPresentModeCommand { get; }
+
+    public ICommand ShowWorkspaceModeCommand { get; }
+
+    /// <summary>The side the bar docks to; the app under test is placed in the rest of the screen.</summary>
+    public PresenterDock Dock
+    {
+        get => _dock;
+        private set
+        {
+            if (SetProperty(ref _dock, value))
+            {
+                OnPropertyChanged(nameof(DockDescription));
+            }
+        }
+    }
+
+    /// <summary>The dock button's tooltip: where it moves the bar.</summary>
+    public string DockDescription => Dock == PresenterDock.Left ? "Dock to the right" : "Dock to the left";
+
+    public ICommand ToggleDockCommand { get; }
+
+    /// <summary>Whether the workspace's suite is not built, so its steps cannot be checked or run.</summary>
+    public bool NeedsBuild
+    {
+        get => _needsBuild;
+        private set => SetProperty(ref _needsBuild, value);
+    }
+
+    /// <summary>Docks the window to the remembered side; called once the window exists.</summary>
+    public void ApplyDock() => _windowService?.Dock(Dock);
+
+    private void ToggleDock()
+    {
+        Dock = Dock == PresenterDock.Left ? PresenterDock.Right : PresenterDock.Left;
+        _windowService?.Dock(Dock);
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.Dock = Dock;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the dock side: {ex.Message}";
+        }
+    }
+
+    /// <summary>The App window choices, as the Settings page shows them.</summary>
+    public IReadOnlyList<string> AppWindowChoices { get; } = [.. AppWindowNames.Values];
+
+    private static IReadOnlyDictionary<PresenterAppWindow, string> AppWindowNames { get; } = new Dictionary<PresenterAppWindow, string>
+    {
+        [PresenterAppWindow.BesideBar] = "Beside the bar",
+        [PresenterAppWindow.MaximizedOtherMonitor] = "Maximized, other monitor",
+        [PresenterAppWindow.Maximized] = "Maximized",
+        [PresenterAppWindow.WhereItOpens] = "Where it opens",
+        [PresenterAppWindow.Background] = "Background",
+    };
+
+    /// <summary>How the app under test's window is shown during a run.</summary>
+    public PresenterAppWindow AppWindow
+    {
+        get => _appWindow;
+        set
+        {
+            if (SetProperty(ref _appWindow, value))
+            {
+                OnPropertyChanged(nameof(AppWindowChoice));
+                SaveWindowSettings();
+            }
+        }
+    }
+
+    /// <summary><see cref="AppWindow"/> by its name on the Settings page.</summary>
+    public string AppWindowChoice
+    {
+        get => AppWindowNames[AppWindow];
+        set => AppWindow = AppWindowNames.FirstOrDefault(entry => entry.Value == value, new(AppWindow, value)).Key;
+    }
+
+    /// <summary>The When a run ends choices, as the Settings page shows them.</summary>
+    public IReadOnlyList<string> RunEndChoices { get; } = ["Close the app", "Keep it open"];
+
+    /// <summary>What happens to the app when a run ends.</summary>
+    public PresenterRunEnd RunEnd
+    {
+        get => _runEnd;
+        set
+        {
+            if (SetProperty(ref _runEnd, value))
+            {
+                OnPropertyChanged(nameof(RunEndChoice));
+                SaveWindowSettings();
+                if (value == PresenterRunEnd.CloseApp)
+                {
+                    ReleaseEndedSession();
+                }
+            }
+        }
+    }
+
+    /// <summary><see cref="RunEnd"/> by its name on the Settings page.</summary>
+    public string RunEndChoice
+    {
+        get => RunEndChoices[(int)RunEnd];
+        set => RunEnd = value == RunEndChoices[1] ? PresenterRunEnd.KeepOpen : PresenterRunEnd.CloseApp;
+    }
+
+    /// <summary>Closes what is open: the run, and an app kept open after one. Called when Presenter closes.</summary>
+    public void Shutdown()
+    {
+        StopActiveSession();
+        ReleaseEndedSession();
+        (_executionService as IDisposable)?.Dispose();
+    }
+
+    private void SaveWindowSettings()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.AppWindow = AppWindow;
+            settings.RunEnd = RunEnd;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the app window settings: {ex.Message}";
+        }
+    }
+
+    // Before a run starts its app: an app kept open from the last run is closed, the launcher is
+    // told how to show the app (BRINELL_AUT_WINDOW, and where: BRINELL_AUT_BOUNDS), and the
+    // windows now are noted, to find the app's once it opens.
+    private void SnapshotWindows()
+    {
+        ReleaseEndedSession();
+        Dictionary<string, string> environment = new()
+        {
+            [Brinell.Core.Diagnostics.AutWindow.Variable] = AppWindow == PresenterAppWindow.Background ? "background" : "shown",
+        };
+        if (_windowService?.TargetBounds(AppWindow, Dock) is { } bounds)
+        {
+            environment[Brinell.Core.Diagnostics.AutWindow.BoundsVariable] = FormattableString.Invariant($"{bounds.X},{bounds.Y},{bounds.Width},{bounds.Height}");
+        }
+
+        _executionService.WindowEnvironment = environment;
+        _windowService?.SetBarTopmost(AppWindow == PresenterAppWindow.Maximized);
+        _placedThisRun = false;
+        _placementSnapshot = _windowService?.Snapshot();
+    }
+
+    // Shows the app's window as the App window setting says once it has opened; tried again after
+    // a step, for an app (a browser) that opens its window late. Presenter keeps the keys.
+    private void TryPlaceApp()
+    {
+        if (_placementSnapshot is null || _windowService?.PlaceApp(_placementSnapshot, Dock, AppWindow) is not { } report)
+        {
+            _windowService?.ReclaimFocus();
+            return;
+        }
+
+        _placementSnapshot = null;
+        _placedThisRun = true;
+        AutPlacementText = report;
+    }
+
+    // Keep it open: the ended run's session (its fixture and app) waits here until the next run,
+    // Stop with no run on, or Presenter closing.
+    private void ReleaseEndedSession()
+    {
+        _endedSession?.Dispose();
+        _endedSession = null;
+    }
+
+    public ICommand ToggleScenariosCommand { get; }
+
+    public ICommand ToggleStepsCommand { get; }
+
+    /// <summary>Opens the Scenario Preview for the selected scenario, in a window of its own.</summary>
+    public ICommand OpenPreviewCommand { get; }
 
     /// <summary>
     /// The visible rows, flattened. Still the source of <c>WorkspaceTreeText</c>, which the UAT
     /// suite asserts against; the on-screen tree binds <see cref="WorkspaceRootNodes"/>.
     /// </summary>
-    public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceTreeNodes { get; } = [];
+    public ObservableCollection<BddWorkspaceNodeViewModel> WorkspaceTreeNodes { get; } = [];
 
     /// <summary>The workspace root, as the one item the tree control nests everything under.</summary>
-    public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceRootNodes { get; } = [];
+    public ObservableCollection<BddWorkspaceNodeViewModel> WorkspaceRootNodes { get; } = [];
 
     public ObservableCollection<RecentFolderViewModel> RecentFolders { get; } = [];
 
@@ -132,13 +451,24 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     public ICommand ReloadCommand { get; }
 
-    public ICommand ValidateCommand { get; }
-
     public ICommand RunCommand { get; }
 
     public ICommand StopCommand { get; }
 
+    /// <summary>Step: runs the row the run is paused before; with no run on, starts one paused before its first step.</summary>
     public ICommand NextStepCommand { get; }
+
+    /// <summary>At a <c>## Step:</c> call, goes inside it without running anything.</summary>
+    public ICommand StepIntoCommand { get; }
+
+    /// <summary>Inside a call, runs the rest of it and pauses after it.</summary>
+    public ICommand StepOutCommand { get; }
+
+    /// <summary>Starts the scenario again, paused before its first step.</summary>
+    public ICommand RestartCommand { get; }
+
+    /// <summary>Whether a run is paused before a row, waiting for a move.</summary>
+    public bool IsPaused => _activeSession is not null && !_isMoving && CurrentRow is not null;
 
     public ICommand ToggleSelectionCommand { get; }
 
@@ -340,10 +670,11 @@ public sealed class PresenterShellViewModel : ViewModelBase
         private set => SetProperty(ref _runScopeText, value);
     }
 
+    /// <summary>The pause between steps, in milliseconds: the current speed's.</summary>
     public string ExecutionDelayText
     {
         get => _executionDelayText;
-        set
+        private set
         {
             if (SetProperty(ref _executionDelayText, value))
             {
@@ -356,17 +687,108 @@ public sealed class PresenterShellViewModel : ViewModelBase
     public int ExecutionDelayMilliseconds
     {
         get => _executionDelayMilliseconds;
-        set
+        private set
         {
             var clamped = Math.Clamp(value, 0, MaxExecutionDelayMilliseconds);
             if (SetProperty(ref _executionDelayMilliseconds, clamped))
             {
-                var text = clamped.ToString();
-                if (!string.Equals(_executionDelayText, text, StringComparison.Ordinal))
-                {
-                    SetProperty(ref _executionDelayText, text, nameof(ExecutionDelayText));
-                }
+                SetProperty(ref _executionDelayText, clamped.ToString(CultureInfo.InvariantCulture), nameof(ExecutionDelayText));
             }
+        }
+    }
+
+    /// <summary>The run's pace; the Speed button cycles Fast, Normal and Slow.</summary>
+    public PresenterSpeed Speed
+    {
+        get => _speed;
+        private set
+        {
+            if (SetProperty(ref _speed, value))
+            {
+                ApplySpeed();
+            }
+        }
+    }
+
+    /// <summary>The Speed button's gauge: high, medium or low.</summary>
+    public string SpeedGlyph => Speed switch
+    {
+        PresenterSpeed.Fast => PresenterIcons.SpeedFast,
+        PresenterSpeed.Slow => PresenterIcons.SpeedSlow,
+        _ => PresenterIcons.SpeedNormal,
+    };
+
+    /// <summary>The Speed button's tooltip: the speed, its pause, and what a click chooses.</summary>
+    public string SpeedDescription => $"Speed: {Speed}, {_speeds.Of(Speed)} ms between steps. Click for {NextSpeed(Speed)}.";
+
+    public ICommand CycleSpeedCommand { get; }
+
+    /// <summary>The Settings page's pause of each speed, in milliseconds.</summary>
+    public string FastMillisecondsText
+    {
+        get => _speeds.Fast.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Fast = milliseconds);
+    }
+
+    /// <inheritdoc cref="FastMillisecondsText"/>
+    public string NormalMillisecondsText
+    {
+        get => _speeds.Normal.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Normal = milliseconds);
+    }
+
+    /// <inheritdoc cref="FastMillisecondsText"/>
+    public string SlowMillisecondsText
+    {
+        get => _speeds.Slow.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Slow = milliseconds);
+    }
+
+    private static PresenterSpeed NextSpeed(PresenterSpeed speed) => speed switch
+    {
+        PresenterSpeed.Fast => PresenterSpeed.Normal,
+        PresenterSpeed.Normal => PresenterSpeed.Slow,
+        _ => PresenterSpeed.Fast,
+    };
+
+    private void CycleSpeed()
+    {
+        Speed = NextSpeed(Speed);
+        SaveSpeeds();
+    }
+
+    private void ApplySpeed()
+    {
+        ExecutionDelayMilliseconds = _speeds.Of(Speed);
+        OnPropertyChanged(nameof(SpeedGlyph));
+        OnPropertyChanged(nameof(SpeedDescription));
+    }
+
+    // A value that is not a number of 0 to 99999 ms is ignored; the field shows it until it is fixed.
+    private void SetSpeedMilliseconds(string value, Action<int> set)
+    {
+        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds) || milliseconds > MaxExecutionDelayMilliseconds)
+        {
+            return;
+        }
+
+        set(milliseconds);
+        ApplySpeed();
+        SaveSpeeds();
+    }
+
+    private void SaveSpeeds()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.Speed = Speed;
+            settings.Speeds = _speeds;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the speeds: {ex.Message}";
         }
     }
 
@@ -376,7 +798,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         private set => SetProperty(ref _runProgress, value);
     }
 
-    public UatWorkspaceNodeViewModel? SelectedWorkspaceNode
+    public BddWorkspaceNodeViewModel? SelectedWorkspaceNode
     {
         get => _selectedWorkspaceNode;
         set
@@ -400,7 +822,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         private set => SetProperty(ref _selectedWorkspaceNodeDetailsText, value);
     }
 
-    public UatScenarioViewModel? SelectedScenario
+    public BddScenarioViewModel? SelectedScenario
     {
         get => _selectedScenario;
         set
@@ -409,6 +831,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             {
                 StopActiveSession();
                 LoadSteps(value);
+                OnPropertyChanged(nameof(StepsHeaderText));
                 OnPropertyChanged(nameof(SelectedScenarioName));
                 OnPropertyChanged(nameof(SelectedScenarioTags));
             }
@@ -431,6 +854,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsDiagnosticsTabSelected));
                 OnPropertyChanged(nameof(IsDiscoveryTabSelected));
                 OnPropertyChanged(nameof(IsCommandCatalogTabSelected));
+                OnPropertyChanged(nameof(IsSettingsTabSelected));
             }
         }
     }
@@ -444,6 +868,11 @@ public sealed class PresenterShellViewModel : ViewModelBase
     public bool IsDiscoveryTabSelected => SelectedTab == DiscoveryTabName;
 
     public bool IsCommandCatalogTabSelected => SelectedTab == CommandCatalogTabName;
+
+    /// <summary>Whether the Settings page shows; its button opens and closes it, in either mode.</summary>
+    public bool IsSettingsTabSelected => SelectedTab == SettingsTabName;
+
+    public ICommand ShowSettingsCommand { get; }
 
     public bool IsSelectionExpanded
     {
@@ -562,6 +991,13 @@ public sealed class PresenterShellViewModel : ViewModelBase
         {
             node.RefreshThemeColors();
         }
+
+        foreach (var row in StepRows)
+        {
+            row.RefreshThemeColors();
+        }
+
+        RefreshPreview();
     }
 
     private void LoadDefaultWorkspace()
@@ -579,7 +1015,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         if (folder is null)
         {
             StatusSummary = "Sample workspace not found";
-            DiagnosticsText = "Could not find testsnew/Brinell.Maui.Uat.Tests from the application folder.";
+            DiagnosticsText = "Could not find testsnew/Brinell.Maui.UITests from the application folder.";
             WorkspaceSummaryText = "No workspace config";
             return;
         }
@@ -693,19 +1129,28 @@ public sealed class PresenterShellViewModel : ViewModelBase
         StopActiveSession();
 
         var result = _workspaceService.LoadFolder(folderPath);
+        var sameWorkspace = WorkspacePath is not null && string.Equals(
+            Path.GetFullPath(WorkspacePath), Path.GetFullPath(result.FolderPath), StringComparison.OrdinalIgnoreCase);
+        if (!sameWorkspace)
+        {
+            ReleaseEndedSession();
+        }
+
+        _catalogs = result.Catalogs;
+        NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
         WorkspaceName = result.WorkspaceName;
 
         Files.Clear();
         foreach (var file in result.Files)
         {
-            Files.Add(new UatFileViewModel(file));
+            Files.Add(new BddFileViewModel(file));
         }
 
         Scenarios.Clear();
         foreach (var scenario in result.Scenarios)
         {
-            Scenarios.Add(new UatScenarioViewModel(scenario));
+            Scenarios.Add(new BddScenarioViewModel(scenario));
         }
 
         SelectedScenario = Scenarios.FirstOrDefault();
@@ -724,6 +1169,17 @@ public sealed class PresenterShellViewModel : ViewModelBase
         StatusSummary = result.ErrorCount == 0
             ? $"Ready: {Files.Count} files, {Scenarios.Count} scenarios, Config: ok, Parse: ok, Bind: ok"
             : $"Needs attention: {result.ErrorCount} diagnostics";
+        // A new workspace opens in Present mode when it is clean; a reload keeps the mode unless
+        // something is now wrong, which only Workspace mode shows.
+        if (result.ErrorCount > 0)
+        {
+            IsPresentMode = false;
+        }
+        else if (!sameWorkspace)
+        {
+            IsPresentMode = true;
+        }
+
         SelectedTab = result.ErrorCount == 0 ? TreeTabName : DiagnosticsTabName;
         if (recordRecent)
         {
@@ -732,9 +1188,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
 
         RunProgress = 0;
+        OnWorkspaceLoaded();
     }
 
-    private void BuildWorkspaceTree(UatWorkspaceLoadResult result)
+    private void BuildWorkspaceTree(BddWorkspaceLoadResult result)
     {
         // A reload rebuilds every node, so where you were is carried across by NodePath.
         // Saving the config reloads, and a save that drops your place is worse than no reload.
@@ -749,19 +1206,19 @@ public sealed class PresenterShellViewModel : ViewModelBase
         WorkspaceRootNodes.Clear();
         _workspaceRoot = null;
 
-        var root = new UatWorkspaceNodeViewModel(
+        var root = new BddWorkspaceNodeViewModel(
             result.WorkspaceName,
-            UatWorkspaceNodeKind.Folder,
+            BddWorkspaceNodeKind.Folder,
             0,
             result.FolderPath,
             expansionChanged: OnWorkspaceNodeExpansionChanged);
 
-        var folderNodes = new Dictionary<string, UatWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase)
+        var folderNodes = new Dictionary<string, BddWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase)
         {
             [Path.GetFullPath(result.FolderPath)] = root
         };
 
-        var fileNodes = new Dictionary<string, UatWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase);
+        var fileNodes = new Dictionary<string, BddWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase);
         var filesByPath = Files.ToDictionary(file => Path.GetFullPath(file.FilePath), StringComparer.OrdinalIgnoreCase);
         var scenariosByFile = Scenarios
             .GroupBy(scenario => Path.GetFullPath(scenario.FilePath), StringComparer.OrdinalIgnoreCase)
@@ -774,7 +1231,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             var parentNode = EnsureFolderNode(parentFolderPath, result.FolderPath, root, folderNodes);
             var fileName = Path.GetFileName(fullFilePath);
             var kind = GetFileNodeKind(fileName);
-            var fileNode = new UatWorkspaceNodeViewModel(
+            var fileNode = new BddWorkspaceNodeViewModel(
                 fileName,
                 kind,
                 parentNode.Depth + 1,
@@ -784,14 +1241,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
             parentNode.AddChild(fileNode);
             fileNodes[fullFilePath] = fileNode;
 
-            if (kind == UatWorkspaceNodeKind.MarkdownFile
+            if (kind == BddWorkspaceNodeKind.MarkdownFile
                 && scenariosByFile.TryGetValue(fullFilePath, out var fileScenarios))
             {
                 var suiteName = fileScenarios.FirstOrDefault()?.SuiteName
                     ?? Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(fileName));
-                var suiteNode = new UatWorkspaceNodeViewModel(
+                var suiteNode = new BddWorkspaceNodeViewModel(
                     suiteName,
-                    UatWorkspaceNodeKind.Suite,
+                    BddWorkspaceNodeKind.Suite,
                     fileNode.Depth + 1,
                     fullFilePath,
                     expansionChanged: OnWorkspaceNodeExpansionChanged);
@@ -799,34 +1256,24 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 fileNode.AddChild(suiteNode);
                 foreach (var scenario in fileScenarios)
                 {
-                    var scenarioNode = new UatWorkspaceNodeViewModel(
+                    var scenarioNode = new BddWorkspaceNodeViewModel(
                         scenario.Name,
-                        UatWorkspaceNodeKind.Scenario,
+                        BddWorkspaceNodeKind.Scenario,
                         suiteNode.Depth + 1,
                         fullFilePath,
                         scenario,
                         expansionChanged: OnWorkspaceNodeExpansionChanged);
 
+                    // The steps are in the step list, not the tree.
                     suiteNode.AddChild(scenarioNode);
-                    foreach (var step in scenario.Steps)
-                    {
-                        scenarioNode.AddChild(new UatWorkspaceNodeViewModel(
-                            step.Text,
-                            UatWorkspaceNodeKind.Step,
-                            scenarioNode.Depth + 1,
-                            fullFilePath,
-                            scenario,
-                            step,
-                            OnWorkspaceNodeExpansionChanged));
-                    }
                 }
             }
             else if (filesByPath.TryGetValue(fullFilePath, out var loadedFile)
                      && !string.IsNullOrWhiteSpace(loadedFile.Diagnostics))
             {
-                fileNode.AddChild(new UatWorkspaceNodeViewModel(
+                fileNode.AddChild(new BddWorkspaceNodeViewModel(
                     "Diagnostics available",
-                    UatWorkspaceNodeKind.File,
+                    BddWorkspaceNodeKind.File,
                     fileNode.Depth + 1,
                     fullFilePath,
                     expansionChanged: OnWorkspaceNodeExpansionChanged));
@@ -840,9 +1287,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var preferredScenario = SelectedScenario ?? Scenarios.FirstOrDefault();
         var preferredNode = FindByNodePath(selectedBefore)
                             ?? _allWorkspaceNodes.FirstOrDefault(
-                                node => node.Kind == UatWorkspaceNodeKind.Scenario
+                                node => node.Kind == BddWorkspaceNodeKind.Scenario
                                         && ReferenceEquals(node.Scenario, preferredScenario))
-                            ?? _allWorkspaceNodes.FirstOrDefault(node => node.Kind == UatWorkspaceNodeKind.Scenario)
+                            ?? _allWorkspaceNodes.FirstOrDefault(node => node.Kind == BddWorkspaceNodeKind.Scenario)
                             ?? root;
         ExpandAncestors(preferredNode);
         _workspaceRoot = root;
@@ -851,7 +1298,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RefreshVisibleWorkspaceTree();
         SelectedWorkspaceNode = preferredNode;
 
-        void AddAllNode(UatWorkspaceNodeViewModel node)
+        void AddAllNode(BddWorkspaceNodeViewModel node)
         {
             _allWorkspaceNodes.Add(node);
             foreach (var child in node.Children)
@@ -865,10 +1312,6 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// Builds the workspace's project and reloads, so the fixture list and the Pages assembly
     /// reflect what was just built.
     /// </summary>
-    /// <remarks>
-    /// The build's own output is shown verbatim: NETSDK1147 names the missing workload and the
-    /// command that installs it, which is better than anything this could paraphrase.
-    /// </remarks>
     private async Task BuildWorkspaceProjectAsync()
     {
         var project = _projectPath;
@@ -878,9 +1321,11 @@ public sealed class PresenterShellViewModel : ViewModelBase
             return;
         }
 
-        // A run maps the Pages assembly; the session's load context releases it on dispose,
-        // and building over a mapped file would fail.
+        // A run's runner process holds the suite's files until it has ended, and building over
+        // them would fail.
         StopActiveSession();
+        ReleaseEndedSession();
+        await _executionService.EndRunnersAsync().ConfigureAwait(true);
 
         _isBuilding = true;
         (BuildCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
@@ -950,13 +1395,6 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// <summary>
     /// The message to show for a failure, with reflection's wrapper removed.
     /// </summary>
-    /// <remarks>
-    /// Constructing a fixture goes through reflection, so anything it throws arrives wrapped in
-    /// a <see cref="System.Reflection.TargetInvocationException" /> whose own message is
-    /// "Exception has been thrown by the target of an invocation" — which says nothing about
-    /// what went wrong. The inner exception is the reason; the wrapper is an implementation
-    /// detail of how the fixture was created.
-    /// </remarks>
     /// <param name="exception">The failure.</param>
     /// <returns>The innermost message, with the outer ones kept when they add anything.</returns>
     private static string Describe(Exception exception)
@@ -979,7 +1417,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     }
 
     /// <summary>Re-expands the nodes that were expanded before a reload.</summary>
-    /// <param name="expandedPaths">The <see cref="UatWorkspaceNodeViewModel.NodePath" />s to expand.</param>
+    /// <param name="expandedPaths">The <see cref="BddWorkspaceNodeViewModel.NodePath" />s to expand.</param>
     private void RestoreExpansion(IReadOnlySet<string> expandedPaths)
     {
         if (expandedPaths.Count == 0)
@@ -999,7 +1437,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// </summary>
     /// <param name="nodePath">The path to find, or null.</param>
     /// <returns>The node, an ancestor of it, or null.</returns>
-    private UatWorkspaceNodeViewModel? FindByNodePath(string? nodePath)
+    private BddWorkspaceNodeViewModel? FindByNodePath(string? nodePath)
     {
         if (string.IsNullOrEmpty(nodePath))
         {
@@ -1028,7 +1466,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return null;
     }
 
-    private void OnWorkspaceNodeExpansionChanged(UatWorkspaceNodeViewModel node)
+    private void OnWorkspaceNodeExpansionChanged(BddWorkspaceNodeViewModel node)
     {
         if (_workspaceRoot is not null)
         {
@@ -1048,7 +1486,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         UpdateWorkspaceTreeText();
         UpdateAllWorkspaceTreeText();
 
-        void AddVisibleNode(UatWorkspaceNodeViewModel node)
+        void AddVisibleNode(BddWorkspaceNodeViewModel node)
         {
             WorkspaceTreeNodes.Add(node);
             if (!node.IsExpanded)
@@ -1063,17 +1501,17 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static void ApplyInitialExpansion(UatWorkspaceNodeViewModel root)
+    private static void ApplyInitialExpansion(BddWorkspaceNodeViewModel root)
     {
         root.IsExpanded = true;
         foreach (var child in root.Children)
         {
-            child.IsExpanded = child.Kind != UatWorkspaceNodeKind.Folder || CountMarkdownDescendants(child) <= 1;
+            child.IsExpanded = child.Kind != BddWorkspaceNodeKind.Folder || CountMarkdownDescendants(child) <= 1;
             CollapseDescendants(child);
         }
     }
 
-    private static void CollapseDescendants(UatWorkspaceNodeViewModel node)
+    private static void CollapseDescendants(BddWorkspaceNodeViewModel node)
     {
         foreach (var child in node.Children)
         {
@@ -1082,7 +1520,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static void ExpandAncestors(UatWorkspaceNodeViewModel node)
+    private static void ExpandAncestors(BddWorkspaceNodeViewModel node)
     {
         var current = node.Parent;
         while (current is not null)
@@ -1092,325 +1530,36 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static int CountMarkdownDescendants(UatWorkspaceNodeViewModel node)
+    private static int CountMarkdownDescendants(BddWorkspaceNodeViewModel node)
     {
-        var count = node.Kind is UatWorkspaceNodeKind.MarkdownFile or UatWorkspaceNodeKind.WorkflowConfig ? 1 : 0;
+        var count = node.Kind is BddWorkspaceNodeKind.MarkdownFile or BddWorkspaceNodeKind.WorkflowConfig ? 1 : 0;
         return count + node.Children.Sum(CountMarkdownDescendants);
     }
 
-    private async Task RunSelectedNodeAsync()
-    {
-        if (WorkspacePath is null)
-        {
-            StatusSummary = "No workspace loaded";
-            return;
-        }
-
-        var scenarios = GetRunnableScenarios(SelectedWorkspaceNode).ToArray();
-        if (scenarios.Length == 0)
-        {
-            StatusSummary = "No runnable scenarios below selection";
-            return;
-        }
-
-        var options = CaptureRunExecutionOptions(SelectedWorkspaceNode, scenarios);
-        _activeRunOptions = options;
-        _stepTimings.Clear();
-        RunScopeText = FormatRunScope(options);
-        ExecutionTimingText = FormatExecutionTiming(options);
-        DiagnosticsText = FormatRunStartedDetails(options);
-        StatusSummary = $"Starting: {options.SelectedNodeName}";
-        RefreshSelectedNodeDetails();
-
-        var passed = 0;
-        foreach (var scenario in scenarios)
-        {
-            SelectedScenario = scenario;
-            if (!await RunScenarioAutoAsync(scenario, options).ConfigureAwait(true))
-            {
-                StatusSummary = $"Failed: {passed}/{scenarios.Length} scenarios passed";
-                RefreshSelectedNodeDetails();
-                return;
-            }
-
-            passed++;
-        }
-
-        StatusSummary = $"Passed: {passed}/{scenarios.Length} scenarios";
-        DiagnosticsText = FormatRunCompletedDetails(options);
-        ExecutionTimingText = FormatExecutionTiming(options);
-        RefreshSelectedNodeDetails();
-    }
-
-    private void Stop()
-    {
-        _executionCancellation?.Cancel();
-        StopActiveSession();
-        StatusSummary = "Stopped";
-    }
-
-    private async Task NextStepAsync()
-    {
-        if (WorkspacePath is null)
-        {
-            StatusSummary = "No workspace loaded";
-            return;
-        }
-
-        var scenario = _activeScenario
-                       ?? GetRunnableScenarios(SelectedWorkspaceNode).FirstOrDefault()
-                       ?? SelectedScenario;
-        if (scenario is null)
-        {
-            StatusSummary = "No runnable scenario below selection";
-            return;
-        }
-
-        if (_activeSession is null && !ReferenceEquals(SelectedScenario, scenario))
-        {
-            SelectedScenario = scenario;
-        }
-
-        if (_activeSession is null || _activeScenario != scenario)
-        {
-            await StartStepSessionAsync(scenario).ConfigureAwait(true);
-        }
-
-        if (_activeSession is null)
-        {
-            return;
-        }
-
-        var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-        if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
-        {
-            MarkRemainingSteps("skip");
-            scenario.Status = result.Status == UatStepResultStatus.Canceled ? "cancel" : "fail";
-            StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
-            RefreshSelectedNodeDetails();
-            FinishActiveSession();
-            return;
-        }
-
-        if (!_activeSession.HasNext)
-        {
-            scenario.Status = "pass";
-            StatusSummary = $"Passed: {scenario.Name}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, null);
-            FinishActiveSession();
-        }
-        else
-        {
-            StatusSummary = $"Ready: {scenario.Name}. Tap Next.";
-        }
-
-        RefreshSelectedNodeDetails();
-    }
-
-    private async Task StartStepSessionAsync(UatScenarioViewModel scenario)
-    {
-        if (WorkspacePath is null)
-        {
-            return;
-        }
-
-        StopActiveSession();
-        ResetScenario(scenario);
-        _executionCancellation = new CancellationTokenSource();
-        StatusSummary = $"Starting: {scenario.Name}";
-
-        try
-        {
-            _activeSession = await _executionService
-                .CreateSessionAsync(WorkspacePath, scenario.FilePath, scenario.Name, _executionCancellation.Token)
-                .ConfigureAwait(true);
-            _activeScenario = scenario;
-            DiscoveryText = _activeSession.DiscoveryReport;
-            CommandCatalogText = _activeSession.CommandCatalogReport;
-            AutPlacementText = _activeSession.AutPlacementReport;
-            DiagnosticsText = string.Join(
-                Environment.NewLine,
-                "Step session ready.",
-                AutPlacementText);
-            StatusSummary = $"Ready: {scenario.Name}. Tap Next.";
-        }
-        catch (Exception ex)
-        {
-            scenario.Status = "fail";
-            StatusSummary = $"Failed to start: {scenario.Name}";
-            DiagnosticsText = Describe(ex);
-            FinishActiveSession();
-        }
-        finally
-        {
-            UpdateScenarioListText();
-            RefreshSelectedNodeDetails();
-        }
-    }
-
-    private async Task<bool> RunScenarioAutoAsync(
-        UatScenarioViewModel scenario,
-        PresenterRunExecutionOptions options)
-    {
-        if (WorkspacePath is null)
-        {
-            return false;
-        }
-
-        StopActiveSession();
-        ResetScenario(scenario, clearTimings: false);
-        _executionCancellation = new CancellationTokenSource();
-        StatusSummary = $"Starting: {scenario.Name}";
-        scenario.Status = "run";
-        UpdateScenarioListText();
-
-        try
-        {
-            _activeSession = await _executionService
-                .CreateSessionAsync(WorkspacePath, scenario.FilePath, scenario.Name, _executionCancellation.Token)
-                .ConfigureAwait(true);
-            _activeScenario = scenario;
-            DiscoveryText = _activeSession.DiscoveryReport;
-            CommandCatalogText = _activeSession.CommandCatalogReport;
-            AutPlacementText = _activeSession.AutPlacementReport;
-
-            while (_activeSession.HasNext)
-            {
-                var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-                if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
-                {
-                    MarkRemainingSteps("skip");
-                    scenario.Status = result.Status == UatStepResultStatus.Canceled ? "cancel" : "fail";
-                    StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
-                    DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
-                    RefreshSelectedNodeDetails();
-                    return false;
-                }
-
-                await WaitBeforeNextStepAsync(_activeSession, scenario, options).ConfigureAwait(true);
-            }
-
-            scenario.Status = "pass";
-            StatusSummary = $"Passed: {scenario.Name}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, null);
-            RefreshSelectedNodeDetails();
-            return true;
-        }
-        catch (OperationCanceledException)
-        {
-            scenario.Status = "cancel";
-            StatusSummary = $"Canceled: {scenario.Name}";
-            MarkRunningSteps("cancel");
-            RefreshSelectedNodeDetails();
-            return false;
-        }
-        catch (Exception ex)
-        {
-            scenario.Status = "fail";
-            StatusSummary = $"Failed: {scenario.Name}: {Describe(ex)}";
-            DiagnosticsText = Describe(ex);
-            MarkRunningSteps("fail");
-            RefreshSelectedNodeDetails();
-            return false;
-        }
-        finally
-        {
-            UpdateScenarioListText();
-            FinishActiveSession();
-        }
-    }
-
-    private async Task<UatStepResult> RunNextStepAsync(
-        PresenterUatExecutionSession session,
-        UatScenarioViewModel scenario)
-    {
-        var index = session.CompletedStepCount;
-        var startedAt = DateTimeOffset.Now;
-        var stepText = GetScenarioStepText(scenario, index);
-        SetStepStatus(index, "run");
-        StatusSummary = stepText;
-        RefreshSelectedNodeDetails();
-        await Task.Yield();
-
-        var cancellationToken = _executionCancellation?.Token ?? CancellationToken.None;
-        var result = await Task.Run(
-            () => session.RunNextAsync(cancellationToken),
-            cancellationToken).ConfigureAwait(true);
-
-        var completedAt = DateTimeOffset.Now;
-        _stepTimings.Add(new PresenterStepTiming(
-            index + 1,
-            stepText,
-            startedAt,
-            completedAt));
-        ExecutionTimingText = FormatExecutionTiming(_activeRunOptions);
-
-        SetStepStatus(index, StepStatusText(result.Status));
-        RunProgress = scenario.Steps.Count == 0
-            ? 0
-            : (double)Math.Min(index + 1, scenario.Steps.Count) / scenario.Steps.Count;
-
-        if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
-        {
-            DiagnosticsText = FormatExecutionDetails(session, result.Message);
-        }
-
-        RefreshSelectedNodeDetails();
-        return result;
-    }
-
-    private async Task WaitBeforeNextStepAsync(
-        PresenterUatExecutionSession session,
-        UatScenarioViewModel scenario,
-        PresenterRunExecutionOptions options)
-    {
-        if (!session.HasNext)
-        {
-            return;
-        }
-
-        var delayMilliseconds = options.EffectiveDelayMilliseconds;
-        if (delayMilliseconds <= 0)
-        {
-            return;
-        }
-
-        if (_stepTimings.Count > 0)
-        {
-            var timing = _stepTimings[^1];
-            timing.DelayAfterMilliseconds = delayMilliseconds;
-            timing.WaitStartedAt = DateTimeOffset.Now;
-        }
-
-        StatusSummary = GetScenarioStepText(scenario, session.CompletedStepCount);
-        DiagnosticsText = FormatExecutionDetails(session, null);
-        ExecutionTimingText = FormatExecutionTiming(options);
-        RefreshSelectedNodeDetails();
-        await Task.Delay(delayMilliseconds, _executionCancellation?.Token ?? CancellationToken.None).ConfigureAwait(true);
-
-        if (_stepTimings.Count > 0)
-        {
-            _stepTimings[^1].WaitCompletedAt = DateTimeOffset.Now;
-            ExecutionTimingText = FormatExecutionTiming(options);
-        }
-    }
-
-    private static string GetScenarioStepText(UatScenarioViewModel scenario, int index)
+    private static string GetScenarioStepText(BddScenarioViewModel scenario, int index)
     {
         return index >= 0 && index < scenario.Steps.Count
             ? scenario.Steps[index].Text
             : scenario.Name;
     }
 
-    private void LoadSteps(UatScenarioViewModel? scenario)
+    private void LoadSteps(BddScenarioViewModel? scenario)
     {
+        CurrentRow = null;
         Steps.Clear();
+        StepRows.Clear();
         if (scenario is not null)
         {
             foreach (var step in scenario.Steps)
             {
                 Steps.Add(step);
+            }
+
+            RefreshBreakpoints(scenario);
+            foreach (var row in scenario.Rows)
+            {
+                row.Host = this;
+                StepRows.Add(row);
             }
         }
 
@@ -1418,7 +1567,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RunProgress = 0;
     }
 
-    private void ResetScenario(UatScenarioViewModel scenario, bool clearTimings = true)
+    private void ResetScenario(BddScenarioViewModel scenario, bool clearTimings = true)
     {
         if (clearTimings)
         {
@@ -1432,6 +1581,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         foreach (var step in scenario.Steps)
         {
             step.Status = "wait";
+            step.Message = null;
         }
 
         RunProgress = 0;
@@ -1480,10 +1630,76 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void UpdateStepListText()
     {
-        StepListText = string.Join(Environment.NewLine, Steps.Select(step => step.DisplayText));
+        StepListText = string.Join(Environment.NewLine, StepRows.Select(row => row.DisplayText));
         UpdateWorkspaceTreeText();
         UpdateAllWorkspaceTreeText();
+        RefreshPreview();
     }
+
+    // The row a step of the run shows on: its own, never its call's.
+    private BddStepRowViewModel? RowOfStep(int stepIndex)
+        => StepRows.FirstOrDefault(row => !row.IsCall && row.FirstStep == stepIndex);
+
+    private void OpenPreview()
+    {
+        _preview?.Open();
+        RefreshPreview();
+    }
+
+    // The preview follows the selected scenario and its run: each step's status, and the current row.
+    private void RefreshPreview()
+    {
+        if (_preview is not { IsOpen: true } preview || SelectedScenario is not { } scenario)
+        {
+            return;
+        }
+
+        preview.Show(new ScenarioPreviewState(
+            scenario.FilePath,
+            scenario.Name,
+            scenario.LineNumber,
+            ScenarioRun(scenario),
+            CurrentRow?.LineNumber,
+            _catalogs,
+            IsDarkThemeActive,
+            WorkspaceName,
+            IsPaused && CurrentRow is { } paused
+                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall)
+                : null));
+    }
+
+    // The run so far, as the preview reads a report: the steps that ran, by the line they are written on.
+    private static BddScenarioRun? ScenarioRun(BddScenarioViewModel scenario)
+    {
+        var ran = scenario.Steps.Where(step => step.Status is "pass" or "fail" or "skip" or "cancel").ToList();
+        if (ran.Count == 0)
+        {
+            return null;
+        }
+
+        var status = scenario.Status switch
+        {
+            "pass" => "passed",
+            "fail" => "failed",
+            "cancel" => "canceled",
+            _ => "running",
+        };
+        return new BddScenarioRun(
+            scenario.Name,
+            status,
+            0,
+            null,
+            [.. ran.Select(step => new BddStepRun(step.LineNumber, null, null, PreviewStatus(step.Status), step.Message))],
+            DateTimeOffset.Now);
+    }
+
+    private static string PreviewStatus(string status) => status switch
+    {
+        "pass" => "Passed",
+        "fail" => "Failed",
+        "cancel" => "Canceled",
+        _ => "Skipped",
+    };
 
     private void UpdateWorkspaceTreeText()
     {
@@ -1500,40 +1716,46 @@ public sealed class PresenterShellViewModel : ViewModelBase
         SelectedWorkspaceNodeDetailsText = FormatSelectedNodeDetails(SelectedWorkspaceNode);
     }
 
-    private IEnumerable<UatScenarioViewModel> GetRunnableScenarios(UatWorkspaceNodeViewModel? node)
+    private IEnumerable<BddScenarioViewModel> GetRunnableScenarios(BddWorkspaceNodeViewModel? node)
     {
         if (node is null)
         {
             return [];
         }
 
-        if (node.Kind == UatWorkspaceNodeKind.Step)
+        if (node.Kind == BddWorkspaceNodeKind.Step)
         {
             return node.Scenario is null ? [] : [node.Scenario];
         }
 
-        if (node.Kind == UatWorkspaceNodeKind.Scenario)
+        if (node.Kind == BddWorkspaceNodeKind.Scenario)
         {
             return node.Scenario is null ? [] : [node.Scenario];
         }
 
         return EnumerateDescendants(node)
-            .Where(candidate => candidate.Kind == UatWorkspaceNodeKind.Scenario && candidate.Scenario is not null)
+            .Where(candidate => candidate.Kind == BddWorkspaceNodeKind.Scenario && candidate.Scenario is not null)
             .Select(candidate => candidate.Scenario!)
             .Distinct()
             .ToArray();
     }
 
     private PresenterRunExecutionOptions CaptureRunExecutionOptions(
-        UatWorkspaceNodeViewModel? selectedNode,
-        IReadOnlyCollection<UatScenarioViewModel> scenarios)
+        BddWorkspaceNodeViewModel? selectedNode,
+        IReadOnlyCollection<BddScenarioViewModel> scenarios)
+        => CaptureRunExecutionOptions(selectedNode?.Kind.ToString() ?? "None", selectedNode?.Name ?? "No selection", scenarios);
+
+    private PresenterRunExecutionOptions CaptureRunExecutionOptions(
+        string scopeKind,
+        string scopeName,
+        IReadOnlyCollection<BddScenarioViewModel> scenarios)
     {
         var effectiveDelay = ParseDelayMilliseconds(ExecutionDelayText);
         ExecutionDelayMilliseconds = effectiveDelay;
 
         return new PresenterRunExecutionOptions(
-            selectedNode?.Kind.ToString() ?? "None",
-            selectedNode?.Name ?? "No selection",
+            scopeKind,
+            scopeName,
             scenarios.Count,
             scenarios.Sum(scenario => scenario.Steps.Count),
             effectiveDelay,
@@ -1550,7 +1772,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return Math.Clamp(parsed, 0, MaxExecutionDelayMilliseconds);
     }
 
-    private string FormatSelectedNodeDetails(UatWorkspaceNodeViewModel? node)
+    private string FormatSelectedNodeDetails(BddWorkspaceNodeViewModel? node)
     {
         if (node is null)
         {
@@ -1605,7 +1827,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : path;
     }
 
-    private static IEnumerable<UatWorkspaceNodeViewModel> EnumerateDescendants(UatWorkspaceNodeViewModel node)
+    private static IEnumerable<BddWorkspaceNodeViewModel> EnumerateDescendants(BddWorkspaceNodeViewModel node)
     {
         foreach (var child in node.Children)
         {
@@ -1632,23 +1854,23 @@ public sealed class PresenterShellViewModel : ViewModelBase
                                        || segment.Equals("obj", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static UatWorkspaceNodeKind GetFileNodeKind(string fileName)
+    private static BddWorkspaceNodeKind GetFileNodeKind(string fileName)
     {
-        if (fileName.Equals("uat.config.md", StringComparison.OrdinalIgnoreCase))
+        if (BddFileFormat.IsConfigFileName(fileName))
         {
-            return UatWorkspaceNodeKind.WorkflowConfig;
+            return BddWorkspaceNodeKind.WorkflowConfig;
         }
 
-        return fileName.EndsWith(".uat.md", StringComparison.OrdinalIgnoreCase)
-            ? UatWorkspaceNodeKind.MarkdownFile
-            : UatWorkspaceNodeKind.MarkdownFile;
+        return fileName.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
+            ? BddWorkspaceNodeKind.MarkdownFile
+            : BddWorkspaceNodeKind.MarkdownFile;
     }
 
-    private UatWorkspaceNodeViewModel EnsureFolderNode(
+    private BddWorkspaceNodeViewModel EnsureFolderNode(
         string folderPath,
         string rootPath,
-        UatWorkspaceNodeViewModel root,
-        Dictionary<string, UatWorkspaceNodeViewModel> folderNodes)
+        BddWorkspaceNodeViewModel root,
+        Dictionary<string, BddWorkspaceNodeViewModel> folderNodes)
     {
         var fullFolderPath = Path.GetFullPath(folderPath);
         if (folderNodes.TryGetValue(fullFolderPath, out var existing))
@@ -1665,9 +1887,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : EnsureFolderNode(parentFolderPath, fullRootPath, root, folderNodes);
 
         var folderName = Path.GetFileName(fullFolderPath);
-        var node = new UatWorkspaceNodeViewModel(
+        var node = new BddWorkspaceNodeViewModel(
             folderName,
-            UatWorkspaceNodeKind.Folder,
+            BddWorkspaceNodeKind.Folder,
             parentNode.Depth + 1,
             fullFolderPath,
             expansionChanged: OnWorkspaceNodeExpansionChanged);
@@ -1676,7 +1898,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return node;
     }
 
-    private static void SortTree(UatWorkspaceNodeViewModel node)
+    private static void SortTree(BddWorkspaceNodeViewModel node)
     {
         node.Children.Sort(CompareNodes);
         foreach (var child in node.Children)
@@ -1685,9 +1907,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static int CompareNodes(UatWorkspaceNodeViewModel left, UatWorkspaceNodeViewModel right)
+    private static int CompareNodes(BddWorkspaceNodeViewModel left, BddWorkspaceNodeViewModel right)
     {
-        if (left.Kind == UatWorkspaceNodeKind.Folder && right.Kind == UatWorkspaceNodeKind.Folder)
+        if (left.Kind == BddWorkspaceNodeKind.Folder && right.Kind == BddWorkspaceNodeKind.Folder)
         {
             var expectedFailureComparison = IsExpectedFailuresFolder(left)
                 .CompareTo(IsExpectedFailuresFolder(right));
@@ -1703,63 +1925,44 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static int IsExpectedFailuresFolder(UatWorkspaceNodeViewModel node)
+    private static int IsExpectedFailuresFolder(BddWorkspaceNodeViewModel node)
     {
         return node.Name.Equals("ExpectedFailures", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
     }
 
-    private static int NodeRank(UatWorkspaceNodeKind kind)
+    private static int NodeRank(BddWorkspaceNodeKind kind)
     {
         return kind switch
         {
-            UatWorkspaceNodeKind.WorkflowConfig => 0,
-            UatWorkspaceNodeKind.Folder => 1,
-            UatWorkspaceNodeKind.MarkdownFile => 2,
-            UatWorkspaceNodeKind.Suite => 3,
-            UatWorkspaceNodeKind.Scenario => 4,
-            UatWorkspaceNodeKind.Step => 5,
+            BddWorkspaceNodeKind.WorkflowConfig => 0,
+            BddWorkspaceNodeKind.Folder => 1,
+            BddWorkspaceNodeKind.MarkdownFile => 2,
+            BddWorkspaceNodeKind.Suite => 3,
+            BddWorkspaceNodeKind.Scenario => 4,
+            BddWorkspaceNodeKind.Step => 5,
             _ => 6
         };
     }
 
-    private void StopActiveSession()
-    {
-        _executionCancellation?.Cancel();
-        _executionCancellation?.Dispose();
-        _executionCancellation = null;
-        _activeSession?.Dispose();
-        _activeSession = null;
-        _activeScenario = null;
-    }
-
-    private void FinishActiveSession()
-    {
-        _executionCancellation?.Dispose();
-        _executionCancellation = null;
-        _activeSession?.Dispose();
-        _activeSession = null;
-        _activeScenario = null;
-    }
-
-    private static string StepStatusText(UatStepResultStatus status)
+    private static string StepStatusText(BddStepResultStatus status)
     {
         return status switch
         {
-            UatStepResultStatus.Passed => "pass",
-            UatStepResultStatus.Failed => "fail",
-            UatStepResultStatus.Skipped => "skip",
-            UatStepResultStatus.Canceled => "cancel",
-            UatStepResultStatus.Running => "run",
+            BddStepResultStatus.Passed => "pass",
+            BddStepResultStatus.Failed => "fail",
+            BddStepResultStatus.Skipped => "skip",
+            BddStepResultStatus.Canceled => "cancel",
+            BddStepResultStatus.Running => "run",
             _ => "wait"
         };
     }
 
-    private static string ScenarioStatusText(UatStepResultStatus status)
+    private static string ScenarioStatusText(BddStepResultStatus status)
     {
         return status switch
         {
-            UatStepResultStatus.Canceled => "Canceled",
-            UatStepResultStatus.Failed => "Failed",
+            BddStepResultStatus.Canceled => "Canceled",
+            BddStepResultStatus.Failed => "Failed",
             _ => "Stopped"
         };
     }
@@ -1769,8 +1972,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var options = _activeRunOptions;
         List<string> lines =
         [
-            .. session.StepSession.Results.Select(result =>
-                $"{result.Status}: {result.Invocation.Step.Source}: {result.Invocation.CommandId}: {result.Invocation.Step.Text} {result.Message}"),
+            .. session.StepsReport,
             "Runtime trace:"
         ];
         if (!string.IsNullOrWhiteSpace(session.AutPlacementReport))
@@ -1778,7 +1980,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             lines.Add(session.AutPlacementReport);
         }
 
-        lines.AddRange(session.Runner.Context.Diagnostics);
+        lines.AddRange(session.Diagnostics);
         if (options is not null)
         {
             lines.Add("Run scope:");
@@ -1861,7 +2063,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return $"- Step {timing.StepNumber}: {timing.StartedAt:HH:mm:ss.fff} -> {timing.CompletedAt:HH:mm:ss.fff} ({duration} ms), {waitText}: {timing.StepText}";
     }
 
-    private static string FormatWorkspaceConfig(UatWorkspaceConfigLoadResult config)
+    private static string FormatWorkspaceConfig(BddWorkspaceConfigLoadResult config)
     {
         List<string> lines =
         [

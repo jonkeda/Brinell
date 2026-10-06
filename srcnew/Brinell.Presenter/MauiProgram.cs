@@ -1,3 +1,4 @@
+using Brinell.Maui.AppSupport;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +11,13 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .UseMauiCommunityToolkit();
+            .UseMauiCommunityToolkit()
+            // Layouts (the page's root grid) get an AutomationId on Windows: MAUI gives them no peer.
+            .ConfigureMauiHandlers(handlers => handlers.AddBrinellAutomationHandlers());
+
+        // Off unless the build has BRINELL_UIA_BRIDGE and the launcher sets BRINELL_UIA_BRIDGE=1.
+        // Before the first page loads: elements publish themselves on Loaded.
+        builder.UseBrinellGestureBridge();
 
 #if DEBUG
         builder.Logging.AddDebug();

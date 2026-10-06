@@ -33,7 +33,7 @@ public class LinkControlTests
     {
         _mockElement.Setup(e => e.GetAttribute("href")).Returns("https://example.com");
 
-        Assert.Equal("https://example.com", _page.TestLink.Href);
+        Assert.Equal("https://example.com", _page.TestLink.GetHref());
     }
 
     [Fact]

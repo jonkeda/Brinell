@@ -1,6 +1,6 @@
 # UAT for complex things
 
-Status: Guidance / discussion draft
+Status: Guidance / discussion draft. [01](01-multi-user.md) was trimmed 2026-09-27: several apps and named users are built.
 Date: 2026-09-20
 Area: `srcnew/Brinell.Uat`, `srcnew/Brinell.Mocking`
 
@@ -58,8 +58,8 @@ and is the right home for a wire-order or tombstone check.
 Lift a complex behaviour to UAT only when **the screen is part of what is under
 test** — the pending marker renders, the Error state with Retry appears, the two
 users' changes are *seen* to reconcile on the page. If the assertion never looks
-at a control, it is an integration test wearing a UAT costume; write it as the
-former.
+at a control, tag it `@service`: it runs below the UI, on the service head
+([Features Below The UI](../../../docs/guides/features-below-the-ui.md)).
 
 ```mermaid
 flowchart TD
@@ -89,14 +89,14 @@ public sealed class TodoWorldPhrases : UatPhraseClassBase
         _world = world;
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server has a todo {title} for user {user}")]
+    [UatPhrase(BddEffectiveStepKeyword.Given, "the server has a todo {title} for user {user}")]
     public void SeedServerTodo(string title, string user) => _world.SeedServerTodo(user, title);
 }
 ```
 
-A phrase method may also take `UatExecutionContext`, `CancellationToken`,
+A phrase method may also take `BddExecutionContext`, `CancellationToken`,
 `TestSettings`, or a typed `[TestSettingsSection]` class — see
-[docs/guides/uat-phrases-and-flows.md](../../../docs/guides/uat-phrases-and-flows.md#custom-root-phrases).
+[docs/guides/uat-step-definitions.md](../../../docs/guides/uat-step-definitions.md#custom-root-phrases).
 Each topic doc below shows the phrase *and* the C# that backs it.
 
 ---

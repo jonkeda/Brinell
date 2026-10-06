@@ -169,6 +169,31 @@
                 </ScrollView>
             </RefreshView>
 
+            <!-- A wrapper declares SwipeDown for the RefreshView that is its content, as a
+                 reusable list control does when it keeps its RefreshView private. -->
+            <ContentView AutomationId="TestWrappedRefreshView"
+                         uia:GestureAutomation.Verbs="SwipeDown"
+                         HeightRequest="40">
+                <RefreshView IsRefreshing="{Binding IsWrappedRefreshing}"
+                             Command="{Binding RefreshCommand}">
+                    <ScrollView>
+                        <Label Text="Wrapped refresh" />
+                    </ScrollView>
+                </RefreshView>
+            </ContentView>
+
+            <!-- Disabled: a user cannot pull it, so the bridge declines. -->
+            <ContentView AutomationId="TestDisabledRefreshView"
+                         uia:GestureAutomation.Verbs="SwipeDown"
+                         HeightRequest="40">
+                <RefreshView IsEnabled="False"
+                             Command="{Binding RefreshCommand}">
+                    <ScrollView>
+                        <Label Text="Disabled refresh" />
+                    </ScrollView>
+                </RefreshView>
+            </ContentView>
+
             <Button AutomationId="TriggerRefreshButton"
                     Text="Trigger refresh"
                     Command="{Binding RefreshCommand}" />

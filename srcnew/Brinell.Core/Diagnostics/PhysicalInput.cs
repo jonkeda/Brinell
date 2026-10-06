@@ -20,38 +20,8 @@ public enum PhysicalInputPolicy
 
 /// <summary>
 /// The gate every real mouse, keyboard or clipboard action passes through.
+/// The policy, its modes and its environment variables are AD-005.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Why this exists.</b> Physical input is the reason a UI test run owns the machine: the
-/// cursor, the foreground window, the keyboard focus queue and the clipboard are all
-/// desktop-global and shared with whoever is sitting at the keyboard. Everything Brinell does
-/// through a UI Automation pattern is invisible to them; everything it does through real input
-/// is not.
-/// </para>
-/// <para>
-/// <b>Two modes, for two jobs.</b> <see cref="PhysicalInputPolicy.Audited"/> is a measuring
-/// instrument: the suite behaves exactly as before and every use is recorded, so one run yields
-/// a complete list of the paths that would have to change. <see cref="PhysicalInputPolicy.Refused"/>
-/// is the enforcement: once semantic routes exist, this is what stops a quiet regression back to
-/// the mouse. Auditing first matters — refusing aborts each test at its first offending call, so
-/// it reports one finding per test rather than all of them.
-/// </para>
-/// <para>
-/// <b>Resolution, in order.</b> An <see cref="OverridePolicy"/> scope wins. Then
-/// <c>BRINELL_BACKGROUND_MODE</c> if it is set at all: <c>audit</c> audits; <c>0</c>, <c>false</c>,
-/// <c>off</c> or <c>allow</c> allow; anything else refuses. When it is not set,
-/// <see cref="PhysicalInputPolicy.Allowed"/>. Point <c>BRINELL_PHYSICAL_INPUT_LOG</c> at a file to
-/// have audited uses appended to it.
-/// </para>
-/// <para>
-/// <b>Who still passes through this gate.</b> The WPF and WinForms FlaUI drivers, which fall back
-/// to real input with no verb layer behind them - refusing it by default would fail their suites
-/// rather than quieten them. The MAUI FlaUI driver used to as well, and made refusal its default;
-/// it now has no physical input to guard, so it neither calls this nor sets a default
-/// (see <c>.docs/decisions/ad-005-physical-input-is-opt-in.md</c>).
-/// </para>
-/// </remarks>
 public static class PhysicalInput
 {
     private static readonly Lazy<PhysicalInputPolicy?> ExplicitPolicy = new(ReadExplicitPolicy);

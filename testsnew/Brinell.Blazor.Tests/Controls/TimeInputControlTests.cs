@@ -31,19 +31,19 @@ public class TimeInputControlTests
     }
 
     [Fact]
-    public void GetMin_ReturnsMinAttribute()
+    public void GetMinimum_ReturnsMinAttribute()
     {
         _mockElement.Setup(e => e.GetAttribute("min")).Returns("08:00");
 
-        Assert.Equal("08:00", _page.TestTimeInput.GetMin());
+        Assert.Equal(new TimeOnly(8, 0), _page.TestTimeInput.GetMinimum());
     }
 
     [Fact]
-    public void GetMax_ReturnsMaxAttribute()
+    public void GetMaximum_ReturnsMaxAttribute()
     {
         _mockElement.Setup(e => e.GetAttribute("max")).Returns("17:00");
 
-        Assert.Equal("17:00", _page.TestTimeInput.GetMax());
+        Assert.Equal(new TimeOnly(17, 0), _page.TestTimeInput.GetMaximum());
     }
 
     [Fact]

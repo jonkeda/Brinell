@@ -1,0 +1,79 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- The Visual Studio extension (P4: VSSDK, in process). It holds no engine types: it starts
+       brinell lsp (tools/Brinell.Cli), carried inside the VSIX, and talks to it in messages. Build it with
+       Visual Studio's MSBuild (tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx);
+       Brinell.sln lists it with Build unticked. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>Brinell.Bdd.VisualStudio</RootNamespace>
+    <UseWPF>true</UseWPF>
+    <IsPackable>false</IsPackable>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <!-- The pkgdef names the assembly's path ("CodeBase"); without it Visual Studio looks for the
+         package's assembly in its own folder, and the package fails to load. -->
+    <UseCodebase>true</UseCodebase>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+    <DeployExtension Condition="'$(DeployExtension)' == ''">true</DeployExtension>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp</StartArguments>
+    <!-- No SourceLink for a local extension. -->
+    <EnableSourceLink>false</EnableSourceLink>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The CodeLens provider runs in Visual Studio's CodeLens process: its own assembly in the VSIX. -->
+    <ProjectReference Include="..\Brinell.Bdd.VisualStudio.CodeLens\Brinell.Bdd.VisualStudio.CodeLens.csproj" Name="Brinell.Bdd.VisualStudio.CodeLens" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest" SubType="Designer" />
+    <VSCTCompile Include="BrinellBddPackage.vsct" ResourceName="Menus.ctmenu" />
+    <EmbeddedResource Update="VSPackage.resx" MergeWithCTO="true" ManifestResourceName="VSPackage" />
+  </ItemGroup>
+
+  <!-- The language server, published beside the extension: started as 'dotnet Server\brinell.dll lsp'. -->
+  <PropertyGroup>
+    <ServerProject>..\Brinell.Cli\Brinell.Cli.csproj</ServerProject>
+    <ServerPublishDir>$(MSBuildProjectDirectory)\$(BaseIntermediateOutputPath)server</ServerPublishDir>
+  </PropertyGroup>
+
+  <Target Name="PublishLanguageServer" BeforeTargets="BeforeBuild" Condition="'$(SkipServerPublish)' != 'true'">
+    <Exec Command="dotnet publish &quot;$(ServerProject)&quot; -c $(Configuration) -o &quot;$(ServerPublishDir)&quot; --nologo -v:q" />
+    <!-- %(RecursiveDir) is empty in metadata set inside a target, which flattened Server\ and lost
+         .playwright\node\win32_x64\node.exe; the subfolder is computed from the path instead. -->
+    <ItemGroup>
+      <_ServerFile Include="$(ServerPublishDir)\**\*" Exclude="$(ServerPublishDir)\**\*.pdb" />
+      <_ServerFile>
+        <ServerRelativePath>$([MSBuild]::MakeRelative('$(ServerPublishDir)\', '%(FullPath)'))</ServerRelativePath>
+      </_ServerFile>
+      <_ServerFile>
+        <IncludeInVSIX>true</IncludeInVSIX>
+        <VSIXSubPath>Server\$([System.IO.Path]::GetDirectoryName('%(ServerRelativePath)'))</VSIXSubPath>
+        <Link>Server\%(ServerRelativePath)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </_ServerFile>
+      <Content Include="@(_ServerFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <!-- After the SDK's targets: the VSSDK's pkgdef, VSCT and VSIX container targets (Microsoft.VSSDK.BuildTools). -->
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
+</Project>

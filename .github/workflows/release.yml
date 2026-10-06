@@ -42,7 +42,7 @@ jobs:
           "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Brinell.Maui.Extensions/Brinell.Maui.Extensions.csproj srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh
@@ -59,3 +59,69 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.nupkg --clobber
+
+  # The IDE extensions, attached to the release: the Visual Studio VSIX and the VS Code VSIX, each
+  # carrying the language server. Stamped with the tag's version (without a suffix, which neither
+  # manifest takes).
+  extensions:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup MSBuild (the VSIX needs Visual Studio's)
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+)(-[0-9A-Za-z.-]+)?$') {
+            Write-Error "Tag '$tag' is not vX.Y.Z or vX.Y.Z-suffix"; exit 1
+          }
+          "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+      - name: Stamp the versions
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.value }}'
+          $manifest = 'tools/Brinell.Bdd.VisualStudio/source.extension.vsixmanifest'
+          (Get-Content $manifest -Raw) -replace '(<Identity [^>]*Version=")[^"]*', "`${1}$version" | Set-Content $manifest -NoNewline
+          Push-Location tools/Brinell.Bdd.VsCode
+          npm version $version --no-git-tag-version --allow-same-version
+          Pop-Location
+
+      - name: Visual Studio extension
+        shell: pwsh
+        run: |
+          msbuild tools/Brinell.Bdd.VisualStudio/Brinell.Bdd.VisualStudio.slnx -restore -p:Configuration=Release -p:DeployExtension=false -v:minimal
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Copy-Item tools/Brinell.Bdd.VisualStudio/bin/Release/net48/Brinell.Bdd.VisualStudio.vsix "artifacts/Brinell.Bdd.VisualStudio-${{ steps.version.outputs.value }}.vsix"
+
+      - name: VS Code extension
+        shell: pwsh
+        run: |
+          dotnet publish tools/Brinell.Cli -c Release -o tools/Brinell.Bdd.VsCode/server --nologo -v:q
+          Push-Location tools/Brinell.Bdd.VsCode
+          npm ci
+          npm run compile
+          npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/brinell-bdd-vscode-${{ steps.version.outputs.value }}.vsix"
+          Pop-Location
+
+      - name: Attach the extensions to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.vsix --clobber

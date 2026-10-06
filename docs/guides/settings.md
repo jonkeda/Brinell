@@ -67,7 +67,7 @@ public sealed class CapabilitySettings
 }
 ```
 
-UAT attaches resolved settings to `UatExecutionContext`; commands can retrieve
+UAT attaches resolved settings to `BddExecutionContext`; commands can retrieve
 `TestSettings` or typed settings through the context settings extensions.
 
 ## Source Files
@@ -76,4 +76,4 @@ UAT attaches resolved settings to `UatExecutionContext`; commands can retrieve
 - `srcnew/Brinell.Core/Settings/JsonTestSettingsProvider.cs`
 - `srcnew/Brinell.Core/Settings/TestSettingsRequest.cs`
 - `srcnew/Brinell.Core/Settings/TestSettingsSectionAttribute.cs`
-- `srcnew/Brinell.Uat/UatExecutionContextSettingsExtensions.cs`
+- `srcnew/Brinell.Uat/BddExecutionContextSettingsExtensions.cs`

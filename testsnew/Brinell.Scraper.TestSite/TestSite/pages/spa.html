@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Orders app</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <!-- A small single-page app: routes by hash and by pushState, renders late (as a framework does
+       after its data arrives), has a web component with an open shadow root, and opens a dialog at the
+       end of body (as MUI, Vuetify and MudBlazor do). -->
+  <nav>
+    <a href="#/orders" data-testid="nav-orders">Orders</a>
+    <a href="#/orders/42" data-testid="nav-order">Order 42</a>
+    <button type="button" data-testid="nav-settings">Settings</button>
+  </nav>
+  <main id="view"></main>
+  <shadow-search></shadow-search>
+  <script>
+    class ShadowSearch extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: "open" });
+        root.innerHTML = '<input placeholder="Search orders" aria-label="Search"><button type="button">Find</button>';
+      }
+    }
+    customElements.define("shadow-search", ShadowSearch);
+
+    const view = document.getElementById("view");
+    function render() {
+      view.innerHTML = "<p>Loading…</p>";
+      const hash = location.hash || "#/orders";
+      setTimeout(() => {
+        if (location.pathname.endsWith("/settings")) {
+          view.innerHTML = '<h1>Settings</h1><label for="lang">Language</label><select id="lang" name="lang"><option>English</option></select>';
+        } else if (/^#\/orders\/\d+$/.test(hash)) {
+          view.innerHTML = '<h1>Order ' + hash.split("/")[2] + '</h1><button type="button" data-testid="open-dialog">Cancel order</button>';
+          view.querySelector('[data-testid="open-dialog"]').addEventListener("click", openDialog);
+        } else {
+          view.innerHTML = '<h1>Orders</h1><table data-testid="orders"><thead><tr><th>Id</th><th>Customer</th></tr></thead>'
+            + '<tbody><tr><td>41</td><td>Ada</td></tr><tr><td>42</td><td>Grace</td></tr></tbody></table>';
+        }
+      }, 300);
+    }
+    function openDialog() {
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      dialog.setAttribute("aria-label", "Cancel order");
+      dialog.innerHTML = '<p>Cancel this order?</p><button type="button">Yes</button><button type="button">No</button>';
+      document.body.appendChild(dialog);
+    }
+    document.querySelector('[data-testid="nav-settings"]').addEventListener("click", () => {
+      history.pushState({}, "", "settings");
+      render();
+    });
+    window.addEventListener("hashchange", render);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+@*
+    A bordered card with a header, around content the page chooses. A container, like the MAUI
+    app's SectionCard: controls inside are found within the card, so a page can reuse ids such as
+    DueValue in different cards. The header's id is the MAUI one, SectionHeader.
+*@
+<section class="section-card" data-testid="@AutomationId">
+    <h2 data-testid="SectionHeader">@Header</h2>
+    @ChildContent
+</section>
+
+@code {
+    /// <summary>The card's test id.</summary>
+    [Parameter, EditorRequired]
+    public string AutomationId { get; set; } = null!;
+
+    /// <summary>The header text.</summary>
+    [Parameter]
+    public string Header { get; set; } = string.Empty;
+
+    /// <summary>The card's content.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

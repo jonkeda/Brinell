@@ -43,9 +43,117 @@ public sealed class ServerTodoStore
                 created_at  TEXT NOT NULL,
                 updated_at  TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id                  TEXT PRIMARY KEY,
+                name                TEXT NOT NULL,
+                email               TEXT NULL,
+                status              TEXT NOT NULL,
+                allowed_until       TEXT NULL,
+                role                TEXT NOT NULL,
+                hours_per_week      INTEGER NOT NULL,
+                hourly_rate_cents   INTEGER NOT NULL,
+                start_minutes       INTEGER NOT NULL,
+                receives_reminders  INTEGER NOT NULL,
+                workload            INTEGER NOT NULL,
+                notes               TEXT NULL,
+                updated_at          TEXT NOT NULL
+            );
             """;
         command.ExecuteNonQuery();
     }
+
+    private const string UserColumns =
+        "id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at";
+
+    /// <summary>Every user, by name.</summary>
+    public IReadOnlyList<UserDto> GetUsers()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT {UserColumns} FROM users ORDER BY name COLLATE NOCASE;";
+
+        var users = new List<UserDto>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            users.Add(ReadUser(reader));
+        }
+
+        return users;
+    }
+
+    /// <summary>One user, or <c>null</c>.</summary>
+    public UserDto? GetUser(Guid id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT {UserColumns} FROM users WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id.ToString("D"));
+
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? ReadUser(reader) : null;
+    }
+
+    /// <summary>
+    /// Stores <paramref name="user"/> as sent and returns what is stored. The server is the
+    /// authority for users, so the last write simply wins.
+    /// </summary>
+    public UserDto UpsertUser(UserDto user)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            $"""
+            INSERT INTO users ({UserColumns})
+            VALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                email = excluded.email,
+                status = excluded.status,
+                allowed_until = excluded.allowed_until,
+                role = excluded.role,
+                hours_per_week = excluded.hours_per_week,
+                hourly_rate_cents = excluded.hourly_rate_cents,
+                start_minutes = excluded.start_minutes,
+                receives_reminders = excluded.receives_reminders,
+                workload = excluded.workload,
+                notes = excluded.notes,
+                updated_at = excluded.updated_at;
+            """;
+
+        command.Parameters.AddWithValue("$id", user.Id.ToString("D"));
+        command.Parameters.AddWithValue("$name", user.Name.Trim());
+        command.Parameters.AddWithValue("$email", (object?)user.Email ?? DBNull.Value);
+        command.Parameters.AddWithValue("$status", user.Status.ToString());
+        command.Parameters.AddWithValue("$until", user.AllowedUntil is { } until ? until.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value);
+        command.Parameters.AddWithValue("$role", user.Role.ToString());
+        command.Parameters.AddWithValue("$hours", user.HoursPerWeek);
+        command.Parameters.AddWithValue("$rate", decimal.ToInt64(user.HourlyRate * 100m));
+        command.Parameters.AddWithValue("$start", (int)user.StartOfDay.ToTimeSpan().TotalMinutes);
+        command.Parameters.AddWithValue("$reminders", user.ReceivesReminders ? 1 : 0);
+        command.Parameters.AddWithValue("$workload", user.Workload);
+        command.Parameters.AddWithValue("$notes", (object?)user.Notes ?? DBNull.Value);
+        command.Parameters.AddWithValue("$updated", WriteTime(user.UpdatedAt));
+        command.ExecuteNonQuery();
+
+        return GetUser(user.Id)!;
+    }
+
+    private static UserDto ReadUser(SqliteDataReader reader) => new(
+        Guid.Parse(reader.GetString(0)),
+        reader.GetString(1),
+        reader.IsDBNull(2) ? null : reader.GetString(2),
+        Enum.Parse<UserStatusDto>(reader.GetString(3)),
+        reader.IsDBNull(4) ? null : DateOnly.ParseExact(reader.GetString(4), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+        Enum.Parse<UserRoleDto>(reader.GetString(5)),
+        reader.GetInt32(6),
+        reader.GetInt64(7) / 100m,
+        TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(reader.GetInt32(8))),
+        reader.GetInt64(9) != 0,
+        reader.GetInt32(10),
+        reader.IsDBNull(11) ? null : reader.GetString(11),
+        ReadTime(reader.GetString(12)));
 
     /// <summary>Every todo, oldest first.</summary>
     public IReadOnlyList<TodoDto> GetAll()

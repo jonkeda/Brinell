@@ -30,13 +30,12 @@ the active docs are rebuilt.
 Working directory: Brinell root.
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 ```
 
-Use `srcnew\Brinell.sln` as the broad active compile check. It covers many
-source, sample, and test projects, but it is not a complete project inventory.
-The top-level `Brinell.sln` includes a different slice plus tools and may fail
-for tool-specific restore policies even when the framework projects build.
+`Brinell.sln` holds every project in the repository, in folders by area. The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
 ## Packages
 
@@ -53,7 +52,7 @@ for tool-specific restore policies even when the framework projects build.
 | `Brinell.Html.Playwright` | Playwright-backed web automation |
 | `Brinell.Blazor` | Blazor-focused testing helpers |
 | `Brinell.Stride` | Stride UI testing integration |
-| `Brinell.Automation` | In-app automation hooks used by Stride-style tests |
+| `Brinell.Stride.Automation` | In-app automation hooks used by Stride-style tests |
 | `Brinell.Mocking` | WireMock and mock sensor helpers |
 | `Brinell.NativeAndroid` | Native Android automation helpers |
 | `Brinell.Uat` | Markdown-driven UAT scenario runtime |
@@ -66,9 +65,11 @@ for tool-specific restore policies even when the framework projects build.
 | `srcnew/` | Active source projects |
 | `testsnew/` | Active unit, UI, and UAT tests |
 | `samples/` | Sample applications used by tests and demos |
+| `tools/` | The BDD language server, IDE extensions, and scripts |
+| `Scraper.Sites/` | What the Scraper makes of public sites, one page per technology |
 | `docs/` | Active documentation |
 | `docs2/` | Preserved previous documentation |
-| `.my/reports/` | Planning and research notes |
+| `.my/` | Plans for work in flight, indexed in `.my/README.md` |
 
 ## Core Rules
 

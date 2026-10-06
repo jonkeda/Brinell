@@ -41,6 +41,16 @@ Task workflows live in `.github/skills/` (Claude Code reads them through stubs i
   objects.
 - [convert-control](.github/skills/convert-control/SKILL.md) - convert a hand-written
   control to the `.tpl.cs` / `.gen.cs` format.
+- [html-control](.github/skills/html-control/SKILL.md) - create or extend an Html or Blazor
+  ControlObject, container, frame or collection.
+- [html-ui-test](.github/skills/html-ui-test/SKILL.md) - write Html and Blazor UI tests and
+  page objects (the Html UI tests, the Blazor UI tests, the Todo web head).
+- [scrape-pages](.github/skills/scrape-pages/SKILL.md) - make Html or Blazor page objects and
+  controls from an app's pages recorded with the Scraper (MCP `start_recording`,
+  `detect_patterns`, `write_code`, `check_code`).
+- [narrated-review](.github/skills/narrated-review/SKILL.md) - finish a feature with its
+  scenarios recorded on video with a voice-over, and a review page (MCP `record_video`,
+  `review_page`).
 
 Read the matching skill before doing that task.
 
@@ -57,7 +67,9 @@ fix:
 
 Use or add a page-object or control member instead. The reasons and the one exception
 (driver and bridge framework tests) are in
-[forbidden-apis.md](.github/skills/maui-ui-test/references/forbidden-apis.md).
+[forbidden-apis.md](.github/skills/maui-ui-test/references/forbidden-apis.md). The same holds
+for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
+[Html forbidden-apis.md](.github/skills/html-ui-test/references/forbidden-apis.md).
 
 ## Core Rules
 
@@ -97,12 +109,17 @@ Use or add a page-object or control member instead. The reasons and the one exce
 
 ## Docs Rules
 
-Four trees, each with one job:
+Five trees, each with one job:
 
 - **`.docs/`** - decisions, invariants and contracts: what must stay true. Read it before
   changing Brinell. A decision is recorded **once**, here, never also in code prose.
 - `docs/` - active guides for someone *using* Brinell.
-- `.my/` - plans, analyses and reviews for work in flight.
+- `.my/` - plans, analyses and reviews for work in flight, indexed in `.my/README.md`.
+  When the work is done: extract, then delete. Move its decisions to `.docs/` and anything a
+  user needs to `docs/`, repoint the links, then delete the topic. An AD that needs the
+  evidence links to it at its last commit. Code comments never point into `.my/`.
+- `.guides/` - user guides: step-by-step how-tos for a task, such as adding controls for a new
+  control library. Linked from `docs/README.md`.
 - `docs2/` - historical archive.
 
 - Keep links valid and relative.
@@ -121,11 +138,17 @@ and all XML doc on private/internal members. Durable rationale goes to `.docs/`,
 Commands are from the Brinell root:
 
 ```powershell
-dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+dotnet build Brinell.sln -v:minimal /nr:false
 dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
 ```
+
+The Html and Blazor UI suites (`testsnew\Brinell.Html.UITests`, `testsnew\Brinell.Blazor.UITests`)
+start the Blazor sample themselves on a free port and need Playwright's Chromium installed
+(`pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
 
 ### Match the test scope to the change
 
@@ -149,6 +172,8 @@ narrower tier fails in a way that suggests wider breakage.
 
 Notes:
 
+- A platform's UAT suite lives in its `*.UITests` project (`uat.config.md`, `Features/`, `Uat/`):
+  `--filter "Category=UAT"` runs it alone, `--filter "Category!=UAT"` the UI tests alone.
 - `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
   `|` for OR and `&` for AND inside a single filter string.
 - The full suite is expected to be **green with nothing set**: 0 failed. The only deliberate

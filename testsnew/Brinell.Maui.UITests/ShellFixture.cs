@@ -12,7 +12,7 @@ namespace Brinell.Maui.UITests;
 /// <remarks>
 /// A second app, and so a second fixture, because the two navigation models want opposite
 /// things from a fixture: the hub app wants "return to hub, open page"; Shell wants "pop this
-/// tab's stack, then select a tab". See .my/navigation/design-shell-sample-app.md.
+/// tab's stack, then select a tab".
 /// </remarks>
 public class ShellFixture : MauiTestFixtureBase
 {

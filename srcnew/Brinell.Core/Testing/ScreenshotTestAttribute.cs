@@ -18,6 +18,7 @@ namespace Brinell.Core.Testing;
 public class ScreenshotTestAttribute : BeforeAfterTestAttribute
 {
     private static readonly AsyncLocal<IScreenshotService?> _screenshotService = new();
+    private static readonly AsyncLocal<TestAppSet?> _apps = new();
     private static readonly AsyncLocal<string?> _currentTestClass = new();
     private static readonly AsyncLocal<string?> _currentTestMethod = new();
     private static readonly AsyncLocal<bool> _testFailed = new();
@@ -31,6 +32,16 @@ public class ScreenshotTestAttribute : BeforeAfterTestAttribute
         _screenshotService.Value = service;
     }
     
+    /// <summary>
+    /// Registers the apps of a test that uses several: a failure then captures every started app,
+    /// not only the one the screenshot service belongs to.
+    /// </summary>
+    /// <param name="apps">The fixture's apps, or null to go back to the single service.</param>
+    public static void SetApps(TestAppSet? apps)
+    {
+        _apps.Value = apps;
+    }
+
     /// <summary>
     /// Gets the currently registered screenshot service.
     /// </summary>
@@ -64,11 +75,22 @@ public class ScreenshotTestAttribute : BeforeAfterTestAttribute
     /// <returns>Path to the saved screenshot, or empty string if not captured.</returns>
     public static string CaptureIfFailed(Exception? exception)
     {
-        if (exception == null || _screenshotService.Value == null || _testFailed.Value)
+        if (exception == null || (_screenshotService.Value == null && _apps.Value == null) || _testFailed.Value)
             return string.Empty;
         
         _testFailed.Value = true; // Prevent duplicate captures
-        
+
+        if (_apps.Value is { Started.Count: > 0 } apps)
+        {
+            return string.Join(
+                Environment.NewLine,
+                apps.CaptureAll(_currentTestClass.Value ?? "Unknown", _currentTestMethod.Value ?? "Unknown", "failure")
+                    .Select(capture => capture.Path ?? $"{capture.App}: {capture.Error}"));
+        }
+
+        if (_screenshotService.Value is null)
+            return string.Empty;
+
         return _screenshotService.Value.CaptureOnFailure(
             _currentTestClass.Value ?? "Unknown",
             _currentTestMethod.Value ?? "Unknown",

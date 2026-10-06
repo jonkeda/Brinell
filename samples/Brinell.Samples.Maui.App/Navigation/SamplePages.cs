@@ -34,7 +34,7 @@ public sealed record SamplePageEntry(
 /// <c>BottomNavigationView</c> shows five tabs and hides the rest behind an overflow menu, so
 /// a page was not merely addressed differently per platform but was not on screen at all. A
 /// flat list of buttons is uniform everywhere, and has no navigation stack to leak state
-/// between tests. See <c>.my/maui/sample-app-navigation-redesign.md</c>.
+/// between tests.
 /// </para>
 /// </remarks>
 public static class SamplePages

@@ -188,6 +188,13 @@ public class BridgePatternRoundTripTests
         Assert.Contains(BrinellVerb.Tap, verbs);
         Assert.Contains(BrinellVerb.SetText, verbs);
         Assert.DoesNotContain(BrinellVerb.SwipeUp, verbs);
+
+        // Undeclared, and answered anyway: it is how a client tells same-id targets apart.
+        Assert.DoesNotContain(BrinellVerb.GetBounds, verbs);
+        Assert.Equal(
+            HResults.S_OK,
+            pattern.Exchange((int)BrinellVerb.GetBounds, string.Empty, out var bounds));
+        Assert.Equal("11,22,33,44", bounds);
     }
 
     /// <summary>

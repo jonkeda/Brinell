@@ -9,8 +9,7 @@ Brinell supports MAUI through shared MAUI controls plus driver adapters.
 - `srcnew/Brinell.Maui.FlaUI`
 - `srcnew/Brinell.Maui.CommunityToolkit`
 - `testsnew/Brinell.Maui.Tests`
-- `testsnew/Brinell.Maui.UITests`
-- `testsnew/Brinell.Maui.Uat.Tests`
+- `testsnew/Brinell.Maui.UITests` (the UI tests and the UAT suite)
 
 ## Driver Choices
 

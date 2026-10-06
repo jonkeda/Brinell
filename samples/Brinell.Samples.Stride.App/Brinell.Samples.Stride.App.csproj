@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Brinell.Automation\Brinell.Automation.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Stride.Automation\Brinell.Stride.Automation.csproj" />
   </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@ namespace Brinell.Maui.Appium;
 /// Appium-based implementation of <see cref="IMauiDriver"/>.
 /// Delegates all operations to the underlying AppiumDriver.
 /// </summary>
-public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
+public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly AppiumDriver _driver;
     private readonly MauiPlatform _platform;
@@ -44,6 +44,16 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
+
+    /// <summary>
+    /// The Android device the session drives, by the serial UiAutomator2 reports (<c>deviceUDID</c>,
+    /// else the <c>udid</c> asked for); null on iOS, where a simulator and a device cannot be told apart here.
+    /// </summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _platform == MauiPlatform.Android && !_disposed
+           && (_driver.Capabilities.GetCapability("deviceUDID") ?? _driver.Capabilities.GetCapability("udid"))?.ToString() is { Length: > 0 } serial
+            ? new Brinell.Core.Recording.RecordingTarget.AndroidDevice(serial)
+            : null;
     
     #endregion
     
@@ -134,7 +144,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// publishes its id), and a scope only searches down. They used to be <c>android:id/content</c>,
     /// the frame <i>above</i> the Shell, which no scoped lookup can reach: every tab and flyout
     /// collection reported zero items. Each host is named by what it holds, as measured on the
-    /// device - see <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// device.
     /// </para>
     /// <para>
     /// The drawer's items are view groups carrying their title as a content description, inside
@@ -240,7 +250,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// CommunityToolkit popup, say - covers the app and reports no way back. Refusing here on that
     /// reading was tried and blocked the one press that dismisses such a page, so the judgement
     /// stays with the caller, which can see what it expected to be on screen.
-    /// See <c>.my/navigation/rca-android-return-to-hub.md</c>.
     /// </remarks>
     public void NavigateBack() => _driver.Navigate().Back();
 

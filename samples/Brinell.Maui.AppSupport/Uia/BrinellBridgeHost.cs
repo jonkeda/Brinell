@@ -171,6 +171,10 @@ public static class BrinellBridgeHost
             var bridge = GetOrCreate(hwnd);
             BridgeDiagnostics.Report("bridge ready");
 
+            // Withdrawn first: an element loaded again must not be published twice. Other
+            // elements sharing its AutomationId stay published.
+            bridge.Unregister(
+                element.AutomationId, target => target is MauiVerbTarget mine && mine.Owns(element));
             bridge.Register(new MauiVerbTarget(element, element.AutomationId, plan));
             BridgeDiagnostics.Report($"registered '{element.AutomationId}'");
 

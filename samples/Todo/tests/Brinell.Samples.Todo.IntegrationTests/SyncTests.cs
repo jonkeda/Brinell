@@ -10,17 +10,34 @@ public sealed class SyncTests
     private const string AnyTodo = TodoApi.TodosPath + "/*";
 
     [Fact]
-    [Trait("Journey", "TOD.07.1")]
-    public async Task Sync_PushesFirst_ThenPulls()
+    [Trait("Journey", "TOD.11.9")]
+    public async Task AUserAddedElsewhere_IsCachedAfterTheNextSync()
     {
-        using var host = await TodoHost.StartAsync("pending-local-change");
+        using var host = await TodoHost.StartAsync("team");
+        var eve = host.TestSet.ServerUsers[1] with { Id = Guid.NewGuid(), Name = "Eve" };
+        host.Server.StoreUser(eve);
 
         var result = await host.Sync.SyncAsync();
 
         Assert.True(result.Succeeded);
-        Assert.Equal(2, result.Pushed);
-        var order = host.Mock.Requests().Select(request => request.Method).ToList();
-        Assert.Equal(["PUT", "PUT", "GET"], order);
+        var cached = await host.Get<IUserRepository>().GetAllAsync();
+        Assert.Equal(["Daan", "Eva", "Eve", "Finn", "Gus", "Hana"], cached.Select(user => user.Name).Order());
+        Assert.Equal(1250.75m, cached.Single(user => user.Name == "Eve").HourlyRate);
+    }
+
+    [Fact]
+    [Trait("Journey", "TOD.11.9")]
+    public async Task AFailedUserFetch_StopsTheSync_AndKeepsTheCachedUsers()
+    {
+        using var host = await TodoHost.StartAsync("team");
+        host.Server.StoreUser(host.TestSet.ServerUsers[0] with { Id = Guid.NewGuid(), Name = "Ivo" });
+        host.Mock.Get(TodoApi.UsersPath).AtPriority(1).Fails(500);
+
+        var result = await host.Sync.SyncAsync();
+
+        Assert.Equal(SyncError.ServerError, result.Error);
+        Assert.Equal(5, (await host.Get<IUserRepository>().GetAllAsync()).Count);
+        Assert.DoesNotContain(host.Mock.Requests(), request => request.Path.StartsWith(TodoApi.TodosPath));
     }
 
     [Fact]
@@ -41,7 +58,7 @@ public sealed class SyncTests
     public async Task ATodoCreatedOnTheServer_AppearsAfterSync()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var elsewhere = new TodoDto(Guid.NewGuid(), "From my phone", null, null, TodoStatusDto.Open, host.Scenario.Now, host.Scenario.Now);
+        var elsewhere = new TodoDto(Guid.NewGuid(), "From my phone", null, null, TodoStatusDto.Open, host.TestSet.Now, host.TestSet.Now);
         host.Server.Store(elsewhere);
 
         var result = await host.Sync.SyncAsync();
@@ -57,7 +74,7 @@ public sealed class SyncTests
     public async Task ATodoDeletedOnTheServer_DisappearsAfterSync()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
         host.Server.Remove(milk.Id);
 
         var result = await host.Sync.SyncAsync();
@@ -71,7 +88,7 @@ public sealed class SyncTests
     public async Task ADeletedTodo_IsDeletedOnTheServer_ThenPurged()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
         await host.Todos.DeleteAsync(milk.Id);
 
         var result = await host.Sync.SyncAsync();
@@ -120,7 +137,7 @@ public sealed class SyncTests
     {
         using var host = await TodoHost.StartAsync("pending-local-change", settings => settings with { ApiKey = "secret-key" });
         host.Mock.Reset();
-        host.Scenario.StubServer(host.Mock, apiKey: "secret-key");
+        host.TestSet.StubServer(host.Mock, apiKey: "secret-key");
 
         var result = await host.Sync.SyncAsync();
 
@@ -130,12 +147,37 @@ public sealed class SyncTests
     }
 
     [Fact]
+    [Trait("Journey", "TOD.07.10")]
+    public async Task EveryRequest_NamesTheClient_WhenOneIsSet()
+    {
+        using var host = await TodoHost.StartAsync("pending-local-change", settings => settings with { ClientId = "web-alice" });
+
+        var result = await host.Sync.SyncAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.NotEmpty(host.Mock.Requests());
+        Assert.All(host.Mock.Requests(), request => Assert.Equal("web-alice", request.Headers[TodoApi.ClientHeader]));
+    }
+
+    [Fact]
+    [Trait("Journey", "TOD.07.10")]
+    public async Task WithoutAClientId_NoClientHeaderIsSent()
+    {
+        using var host = await TodoHost.StartAsync("pending-local-change");
+
+        await host.Sync.SyncAsync();
+
+        Assert.NotEmpty(host.Mock.Requests());
+        Assert.All(host.Mock.Requests(), request => Assert.False(request.Headers.ContainsKey(TodoApi.ClientHeader)));
+    }
+
+    [Fact]
     [Trait("Journey", "TOD.07.6")]
     public async Task AConflict_TheNewerServerVersionWins_AndTheOlderLocalOneIsReplaced()
     {
         using var host = await TodoHost.StartAsync("pending-local-change");
-        var milk = host.Scenario.Server[0];
-        host.Server.Store(milk with { Title = "Buy almond milk", UpdatedAt = host.Scenario.Now });
+        var milk = host.TestSet.Server[0];
+        host.Server.Store(milk with { Title = "Buy almond milk", UpdatedAt = host.TestSet.Now });
 
         await host.Sync.SyncAsync();
 
@@ -168,7 +210,7 @@ public sealed class SyncTests
 
         Assert.Equal(SyncError.ServerError, (await host.Sync.SyncAsync()).Error);
         host.Mock.Reset();
-        host.Scenario.StubServer(host.Mock);
+        host.TestSet.StubServer(host.Mock);
 
         Assert.True((await host.Sync.SyncAsync()).Succeeded);
         Assert.All(await host.LocalAsync(), todo => Assert.Equal(SyncState.Synced, todo.SyncState));

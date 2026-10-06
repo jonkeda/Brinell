@@ -23,7 +23,13 @@ real mouse, keyboard, clipboard and foreground-window use pass through one gate,
 | `0`, `false`, `off`, `allow` | performed |
 
 Refusing by default would fail their suites rather than quieten them. The variable has no
-effect on MAUI. The history and the removal plan are in `.my/bridge/no-physical-input.md`.
+effect on MAUI. Evidence: [the history and the removal plan at d4917d0](https://github.com/exact-mobile-apps/test-tooling/blob/d4917d0/.my/bridge/no-physical-input.md).
+
+**Showing the app is not input.** During a test run the MAUI driver keeps the app behind the person's
+windows (`QuietWindow`). `BRINELL_AUT_WINDOW=shown` (`AutWindow`, set by the Presenter) leaves it
+where it can be watched; placing it, its z-order and giving the focus back to the Presenter are window
+management, not pointer, keyboard or clipboard use. A shown browser is headed. The default stays
+`background`, so a test run does not change.
 
 **Broken when:** `Brinell.Maui.FlaUI` gains pointer/keyboard/clipboard/foreground code, or a
 setting is added to re-enable physical input on MAUI.

@@ -21,7 +21,7 @@ public sealed class ProbeFactAttribute : FactAttribute
 /// What one lookup and one alive check cost against the real app.
 /// </summary>
 /// <remarks>
-/// For decision Q6 of <c>.my/stale-readiness/design.md</c>: a scope keeps its root for the
+/// For the call model's root rule: a scope keeps its root for the
 /// object's lifetime and checks it with the alive rule (one <c>InstanceKey</c> read) on every
 /// access, unless that check costs more than finding the root again. The numbers are written to
 /// the test output and recorded in the plan's baseline table.

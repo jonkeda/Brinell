@@ -81,7 +81,7 @@ public sealed class DatabaseTests : IDisposable
     public async Task ATombstone_SurvivesARestart_AndStaysHidden()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
 
         await host.Todos.DeleteAsync(milk.Id);
         host.Restart();
@@ -113,7 +113,7 @@ public sealed class DatabaseTests : IDisposable
         var stored = Assert.Single(await host.LocalAsync());
         Assert.Equal(created.Id, stored.Id);
         Assert.Equal(SyncState.LocalOnly, stored.SyncState);
-        Assert.Equal(host.Scenario.Now, stored.CreatedAt);
+        Assert.Equal(host.TestSet.Now, stored.CreatedAt);
     }
 
     [Fact]
@@ -121,14 +121,14 @@ public sealed class DatabaseTests : IDisposable
     public async Task AnUpdate_MovesUpdatedAt_AndKeepsCreatedAt_OnDisk()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
 
         await host.Todos.UpdateAsync(milk.Id, "Buy oat milk", null, null, TodoStatus.Open);
         host.Restart();
 
         var stored = (await host.Repository.GetAsync(milk.Id))!;
         Assert.Equal(milk.CreatedAt, stored.CreatedAt);
-        Assert.Equal(host.Scenario.Now, stored.UpdatedAt);
+        Assert.Equal(host.TestSet.Now, stored.UpdatedAt);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class DatabaseTests : IDisposable
         // row holds one whole version, never a new title beside old notes. The real kill is manual
         // (manual/charters.md, CH-2).
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = (await host.Repository.GetAsync(host.Scenario.Local[0].Id))!;
+        var milk = (await host.Repository.GetAsync(host.TestSet.Local[0].Id))!;
         var versionA = milk with { Title = "Version A", Notes = "Notes of A" };
         var versionB = milk with { Title = "Version B", Notes = "Notes of B" };
         await host.Repository.SaveAsync(versionA);
@@ -172,6 +172,8 @@ public sealed class DatabaseTests : IDisposable
         Assert.NotNull(host.Get<TodoListViewModel>());
         Assert.NotNull(host.Get<TodoDetailViewModel>());
         Assert.NotNull(host.Get<TodoEditViewModel>());
+        Assert.NotNull(host.Get<UserListViewModel>());
+        Assert.NotNull(host.Get<UserEditViewModel>());
         Assert.Same(host.Get<TodoListViewModel>(), host.Get<TodoListViewModel>());
     }
 }

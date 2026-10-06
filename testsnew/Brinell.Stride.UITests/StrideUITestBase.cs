@@ -8,7 +8,8 @@ public class StrideAppFixture : StrideTestFixtureBase, IAsyncLifetime
 {
     protected override string GetDefaultAppPath()
     {
-        var assemblyDir = AppContext.BaseDirectory;
+        // This assembly's folder, wherever the suite runs (AD-025).
+        var assemblyDir = Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(StrideUITestBase).Assembly);
         var solutionDir = Path.GetFullPath(Path.Combine(assemblyDir, "..", "..", "..", "..", ".."));
         return Path.Combine(solutionDir, "samples", "Brinell.Samples.Stride.App", "bin", "Debug", "net10.0-windows", "Brinell.Samples.Stride.App.exe");
     }

@@ -10,11 +10,31 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
   </ItemGroup>
 
+  <!-- Built with the tests, not referenced: the tests start it themselves (TestBase/BlazorSample). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\samples\Brinell.Samples.Blazor.App\Brinell.Samples.Blazor.App.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Update="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- The UAT suite: uat.config.md, Features/ and Uat/ (the fixture and the scenario test class). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
   </ItemGroup>
 
 </Project>

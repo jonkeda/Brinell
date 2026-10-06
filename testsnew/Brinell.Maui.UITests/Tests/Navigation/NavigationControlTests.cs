@@ -365,8 +365,8 @@ public class NavigationControlTests
     /// checked state - so <c>IsSelected</c> answers false even for the tab just clicked, and
     /// the app's own record of the current tab is what the tests above assert. Pinned
     /// deliberately: reading "current" from app state or from styling is exactly the guess this
-    /// control must not make. Real selection is covered where tabs are really selectable - see
-    /// .my/navigation/design-shell-sample-app.md.
+    /// control must not make. Real selection is covered where tabs are really selectable:
+    /// the Shell sample app, under <c>ShellFixture</c>.
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsSelected")]

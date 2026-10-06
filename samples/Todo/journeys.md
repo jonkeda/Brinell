@@ -7,7 +7,8 @@ compares those traits with this file.
 
 Tiers: **U** Unit, **I** Integration (headless, WireMock + SQLite), **C** Contract (real API in
 process), **H** UI hermetic (Brinell + WireMock + seeded DB), **L** UI live (Brinell + real API),
-**M** Manual. Gates: **S** Smoke, **R** Reviews.
+**M** Manual. Gates: **S** Smoke, **R** Reviews. A feature scenario counts as **I** when tagged
+`@service` and as **H** on a UI head; tagged `@service @maui`, it counts for both.
 
 The rule is the one from the pyramid discussion: each subtask gets the **lowest** tier that can
 give confidence. A higher tier appears only for what the lower one cannot see (a rendered control,
@@ -89,6 +90,12 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.07.7 | A second sync with no changes sends no writes and adds no rows | I | Idempotence |
 | TOD.07.8 | Requests carry the API key header | I | WireMock request log |
 | TOD.07.9 | The app's DTOs match what the real API sends and accepts | C | Keeps the WireMock stubs honest |
+| TOD.07.10 | Requests name the client that sent them (`X-Todo-Client`), and the real API records it | I + C | WireMock request log in I; the API's request log in C. What lets several apps share one backend in a test |
+| TOD.07.11 | A todo created on Windows reaches a browser after both sync | H | Several apps on one backend (`Mixed.UITests`, `Mixed.Uat`) |
+| TOD.07.12 | Two Windows apps side by side: a todo or an edit made in one reaches the other | H | Two FlaUI-driven windows in one test |
+| TOD.07.13 | Conflict between two apps: the newer edit wins on both | H | Each app's clock is pinned apart (`ClockOffsetMinutes` in `apps.md`); the rule itself is TOD.07.6 in U |
+| TOD.07.14 | An app that was offline gets the others' changes once it is back online | H | The network-state file per app |
+| TOD.07.15 | A todo created on Android reaches a Windows app | H | Needs the emulator: skipped unless `BRINELL_ANDROID=1` |
 
 ## TOD.08 Things go wrong
 
@@ -121,6 +128,25 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.10.3 | Screenshots per screen for design review | **R** | Artifacts (AD-007) |
 | TOD.10.4 | Dark mode, 200 % font scaling, small-screen keyboard overlap | M | Visual judgement |
 
+## TOD.11 Manage users
+
+Users are not linked to todos yet. Each subtask is covered at the lowest tier that can see it, and
+H shows it once on screen (`UsersJourneyTests`); the UAT scenarios are `TOD.11-manage-users.feature.md`,
+which reaches the users pages with `Using | Users`. Test set: `team.json`.
+
+| Id | Subtask | Tier | Why there |
+| --- | --- | --- | --- |
+| TOD.11.1 | Users lists available users first, then the others, each with its role and state (Expired, On leave, Inactive) | U + H | Ordering and state text are pure rules; H for the rendered rows |
+| TOD.11.2 | Add with valid values saves the user on the server and caches it | U + C + H | VM and service in U; the real API keeps every field in C; H drives every control kind once |
+| TOD.11.3 | Each field refuses a bad value with a message on that field | U + H | Validation table; errors placed per field by the VM; H for three errors on screen |
+| TOD.11.4 | Editing a user loads every field and saves the change | U + H | VM round trip; H for reopening the saved values |
+| TOD.11.5 | "Has an end date" off saves no end date; on, the date is saved, also one in the past | U + H | VM; H for the disabled picker |
+| TOD.11.6 | A user whose end date has passed shows as Expired; today's and tomorrow's do not | U + H | Pure rule on the pinned clock; H for the row |
+| TOD.11.7 | A user set Inactive stays in the list, and their name can be used again | U + C + H | Rule in U; the real API allows the reuse in C; H on screen |
+| TOD.11.8 | Offline, Add and Save are disabled and the page says so; the list still reads | U + H | VM and service; H for the disabled toolbar items |
+| TOD.11.9 | A sync fetches the users first and replaces the cached list only after a complete fetch | I + H | WireMock + SQLite; H for a user from another device appearing |
+| TOD.11.10 | The server refuses what the app would refuse, naming the field, and the fake answers alike | C | Real API and WireMock fake |
+
 ---
 
 ## Allocation summary
@@ -129,10 +155,10 @@ Counts are per assignment, so a subtask with two tiers counts twice.
 
 | Tier | Count | Share |
 | --- | --- | --- |
-| Unit | 21 | |
-| Integration | 17 | |
-| Contract | 1 | |
-| UI hermetic | 27 | one example per behaviour |
+| Unit | 29 | |
+| Integration | 19 | |
+| Contract | 5 | |
+| UI hermetic | 41 | one example per behaviour |
 | UI live | 3 | real wire only |
 | Manual | 4 | |
 | Smoke / Reviews gates | 2 / 3 | |

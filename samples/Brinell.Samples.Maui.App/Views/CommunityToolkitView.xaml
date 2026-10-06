@@ -4,7 +4,7 @@
     and DockLayout.
 
     Each control has an AutomationId and a status label echoing the state a test asserts.
-    Verbs are declared only where the probe (.my/communitytoolkit/probe.md) found no UI
+    Verbs are declared only where the probe (docs/controls/community-toolkit.md) found no UI
     Automation route and the AD-008 checks passed: Expander, RatingView and DrawingView. They are
     answered by ToolkitVerbSink, because AppSupport does not know the toolkit's types. AvatarView,
     StateContainer and DockLayout are read from the tree and declare nothing.

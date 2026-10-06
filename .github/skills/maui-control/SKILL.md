@@ -27,7 +27,7 @@ follow the rule and mention the disagreement.
    and the common rules below.
 5. **Generate and build**: `tools\Scripts\CreateMaui.Bat`, read its errors and warnings, diff
    `Foo.gen.cs` against the API you intended, then
-   `dotnet build srcnew\Brinell.sln -v:minimal /nr:false`. A plain `.cs` (no Core methods, no
+   `dotnet build Brinell.sln -v:minimal /nr:false`. A plain `.cs` (no Core methods, no
    shortcuts: R5) skips generation; just build.
 6. **Prove it**: page-object members and UI tests, written with the `maui-ui-test` skill.
    Rebuild the sample app (the solution build above includes it and the Windows exe the fixture

@@ -48,6 +48,8 @@ public interface IElementObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [BddThen("{control} should exist", HasLiteral = true, Literal = true, CommandId = "Control.AssertExists")]
+    [BddThen("{control} should not exist", HasLiteral = true, Literal = false, CommandId = "Control.AssertExists.False")]
     TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
@@ -55,8 +57,8 @@ public interface IElementObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatStep(UatEffectiveStepKeyword.Then, "{control} should be visible", HasLiteral = true, Literal = true, CommandId = "Control.AssertVisible")]
-    [UatStep(UatEffectiveStepKeyword.Then, "{control} should not be visible", HasLiteral = true, Literal = false, CommandId = "Control.AssertVisible.False")]
+    [BddThen("{control} should be visible", HasLiteral = true, Literal = true, CommandId = "Control.AssertVisible")]
+    [BddThen("{control} should not be visible", HasLiteral = true, Literal = false, CommandId = "Control.AssertVisible.False")]
     TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
@@ -64,7 +66,8 @@ public interface IElementObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatStep(UatEffectiveStepKeyword.Then, "{control} should be enabled", HasLiteral = true, Literal = true, CommandId = "Control.AssertEnabled")]
+    [BddThen("{control} should be enabled", HasLiteral = true, Literal = true, CommandId = "Control.AssertEnabled")]
+    [BddThen("{control} should be disabled", HasLiteral = true, Literal = false, CommandId = "Control.AssertEnabled.False")]
     TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
     
 }

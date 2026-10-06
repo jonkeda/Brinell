@@ -23,11 +23,11 @@ public sealed class UatDiscoveryTests
         Assert.Contains(login.Controls, x => x.Name == "Sign in" && x.MemberName == nameof(LoginPage.SubmitButton));
 
         Assert.Contains(result.Commands, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I sign in with credentials" &&
             x.Method.Name == nameof(LoginPage.SignInWithCredentials));
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I sign in with credentials");
     }
 
@@ -52,11 +52,25 @@ public sealed class UatDiscoveryTests
 
         Assert.True(result.Success, FormatDiagnostics(result));
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I save the settings");
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.Then &&
+            x.Keyword == BddEffectiveStepKeyword.Then &&
             x.Phrase == "the settings are saved");
+    }
+
+    [Fact]
+    public void Discover_StepOnAControlMethod_IsNotACommandPhrase()
+    {
+        var result = UatDiscovery.Discover(
+            new UatDiscoveryOptions(),
+            typeof(UatDiscoveryTests).Assembly);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Contains(
+            Assert.Single(result.Pages, x => x.Name == "Settings").Controls,
+            x => x.MemberName == nameof(SettingsPage.BrightnessSlider));
+        Assert.DoesNotContain(result.Commands, x => x.Phrase == "I dim {control}");
     }
 
     private static string FormatDiagnostics(UatDiscoveryResult result)
@@ -74,7 +88,9 @@ public sealed class UatDiscoveryTests
 
         public SaveButton SaveButton { get; } = new();
 
-        [UatIgnore]
+        public BrightnessSlider BrightnessSlider { get; } = new();
+
+        [BddIgnore]
         public SaveButton InternalButton { get; } = new();
     }
 
@@ -84,7 +100,7 @@ public sealed class UatDiscoveryTests
         [UatName("Sign in")]
         public SaveButton SubmitButton { get; } = new();
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I sign in with credentials")]
+        [BddWhen("I sign in with credentials")]
         public void SignInWithCredentials()
         {
         }
@@ -92,8 +108,8 @@ public sealed class UatDiscoveryTests
 
     public sealed class PhraseCatalogPage
     {
-        [UatPhrase(UatEffectiveStepKeyword.When, "I save the settings")]
-        [UatPhrase(UatEffectiveStepKeyword.Then, "the settings are saved")]
+        [BddWhen("I save the settings")]
+        [BddThen("the settings are saved")]
         public void SaveSettings()
         {
         }
@@ -111,6 +127,14 @@ public sealed class UatDiscoveryTests
     {
         [UatAction("check")]
         public void Check()
+        {
+        }
+    }
+
+    public sealed class BrightnessSlider
+    {
+        [BddWhen("I dim {control}")]
+        public void Dim()
         {
         }
     }

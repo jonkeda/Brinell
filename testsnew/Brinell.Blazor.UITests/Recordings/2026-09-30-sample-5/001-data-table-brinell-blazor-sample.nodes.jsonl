@@ -1,0 +1,253 @@
+{"platform":"html","location":"http://localhost:5180/datatable","title":"Data Table - Brinell Blazor Sample","capturedAt":"2026-09-30T18:28:03.9268299+00:00","nodes":252}
+{"n":1,"p":0,"type":"html","box":[0,0,1521,874]}
+{"n":2,"p":1,"type":"body","box":[8,8,1505,858],"attr":{"data-busy":"false"}}
+{"n":3,"p":2,"type":"div","box":[8,8,1505,858],"attr":{"class":"page"}}
+{"n":4,"p":3,"type":"div","box":[8,8,283,858],"attr":{"class":"sidebar"}}
+{"n":5,"p":4,"type":"div","box":[24,24,250,504],"attr":{"class":"nav-menu","data-automation-id":"NavMenu"}}
+{"n":6,"p":5,"type":"nav","box":[24,24,250,504],"attr":{"class":"flex-column"}}
+{"n":7,"p":6,"type":"div","box":[24,24,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":8,"p":7,"type":"a","text":"Home","box":[24,32,250,34],"attr":{"class":"nav-link","data-automation-id":"NavHome","href":"","id":"nav-home"}}
+{"n":9,"p":8,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-house-door-fill"}}
+{"n":10,"p":6,"type":"div","box":[24,74,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":11,"p":10,"type":"a","text":"Counter","box":[24,82,250,34],"attr":{"class":"nav-link","data-automation-id":"NavCounter","href":"counter","id":"nav-counter"}}
+{"n":12,"p":11,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-plus-square-fill"}}
+{"n":13,"p":6,"type":"div","box":[24,125,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":14,"p":13,"type":"a","text":"Login","box":[24,133,250,34],"attr":{"class":"nav-link","data-automation-id":"NavLogin","href":"login","id":"nav-login"}}
+{"n":15,"p":14,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-fill"}}
+{"n":16,"p":6,"type":"div","box":[24,175,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":17,"p":16,"type":"a","text":"Dashboard","box":[24,183,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDashboard","href":"dashboard","id":"nav-dashboard"}}
+{"n":18,"p":17,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-speedometer2"}}
+{"n":19,"p":6,"type":"div","box":[24,226,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":20,"p":19,"type":"a","text":"User Form","box":[24,234,250,34],"attr":{"class":"nav-link","data-automation-id":"NavUserForm","href":"userform","id":"nav-userform"}}
+{"n":21,"p":20,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-lines-fill"}}
+{"n":22,"p":6,"type":"div","box":[24,276,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":23,"p":22,"type":"a","text":"Data Table","box":[24,284,250,34],"attr":{"aria-current":"page","class":"nav-link active","data-automation-id":"NavDataTable","href":"datatable","id":"nav-datatable"}}
+{"n":24,"p":23,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-table"}}
+{"n":25,"p":6,"type":"div","box":[24,326,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":26,"p":25,"type":"a","text":"Media Gallery","box":[24,334,250,34],"attr":{"class":"nav-link","data-automation-id":"NavMediaGallery","href":"mediagallery","id":"nav-mediagallery"}}
+{"n":27,"p":26,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-images"}}
+{"n":28,"p":6,"type":"div","box":[24,377,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":29,"p":28,"type":"a","text":"Navigation","box":[24,385,250,34],"attr":{"class":"nav-link","data-automation-id":"NavNavigation","href":"navigation","id":"nav-navigation"}}
+{"n":30,"p":29,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-signpost-split-fill"}}
+{"n":31,"p":6,"type":"div","box":[24,427,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":32,"p":31,"type":"a","text":"Validation","box":[24,435,250,34],"attr":{"class":"nav-link","data-automation-id":"NavValidation","href":"validation","id":"nav-validation"}}
+{"n":33,"p":32,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-check-circle-fill"}}
+{"n":34,"p":6,"type":"div","box":[24,478,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":35,"p":34,"type":"a","text":"Advanced","box":[24,486,250,34],"attr":{"class":"nav-link","data-automation-id":"NavAdvanced","href":"advanced","id":"nav-advanced"}}
+{"n":36,"p":35,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-gear-wide-connected"}}
+{"n":37,"p":3,"type":"main","box":[291,8,1222,858]}
+{"n":38,"p":37,"type":"article","box":[291,8,1222,727],"attr":{"class":"content px-4"}}
+{"n":39,"p":38,"type":"div","box":[291,47,1222,688],"attr":{"data-automation-id":"DataTablePage"}}
+{"n":40,"p":39,"type":"h1","text":"Data Management","box":[291,47,1222,36],"attr":{"data-automation-id":"DataTableTitle","tabindex":"-1"}}
+{"n":41,"p":39,"type":"div","box":[291,104,1222,81],"attr":{"class":"card mb-4","data-automation-id":"FilterSection"}}
+{"n":42,"p":41,"type":"div","box":[291,104,1222,81],"attr":{"class":"card-body"}}
+{"n":43,"p":42,"type":"div","box":[291,104,1222,81],"attr":{"class":"row g-3"}}
+{"n":44,"p":43,"type":"div","box":[291,104,1222,21],"attr":{"class":"col-md-4"}}
+{"n":45,"p":44,"type":"label","text":"Search","box":[789,105,51,18],"attr":{"class":"form-label"}}
+{"n":46,"p":44,"type":"input","box":[845,104,170,21],"attr":{"class":"form-control","data-automation-id":"SearchInput","placeholder":"Search...","type":"text"}}
+{"n":47,"p":43,"type":"div","box":[291,126,1222,19],"attr":{"class":"col-md-3"}}
+{"n":48,"p":47,"type":"label","text":"Category","box":[815,126,65,18],"attr":{"class":"form-label"}}
+{"n":49,"p":47,"type":"select","box":[884,126,105,18],"attr":{"class":"form-select","data-automation-id":"CategoryFilter"}}
+{"n":50,"p":49,"type":"option","text":"All Categories"}
+{"n":51,"p":49,"type":"option","text":"Electronics"}
+{"n":52,"p":49,"type":"option","text":"Books"}
+{"n":53,"p":49,"type":"option","text":"Clothing"}
+{"n":54,"p":49,"type":"option","text":"Food"}
+{"n":55,"p":49,"type":"option","text":"Toys"}
+{"n":56,"p":43,"type":"div","box":[291,145,1222,19],"attr":{"class":"col-md-3"}}
+{"n":57,"p":56,"type":"label","text":"Status","box":[831,145,45,18],"attr":{"class":"form-label"}}
+{"n":58,"p":56,"type":"select","box":[881,146,92,18],"attr":{"class":"form-select","data-automation-id":"StatusFilter"}}
+{"n":59,"p":58,"type":"option","text":"All Statuses"}
+{"n":60,"p":58,"type":"option","text":"Active"}
+{"n":61,"p":58,"type":"option","text":"Inactive"}
+{"n":62,"p":58,"type":"option","text":"Pending"}
+{"n":63,"p":58,"type":"option","text":"Archived"}
+{"n":64,"p":43,"type":"div","box":[291,164,1222,21],"attr":{"class":"col-md-2 d-flex align-items-end"}}
+{"n":65,"p":64,"type":"button","text":"Clear","box":[878,164,47,21],"attr":{"class":"btn btn-outline-secondary w-100","data-automation-id":"ClearFiltersButton"}}
+{"n":66,"p":39,"type":"div","box":[291,201,1222,40],"attr":{"class":"d-flex justify-content-between align-items-center mb-3"}}
+{"n":67,"p":66,"type":"div","box":[291,201,1222,21],"attr":{"class":"btn-group","data-automation-id":"BulkActions"}}
+{"n":68,"p":67,"type":"button","text":"Select All","box":[291,201,70,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"SelectAllButton"}}
+{"n":69,"p":67,"type":"button","text":"Clear Selection","box":[365,201,106,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"ClearSelectionButton","disabled":""}}
+{"n":70,"p":67,"type":"button","text":"Delete Selected (0)","box":[475,201,129,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteSelectedButton","disabled":""}}
+{"n":71,"p":66,"type":"span","text":"Showing 10 of 50 records","box":[291,222,181,18],"attr":{"class":"text-muted","data-automation-id":"RecordCount"}}
+{"n":72,"p":39,"type":"div","box":[291,241,1222,273],"attr":{"class":"table-responsive","data-automation-id":"TableContainer"}}
+{"n":73,"p":72,"type":"table","box":[291,241,484,273],"attr":{"class":"table table-striped table-hover","data-automation-id":"DataTable"}}
+{"n":74,"p":73,"type":"thead","box":[292,242,481,22],"attr":{"class":"table-dark"}}
+{"n":75,"p":74,"type":"tr","box":[292,242,481,22]}
+{"n":76,"p":75,"type":"th","box":[292,242,42,22]}
+{"n":77,"p":76,"type":"input","box":[307,246,13,13],"attr":{"class":"form-check-input","data-automation-id":"SelectAllCheckbox","type":"checkbox"}}
+{"n":78,"p":75,"type":"th","text":"ID ^","box":[336,242,32,22],"attr":{"data-automation-id":"HeaderId"}}
+{"n":79,"p":75,"type":"th","text":"Title","box":[369,242,55,22],"attr":{"data-automation-id":"HeaderTitle"}}
+{"n":80,"p":75,"type":"th","text":"Category","box":[426,242,80,22],"attr":{"data-automation-id":"HeaderCategory"}}
+{"n":81,"p":75,"type":"th","text":"Status","box":[508,242,64,22],"attr":{"data-automation-id":"HeaderStatus"}}
+{"n":82,"p":75,"type":"th","text":"Price","box":[574,242,51,22],"attr":{"data-automation-id":"HeaderPrice"}}
+{"n":83,"p":75,"type":"th","text":"Actions","box":[627,242,147,22],"attr":{"data-automation-id":"HeaderActions"}}
+{"n":84,"p":73,"type":"tbody","box":[292,266,481,246]}
+{"n":85,"p":84,"type":"tr","box":[292,266,481,23],"attr":{"class":"","data-automation-id":"Row_1"}}
+{"n":86,"p":85,"type":"td","box":[292,266,42,23]}
+{"n":87,"p":86,"type":"input","box":[297,271,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_1","type":"checkbox"}}
+{"n":88,"p":85,"type":"td","text":"1","box":[336,266,32,23],"attr":{"data-automation-id":"Cell_Id_1"}}
+{"n":89,"p":85,"type":"td","text":"Item 1","box":[369,266,55,23],"attr":{"data-automation-id":"Cell_Title_1"}}
+{"n":90,"p":85,"type":"td","text":"Electronics","box":[426,266,80,23],"attr":{"data-automation-id":"Cell_Category_1"}}
+{"n":91,"p":85,"type":"td","box":[508,266,64,23]}
+{"n":92,"p":91,"type":"span","text":"Active","box":[509,268,44,18],"attr":{"class":"badge bg-success","data-automation-id":"Cell_Status_1"}}
+{"n":93,"p":85,"type":"td","text":"$0.55","box":[574,266,51,23],"attr":{"data-automation-id":"Cell_Price_1"}}
+{"n":94,"p":85,"type":"td","box":[627,266,147,23]}
+{"n":95,"p":94,"type":"div","box":[628,267,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":96,"p":95,"type":"button","text":"View","box":[628,267,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_1"}}
+{"n":97,"p":95,"type":"button","text":"Edit","box":[676,267,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_1"}}
+{"n":98,"p":95,"type":"button","text":"Delete","box":[719,267,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_1"}}
+{"n":99,"p":84,"type":"tr","box":[292,291,481,23],"attr":{"class":"","data-automation-id":"Row_2"}}
+{"n":100,"p":99,"type":"td","box":[292,291,42,23]}
+{"n":101,"p":100,"type":"input","box":[297,295,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_2","type":"checkbox"}}
+{"n":102,"p":99,"type":"td","text":"2","box":[336,291,32,23],"attr":{"data-automation-id":"Cell_Id_2"}}
+{"n":103,"p":99,"type":"td","text":"Item 2","box":[369,291,55,23],"attr":{"data-automation-id":"Cell_Title_2"}}
+{"n":104,"p":99,"type":"td","text":"Books","box":[426,291,80,23],"attr":{"data-automation-id":"Cell_Category_2"}}
+{"n":105,"p":99,"type":"td","box":[508,291,64,23]}
+{"n":106,"p":105,"type":"span","text":"Inactive","box":[509,293,55,18],"attr":{"class":"badge bg-secondary","data-automation-id":"Cell_Status_2"}}
+{"n":107,"p":99,"type":"td","text":"$10.61","box":[574,291,51,23],"attr":{"data-automation-id":"Cell_Price_2"}}
+{"n":108,"p":99,"type":"td","box":[627,291,147,23]}
+{"n":109,"p":108,"type":"div","box":[628,292,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":110,"p":109,"type":"button","text":"View","box":[628,292,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_2"}}
+{"n":111,"p":109,"type":"button","text":"Edit","box":[676,292,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_2"}}
+{"n":112,"p":109,"type":"button","text":"Delete","box":[719,292,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_2"}}
+{"n":113,"p":84,"type":"tr","box":[292,316,481,23],"attr":{"class":"","data-automation-id":"Row_3"}}
+{"n":114,"p":113,"type":"td","box":[292,316,42,23]}
+{"n":115,"p":114,"type":"input","box":[297,320,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_3","type":"checkbox"}}
+{"n":116,"p":113,"type":"td","text":"3","box":[336,316,32,23],"attr":{"data-automation-id":"Cell_Id_3"}}
+{"n":117,"p":113,"type":"td","text":"Item 3","box":[369,316,55,23],"attr":{"data-automation-id":"Cell_Title_3"}}
+{"n":118,"p":113,"type":"td","text":"Clothing","box":[426,316,80,23],"attr":{"data-automation-id":"Cell_Category_3"}}
+{"n":119,"p":113,"type":"td","box":[508,316,64,23]}
+{"n":120,"p":119,"type":"span","text":"Pending","box":[509,318,59,18],"attr":{"class":"badge bg-warning text-dark","data-automation-id":"Cell_Status_3"}}
+{"n":121,"p":113,"type":"td","text":"$74.03","box":[574,316,51,23],"attr":{"data-automation-id":"Cell_Price_3"}}
+{"n":122,"p":113,"type":"td","box":[627,316,147,23]}
+{"n":123,"p":122,"type":"div","box":[628,317,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":124,"p":123,"type":"button","text":"View","box":[628,317,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_3"}}
+{"n":125,"p":123,"type":"button","text":"Edit","box":[676,317,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_3"}}
+{"n":126,"p":123,"type":"button","text":"Delete","box":[719,317,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_3"}}
+{"n":127,"p":84,"type":"tr","box":[292,340,481,23],"attr":{"class":"","data-automation-id":"Row_4"}}
+{"n":128,"p":127,"type":"td","box":[292,340,42,23]}
+{"n":129,"p":128,"type":"input","box":[297,345,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_4","type":"checkbox"}}
+{"n":130,"p":127,"type":"td","text":"4","box":[336,340,32,23],"attr":{"data-automation-id":"Cell_Id_4"}}
+{"n":131,"p":127,"type":"td","text":"Item 4","box":[369,340,55,23],"attr":{"data-automation-id":"Cell_Title_4"}}
+{"n":132,"p":127,"type":"td","text":"Food","box":[426,340,80,23],"attr":{"data-automation-id":"Cell_Category_4"}}
+{"n":133,"p":127,"type":"td","box":[508,340,64,23]}
+{"n":134,"p":133,"type":"span","text":"Archived","box":[509,343,62,18],"attr":{"class":"badge bg-primary","data-automation-id":"Cell_Status_4"}}
+{"n":135,"p":127,"type":"td","text":"$9.18","box":[574,340,51,23],"attr":{"data-automation-id":"Cell_Price_4"}}
+{"n":136,"p":127,"type":"td","box":[627,340,147,23]}
+{"n":137,"p":136,"type":"div","box":[628,341,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":138,"p":137,"type":"button","text":"View","box":[628,341,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_4"}}
+{"n":139,"p":137,"type":"button","text":"Edit","box":[676,341,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_4"}}
+{"n":140,"p":137,"type":"button","text":"Delete","box":[719,341,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_4"}}
+{"n":141,"p":84,"type":"tr","box":[292,365,481,23],"attr":{"class":"","data-automation-id":"Row_5"}}
+{"n":142,"p":141,"type":"td","box":[292,365,42,23]}
+{"n":143,"p":142,"type":"input","box":[297,370,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_5","type":"checkbox"}}
+{"n":144,"p":141,"type":"td","text":"5","box":[336,365,32,23],"attr":{"data-automation-id":"Cell_Id_5"}}
+{"n":145,"p":141,"type":"td","text":"Item 5","box":[369,365,55,23],"attr":{"data-automation-id":"Cell_Title_5"}}
+{"n":146,"p":141,"type":"td","text":"Toys","box":[426,365,80,23],"attr":{"data-automation-id":"Cell_Category_5"}}
+{"n":147,"p":141,"type":"td","box":[508,365,64,23]}
+{"n":148,"p":147,"type":"span","text":"Active","box":[509,368,44,18],"attr":{"class":"badge bg-success","data-automation-id":"Cell_Status_5"}}
+{"n":149,"p":141,"type":"td","text":"$39.46","box":[574,365,51,23],"attr":{"data-automation-id":"Cell_Price_5"}}
+{"n":150,"p":141,"type":"td","box":[627,365,147,23]}
+{"n":151,"p":150,"type":"div","box":[628,366,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":152,"p":151,"type":"button","text":"View","box":[628,366,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_5"}}
+{"n":153,"p":151,"type":"button","text":"Edit","box":[676,366,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_5"}}
+{"n":154,"p":151,"type":"button","text":"Delete","box":[719,366,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_5"}}
+{"n":155,"p":84,"type":"tr","box":[292,390,481,23],"attr":{"class":"","data-automation-id":"Row_6"}}
+{"n":156,"p":155,"type":"td","box":[292,390,42,23]}
+{"n":157,"p":156,"type":"input","box":[297,395,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_6","type":"checkbox"}}
+{"n":158,"p":155,"type":"td","text":"6","box":[336,390,32,23],"attr":{"data-automation-id":"Cell_Id_6"}}
+{"n":159,"p":155,"type":"td","text":"Item 6","box":[369,390,55,23],"attr":{"data-automation-id":"Cell_Title_6"}}
+{"n":160,"p":155,"type":"td","text":"Electronics","box":[426,390,80,23],"attr":{"data-automation-id":"Cell_Category_6"}}
+{"n":161,"p":155,"type":"td","box":[508,390,64,23]}
+{"n":162,"p":161,"type":"span","text":"Inactive","box":[509,392,55,18],"attr":{"class":"badge bg-secondary","data-automation-id":"Cell_Status_6"}}
+{"n":163,"p":155,"type":"td","text":"$68.45","box":[574,390,51,23],"attr":{"data-automation-id":"Cell_Price_6"}}
+{"n":164,"p":155,"type":"td","box":[627,390,147,23]}
+{"n":165,"p":164,"type":"div","box":[628,391,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":166,"p":165,"type":"button","text":"View","box":[628,391,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_6"}}
+{"n":167,"p":165,"type":"button","text":"Edit","box":[676,391,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_6"}}
+{"n":168,"p":165,"type":"button","text":"Delete","box":[719,391,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_6"}}
+{"n":169,"p":84,"type":"tr","box":[292,415,481,23],"attr":{"class":"","data-automation-id":"Row_7"}}
+{"n":170,"p":169,"type":"td","box":[292,415,42,23]}
+{"n":171,"p":170,"type":"input","box":[297,419,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_7","type":"checkbox"}}
+{"n":172,"p":169,"type":"td","text":"7","box":[336,415,32,23],"attr":{"data-automation-id":"Cell_Id_7"}}
+{"n":173,"p":169,"type":"td","text":"Item 7","box":[369,415,55,23],"attr":{"data-automation-id":"Cell_Title_7"}}
+{"n":174,"p":169,"type":"td","text":"Books","box":[426,415,80,23],"attr":{"data-automation-id":"Cell_Category_7"}}
+{"n":175,"p":169,"type":"td","box":[508,415,64,23]}
+{"n":176,"p":175,"type":"span","text":"Pending","box":[509,417,59,18],"attr":{"class":"badge bg-warning text-dark","data-automation-id":"Cell_Status_7"}}
+{"n":177,"p":169,"type":"td","text":"$24.58","box":[574,415,51,23],"attr":{"data-automation-id":"Cell_Price_7"}}
+{"n":178,"p":169,"type":"td","box":[627,415,147,23]}
+{"n":179,"p":178,"type":"div","box":[628,416,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":180,"p":179,"type":"button","text":"View","box":[628,416,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_7"}}
+{"n":181,"p":179,"type":"button","text":"Edit","box":[676,416,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_7"}}
+{"n":182,"p":179,"type":"button","text":"Delete","box":[719,416,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_7"}}
+{"n":183,"p":84,"type":"tr","box":[292,440,481,23],"attr":{"class":"","data-automation-id":"Row_8"}}
+{"n":184,"p":183,"type":"td","box":[292,440,42,23]}
+{"n":185,"p":184,"type":"input","box":[297,444,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_8","type":"checkbox"}}
+{"n":186,"p":183,"type":"td","text":"8","box":[336,440,32,23],"attr":{"data-automation-id":"Cell_Id_8"}}
+{"n":187,"p":183,"type":"td","text":"Item 8","box":[369,440,55,23],"attr":{"data-automation-id":"Cell_Title_8"}}
+{"n":188,"p":183,"type":"td","text":"Clothing","box":[426,440,80,23],"attr":{"data-automation-id":"Cell_Category_8"}}
+{"n":189,"p":183,"type":"td","box":[508,440,64,23]}
+{"n":190,"p":189,"type":"span","text":"Archived","box":[509,442,62,18],"attr":{"class":"badge bg-primary","data-automation-id":"Cell_Status_8"}}
+{"n":191,"p":183,"type":"td","text":"$4.84","box":[574,440,51,23],"attr":{"data-automation-id":"Cell_Price_8"}}
+{"n":192,"p":183,"type":"td","box":[627,440,147,23]}
+{"n":193,"p":192,"type":"div","box":[628,441,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":194,"p":193,"type":"button","text":"View","box":[628,441,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_8"}}
+{"n":195,"p":193,"type":"button","text":"Edit","box":[676,441,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_8"}}
+{"n":196,"p":193,"type":"button","text":"Delete","box":[719,441,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_8"}}
+{"n":197,"p":84,"type":"tr","box":[292,464,481,23],"attr":{"class":"","data-automation-id":"Row_9"}}
+{"n":198,"p":197,"type":"td","box":[292,464,42,23]}
+{"n":199,"p":198,"type":"input","box":[297,469,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_9","type":"checkbox"}}
+{"n":200,"p":197,"type":"td","text":"9","box":[336,464,32,23],"attr":{"data-automation-id":"Cell_Id_9"}}
+{"n":201,"p":197,"type":"td","text":"Item 9","box":[369,464,55,23],"attr":{"data-automation-id":"Cell_Title_9"}}
+{"n":202,"p":197,"type":"td","text":"Food","box":[426,464,80,23],"attr":{"data-automation-id":"Cell_Category_9"}}
+{"n":203,"p":197,"type":"td","box":[508,464,64,23]}
+{"n":204,"p":203,"type":"span","text":"Active","box":[509,467,44,18],"attr":{"class":"badge bg-success","data-automation-id":"Cell_Status_9"}}
+{"n":205,"p":197,"type":"td","text":"$92.92","box":[574,464,51,23],"attr":{"data-automation-id":"Cell_Price_9"}}
+{"n":206,"p":197,"type":"td","box":[627,464,147,23]}
+{"n":207,"p":206,"type":"div","box":[628,465,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":208,"p":207,"type":"button","text":"View","box":[628,465,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_9"}}
+{"n":209,"p":207,"type":"button","text":"Edit","box":[676,465,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_9"}}
+{"n":210,"p":207,"type":"button","text":"Delete","box":[719,465,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_9"}}
+{"n":211,"p":84,"type":"tr","box":[292,489,481,23],"attr":{"class":"","data-automation-id":"Row_10"}}
+{"n":212,"p":211,"type":"td","box":[292,489,42,23]}
+{"n":213,"p":212,"type":"input","box":[297,494,13,13],"attr":{"class":"form-check-input","data-automation-id":"RowCheckbox_10","type":"checkbox"}}
+{"n":214,"p":211,"type":"td","text":"10","box":[336,489,32,23],"attr":{"data-automation-id":"Cell_Id_10"}}
+{"n":215,"p":211,"type":"td","text":"Item 10","box":[369,489,55,23],"attr":{"data-automation-id":"Cell_Title_10"}}
+{"n":216,"p":211,"type":"td","text":"Toys","box":[426,489,80,23],"attr":{"data-automation-id":"Cell_Category_10"}}
+{"n":217,"p":211,"type":"td","box":[508,489,64,23]}
+{"n":218,"p":217,"type":"span","text":"Inactive","box":[509,492,55,18],"attr":{"class":"badge bg-secondary","data-automation-id":"Cell_Status_10"}}
+{"n":219,"p":211,"type":"td","text":"$35.00","box":[574,489,51,23],"attr":{"data-automation-id":"Cell_Price_10"}}
+{"n":220,"p":211,"type":"td","box":[627,489,147,23]}
+{"n":221,"p":220,"type":"div","box":[628,490,145,21],"attr":{"class":"btn-group btn-group-sm"}}
+{"n":222,"p":221,"type":"button","text":"View","box":[628,490,44,21],"attr":{"class":"btn btn-outline-primary","data-automation-id":"ViewButton_10"}}
+{"n":223,"p":221,"type":"button","text":"Edit","box":[676,490,38,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"EditButton_10"}}
+{"n":224,"p":221,"type":"button","text":"Delete","box":[719,490,54,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"DeleteButton_10"}}
+{"n":225,"p":39,"type":"nav","name":"Table pagination","box":[291,530,1222,148],"attr":{"data-automation-id":"TablePagination"}}
+{"n":226,"p":225,"type":"ul","box":[291,530,1222,148],"attr":{"class":"pagination justify-content-center"}}
+{"n":227,"p":226,"type":"li","box":[331,530,1182,21],"attr":{"class":"page-item disabled"}}
+{"n":228,"p":227,"type":"button","text":"Previous","box":[331,530,67,21],"attr":{"class":"page-link","data-automation-id":"PrevPageButton"}}
+{"n":229,"p":226,"type":"li","box":[331,551,1182,21],"attr":{"class":"page-item active"}}
+{"n":230,"p":229,"type":"button","text":"1","box":[331,551,23,21],"attr":{"class":"page-link","data-automation-id":"PageButton_1"}}
+{"n":231,"p":226,"type":"li","box":[331,572,1182,21],"attr":{"class":"page-item "}}
+{"n":232,"p":231,"type":"button","text":"2","box":[331,572,23,21],"attr":{"class":"page-link","data-automation-id":"PageButton_2"}}
+{"n":233,"p":226,"type":"li","box":[331,594,1182,21],"attr":{"class":"page-item "}}
+{"n":234,"p":233,"type":"button","text":"3","box":[331,594,23,21],"attr":{"class":"page-link","data-automation-id":"PageButton_3"}}
+{"n":235,"p":226,"type":"li","box":[331,615,1182,21],"attr":{"class":"page-item "}}
+{"n":236,"p":235,"type":"button","text":"4","box":[331,615,23,21],"attr":{"class":"page-link","data-automation-id":"PageButton_4"}}
+{"n":237,"p":226,"type":"li","box":[331,636,1182,21],"attr":{"class":"page-item "}}
+{"n":238,"p":237,"type":"button","text":"5","box":[331,636,23,21],"attr":{"class":"page-link","data-automation-id":"PageButton_5"}}
+{"n":239,"p":226,"type":"li","box":[331,657,1182,21],"attr":{"class":"page-item "}}
+{"n":240,"p":239,"type":"button","text":"Next","box":[331,657,43,21],"attr":{"class":"page-link","data-automation-id":"NextPageButton"}}
+{"n":241,"p":39,"type":"div","box":[291,694,1222,19],"attr":{"class":"d-flex justify-content-center align-items-center gap-2 mt-2"}}
+{"n":242,"p":241,"type":"span","text":"Items per page:","box":[291,694,111,18]}
+{"n":243,"p":241,"type":"select","box":[406,695,37,18],"attr":{"class":"form-select form-select-sm","data-automation-id":"PageSizeSelector"}}
+{"n":244,"p":243,"type":"option","text":"5"}
+{"n":245,"p":243,"type":"option","text":"10"}
+{"n":246,"p":243,"type":"option","text":"25"}
+{"n":247,"p":243,"type":"option","text":"50"}
+{"n":248,"p":39,"type":"div","box":[291,714,1222,21],"attr":{"class":"mt-4 text-center"}}
+{"n":249,"p":248,"type":"button","text":"Refresh Data","box":[291,714,94,21],"attr":{"class":"btn btn-primary","data-automation-id":"RefreshButton"}}
+{"n":250,"p":2,"type":"div","text":"An unhandled error has occurred.","attr":{"data-nosnippet":"","id":"blazor-error-ui"}}
+{"n":251,"p":250,"type":"a","text":"Reload","attr":{"class":"reload","href":"."}}
+{"n":252,"p":250,"type":"span","text":"\uD83D\uDDD9","attr":{"class":"dismiss"}}

@@ -13,8 +13,8 @@
         or app-bug-or-test. The suggestion is a heuristic to sort the list; the class is decided
         by reading the failure.
 
-    Written for the stale-readiness plan (.my/stale-readiness/plan.md, step 2 baseline and step 8
-    comparison). UI tests drive the desktop, so the script refuses to start while another test
+    Written for the stale-readiness work (a baseline before a change, and a comparison
+    after it). UI tests drive the desktop, so the script refuses to start while another test
     host is running: two runs at once fight over the desktop and produce failures that are not real.
 
 .PARAMETER Project
@@ -32,6 +32,11 @@
 .PARAMETER Build
     Build once before the first run. By default the runs use the existing build (--no-build).
 
+.PARAMETER AllowProcess
+    Sample processes the runs need running, by name: a web host such as
+    Brinell.Samples.Blazor.App, which the Html UI tests expect to be up. Any other sample process
+    still stops the script.
+
 .EXAMPLE
     .\tools\Scripts\repeat-run.ps1 -Project samples/Todo/tests/Brinell.Samples.Todo.UITests -Runs 5
 #>
@@ -40,7 +45,8 @@ param(
     [int]$Runs = 5,
     [string]$Filter,
     [string]$OutDir,
-    [switch]$Build
+    [switch]$Build,
+    [string[]]$AllowProcess = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,7 +63,8 @@ if (Get-Process -Name testhost -ErrorAction SilentlyContinue) {
 
 # A sample app left over from an earlier run breaks the next run's attach (FlaUI GetMainWindow
 # fails with "Unexpected HRESULT"): every test of that fixture fails, and none of it is real.
-$orphans = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like 'Brinell.Samples.*' }
+$orphans = Get-Process -ErrorAction SilentlyContinue |
+    Where-Object { $_.ProcessName -like 'Brinell.Samples.*' -and $AllowProcess -notcontains $_.ProcessName }
 if ($orphans) {
     throw "Sample app(s) still running from an earlier run: $(($orphans | ForEach-Object { "$($_.ProcessName) ($($_.Id))" }) -join ', '). Stop them first."
 }
@@ -94,6 +101,7 @@ function Get-SuggestedClass([string]$message) {
 
 $failures = @{}
 $testsSeen = @{}
+$durations = @{}
 foreach ($trx in Get-ChildItem -Path $OutDir -Filter 'run-*.trx') {
     [xml]$doc = Get-Content -Raw -Path $trx.FullName
     $ns = New-Object System.Xml.XmlNamespaceManager($doc.NameTable)
@@ -101,6 +109,10 @@ foreach ($trx in Get-ChildItem -Path $OutDir -Filter 'run-*.trx') {
     foreach ($result in $doc.SelectNodes('//t:UnitTestResult', $ns)) {
         $name = $result.testName
         $testsSeen[$name] = $true
+        if ($result.duration) {
+            if (-not $durations.ContainsKey($name)) { $durations[$name] = @() }
+            $durations[$name] += [TimeSpan]::Parse($result.duration).TotalSeconds
+        }
         if ($result.outcome -ne 'Failed') { continue }
         $messageNode = $result.SelectSingleNode('t:Output/t:ErrorInfo/t:Message', $ns)
         $message = if ($messageNode) { ($messageNode.InnerText -split "`n")[0].Trim() } else { '' }
@@ -130,6 +142,14 @@ foreach ($name in ($failures.Keys | Sort-Object { -$failures[$_].Count }, { $_ }
     $lines += "| ``$name`` | $($entry.Count)/$Runs | $kind | $class | $cell |"
 }
 if ($failures.Count -eq 0) { $lines += '| (no failures) | | | | |' }
+
+$lines += @('', '## Slowest tests', '', 'Mean and worst over the runs, in seconds.', '', '| Test | Mean | Worst |', '|---|---:|---:|')
+$slowest = $durations.Keys |
+    ForEach-Object { [pscustomobject]@{ Name = $_; Mean = ($durations[$_] | Measure-Object -Average).Average; Worst = ($durations[$_] | Measure-Object -Maximum).Maximum } } |
+    Sort-Object Mean -Descending | Select-Object -First 5
+foreach ($test in $slowest) {
+    $lines += "| ``$($test.Name)`` | $($test.Mean.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) | $($test.Worst.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture)) |"
+}
 
 $summary = Join-Path $OutDir 'repeat-summary.md'
 $lines | Set-Content -Path $summary -Encoding utf8

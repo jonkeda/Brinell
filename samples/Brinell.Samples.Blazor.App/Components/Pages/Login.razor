@@ -58,7 +58,7 @@
             <button type="submit"
                     class="btn btn-primary"
                     data-testid="login-btn"
-                    disabled="@_isLoading">
+                    disabled="@(_isLoading || _stuck)">
                 @if (_isLoading)
                 {
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" data-testid="loading-spinner"></span>
@@ -81,6 +81,15 @@
 </div>
 
 @code {
+    /// <summary>
+    /// A known bug to put back on purpose (.my/html/sample-app.md item 2): <c>stuck-disabled</c>
+    /// leaves the Login button disabled for good after the first submit, like the MAUI Todo
+    /// toolbar Cancel whose command never re-enabled. The R0 proofs launch with it.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "login-bug")]
+    public string? LoginBug { get; set; }
+
+    private bool _stuck;
     private LoginModel _loginModel = new();
     private bool _isLoading = false;
     private bool _isSuccess = false;
@@ -118,6 +127,7 @@
         finally
         {
             _isLoading = false;
+            _stuck = LoginBug == "stuck-disabled";
         }
     }
 }

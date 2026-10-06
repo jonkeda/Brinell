@@ -39,8 +39,24 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [Test Writing](guides/test-writing.md)
 - [UAT Template Guide](guides/uat-template-guide.md) - project layout, `uat.config.md`,
   scenario file shape
-- [UAT Phrases And Flows](guides/uat-phrases-and-flows.md) - the step vocabulary and how to
+- [UAT Step Definitions And Flows](guides/uat-step-definitions.md) - the step vocabulary and how to
   extend it
+- [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
+  runs without a screen, its suite and step definitions
+- [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
+- [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
+  files as readable, bound steps beside the editor
+- [Brinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
+  preview, Test Explorer on the scenarios' addresses
+- [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
+  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRINELL_RECORD`
+- [The Scraper](guides/scraper.md) - record or explore an app's pages into a UI test project,
+  draft page objects from them, and have an agent make controls; from VS Code, Visual Studio, the
+  command line or MCP, and unattended with the loop
+- [Adding Controls For A New Control Library](../.guides/control-library.md) - the
+  `control-source-builder` agent, step by step: survey, groundwork, probe, build, closeout
+- [Test Data](guides/test-data.md) - test sets, `brinell data`, `TestData` in UAT
+  files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
 - [Migration Notes](guides/migration.md)
@@ -59,6 +75,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Run Guides
 
 - [Build And Test](run/build-and-test.md)
+- [The `brinell` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
 - [Playwright](run/Playwright.md)
@@ -69,6 +86,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Specs
 
 - [Spec Status](specs/README.md)
+- [UAT Scenario Grammar](specs/uat-grammar.md) - the formal format of `.feature.md` and `.steps.md`
+  files, and the parser's diagnostics
 
 ## Maintenance Rules
 
@@ -76,4 +95,4 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - Use `Brinell.*` namespaces only.
 - Mark every command with its working directory.
 - Keep guides here; keep decisions and invariants in `.docs/`.
-- Do not add generated test artifacts under `docs/` or `.my/reports/`.
+- Do not add generated test artifacts under `docs/` or `.my/`; they belong under `TestResults/`.

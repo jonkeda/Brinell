@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
+using Brinell.Core.Calls;
 using Brinell.Core.Utilities;
-using Brinell.Maui.Calls;
 
 namespace Brinell.Maui.Containers;
 
@@ -424,10 +424,10 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     // parent scope. Identical names and shapes let the generator emit one body for both
     // hierarchies. The element these operate on is the container root.
     //
-    // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
+    // Every public member is one call (call-model contract, R1): one log pair, one
     // budget, one poll, whose attempts check the page and then use the root. An action runs once.
 
-    private protected ControlCall Call => new(Context, PageName, ControlId);
+    private protected ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
 
     private protected int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 
@@ -437,7 +437,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// What is left of the running call's budget, for a wait below the call (a scroll); the
     /// default wait outside a call. Nothing inside a call starts a budget of its own (R2, R3).
     /// </summary>
-    protected int CallRemainingMs => AttemptContext.RemainingOr(DefaultTimeoutMs);
+    protected int CallRemainingMs => CallBudget.RemainingOr(DefaultTimeoutMs);
 
     /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
     private protected Exception Failure(AttemptContext attempt, string caller, int budgetMs)
@@ -499,7 +499,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <param name="done">Whether the value is the one waited for.</param>
     /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
     /// <returns>How the wait ended, with the last value and error.</returns>
-    protected Controls.Base.Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
+    protected Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
         => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
 
     /// <summary>Polls an arbitrary condition.</summary>

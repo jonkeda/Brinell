@@ -46,6 +46,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<TodoListPage>();
         builder.Services.AddTransient<TodoDetailPage>();
         builder.Services.AddTransient<TodoEditPage>();
+        builder.Services.AddTransient<UserListPage>();
+        builder.Services.AddTransient<UserEditPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

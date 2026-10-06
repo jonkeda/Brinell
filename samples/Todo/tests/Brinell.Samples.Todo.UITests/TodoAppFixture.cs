@@ -1,6 +1,7 @@
 using Brinell.Mocking;
 using Brinell.Samples.Todo.Contracts;
 using Brinell.Samples.Todo.TestSupport;
+using Brinell.Samples.Todo.TestSupport.Uat;
 
 namespace Brinell.Samples.Todo.UITests;
 
@@ -9,10 +10,10 @@ namespace Brinell.Samples.Todo.UITests;
 /// </summary>
 /// <remarks>
 /// The fake is the stateful <see cref="TodoServerStub"/>, which the integration tier's contract
-/// tests hold to the real API's behaviour. Between tests it is reset to the scenario's server
+/// tests hold to the real API's behaviour. Between tests it is reset to the test set's server
 /// state, with any per-test override (a 500, a delay) removed.
 /// </remarks>
-public abstract class TodoAppFixture : TodoAppFixtureBase
+public abstract class TodoAppFixture : TodoAppFixtureBase, ITodoArrangement
 {
     private MockApiServer? _backend;
     private TodoServerStub? _server;
@@ -39,23 +40,37 @@ public abstract class TodoAppFixture : TodoAppFixtureBase
     public string ServerHasTodo(string title, TodoStatusDto status = TodoStatusDto.Open, DateOnly? dueDate = null)
     {
         var unique = $"{title} {Guid.NewGuid().ToString("N")[..6]}";
-        var yesterday = Scenario.Now.AddDays(-1);
+        var yesterday = TestSet.Now.AddDays(-1);
         Server.Store(new TodoDto(Guid.NewGuid(), unique, null, dueDate, status, yesterday, yesterday));
         return unique;
     }
 
-    /// <summary>Removes every per-test backend override and restores the scenario's server state.</summary>
+    /// <summary>
+    /// Adds an available Member to the fake server, as another device would, with a unique name.
+    /// </summary>
+    /// <param name="name">The name's start; a short unique suffix is added.</param>
+    /// <returns>The full, unique name.</returns>
+    public string ServerHasUser(string name)
+    {
+        var unique = $"{name} {Guid.NewGuid().ToString("N")[..6]}";
+        Server.StoreUser(new UserDto(
+            Guid.NewGuid(), unique, null, UserStatusDto.Active, null, UserRoleDto.Member,
+            40, 0m, new TimeOnly(9, 0), true, 0, null, TestSet.Now.AddDays(-1)));
+        return unique;
+    }
+
+    /// <summary>Removes every per-test backend override and restores the test set's server state.</summary>
     public void ResetBackend()
     {
         Backend.Reset();
-        _server = Scenario.StubServer(Backend);
+        _server = TestSet.StubServer(Backend);
     }
 
     /// <inheritdoc />
-    protected override string StartBackend(TodoScenario scenario, string runFolder)
+    protected override string StartBackend(TodoTestSet testSet, string runFolder)
     {
         _backend = MockApiServer.Start();
-        _server = scenario.StubServer(_backend);
+        _server = testSet.StubServer(_backend);
         return _backend.BaseUrl;
     }
 

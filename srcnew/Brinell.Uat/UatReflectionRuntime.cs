@@ -8,38 +8,38 @@ namespace Brinell.Uat;
 public sealed class UatReflectionRuntime
 {
     private const string CurrentPageItemKey = "Uat.Reflection.CurrentPage";
-    private const string ServiceProviderItemKey = "Uat.Reflection.ServiceProvider";
     private readonly Dictionary<string, UatRuntimePage> _pages;
-    private readonly IReadOnlyList<UatPhraseClassBinding> _phraseClasses;
-    private readonly object _root;
+    private readonly BddStepDefinitionRuntime _steps;
 
     private UatReflectionRuntime(
-        object root,
+        object? root,
         IEnumerable<UatRuntimePage> pages,
-        IEnumerable<UatPhraseClassBinding>? phraseClasses = null)
+        IEnumerable<BddPhraseClassBinding>? phraseClasses = null,
+        BddArgumentTypes? argumentTypes = null,
+        Type? rootType = null)
     {
-        _root = root;
-        _phraseClasses = phraseClasses?.ToArray() ?? [];
+        // A runtime built for checking has a fixture type and no fixture; its handlers never run.
+        _steps = new BddStepDefinitionRuntime(root, rootType ?? root!.GetType(), phraseClasses, argumentTypes ?? BddArgumentTypes.Empty);
         _pages = new Dictionary<string, UatRuntimePage>(StringComparer.OrdinalIgnoreCase);
         foreach (var page in pages)
         {
-            _pages[page.Name] = page;
+            _pages[page.Key] = page;
         }
     }
 
     public IReadOnlyCollection<UatRuntimePage> Pages => _pages.Values;
 
-    public IReadOnlyList<UatPhraseClassBinding> PhraseClasses => _phraseClasses;
+    public IReadOnlyList<BddPhraseClassBinding> PhraseClasses => _steps.PhraseClasses;
 
     public IReadOnlyList<string> DescribeDiscovery()
     {
         List<string> lines = ["Discovered UAT pages:"];
-        foreach (var page in Pages.OrderBy(page => page.Name, StringComparer.OrdinalIgnoreCase))
+        foreach (var page in Pages.OrderBy(page => page.Key, StringComparer.OrdinalIgnoreCase))
         {
             var controls = page.Controls.Count == 0
                 ? "(no controls)"
                 : string.Join(", ", page.Controls.Select(control => control.Name).Order(StringComparer.OrdinalIgnoreCase));
-            lines.Add($"- {page.Name}: {controls}");
+            lines.Add($"- {page.Key}: {controls}");
         }
 
         return lines;
@@ -55,7 +55,7 @@ public sealed class UatReflectionRuntime
         foreach (var property in rootType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.GetIndexParameters().Length > 0 ||
-                property.GetCustomAttribute<UatIgnoreAttribute>() is not null ||
+                property.GetCustomAttribute<BddIgnoreAttribute>() is not null ||
                 !IsRuntimePageProperty(property))
             {
                 continue;
@@ -74,10 +74,13 @@ public sealed class UatReflectionRuntime
                 page.GetType(),
                 page,
                 DiscoverControls(page),
-                navigation is null ? null : () => Invoke(root, navigation)));
+                navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+            {
+                Namespace = BddNamespaces.Normalize(BddNamespaceAttribute.Of(page.GetType())),
+            });
         }
 
-        return new UatReflectionRuntime(root, pages);
+        return new UatReflectionRuntime(root, pages, argumentTypes: BddArgumentTypes.Discover(BddStepDefinitionRuntime.LoadableTypes(rootType.Assembly)));
     }
 
     public static UatReflectionRuntime FromComposition(object root, TestComposition composition)
@@ -95,362 +98,260 @@ public sealed class UatReflectionRuntime
                     page.PageType,
                     Instance: null,
                     DiscoverControls(page.PageType),
-                    navigation is null ? null : () => Invoke(root, navigation));
+                    navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+                {
+                    Namespace = BddNamespaces.Normalize(page.Namespace),
+                };
             })
             .ToArray();
-        var phraseClasses = DiscoverPhraseClasses(composition.Catalog.ScannedTypes);
+        var argumentTypes = BddArgumentTypes.Discover(composition.Catalog.ScannedTypes.Concat(BddStepDefinitionRuntime.LoadableTypes(rootType.Assembly)));
+        var phraseClasses = BddStepDefinitionRuntime.DiscoverPhraseClasses(composition.Catalog.ScannedTypes, argumentTypes);
 
-        return new UatReflectionRuntime(root, pages, phraseClasses);
+        return new UatReflectionRuntime(root, pages, phraseClasses, argumentTypes);
     }
 
-    public static void SetServiceProvider(UatExecutionContext context, IServiceProvider serviceProvider)
+    /// <summary>
+    /// The phrases of <paramref name="fixtureType"/> without creating the fixture: for checking
+    /// scenario files (the <c>brinell data</c> tool), not for running them.
+    /// </summary>
+    /// <param name="fixtureType">The suite's fixture, as the config's <c>Fixture</c> names it.</param>
+    /// <param name="modules">A head's modules, for a fixture with several heads; the fixture's own scan when null.</param>
+    public static UatReflectionRuntime ForChecking(Type fixtureType, TestCompositionCatalog? modules = null)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(fixtureType);
 
-        context.Items[ServiceProviderItemKey] = serviceProvider;
+        var usesComposition = fixtureType
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Any(property => property.Name is "Composition" or "TestComposition" && typeof(TestComposition).IsAssignableFrom(property.PropertyType));
+        if (!usesComposition && modules is null)
+        {
+            var rootPages = fixtureType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.GetIndexParameters().Length == 0 &&
+                                   property.GetCustomAttribute<BddIgnoreAttribute>() is null &&
+                                   IsRuntimePageProperty(property))
+                .Select(property => new UatRuntimePage(ResolveRuntimeName(property), property.PropertyType, Instance: null, DiscoverControls(property.PropertyType), Navigate: null)
+                {
+                    Namespace = BddNamespaces.Normalize(BddNamespaceAttribute.Of(property.PropertyType)),
+                });
+            return new UatReflectionRuntime(null, rootPages, argumentTypes: BddArgumentTypes.Discover(BddStepDefinitionRuntime.LoadableTypes(fixtureType.Assembly)), rootType: fixtureType);
+        }
+
+        var catalog = modules ?? TestCompositionCatalog.Discover(TestCompositionDiscoveryOptions.FromFixture(fixtureType));
+        var pages = catalog.Pages.Select(page => new UatRuntimePage(page.Name, page.PageType, Instance: null, DiscoverControls(page.PageType), Navigate: null)
+        {
+            Namespace = BddNamespaces.Normalize(page.Namespace),
+        });
+        var argumentTypes = BddArgumentTypes.Discover(catalog.ScannedTypes.Concat(BddStepDefinitionRuntime.LoadableTypes(fixtureType.Assembly)));
+        return new UatReflectionRuntime(null, pages, BddStepDefinitionRuntime.DiscoverPhraseClasses(catalog.ScannedTypes, argumentTypes), argumentTypes, fixtureType);
     }
 
-    public static void RegisterRootPhrases(UatCommandCatalog catalog, Type rootType)
+    public static void SetServiceProvider(BddExecutionContext context, IServiceProvider serviceProvider)
+        => BddStepDefinitionRuntime.SetServiceProvider(context, serviceProvider);
+
+    public static void RegisterRootPhrases(BddCommandCatalog catalog, Type rootType)
     {
-        RegisterRootPhrases(catalog, rootType, handlerFactory: null);
+        BddStepDefinitionRuntime.RegisterRootPhrases(catalog, rootType, handlerFactory: null);
     }
 
-    public static void RegisterCompositionPhrases(UatCommandCatalog catalog, Type rootType)
+    public static void RegisterCompositionPhrases(BddCommandCatalog catalog, Type rootType)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(rootType);
 
         var options = TestCompositionDiscoveryOptions.FromFixture(rootType);
         var compositionCatalog = TestCompositionCatalog.Discover(options);
-        RegisterPhraseClassPhrases(
+        BddStepDefinitionRuntime.RegisterPhraseClassPhrases(
             catalog,
-            DiscoverPhraseClasses(compositionCatalog.ScannedTypes),
+            BddStepDefinitionRuntime.DiscoverPhraseClasses(compositionCatalog.ScannedTypes, BddArgumentTypes.Discover(compositionCatalog.ScannedTypes)),
             handlerFactory: null);
     }
 
-    public UatCommandCatalog CreateCommandCatalog()
+    public BddCommandCatalog CreateCommandCatalog()
     {
-        var catalog = new UatCommandCatalog();
+        var catalog = new BddCommandCatalog { ArgumentTypes = _steps.ArgumentTypes, Scope = new UatPageSet(PageModels()) };
 
-        // The engine's three intrinsic page-graph verbs — defined once, here.
-        catalog.Register(
-            UatEffectiveStepKeyword.Given,
-            "I am on the {page} page",
-            "Builtin.Page.Open",
-            handler: OpenPageAsync);
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "I should be on the {page} page",
-            "Builtin.Page.AssertOpen",
-            handler: AssertPageAsync);
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "I should see {text}",
-            "Builtin.Page.AssertTextVisible",
-            allowsTable: false,
-            handler: AssertAnyControlTextContainsAsync);
+        // The engine's three intrinsic page-graph verbs — defined once, here, each with its named
+        // form for a scenario with several users (AD-015).
+        foreach (var phrase in new[] { "I am on the {page} page", "{user} is on the {page} page" })
+        {
+            catalog.Register(BddEffectiveStepKeyword.Given, phrase, "Builtin.Page.Open", handler: OpenPageAsync, namesPage: true);
+        }
 
-        // Everything control-shaped is discovered from [UatStep] on Brinell.Core interfaces
+        foreach (var phrase in new[] { "I should be on the {page} page", "{user} should be on the {page} page" })
+        {
+            catalog.Register(BddEffectiveStepKeyword.Then, phrase, "Builtin.Page.AssertOpen", handler: AssertPageAsync, namesPage: true);
+        }
+
+        foreach (var phrase in new[] { "I should see {text}", "{user} should see {text}" })
+        {
+            catalog.Register(
+                BddEffectiveStepKeyword.Then,
+                phrase,
+                "Builtin.Page.AssertTextVisible",
+                allowsTable: false,
+                handler: AssertAnyControlTextContainsAsync);
+        }
+
+        // Everything control-shaped is discovered from [BddWhen]/[BddThen] on Brinell.Core interfaces
         // and any decorated app control types found during page discovery.
         UatCatalogBuilder.RegisterControlVerbs(
             catalog,
             ControlStepTypes(),
             "Builtin.",
-            binding => (context, invocation, _) =>
-                InvokeControlMethodAsync(
-                    context,
-                    invocation,
-                    "control",
-                    binding.MethodName,
-                    binding.ValueArgumentName,
-                    binding.Literal));
+            binding => (context, invocation, _) => InvokeControlMethodAsync(context, invocation, binding));
 
-        RegisterPhraseClassPhrases(
-            catalog,
-            _phraseClasses,
-            (phraseClassType, method) => (context, invocation, cancellationToken) =>
-                InvokePhraseClassMethodAsync(
-                    phraseClassType,
-                    method,
-                    context,
-                    invocation,
-                    cancellationToken));
-        RegisterRootPhrases(catalog);
+        _steps.RegisterPhraseClasses(catalog);
+        RegisterPagePhrases(catalog);
+        _steps.RegisterRootPhrases(catalog);
         return catalog;
+    }
+
+    // The pages as the binder follows them: each control with its type and where tapping it goes.
+    private Dictionary<string, UatPageModel> PageModels()
+    {
+        var nameOf = _pages.Values
+            .GroupBy(page => page.PageType)
+            .ToDictionary(group => group.Key, group => group.First().Key);
+        return _pages.Values.ToDictionary(
+            page => page.Key,
+            page => new UatPageModel(
+                page.Name,
+                page.PageType,
+                page.Controls
+                    .Select(control => new UatControlModel(
+                        control.Name,
+                        control.Property.PropertyType,
+                        control.Property.GetCustomAttribute<UatNavigatesToAttribute>() is { } goesTo
+                            ? nameOf.GetValueOrDefault(goesTo.Page) ?? throw new InvalidOperationException(
+                                $"{page.PageType.Name}.{control.MemberName} navigates to {goesTo.Page.Name}, which is not a UAT page.")
+                            : null))
+                    .ToArray())
+            {
+                Namespace = page.Namespace,
+            },
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    // A page's own workflows: keyword attributes on page-object methods (D4). A method that returns
+    // a page object says which page is current after it.
+    private void RegisterPagePhrases(BddCommandCatalog catalog)
+    {
+        foreach (var page in _pages.Values)
+        {
+            foreach (var method in page.PageType.GetMethods(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (method.IsSpecialName ||
+                    !method.IsDefined(typeof(BddStepAttribute), inherit: false) ||
+                    method.GetCustomAttribute<BddIgnoreAttribute>() is not null)
+                {
+                    continue;
+                }
+
+                var pageAfter = _pages.Values.FirstOrDefault(candidate => candidate.PageType == method.ReturnType);
+                var (phrases, unmatchable) = BddPhraseDeclarations.Of(method, inferWithoutAttribute: false, _steps.ArgumentTypes);
+                foreach (var phrase in phrases)
+                {
+                    catalog.Register(
+                        phrase.Keyword,
+                        phrase.Phrase,
+                        $"{page.PageType.FullName}.{method.Name}",
+                        handler: (context, invocation, cancellationToken) =>
+                            InvokePagePhraseAsync(page, method, context, invocation, cancellationToken),
+                        parameters: phrase.Parameters,
+                        problem: phrase.Problem,
+                        page: page.Key,
+                        pageAfter: pageAfter?.Key);
+                }
+
+                foreach (var declaration in unmatchable)
+                {
+                    catalog.AddUnmatchable(declaration);
+                }
+            }
+        }
+    }
+
+    private Task<BddStepResult> InvokePagePhraseAsync(
+        UatRuntimePage page,
+        MethodInfo method,
+        BddExecutionContext context,
+        BddStepInvocation invocation,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!TryGetCurrentPage(context, invocation, out var current))
+        {
+            return Task.FromResult(current.Result);
+        }
+
+        if (!string.Equals(current.Page!.Key, page.Key, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(BddStepResult.Failed(
+                invocation,
+                $"The step '{invocation.Command.Phrase}' is a phrase of the {page.Name} page, but the current page is {current.Page.Name}. Go to the {page.Name} page first."));
+        }
+
+        var instance = GetPageInstance(context, page);
+        if (instance is null)
+        {
+            return Task.FromResult(BddStepResult.Failed(invocation, $"UAT page '{page.Name}' requires an active DI scope."));
+        }
+
+        try
+        {
+            BddInvoker.Invoke(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(BddStepResult.Failed(invocation, $"UAT page phrase '{page.Name}.{method.Name}' failed: {ex.Message}", ex));
+        }
+
+        context.Diagnostics.Add($"page-phrase:{page.Name}.{method.Name}");
+        return Task.FromResult(FollowPage(context, invocation));
+    }
+
+    // The page the binder worked out for after the step becomes current, as it does after
+    // "I should be on the ... page": the steps that follow were bound against it.
+    private BddStepResult FollowPage(BddExecutionContext context, BddStepInvocation invocation)
+    {
+        if (invocation.PageAfter is not { } name ||
+            string.Equals(context.CurrentPageName, name, StringComparison.OrdinalIgnoreCase) ||
+            !_pages.TryGetValue(name, out var page))
+        {
+            return BddStepResult.Passed(invocation);
+        }
+
+        var instance = GetPageInstance(context, page);
+        if (instance is null || !WaitPageReady(instance))
+        {
+            return BddStepResult.Failed(invocation, $"The step should have ended on the {page.Name} page, which did not become ready.");
+        }
+
+        context.CurrentPageName = page.Key;
+        context.AppItems[CurrentPageItemKey] = page;
+        return BddStepResult.Passed(invocation);
     }
 
     private IEnumerable<Type> ControlStepTypes()
     {
+        // A verb declared on a control's base class (StateContainer under an app's own state
+        // container) is found through the class that the page declares. A page's own phrases are
+        // page phrases, even where a page exposes itself as a property (Self).
+        var pageTypes = _pages.Values.Select(page => page.PageType).ToHashSet();
         var discovered = _pages.Values
             .SelectMany(page => page.Controls)
-            .Select(control => control.Property.PropertyType);
+            .Where(control => !pageTypes.Contains(control.Property.PropertyType))
+            .SelectMany(control => SelfAndBaseTypes(control.Property.PropertyType));
         return UatCatalogBuilder.CoreStepTypes.Concat(discovered).Distinct();
     }
 
-    private static void RegisterPhraseClassPhrases(
-        UatCommandCatalog catalog,
-        IEnumerable<UatPhraseClassBinding> phraseClasses,
-        Func<Type, MethodInfo, UatCommandHandler?>? handlerFactory)
+    private static IEnumerable<Type> SelfAndBaseTypes(Type type)
     {
-        foreach (var phraseClass in phraseClasses)
+        for (Type? current = type; current is not null && current != typeof(object); current = current.BaseType)
         {
-            foreach (var method in phraseClass.Methods)
-            {
-                foreach (var phrase in method.Phrases)
-                {
-                    foreach (var keyword in ExpandKeywords(phrase.Keyword))
-                    {
-                        catalog.Register(
-                            keyword,
-                            phrase.Phrase,
-                            $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
-                            handler: handlerFactory?.Invoke(phraseClass.Type, method.Method));
-                    }
-                }
-            }
+            yield return current;
         }
-    }
-
-    private void RegisterRootPhrases(UatCommandCatalog catalog)
-    {
-        RegisterRootPhrases(
-            catalog,
-            _root.GetType(),
-            method => (context, invocation, cancellationToken) =>
-                InvokeRootPhraseAsync(method, context, invocation, cancellationToken));
-    }
-
-    private static void RegisterRootPhrases(
-        UatCommandCatalog catalog,
-        Type rootType,
-        Func<MethodInfo, UatCommandHandler?>? handlerFactory)
-    {
-        ArgumentNullException.ThrowIfNull(catalog);
-        ArgumentNullException.ThrowIfNull(rootType);
-
-        foreach (var method in rootType
-                     .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                     .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null))
-        {
-            foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
-            {
-                foreach (var keyword in ExpandKeywords(phrase.Keyword))
-                {
-                    if (catalog.Patterns.Any(pattern =>
-                            pattern.Keyword == keyword &&
-                            pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
-                    {
-                        continue;
-                    }
-
-                    catalog.Register(
-                        keyword,
-                        phrase.Phrase,
-                        $"{method.DeclaringType!.FullName}.{method.Name}",
-                        handler: handlerFactory?.Invoke(method));
-                }
-            }
-        }
-    }
-
-    private async Task<UatStepResult> InvokeRootPhraseAsync(
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        try
-        {
-            var result = Invoke(_root, method, BuildRootPhraseArguments(method, context, invocation, cancellationToken));
-            if (result is Task<UatStepResult> resultTask)
-            {
-                return await resultTask.ConfigureAwait(false);
-            }
-
-            if (result is Task task)
-            {
-                await task.ConfigureAwait(false);
-                context.Diagnostics.Add($"custom:{method.Name}");
-                return UatStepResult.Passed(invocation);
-            }
-
-            if (result is UatStepResult stepResult)
-            {
-                return stepResult;
-            }
-
-            if (result is bool boolean && !boolean)
-            {
-                return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' returned false.");
-            }
-
-            context.Diagnostics.Add($"custom:{method.Name}");
-            return UatStepResult.Passed(invocation, result as string);
-        }
-        catch (Exception ex)
-        {
-            return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' failed: {ex.Message}", ex);
-        }
-    }
-
-    private async Task<UatStepResult> InvokePhraseClassMethodAsync(
-        Type phraseClassType,
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!TryGetServiceProvider(context, out var serviceProvider))
-        {
-            return UatStepResult.Failed(
-                invocation,
-                $"UAT phrase class '{phraseClassType.FullName}' requires an active DI scope.");
-        }
-
-        try
-        {
-            var instance = serviceProvider.GetService(phraseClassType) ??
-                           ActivatorUtilities.CreateInstance(serviceProvider, phraseClassType);
-            var result = Invoke(instance, method, BuildRootPhraseArguments(method, context, invocation, cancellationToken));
-            if (result is Task<UatStepResult> resultTask)
-            {
-                return await resultTask.ConfigureAwait(false);
-            }
-
-            if (result is Task task)
-            {
-                await task.ConfigureAwait(false);
-                context.Diagnostics.Add($"phrase:{method.Name}");
-                return UatStepResult.Passed(invocation);
-            }
-
-            if (result is UatStepResult stepResult)
-            {
-                return stepResult;
-            }
-
-            if (result is bool boolean && !boolean)
-            {
-                return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' returned false.");
-            }
-
-            context.Diagnostics.Add($"phrase:{method.Name}");
-            return UatStepResult.Passed(invocation, result as string);
-        }
-        catch (Exception ex)
-        {
-            return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' failed: {ex.Message}", ex);
-        }
-    }
-
-    private static object?[] BuildRootPhraseArguments(
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        var parameters = method.GetParameters();
-        var arguments = new object?[parameters.Length];
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var parameter = parameters[i];
-            if (parameter.ParameterType == typeof(UatExecutionContext))
-            {
-                arguments[i] = context;
-                continue;
-            }
-
-            if (parameter.ParameterType == typeof(UatStepInvocation))
-            {
-                arguments[i] = invocation;
-                continue;
-            }
-
-            if (parameter.ParameterType == typeof(CancellationToken))
-            {
-                arguments[i] = cancellationToken;
-                continue;
-            }
-
-            if (IsSettingsParameterType(parameter.ParameterType, method.DeclaringType?.Assembly))
-            {
-                arguments[i] = context.GetSettings(parameter.ParameterType);
-                continue;
-            }
-
-            if (parameter.Name is not null &&
-                invocation.Arguments.TryGetValue(parameter.Name, out var value))
-            {
-                arguments[i] = ConvertArgument(value, parameter.ParameterType);
-                continue;
-            }
-
-            arguments[i] = parameter.IsOptional
-                ? Type.Missing
-                : throw new InvalidOperationException(
-                    $"Custom UAT step '{method.Name}' requires parameter '{parameter.Name}' but no matching phrase argument was found.");
-        }
-
-        return arguments;
-    }
-
-    private static bool IsSettingsParameterType(Type parameterType, Assembly? phraseAssembly)
-    {
-        if (parameterType == typeof(TestSettings) ||
-            parameterType.GetCustomAttribute<TestSettingsRootAttribute>() is not null ||
-            parameterType.GetCustomAttribute<TestSettingsSectionAttribute>() is not null)
-        {
-            return true;
-        }
-
-        return phraseAssembly is not null &&
-               parameterType.Assembly == phraseAssembly &&
-               parameterType.IsClass &&
-               parameterType.Name.EndsWith("Settings", StringComparison.Ordinal);
-    }
-
-    private static object? ConvertArgument(string value, Type targetType)
-    {
-        var nullableInnerType = Nullable.GetUnderlyingType(targetType);
-        var effectiveType = nullableInnerType ?? targetType;
-        if (effectiveType == typeof(string))
-        {
-            return value;
-        }
-
-        if (effectiveType == typeof(int))
-        {
-            return int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        if (effectiveType == typeof(double))
-        {
-            return double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        if (effectiveType == typeof(bool))
-        {
-            return bool.Parse(value);
-        }
-
-        if (effectiveType.IsEnum)
-        {
-            return Enum.Parse(effectiveType, value, ignoreCase: true);
-        }
-
-        return Convert.ChangeType(value, effectiveType, System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static IEnumerable<UatEffectiveStepKeyword> ExpandKeywords(UatEffectiveStepKeyword? keyword)
-    {
-        return keyword.HasValue
-            ? [keyword.Value]
-            : Enum.GetValues<UatEffectiveStepKeyword>();
     }
 
     private static IReadOnlyList<UatRuntimeControl> DiscoverControls(object page)
@@ -464,7 +365,7 @@ public sealed class UatReflectionRuntime
         foreach (var property in pageType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.GetIndexParameters().Length > 0 ||
-                property.GetCustomAttribute<UatIgnoreAttribute>() is not null ||
+                property.GetCustomAttribute<BddIgnoreAttribute>() is not null ||
                 !IsRuntimeControlProperty(property))
             {
                 continue;
@@ -477,136 +378,6 @@ public sealed class UatReflectionRuntime
         }
 
         return controls;
-    }
-
-    private static IReadOnlyList<UatPhraseClassBinding> DiscoverPhraseClasses(IReadOnlyList<Type> types)
-    {
-        List<UatPhraseClassBinding> phraseClasses = [];
-
-        foreach (var type in types.Where(IsPhraseClassType))
-        {
-            List<UatPhraseClassMethodBinding> methods = [];
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-            {
-                if (method.IsSpecialName ||
-                    method.GetCustomAttribute<UatIgnoreAttribute>() is not null)
-                {
-                    continue;
-                }
-
-                var phrases = ResolvePhraseClassMethodPhrases(method);
-                if (phrases.Count == 0)
-                {
-                    continue;
-                }
-
-                methods.Add(new UatPhraseClassMethodBinding(method, phrases));
-            }
-
-            if (methods.Count > 0)
-            {
-                phraseClasses.Add(new UatPhraseClassBinding(type, methods));
-            }
-        }
-
-        return phraseClasses;
-    }
-
-    private static bool IsPhraseClassType(Type type)
-    {
-        return type.GetCustomAttribute<UatPhraseClassAttribute>() is not null ||
-               typeof(UatPhraseClassBase).IsAssignableFrom(type);
-    }
-
-    private static IReadOnlyList<UatPhraseMethodPhrase> ResolvePhraseClassMethodPhrases(MethodInfo method)
-    {
-        var attributes = method
-            .GetCustomAttributes<UatPhraseAttribute>()
-            .Select(attribute => new UatPhraseMethodPhrase(attribute.Phrase, attribute.Keyword))
-            .ToArray();
-        if (attributes.Length > 0)
-        {
-            return attributes;
-        }
-
-        return TryInferPhraseFromMethodName(method.Name, out var keyword, out var phrase)
-            ? [new UatPhraseMethodPhrase(phrase, keyword)]
-            : [];
-    }
-
-    private static bool TryInferPhraseFromMethodName(
-        string methodName,
-        out UatEffectiveStepKeyword keyword,
-        out string phrase)
-    {
-        foreach (var candidate in Enum.GetValues<UatEffectiveStepKeyword>())
-        {
-            var prefix = candidate.ToString();
-            if (!methodName.StartsWith(prefix, StringComparison.Ordinal) ||
-                methodName.Length == prefix.Length)
-            {
-                continue;
-            }
-
-            keyword = candidate;
-            phrase = ToPhrase(methodName[prefix.Length..]);
-            return true;
-        }
-
-        keyword = default;
-        phrase = string.Empty;
-        return false;
-    }
-
-    private static string ToPhrase(string identifier)
-    {
-        var words = SplitWords(identifier);
-        for (var i = 0; i < words.Count; i++)
-        {
-            if (!words[i].Equals("I", StringComparison.Ordinal))
-            {
-                words[i] = words[i].ToLowerInvariant();
-            }
-        }
-
-        return string.Join(' ', words);
-    }
-
-    private static List<string> SplitWords(string value)
-    {
-        List<string> words = [];
-        var current = string.Empty;
-
-        foreach (var character in value)
-        {
-            if (current.Length > 0 && char.IsUpper(character))
-            {
-                words.Add(current);
-                current = string.Empty;
-            }
-
-            current += character;
-        }
-
-        if (current.Length > 0)
-        {
-            words.Add(current);
-        }
-
-        return words;
-    }
-
-    private static bool TryGetServiceProvider(UatExecutionContext context, out IServiceProvider serviceProvider)
-    {
-        if (context.Items.TryGetValue(ServiceProviderItemKey, out var value) &&
-            value is IServiceProvider found)
-        {
-            serviceProvider = found;
-            return true;
-        }
-
-        serviceProvider = null!;
-        return false;
     }
 
     private static bool IsRuntimePageProperty(PropertyInfo property)
@@ -622,8 +393,11 @@ public sealed class UatReflectionRuntime
             return true;
         }
 
+        // A type that declares its own verbs is a control whatever it is called (ContentDialog).
         return UatNameInference.HasKnownSuffix(property.Name) ||
-               UatNameInference.HasKnownSuffix(property.PropertyType.Name);
+               UatNameInference.HasKnownSuffix(property.PropertyType.Name) ||
+               property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                   .Any(method => method.IsDefined(typeof(BddStepAttribute), inherit: false));
     }
 
     private static string ResolveRuntimeName(MemberInfo member)
@@ -642,17 +416,17 @@ public sealed class UatReflectionRuntime
                 method.GetParameters().All(parameter => parameter.IsOptional));
     }
 
-    private Task<UatStepResult> OpenPageAsync(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
+    private Task<BddStepResult> OpenPageAsync(
+        BddExecutionContext context,
+        BddStepInvocation invocation,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!invocation.Arguments.TryGetValue("page", out var pageName) ||
-            !_pages.TryGetValue(pageName, out var page))
+            FindPage(pageName) is not { } page)
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{pageName}' was not found. Available pages: {FormatPageNames()}."));
         }
@@ -661,35 +435,35 @@ public sealed class UatReflectionRuntime
         var instance = GetPageInstance(context, page);
         if (instance is null)
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{page.Name}' requires an active DI scope."));
         }
 
         if (!WaitPageReady(instance))
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{page.Name}' did not become ready."));
         }
 
-        context.CurrentPageName = page.Name;
-        context.Items[CurrentPageItemKey] = page;
-        context.Diagnostics.Add($"page:{page.Name}");
-        return Task.FromResult(UatStepResult.Passed(invocation));
+        context.CurrentPageName = page.Key;
+        context.AppItems[CurrentPageItemKey] = page;
+        context.Diagnostics.Add($"page:{page.Key}");
+        return Task.FromResult(BddStepResult.Passed(invocation));
     }
 
-    private Task<UatStepResult> AssertPageAsync(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
+    private Task<BddStepResult> AssertPageAsync(
+        BddExecutionContext context,
+        BddStepInvocation invocation,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!invocation.Arguments.TryGetValue("page", out var pageName) ||
-            !_pages.TryGetValue(pageName, out var page))
+            FindPage(pageName) is not { } page)
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{pageName}' was not found. Available pages: {FormatPageNames()}."));
         }
@@ -697,64 +471,75 @@ public sealed class UatReflectionRuntime
         var instance = GetPageInstance(context, page);
         if (instance is null)
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{page.Name}' requires an active DI scope."));
         }
 
         if (!WaitPageReady(instance))
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{page.Name}' was not ready."));
         }
 
-        context.CurrentPageName = page.Name;
-        context.Items[CurrentPageItemKey] = page;
-        return Task.FromResult(UatStepResult.Passed(invocation));
+        context.CurrentPageName = page.Key;
+        context.AppItems[CurrentPageItemKey] = page;
+        return Task.FromResult(BddStepResult.Passed(invocation));
     }
 
-    private Task<UatStepResult> InvokeControlMethodAsync(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        string controlArgumentName,
-        string methodName,
-        string? valueArgumentName = null,
-        object? literalArgument = null)
+    private Task<BddStepResult> InvokeControlMethodAsync(
+        BddExecutionContext context,
+        BddStepInvocation invocation,
+        UatStepBinding binding)
     {
-        if (!TryGetCurrentControl(context, invocation, controlArgumentName, out var controlResult))
+        var (methodName, valueArgumentName, valueType) = (binding.MethodName, binding.ValueArgumentName, binding.ValueType);
+        object? literalArgument = binding.Literal;
+        var found = binding.NamesControl
+            ? TryGetCurrentControl(context, invocation, UatCatalogBuilder.ControlParameter, out var controlResult)
+            : TryGetDeclaringControl(context, invocation, binding, out controlResult);
+        if (!found)
         {
             return Task.FromResult(controlResult.Result);
         }
 
-        var value = valueArgumentName is null
-            ? literalArgument
-            : invocation.Arguments[valueArgumentName];
-        var arguments = valueArgumentName is null && literalArgument is null
-            ? []
-            : new[] { value };
+        object? value;
+        try
+        {
+            value = valueArgumentName is null ? literalArgument
+                : valueType is null || valueType == typeof(string) ? invocation.Arguments[valueArgumentName]
+                : BddValues.Read(invocation.RawArguments[valueArgumentName], valueType, _steps.ValueContext(context));
+        }
+        catch (BddValueException ex)
+        {
+            return Task.FromResult(BddStepResult.Failed(invocation, $"'{valueArgumentName}' is a {BddValues.Describe(valueType!)}; {ex.Problem.Message}", ex));
+        }
+        object?[] arguments = [
+            .. binding.ItemArgumentName is { } item ? [invocation.Arguments[item]] : Array.Empty<object?>(),
+            .. valueArgumentName is null && literalArgument is null ? Array.Empty<object?>() : [value],
+        ];
 
         try
         {
-            Invoke(controlResult.Control!, methodName, arguments);
+            BddInvoker.Invoke(controlResult.Control!, methodName, arguments);
             context.Diagnostics.Add($"{methodName}:{controlResult.ControlName}");
-            return Task.FromResult(UatStepResult.Passed(invocation));
+            return Task.FromResult(FollowPage(context, invocation));
         }
         catch (Exception ex)
         {
             var methodDetail = ex is MissingMethodException
                 ? $" Available methods: {FormatMethodNames(controlResult.Control!)}."
                 : string.Empty;
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"Failed to run '{methodName}' on control '{controlResult.ControlName}': {ex.Message}.{methodDetail}",
                 ex));
         }
     }
 
-    private Task<UatStepResult> AssertAnyControlTextContainsAsync(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
+    private Task<BddStepResult> AssertAnyControlTextContainsAsync(
+        BddExecutionContext context,
+        BddStepInvocation invocation,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -768,7 +553,7 @@ public sealed class UatReflectionRuntime
         var pageInstance = GetPageInstance(context, pageResult.Page!);
         if (pageInstance is null)
         {
-            return Task.FromResult(UatStepResult.Failed(
+            return Task.FromResult(BddStepResult.Failed(
                 invocation,
                 $"UAT page '{pageResult.Page!.Name}' requires an active DI scope."));
         }
@@ -781,23 +566,23 @@ public sealed class UatReflectionRuntime
                 continue;
             }
 
-            var text = Invoke(control, "GetText");
+            var text = BddInvoker.Invoke(control, "GetText");
             if (text is string value &&
                 value.Contains(expected, StringComparison.Ordinal))
             {
                 context.Diagnostics.Add($"see:{expected}");
-                return Task.FromResult(UatStepResult.Passed(invocation));
+                return Task.FromResult(BddStepResult.Passed(invocation));
             }
         }
 
-        return Task.FromResult(UatStepResult.Failed(
+        return Task.FromResult(BddStepResult.Failed(
             invocation,
             $"Text '{expected}' was not found on page '{pageResult.Page.Name}'."));
     }
 
     private bool TryGetCurrentControl(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
+        BddExecutionContext context,
+        BddStepInvocation invocation,
         string controlArgumentName,
         out UatControlResolution result)
     {
@@ -809,28 +594,28 @@ public sealed class UatReflectionRuntime
         }
 
         var controlName = invocation.Arguments[controlArgumentName];
-        var controlBinding = pageResult.Page!.Controls.FirstOrDefault(
-            control => control.Name.Equals(controlName, StringComparison.OrdinalIgnoreCase));
+        var page = pageResult.Page!;
+        var controlBinding = FindControl(page, controlName);
         if (controlBinding is null)
         {
             result = new UatControlResolution(
                 null,
                 controlName,
-                UatStepResult.Failed(
+                BddStepResult.Failed(
                     invocation,
-                    $"UAT control '{controlName}' was not found on page '{pageResult.Page.Name}'. Available controls: {FormatControlNames(pageResult.Page)}."));
+                    $"UAT control '{controlName}' was not found on page '{page.Name}'. Available controls: {FormatControlNames(page)}."));
             return false;
         }
 
-        var pageInstance = GetPageInstance(context, pageResult.Page);
+        var pageInstance = GetPageInstance(context, page);
         if (pageInstance is null)
         {
             result = new UatControlResolution(
                 null,
                 controlName,
-                UatStepResult.Failed(
+                BddStepResult.Failed(
                     invocation,
-                    $"UAT page '{pageResult.Page.Name}' requires an active DI scope."));
+                    $"UAT page '{page.Name}' requires an active DI scope."));
             return false;
         }
 
@@ -840,43 +625,109 @@ public sealed class UatReflectionRuntime
             result = new UatControlResolution(
                 null,
                 controlName,
-                UatStepResult.Failed(
+                BddStepResult.Failed(
                     invocation,
-                    $"UAT control '{controlName}' on page '{pageResult.Page.Name}' returned null."));
+                    $"UAT control '{controlName}' on page '{page.Name}' returned null."));
             return false;
         }
 
-        result = new UatControlResolution(control, controlName, UatStepResult.Passed(invocation));
+        result = new UatControlResolution(control, controlName, BddStepResult.Passed(invocation));
         return true;
     }
 
+    // A verb without {control} runs on the one control of the current page whose type declares it:
+    // "the todo {item} should be synced" on the list's collection.
+    private bool TryGetDeclaringControl(
+        BddExecutionContext context,
+        BddStepInvocation invocation,
+        UatStepBinding binding,
+        out UatControlResolution result)
+    {
+        result = default;
+        if (!TryGetCurrentPage(context, invocation, out var pageResult))
+        {
+            result = new UatControlResolution(null, string.Empty, pageResult.Result);
+            return false;
+        }
+
+        var page = pageResult.Page!;
+        var declaring = page.Controls
+            .Where(control => SelfAndBaseTypes(control.Property.PropertyType).Any(type => Declares(type, binding)))
+            .ToList();
+        if (declaring.Count != 1)
+        {
+            result = new UatControlResolution(
+                null,
+                string.Empty,
+                BddStepResult.Failed(
+                    invocation,
+                    declaring.Count == 0
+                        ? $"No control on page '{page.Name}' has the step '{binding.Phrase}'. Go to the page whose control has it first."
+                        : $"The step '{binding.Phrase}' is on several controls of page '{page.Name}' ({string.Join(", ", declaring.Select(control => control.Name))}), so it cannot tell which one is meant. Put {{control}} in the phrase."));
+            return false;
+        }
+
+        var pageInstance = GetPageInstance(context, page);
+        var control = pageInstance is null ? null : declaring[0].Get(pageInstance);
+        if (control is null)
+        {
+            result = new UatControlResolution(
+                null,
+                declaring[0].Name,
+                BddStepResult.Failed(invocation, $"UAT control '{declaring[0].Name}' on page '{page.Name}' could not be created."));
+            return false;
+        }
+
+        result = new UatControlResolution(control, declaring[0].Name, BddStepResult.Passed(invocation));
+        return true;
+    }
+
+    private static bool Declares(Type type, UatStepBinding binding)
+        => type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .Any(method => method.Name == binding.MethodName &&
+                           method.GetCustomAttributes<BddStepAttribute>(inherit: false)
+                               .Any(attribute => attribute.Keyword == binding.Keyword && attribute.Phrase == binding.Phrase));
+
+    // A step may put "the" before a control's name: "the dialog should ask ..." finds Dialog.
+    private static UatRuntimeControl? FindControl(UatRuntimePage page, string name)
+        => page.Controls.FirstOrDefault(control => control.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+           ?? (name.StartsWith("the ", StringComparison.OrdinalIgnoreCase)
+               ? page.Controls.FirstOrDefault(control => control.Name.Equals(name[4..].TrimStart(), StringComparison.OrdinalIgnoreCase))
+               : null);
+
     private bool TryGetCurrentPage(
-        UatExecutionContext context,
-        UatStepInvocation invocation,
+        BddExecutionContext context,
+        BddStepInvocation invocation,
         out UatPageResolution result)
     {
         result = default;
-        if (context.Items.TryGetValue(CurrentPageItemKey, out var value) &&
+        if (context.AppItems.TryGetValue(CurrentPageItemKey, out var value) &&
             value is UatRuntimePage page)
         {
-            result = new UatPageResolution(page, UatStepResult.Passed(invocation));
+            result = new UatPageResolution(page, BddStepResult.Passed(invocation));
             return true;
         }
 
         if (context.CurrentPageName is not null &&
             _pages.TryGetValue(context.CurrentPageName, out var namedPage))
         {
-            result = new UatPageResolution(namedPage, UatStepResult.Passed(invocation));
+            result = new UatPageResolution(namedPage, BddStepResult.Passed(invocation));
             return true;
         }
 
         result = new UatPageResolution(
             null,
-            UatStepResult.Failed(
+            BddStepResult.Failed(
                 invocation,
                 $"No current UAT page is active. Add a 'Given I am on the ... page' step first. Available pages: {FormatPageNames()}."));
         return false;
     }
+
+    // The binder writes a page's key into the step; a bare name finds the one page it names.
+    private UatRuntimePage? FindPage(string name)
+        => _pages.TryGetValue(name, out var page)
+            ? page
+            : _pages.Values.Where(candidate => candidate.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).ToList() is [var only] ? only : null;
 
     private string FormatPageNames()
     {
@@ -905,31 +756,31 @@ public sealed class UatReflectionRuntime
         return methods.Length == 0 ? "(none)" : string.Join(", ", methods);
     }
 
-    private static object? GetPageInstance(UatExecutionContext context, UatRuntimePage page)
+    private static object? GetPageInstance(BddExecutionContext context, UatRuntimePage page)
     {
         if (page.Instance is not null)
         {
             return page.Instance;
         }
 
-        return TryGetServiceProvider(context, out var serviceProvider)
+        return BddStepDefinitionRuntime.TryGetServiceProvider(context, out var serviceProvider)
             ? serviceProvider.GetService(page.PageType)
             : null;
     }
 
     private static bool WaitPageReady(object page)
     {
-        if (TryInvokeBool(page, "WaitReady", 10000, out var ready))
+        if (BddInvoker.TryInvokeBool(page, "WaitReady", 10000, out var ready))
         {
             return ready;
         }
 
-        if (TryInvokeBool(page, "WaitLoaded", true, 10000, out ready))
+        if (BddInvoker.TryInvokeBool(page, "WaitLoaded", true, 10000, out ready))
         {
             return ready;
         }
 
-        if (TryInvokeBool(page, "IsLoaded", 10000, out ready))
+        if (BddInvoker.TryInvokeBool(page, "IsLoaded", 10000, out ready))
         {
             return ready;
         }
@@ -937,118 +788,9 @@ public sealed class UatReflectionRuntime
         return true;
     }
 
-    private static bool TryInvokeBool(object instance, string methodName, object? argument, out bool result)
-    {
-        result = false;
-        var method = FindInvokableMethod(instance.GetType(), methodName, argument is null ? [] : [argument]);
-        if (method is null)
-        {
-            return false;
-        }
+    private readonly record struct UatPageResolution(UatRuntimePage? Page, BddStepResult Result);
 
-        var value = Invoke(instance, method, argument);
-        if (value is bool boolean)
-        {
-            result = boolean;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool TryInvokeBool(object instance, string methodName, object? first, object? second, out bool result)
-    {
-        result = false;
-        var method = FindInvokableMethod(instance.GetType(), methodName, [first, second]);
-        if (method is null)
-        {
-            return false;
-        }
-
-        var value = Invoke(instance, method, first, second);
-        if (value is bool boolean)
-        {
-            result = boolean;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static object? Invoke(object instance, string methodName, params object?[] providedArguments)
-    {
-        var method = FindInvokableMethod(instance.GetType(), methodName, providedArguments);
-        if (method is null)
-        {
-            throw new MissingMethodException(instance.GetType().FullName, methodName);
-        }
-
-        return Invoke(instance, method, providedArguments);
-    }
-
-    private static object? Invoke(object instance, MethodInfo method, params object?[] providedArguments)
-    {
-        var parameters = method.GetParameters();
-        object?[] arguments = new object?[parameters.Length];
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            arguments[i] = i < providedArguments.Length
-                ? providedArguments[i]
-                : Type.Missing;
-        }
-
-        try
-        {
-            var result = method.Invoke(instance, arguments);
-            return result;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            throw ex.InnerException;
-        }
-    }
-
-    private static MethodInfo? FindInvokableMethod(Type type, string methodName, IReadOnlyList<object?> providedArguments)
-    {
-        return type
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Where(method => method.Name.Equals(methodName, StringComparison.Ordinal))
-            .FirstOrDefault(method =>
-            {
-                var parameters = method.GetParameters();
-                if (parameters.Count(parameter => !parameter.IsOptional) > providedArguments.Count ||
-                    parameters.Length < providedArguments.Count)
-                {
-                    return false;
-                }
-
-                for (var i = 0; i < providedArguments.Count; i++)
-                {
-                    if (!CanPassArgument(providedArguments[i], parameters[i].ParameterType))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-    }
-
-    private static bool CanPassArgument(object? argument, Type parameterType)
-    {
-        var nullableInnerType = Nullable.GetUnderlyingType(parameterType);
-        if (argument is null)
-        {
-            return nullableInnerType is not null || !parameterType.IsValueType;
-        }
-
-        var effectiveParameterType = nullableInnerType ?? parameterType;
-        return effectiveParameterType.IsInstanceOfType(argument);
-    }
-
-    private readonly record struct UatPageResolution(UatRuntimePage? Page, UatStepResult Result);
-
-    private readonly record struct UatControlResolution(object? Control, string ControlName, UatStepResult Result);
+    private readonly record struct UatControlResolution(object? Control, string ControlName, BddStepResult Result);
 }
 
 public sealed record UatRuntimePage(
@@ -1056,7 +798,14 @@ public sealed record UatRuntimePage(
     Type PageType,
     object? Instance,
     IReadOnlyList<UatRuntimeControl> Controls,
-    Action? Navigate);
+    Action? Navigate)
+{
+    /// <summary>The page's namespace (<see cref="BddNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>The page as steps and the runtime know it: <c>Invoicing/Detail</c>, or <see cref="Name"/>.</summary>
+    public string Key => BddNamespaces.PageKey(Namespace, Name);
+}
 
 public sealed record UatRuntimeControl(
     string Name,
@@ -1068,15 +817,3 @@ public sealed record UatRuntimeControl(
         return Property.GetValue(page);
     }
 }
-
-public sealed record UatPhraseClassBinding(
-    Type Type,
-    IReadOnlyList<UatPhraseClassMethodBinding> Methods);
-
-public sealed record UatPhraseClassMethodBinding(
-    MethodInfo Method,
-    IReadOnlyList<UatPhraseMethodPhrase> Phrases);
-
-public sealed record UatPhraseMethodPhrase(
-    string Phrase,
-    UatEffectiveStepKeyword? Keyword);

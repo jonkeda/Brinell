@@ -5,20 +5,9 @@ namespace Brinell.Maui.Controls.Container;
 /// <summary>
 /// One node of a <see cref="TreeView{TParent, TSelf}"/>: its label and its expand/collapse toggle,
 /// both found within the tree by the automation ids the app gave them.
+/// A node is not a scope (its row has no automation peer), and a node under a collapsed
+/// ancestor does not exist. On Windows the toggle is invoked and expansion read from its name.
 /// </summary>
-/// <remarks>
-/// <para>
-/// A node is not a scope. Its row is a layout with no automation peer, so there is nothing to scope
-/// to and the two parts are addressed within the tree instead. Members that touch both parts -
-/// <see cref="SetExpanded"/> and the two shortcuts onto it - are therefore hand-written plain calls
-/// in sequence (rule R4): read the toggle's state, click the toggle, wait for the state to flip.
-/// </para>
-/// <para>
-/// <b>Windows:</b> the toggle is invoked through the Invoke pattern, and expansion is read from its
-/// accessible name (see <see cref="TreeView{TParent, TSelf}"/>). A node under a collapsed ancestor
-/// is absent from the tree, so <see cref="IsExists"/> is false for it rather than "not visible".
-/// </para>
-/// </remarks>
 /// <typeparam name="TTree">The tree scope this node belongs to.</typeparam>
 public class TreeNode<TTree>
     where TTree : IMauiScope<TTree>

@@ -7,7 +7,7 @@ namespace Brinell.Maui.Context;
 /// MAUI test context implementation supporting multiple drivers (Appium, FlaUI).
 /// Uses MauiDriverFactory to create the appropriate driver for the platform.
 /// </summary>
-public class MauiTestContext : IMauiTestContext
+public class MauiTestContext : IMauiTestContext, Brinell.Core.Recording.IRecordable
 {
     private readonly Interfaces.IMauiDriver _driver;
     private readonly TimeoutSettings _timeouts;
@@ -28,6 +28,7 @@ public class MauiTestContext : IMauiTestContext
     {
         ArgumentNullException.ThrowIfNull(options);
         
+        Name = options.Name;
         _timeouts = options.Timeouts ?? TimeoutSettings.Default;
         _nearMiss = options.NearMiss ?? NearMissSettings.Default;
         _callLog = options.Logger == null ? OpenCallLog() : null;
@@ -54,6 +55,9 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <inheritdoc />
+    public string? Name { get; }
+
+    /// <inheritdoc />
     public Interfaces.IMauiDriver Driver => _driver;
     
     /// <inheritdoc />
@@ -61,6 +65,13 @@ public class MauiTestContext : IMauiTestContext
     
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
+
+    /// <summary>What the driver says it shows (the device, for Appium); else the app's window on Windows.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _disposed ? null
+            : _driver is Brinell.Core.Recording.IRecordable recordable ? recordable.RecordingTarget
+            : _platform == MauiPlatform.Windows ? Brinell.Core.Recording.RecordingTarget.ForWindow(_driver.CurrentWindowHandle)
+            : null;
 
     /// <inheritdoc />
     public IMauiElement AppElement => _driver.AppElement;
@@ -102,10 +113,7 @@ public class MauiTestContext : IMauiTestContext
     public bool WaitReady(int? timeoutMs = null) => !_disposed;
     
     /// <inheritdoc />
-    /// <remarks>
-    /// Null means "nothing matches now" and nothing else. A driver error propagates: reading it as
-    /// "absent" would let <c>WaitExists(false)</c> pass on a broken driver (F4).
-    /// </remarks>
+    /// <remarks>Null means nothing matches now; a driver error propagates, never reads as absent.</remarks>
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
@@ -115,11 +123,7 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <inheritdoc />
-    /// <remarks>
-    /// One attempt, like every lookup (R2): it used to wait <c>ElementFind</c> (3 s) and then sweep
-    /// the app, inside every poll tick of every control on <c>AppRoot</c> (F1, F2). Waiting is the
-    /// call's poll's job, and so is the sweep (throttled, in the control's lookup).
-    /// </remarks>
+    /// <remarks>One attempt, like every lookup (call model R2): waiting is the call's poll's job.</remarks>
     public IMauiElement FindElement(Locator locator)
         => TryFindElement(locator) ?? throw DescribeMiss(locator);
 

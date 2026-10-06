@@ -9,13 +9,8 @@ namespace Brinell.Presenter.ViewModels;
 
 /// <summary>
 /// Edits the two rows a workspace config carries, and shows what the rest derives to.
+/// Save stays enabled while the config is invalid, so half-fixed work is never lost (AD-018).
 /// </summary>
-/// <remarks>
-/// Saving writes through <see cref="UatConfigWriter" />, so untouched text survives, and then
-/// reloads the workspace - the tree carries expansion and selection across. Save stays enabled
-/// while the config is invalid: half-fixing and saving is legitimate, and refusing to write is
-/// how an editor loses work. See <c>.my/present/startup/00-presenter-workspace-design.md</c>.
-/// </remarks>
 public sealed class ConfigEditorViewModel : ViewModelBase
 {
     private readonly IFixtureInspector _fixtureInspector;
@@ -182,26 +177,29 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         {
             if (!ConfigExists)
             {
-                return "No uat.config.md";
+                return $"No {BddFileFormat.UiConfigFileName}";
             }
 
             var problems = _hasErrors ? "problems" : string.Empty;
             return (IsDirty, problems.Length > 0) switch
             {
-                (true, true) => "uat.config.md  * unsaved, problems",
-                (true, false) => "uat.config.md  * unsaved",
-                (false, true) => "uat.config.md  problems",
-                _ => "uat.config.md"
+                (true, true) => $"{ConfigName}  * unsaved, problems",
+                (true, false) => $"{ConfigName}  * unsaved",
+                (false, true) => $"{ConfigName}  problems",
+                _ => ConfigName
             };
         }
     }
 
     private bool WorkspacePathIsSet => _workspacePath.Length > 0;
 
+    // uat.config.md or bdd.config.md, whichever the workspace has.
+    private string ConfigName => _configPath.Length > 0 ? Path.GetFileName(_configPath) : BddFileFormat.UiConfigFileName;
+
     /// <summary>Shows the workspace's config, discarding any unsaved edits.</summary>
     /// <param name="workspacePath">The workspace folder.</param>
     /// <param name="config">What the inspector made of it.</param>
-    public void Load(string workspacePath, UatWorkspaceConfigLoadResult config)
+    public void Load(string workspacePath, BddWorkspaceConfigLoadResult config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -231,8 +229,8 @@ public sealed class ConfigEditorViewModel : ViewModelBase
                 ? $"{config.ResolvedAppPath}   configured override"
                 : "owned by the fixture";
 
-            ProjectProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, UatConfigFields.Project));
-            FixtureProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, UatConfigFields.Fixture));
+            ProjectProblem = Describe(config.ProblemsFor(BddConfigSections.Runtime, BddConfigFields.Project));
+            FixtureProblem = Describe(config.ProblemsFor(BddConfigSections.Runtime, BddConfigFields.Fixture));
             SaveMessage = string.Empty;
 
             RefreshFixtureCandidates();
@@ -244,10 +242,10 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         }
     }
 
-    private static string Describe(IReadOnlyList<UatConfigProblem> problems) =>
+    private static string Describe(IReadOnlyList<BddConfigProblem> problems) =>
         problems.Count == 0 ? string.Empty : string.Join(Environment.NewLine, problems.Select(p => p.Message));
 
-    private static string DescribePages(UatWorkspaceConfigLoadResult config)
+    private static string DescribePages(BddWorkspaceConfigLoadResult config)
     {
         var pages = config.Assemblies.FirstOrDefault(assembly =>
             assembly.Kind.Equals("Pages", StringComparison.OrdinalIgnoreCase));
@@ -340,16 +338,16 @@ public sealed class ConfigEditorViewModel : ViewModelBase
 
         if (ReadWriteTime() != _configWriteTimeAtLoad)
         {
-            SaveMessage = "uat.config.md changed on disk. Reload to see it, or save again to overwrite.";
+            SaveMessage = $"{ConfigName} changed on disk. Reload to see it, or save again to overwrite.";
             _configWriteTimeAtLoad = ReadWriteTime();
             return;
         }
 
-        var edit = UatConfigEdit.Empty
-            .WithField(UatConfigSections.Runtime, UatConfigFields.Project, Blank(ProjectText))
-            .WithField(UatConfigSections.Runtime, UatConfigFields.Fixture, Blank(FixtureText));
+        var edit = BddConfigEdit.Empty
+            .WithField(BddConfigSections.Runtime, BddConfigFields.Project, Blank(ProjectText))
+            .WithField(BddConfigSections.Runtime, BddConfigFields.Fixture, Blank(FixtureText));
 
-        UatConfigWriter.ApplyToFile(_configPath, edit);
+        BddConfigWriter.ApplyToFile(_configPath, edit);
         _savedProjectText = ProjectText;
         _savedFixtureText = FixtureText;
         _configWriteTimeAtLoad = ReadWriteTime();
@@ -380,7 +378,7 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         }
 
         var path = Path.Combine(_workspacePath, "uat.config.md");
-        UatConfigWriter.CreateFile(path, new UatConfigTemplate(Blank(ProjectText) ?? "./", Blank(FixtureText)));
+        BddConfigWriter.CreateFile(path, new BddConfigTemplate(Blank(ProjectText) ?? "./", Blank(FixtureText)));
         SaveMessage = "Created uat.config.md.";
         _reloadWorkspace();
     }

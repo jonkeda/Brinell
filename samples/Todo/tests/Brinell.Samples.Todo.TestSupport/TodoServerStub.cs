@@ -29,12 +29,26 @@ public sealed class TodoServerStub
 {
     private readonly Lock _gate = new();
     private readonly Dictionary<Guid, TodoDto> _todos;
+    private readonly Dictionary<Guid, UserDto> _users;
     private readonly string _apiKey;
 
-    private TodoServerStub(IEnumerable<TodoDto> initial, string apiKey)
+    private TodoServerStub(IEnumerable<TodoDto> initial, string apiKey, IEnumerable<UserDto>? users)
     {
         _todos = initial.ToDictionary(todo => todo.Id);
+        _users = (users ?? []).ToDictionary(user => user.Id);
         _apiKey = apiKey;
+    }
+
+    /// <summary>The users the fake server holds now, by name.</summary>
+    public IReadOnlyList<UserDto> Users
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _users.Values.OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase).ToList();
+            }
+        }
     }
 
     /// <summary>What the fake server holds now, oldest first.</summary>
@@ -50,18 +64,36 @@ public sealed class TodoServerStub
     }
 
     /// <summary>
-    /// Registers the fake's endpoints on <paramref name="mock"/>, starting from <paramref name="initial"/>.
+    /// Registers the fake's endpoints on <paramref name="mock"/>, starting from <paramref name="initial"/>
+    /// and <paramref name="users"/>.
     /// </summary>
-    public static TodoServerStub Install(MockApiServer mock, IEnumerable<TodoDto> initial, string apiKey = TodoApi.DevelopmentApiKey)
+    public static TodoServerStub Install(
+        MockApiServer mock,
+        IEnumerable<TodoDto> initial,
+        string apiKey = TodoApi.DevelopmentApiKey,
+        IEnumerable<UserDto>? users = null)
     {
-        var stub = new TodoServerStub(initial, apiKey);
+        var stub = new TodoServerStub(initial, apiKey, users);
 
         mock.Get(TodoApi.TodosPath).RespondsWith(stub.List);
         mock.Get(TodoApi.TodosPath + "/*").RespondsWith(stub.GetOne);
         mock.Put(TodoApi.TodosPath + "/*").RespondsWith(stub.Put);
         mock.Delete(TodoApi.TodosPath + "/*").RespondsWith(stub.Delete);
 
+        mock.Get(TodoApi.UsersPath).RespondsWith(stub.ListUsers);
+        mock.Get(TodoApi.UsersPath + "/*").RespondsWith(stub.GetUser);
+        mock.Put(TodoApi.UsersPath + "/*").RespondsWith(stub.PutUser);
+
         return stub;
+    }
+
+    /// <summary>Adds or replaces a user on the server, as if another device had saved it.</summary>
+    public void StoreUser(UserDto user)
+    {
+        lock (_gate)
+        {
+            _users[user.Id] = user;
+        }
     }
 
     /// <summary>Adds or replaces a todo on the server, as if another device had synced it.</summary>
@@ -159,6 +191,76 @@ public sealed class TodoServerStub
             return MockResponse.Status(_todos.Remove(id) ? 204 : 404);
         }
     }
+
+    private MockResponse ListUsers(RecordedRequest request)
+        => Authorized(request) ?? Json(Users);
+
+    private MockResponse GetUser(RecordedRequest request)
+    {
+        if (Authorized(request) is { } refused)
+        {
+            return refused;
+        }
+
+        if (!TryReadId(request, out var id))
+        {
+            return MockResponse.Status(404);
+        }
+
+        lock (_gate)
+        {
+            return _users.TryGetValue(id, out var user) ? Json(user) : MockResponse.Status(404);
+        }
+    }
+
+    // The same checks and answers as the real API: a validation problem document per field (400),
+    // or the name taken (409). The contract tests compare the two.
+    private MockResponse PutUser(RecordedRequest request)
+    {
+        if (Authorized(request) is { } refused)
+        {
+            return refused;
+        }
+
+        if (!TryReadId(request, out var id))
+        {
+            return MockResponse.Status(404);
+        }
+
+        UserDto? sent;
+        try
+        {
+            sent = request.BodyAs<UserDto>(TodoApi.JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return MockResponse.Status(400);
+        }
+
+        if (sent is null || sent.Id != id)
+        {
+            return MockResponse.Status(400);
+        }
+
+        if (ServerUserRules.Validate(sent) is { Count: > 0 } errors)
+        {
+            return Problem(400, errors);
+        }
+
+        lock (_gate)
+        {
+            if (ServerUserRules.IsDuplicateName(sent, _users.Values))
+            {
+                return Problem(409, new Dictionary<string, string[]> { ["name"] = ["Another user already has this name"] });
+            }
+
+            _users[id] = sent with { Name = sent.Name.Trim() };
+            return Json(_users[id]);
+        }
+    }
+
+    private static MockResponse Problem(int status, Dictionary<string, string[]> errors)
+        => MockResponse.Json(new ValidationProblemDto(status, errors), status, TodoApi.JsonOptions);
 
     private MockResponse? Authorized(RecordedRequest request)
         => request.Headers.TryGetValue(TodoApi.ApiKeyHeader, out var key) && key == _apiKey

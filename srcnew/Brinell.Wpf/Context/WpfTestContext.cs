@@ -5,7 +5,7 @@ namespace Brinell.Wpf.Context;
 /// <summary>
 /// WPF test context implementation using FlaUI driver.
 /// </summary>
-public class WpfTestContext : IWpfTestContext, IDisposable
+public class WpfTestContext : IWpfTestContext, IDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly IWpfDriver _driver;
     private readonly TimeoutSettings _timeouts;
@@ -69,6 +69,10 @@ public class WpfTestContext : IWpfTestContext, IDisposable
 
     /// <inheritdoc />
     public IPageObject? Page => null;
+
+    /// <summary>The app's window.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _disposed ? null : Brinell.Core.Recording.RecordingTarget.ForWindow(_driver.CurrentWindowHandle);
 
     /// <inheritdoc />
     public bool IsReady(int? timeoutMs = null) => !_disposed;

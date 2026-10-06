@@ -31,19 +31,19 @@ public class DateInputControlTests
     }
 
     [Fact]
-    public void GetMin_ReturnsMinAttribute()
+    public void GetMinimum_ReturnsMinAttribute()
     {
         _mockElement.Setup(e => e.GetAttribute("min")).Returns("2020-01-01");
 
-        Assert.Equal("2020-01-01", _page.TestDateInput.GetMin());
+        Assert.Equal(new DateOnly(2020, 1, 1), _page.TestDateInput.GetMinimum());
     }
 
     [Fact]
-    public void GetMax_ReturnsMaxAttribute()
+    public void GetMaximum_ReturnsMaxAttribute()
     {
         _mockElement.Setup(e => e.GetAttribute("max")).Returns("2030-12-31");
 
-        Assert.Equal("2030-12-31", _page.TestDateInput.GetMax());
+        Assert.Equal(new DateOnly(2030, 12, 31), _page.TestDateInput.GetMaximum());
     }
 
     [Fact]

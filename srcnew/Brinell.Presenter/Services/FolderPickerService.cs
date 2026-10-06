@@ -31,7 +31,12 @@ public sealed class FolderPickerService : IFolderPickerService
     }
 
     /// <inheritdoc />
-    public async Task<string?> PickProjectAsync(CancellationToken cancellationToken = default)
+    public Task<string?> PickProjectAsync(CancellationToken cancellationToken = default) => PickFileAsync(".csproj", cancellationToken);
+
+    /// <inheritdoc />
+    public Task<string?> PickScriptAsync(CancellationToken cancellationToken = default) => PickFileAsync(".md", cancellationToken);
+
+    private static async Task<string?> PickFileAsync(string extension, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -40,7 +45,7 @@ public sealed class FolderPickerService : IFolderPickerService
         {
             SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
         };
-        picker.FileTypeFilter.Add(".csproj");
+        picker.FileTypeFilter.Add(extension);
 
         var window = Application.Current?.Windows.FirstOrDefault();
         var platformWindow = window?.Handler?.PlatformView as Microsoft.UI.Xaml.Window;

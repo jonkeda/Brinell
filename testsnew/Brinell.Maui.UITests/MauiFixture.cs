@@ -42,8 +42,8 @@ public class MauiFixture : MauiTestFixtureBase
     /// which is a contradiction - the hub is not loaded precisely when the way back to it is
     /// needed - and the readiness gates correctly refused, taking the whole suite down with them.
     /// The fix at the time replaced the control object with a hand-rolled lookup, which cost the
-    /// activation ladder, the logging and the failure messages that come with one; see
-    /// <c>.my/fix/rca-backtohub-is-not-a-control-object.md</c>. <see cref="AppRoot"/> is the
+    /// activation ladder, the logging and the failure messages that come with one.
+    /// <see cref="AppRoot"/> is the
     /// scope that was missing.
     /// </para>
     /// <para>
@@ -464,7 +464,6 @@ public class MauiFixture : MauiTestFixtureBase
 
         // UiAutomator2 waits for the app to report idle before each command, defaulting to
         // 10 s. A MAUI app that animates may never report idle, so commands pay that wait.
-        // See .my/scroll/perf-why-exists-was-slow.md for the measurements behind these settings.
         options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
 
         // Reinstall even when the installed APK reports the same version: MAUI does not bump

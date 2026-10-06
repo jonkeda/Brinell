@@ -18,7 +18,7 @@ running app:
 | File | Job |
 | --- | --- |
 | `uat.config.md` | Where the app is, which assemblies hold the pages and controls, how to report. One per test project. |
-| `Scenarios/*.uat.md` | The executable scenarios themselves, in `Given / When / Then`. |
+| `Features/*.feature.md` | The executable scenarios themselves, in `Given / When / Then`. |
 | `Runtime/*.cs` | The fixture, the xUnit collection and the scenario test class. Written once. |
 
 Brinell reads the scenario, matches each line to a **phrase**, and calls the matching
@@ -27,7 +27,7 @@ Markdown *is* the test.
 
 ```mermaid
 flowchart LR
-    MD[create-needs-title.uat.md<br/>Given/When/Then] --> P[Parser]
+    MD[TOD.02-create-a-todo.feature.md<br/>Given/When/Then] --> P[Parser]
     P --> C[Command catalog<br/>discovered phrases]
     C --> B[Binder<br/>one phrase per step]
     B --> R[Runner]
@@ -39,10 +39,11 @@ flowchart LR
 
 ## 2. The scenario file
 
-[`Scenarios/create-needs-title.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/create-needs-title.uat.md):
+One file per journey. [`Features/TOD.02-create-a-todo.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
+holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
-```markdown
-# UAT: Todo saving a new todo needs a title
+````markdown
+# Feature: TOD.02 Create a todo
 
 ## Metadata
 
@@ -51,31 +52,54 @@ flowchart LR
 | App | Brinell.Samples.Todo.App |
 | Area | Create |
 | Target | MAUI |
-| Journey | TOD.02.3 |
-| Tags | smoke, maui, create, validation |
+| Journey | TOD.02 |
+| TestData | one-todo |
+| Tags | maui, create |
 
-@smoke @maui @create @validation
-## Scenario: Saving with an empty title shows the error and stays
+## Background
 
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page
-When I clear Title
-And I tap Save
-Then Title Error should be visible
-And Title Error should contain "Title is required"
 ```
+
+@TOD.02.3 @smoke @maui @create @validation
+## Scenario Outline: TOD.02.3 An empty or whitespace title shows "Title is required" and does not save
+
+```gherkin
+When I set Title to <title>
+And I tap Save
+Then Title Error should contain "Title is required"
+And I should be on the Todo Edit page
+And the database should not have a todo with a blank title
+And the database should have todos
+  | Title    | SyncState |
+  | -------- | --------- |
+  | Buy milk | Synced    |
+```
+
+### Examples
+
+| title |
+| --- |
+| "" |
+| "   " |
+````
 
 Notes on why each part is there:
 
-- **`# UAT: <title>`** — exactly one per file; it names the scenario.
-- **`## Metadata`** — the traceable header. `Journey: TOD.02.3` is what ties this file
-  back to the journey checklist; `Area` and `App` are documentation.
-- **`@smoke @maui ...`** — the tag line. It must sit **immediately above**
-  `## Scenario:`. These, not the `Tags` metadata row, drive filtering and skip rules.
+- **`# Feature: <title>`** — exactly one per file; it names the journey.
+- **`## Metadata`** — the traceable header. `Journey: TOD.02` ties the file to the checklist;
+  `TestData: one-todo` is the starting data the app is launched on (one synced todo, "Buy milk").
+- **`## Background`** — steps put in front of every scenario in the file.
+- **`@TOD.02.3 @smoke ...`** — the tag line, **immediately above** the scenario heading. The
+  subtask id is both a tag and the start of the heading, so reports and screenshots carry it.
+- **`Scenario Outline` + `Examples`** — one run per row; the quotes keep the whitespace title.
 - **The steps** — each starts with `Given/When/Then/And/But`. `And` inherits the previous
-  keyword (so `And I tap Save` is still a *When*), and a `When` after a `Then` is fine:
-  the scenario alternates as the user does.
+  keyword, and a `When` after a `Then` is fine: the scenario alternates as the user does. The
+  `the database should ...` steps read the app's SQLite file and compare the listed columns.
+- **Fenced blocks** — the ```` ```gherkin ```` fences are only for rendering; the parser ignores them.
 
 ---
 
@@ -93,7 +117,7 @@ Every step matches exactly one phrase. The phrase decides which page object meth
 | `Then Title Error should be visible` | `{control} should be visible` | `TitleError.AssertVisible(true)` |
 | `And Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 
-Those control phrases are not a list someone maintains. Each is a `[UatStep]` attribute on
+Those control phrases are not a list someone maintains. Each is a `[BddWhen]` or `[BddThen]` attribute on
 the `Brinell.Core` interface method it calls — `I clear {control}` sits on
 `IEditableTextControlObject.Clear`, `{control} should be visible` on
 `IElementObject.AssertVisible` — and the engine discovers them by reflection
@@ -129,7 +153,7 @@ So the chain for one step is:
 
 ```text
 "And Title Error should contain \"Title is required\""
-   -> phrase   {control} should contain {value}   ([UatStep] on ITextControlObject.AssertTextContains)
+   -> phrase   {control} should contain {value}   ([BddThen] on ITextControlObject.AssertTextContains)
    -> control  "Title Error"  == TodoEditPage.TitleError
    -> id       TodoEdit_TitleError  (from the XAML)
    -> call     AssertTextContains("Title is required")
@@ -145,27 +169,27 @@ binds to the page object's name.
 ## 4. A verb the framework does not have
 
 Cycling the status with **Next** is Todo's own behaviour, so Todo declares its own verb: a
-`[UatStep]` on the method of the ControlObject that performs it
+`[BddWhen]` on the method of the ControlObject that performs it
 ([`TodoStatus.tpl.cs`](tests/Brinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
 
 ```csharp
-[UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+[BddWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
 
-[UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+[BddThen("{control} should show status {value}")]
 public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
 No registration, no catalog edit: the attribute *is* the registration, and
-[`set-status-on-a-new-todo.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/set-status-on-a-new-todo.uat.md)
+[`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.05-change-status.feature.md)
 reads
 
-```markdown
+```gherkin
 When I advance Status to "Done"
 Then Status should show status "Done"
 ```
 
-The same move gives the list its row assertion — `[UatStep]` on `TodoList.AssertRow`
+The same move gives the list its row assertion — `[BddThen]` on `TodoList.AssertRow`
 produces `Then Todos should have todo "Write the report"`.
 
 ---
@@ -201,7 +225,7 @@ produces `Then Todos should have todo "Write the report"`.
 ```
 
 - **`Pages`** is the assembly carrying `TodoListPage` / `TodoEditPage` — the source of the
-  control names, and of Todo's custom `[UatStep]` verbs.
+  control names, and of Todo's custom `[BddWhen]` / `[BddThen]` verbs.
 - **`AllowNameInference = true`** is why `AddButton` works as **Add** with no attribute.
 - **`Fixture = FlaUI`** is the Windows head. `TodoUatScenarioTests` asserts this at load
   time, so a config pointed at the wrong driver fails before any scenario runs.
@@ -239,7 +263,7 @@ Scenarios share one app process, so
 resets it between them:
 
 ```csharp
-protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 ```
 
 Online again, backend back to `three-todos`, list on screen. That is what keeps the four
@@ -278,16 +302,30 @@ dotnet test tests/Brinell.Samples.Todo.Uat
 
 ## 9. Why this is worth it
 
-- A product owner can read `create-needs-title.uat.md` and sign off on it — there is no C#
+- A product owner can read `TOD.02-create-a-todo.feature.md` and sign off on it — there is no C#
   to understand.
 - It runs deterministically against the real app; no LLM in the loop at run time.
-- It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
+- It stays traceable: `TOD.02.3` in the journey checklist → this `.feature.md` → green/red.
 
 When a scenario outgrows the phrase vocabulary, there are two escapes before giving up on
-Markdown: a `[UatStep]` on the control that does the work (§4), or a `[UatPhrase]` on the
+Markdown: a `[BddWhen]` or `[BddThen]` on the control that does the work (§4), or one on a
 fixture for something no control owns. Only past those does the scenario drop to a `.cs`
 page-object test — the hatch described in
 [.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md).
+
+The same file shape also carries a journey across several apps. With an `Apps` table (or a shared
+`apps.md`), a step names who does it and runs on that person's app, so a sync between Daan's
+Windows app and Finn's browser reads as what they do:
+
+```gherkin
+When Daan taps Sync
+Then the server should have received the todo "Pack for the trip" from Daan
+When Finn taps Sync
+Then Todos should have todo "Pack for the trip"
+```
+
+See `tests/Brinell.Samples.Todo.Mixed.Uat/Features/TOD.07-mixed.feature.md` and
+[AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
 
 ---
 
@@ -296,6 +334,7 @@ page-object test — the hatch described in
 - Journey checklist: [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md)
 - Pyramid backbone: [journeys.md](journeys.md)
 - Config and file shape: [docs/guides/uat-template-guide.md](../../docs/guides/uat-template-guide.md)
-- Phrase catalog and binding: [docs/guides/uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+- Phrase catalog and binding: [docs/guides/uat-step-definitions.md](../../docs/guides/uat-step-definitions.md)
 - Why the vocabulary is attribute-declared: [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+- Several apps in one scenario: [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)
 - Todo page objects: [tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)

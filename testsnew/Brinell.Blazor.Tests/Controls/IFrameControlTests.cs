@@ -48,6 +48,9 @@ public class IFrameControlTests
     [Fact]
     public void FillInside_CallsEvaluate()
     {
+        _mockElement.Setup(e => e.Evaluate<string?>(It.Is<string>(s => s.EndsWith("#inner-input').value"))))
+            .Returns("hello");
+
         _page.TestIFrame.FillInside("#inner-input", "hello");
         _mockElement.Verify(e => e.Evaluate(It.Is<string>(s =>
             s.Contains("contentDocument") && s.Contains("#inner-input") && s.Contains("hello"))), Times.Once);
@@ -63,21 +66,21 @@ public class IFrameControlTests
     }
 
     [Fact]
-    public void ElementExistsInside_WhenExists_ReturnsTrue()
+    public void IsElementInside_WhenExists_ReturnsTrue()
     {
         _mockElement.Setup(e => e.Evaluate<bool>(It.Is<string>(s =>
             s.Contains("contentDocument") && s.Contains("#inner-element") && s.Contains("!== null"))))
             .Returns(true);
-        Assert.True(_page.TestIFrame.ElementExistsInside("#inner-element"));
+        Assert.True(_page.TestIFrame.IsElementInside("#inner-element"));
     }
 
     [Fact]
-    public void ElementExistsInside_WhenNotExists_ReturnsFalse()
+    public void IsElementInside_WhenNotExists_ReturnsFalse()
     {
         _mockElement.Setup(e => e.Evaluate<bool>(It.Is<string>(s =>
             s.Contains("contentDocument") && s.Contains("#missing"))))
             .Returns(false);
-        Assert.False(_page.TestIFrame.ElementExistsInside("#missing"));
+        Assert.False(_page.TestIFrame.IsElementInside("#missing"));
     }
 
     [Fact]

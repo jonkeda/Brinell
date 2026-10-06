@@ -17,7 +17,7 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
         page.LoginButton.Click();
 
         page.SuccessMessage.WaitVisible(true);
-        page.SuccessMessage.AssertTextContaining("Login successful");
+        page.SuccessMessage.AssertTextContains("Login successful");
     }
 
     [Fact]
@@ -28,33 +28,26 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
 
         page.LoginButton.Click();
 
-        var validationMessages = Context.FindElements(Locator.ByCss(".text-danger"));
-        Assert.NotEmpty(validationMessages);
+        page.ValidationMessage.AssertVisible(true);
     }
 
+    /// <summary>
+    /// R0 guard at the UI level: with the "never re-enables" bug switched on, the second Login
+    /// fails and says the button is disabled. It must never pass, and never click a disabled button.
+    /// </summary>
     [Fact]
-    public async Task LoginFlow_ValidCredentials_ShowsSuccessMessage_Async()
+    public void LoginFlow_WhenLoginNeverReenables_TheSecondLoginFailsSayingDisabled()
     {
-        await NavigateToPageAsync("/login");
+        NavigateToPage("/login?login-bug=stuck-disabled");
         var page = new LoginPage(Context);
+        page.EmailInput.SetText("test@example.com");
+        page.PasswordInput.SetText("wrong-password");
+        page.LoginButton.Click();
+        page.ErrorMessage.WaitVisible(true);
 
-        await page.EmailInput.SetTextAsync("test@example.com");
-        await page.PasswordInput.SetTextAsync("password123");
-        await page.LoginButton.ClickAsync();
+        var error = Record.Exception(() => page.LoginButton.Click());
 
-        await page.SuccessMessage.WaitVisibleAsync(true);
-        await page.SuccessMessage.AssertTextContainingAsync("Login successful");
-    }
-
-    [Fact]
-    public async Task LoginFlow_EmptyCredentials_ShowsError_Async()
-    {
-        await NavigateToPageAsync("/login");
-        var page = new LoginPage(Context);
-
-        await page.LoginButton.ClickAsync();
-
-        var validationMessages = Context.FindElements(Locator.ByCss(".text-danger"));
-        Assert.NotEmpty(validationMessages);
+        Assert.NotNull(error);
+        Assert.Contains("enabled", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

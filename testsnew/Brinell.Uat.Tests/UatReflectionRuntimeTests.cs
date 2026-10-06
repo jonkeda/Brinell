@@ -26,18 +26,20 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Greeting
+            # Feature: Greeting
 
             ## Scenario: User receives greeting
 
+            ```gherkin
             Given I am on the Main page
             When I clear Name
             And I enter "Alice" into Name
             And I tap Greet
             Then Greeting should contain "Hello, Alice!"
+            ```
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.True(fixture.MainPage.Navigated);
@@ -51,10 +53,11 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: User Form
+            # Feature: User Form
 
             ## Scenario: User profile values are entered
 
+            ```gherkin
             Given I am on the User Form page
             When I enter "Ada" into First Name
             And I check Terms
@@ -62,9 +65,10 @@ public sealed class UatReflectionRuntimeTests
             Then First Name should contain "Ada"
             And Terms should be checked
             And Country should have selected "United States"
+            ```
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.True(fixture.UserFormPage.Navigated);
@@ -74,44 +78,43 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
-    public async Task CreatedCatalog_WithoutCurrentPage_ReturnsDiagnosticFailure()
+    public void CreatedCatalog_WithoutCurrentPage_FailsBinding()
     {
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
-        var scenario = BindScenario(runtime, """
-            # UAT: Missing Page
+
+        var diagnostic = Assert.Single(BindErrors(runtime, """
+            # Feature: Missing Page
 
             ## Scenario: Missing current page
 
+            ```gherkin
             When I tap Greet
-            """);
+            ```
+            """));
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
-
-        var step = Assert.Single(result.Steps);
-        Assert.Equal(UatStepResultStatus.Failed, step.Status);
-        Assert.Contains("No current UAT page", step.Message);
-        Assert.Contains("Available pages", step.Message);
+        Assert.Equal("UATB008", diagnostic.Code);
+        Assert.Contains("Start with 'Given I am on the ... page'", diagnostic.Message);
     }
 
     [Fact]
-    public async Task CreatedCatalog_MissingControl_ReturnsAvailableControlNames()
+    public void CreatedCatalog_MissingControl_FailsBinding_WithTheControlNames()
     {
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
-        var scenario = BindScenario(runtime, """
-            # UAT: Missing Control
+
+        var diagnostic = Assert.Single(BindErrors(runtime, """
+            # Feature: Missing Control
 
             ## Scenario: Missing control
 
+            ```gherkin
             Given I am on the Main page
             When I tap Imaginary Button
-            """);
+            ```
+            """));
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
-
-        var step = Assert.Single(result.Steps, x => x.Status == UatStepResultStatus.Failed);
-        Assert.Contains("Imaginary Button", step.Message);
-        Assert.Contains("Available controls", step.Message);
-        Assert.Contains("Greet", step.Message);
+        Assert.Equal("UATB009", diagnostic.Code);
+        Assert.Contains("the Main page has no control 'Imaginary Button'", diagnostic.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Greet", diagnostic.Message);
     }
 
     [Fact]
@@ -120,18 +123,77 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Custom Root Phrase
+            # Feature: Custom Root Phrase
 
             ## Scenario: Root phrase can store scenario state
 
+            ```gherkin
             Given I remember "Rush Alpha" as a trained player
             Then remembered trained player should be "Rush Alpha"
+            ```
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.Equal("Rush Alpha", fixture.RememberedTrainedPlayer);
+    }
+
+    [Fact]
+    public void BddGiven_OnFixtureMethod_RegistersARootPhrase()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new Fixture()).CreateCommandCatalog();
+
+        var pattern = Assert.Single(catalog.Patterns, pattern =>
+            pattern.Phrase == "I remember {name} as a trained player");
+        Assert.Equal(BddEffectiveStepKeyword.Given, pattern.Keyword);
+        Assert.Equal($"{typeof(Fixture).FullName}.{nameof(Fixture.RememberTrainedPlayer)}", pattern.CommandId);
+    }
+
+    [Fact]
+    public async Task BddThen_Phrase_RunsWhenWrittenAfterBut()
+    {
+        var fixture = new Fixture();
+        var runtime = UatReflectionRuntime.FromRoot(fixture);
+        var scenario = BindScenario(runtime, """
+            # Feature: But
+
+            ## Scenario: A Then phrase follows But
+
+            ```gherkin
+            Given I remember "Rush Alpha" as a trained player
+            Then remembered trained player should be "Rush Alpha"
+            But no other player should be remembered than "Rush Alpha"
+            ```
+            """);
+
+        var result = await new BddScenarioRunner().RunAsync(scenario);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal(1, fixture.OtherPlayerChecks);
+    }
+
+    [Fact]
+    public void PhraseMethod_WithCommandId_IsBroken_AndFailsOnlyTheStepThatUsesIt()
+    {
+        // The catalog still builds; the step that binds to the broken phrase names the problem (AD-016).
+        var catalog = UatReflectionRuntime.FromRoot(new CommandIdFixture()).CreateCommandCatalog();
+        var parse = BddMarkdownParser.Parse("""
+            # Feature: Broken
+
+            ## Scenario: Uses the broken phrase
+
+            ```gherkin
+            Given I remember something
+            ```
+            """);
+
+        var bind = BddBinder.Bind(parse.Document!, catalog);
+
+        var error = Assert.Single(bind.Diagnostics);
+        Assert.Equal("UATA013", error.Code);
+        Assert.Contains(nameof(CommandIdFixture.Remember), error.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(BddStepAttribute.CommandId), error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -140,14 +202,16 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new SettingsFixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Settings Injection
+            # Feature: Settings Injection
 
             ## Scenario: Settings are available to phrases
 
+            ```gherkin
             Given the A9 camera settings are available
             Then the raw A9 host setting should match
+            ```
             """);
-        var runner = new UatScenarioRunner();
+        var runner = new BddScenarioRunner();
         runner.Context.SetSettings(new TestSettingsProviderStub().Resolve(new TestSettingsRequest(
             ProjectDirectory: Directory.GetCurrentDirectory())));
 
@@ -158,29 +222,39 @@ public sealed class UatReflectionRuntimeTests
         Assert.Equal("192.168.168.1", fixture.RawHost);
     }
 
-    private static UatBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
+    private static IReadOnlyList<BddDiagnostic> BindErrors(UatReflectionRuntime runtime, string markdown)
     {
-        var parse = UatMarkdownParser.Parse(markdown);
+        var parse = BddMarkdownParser.Parse(markdown);
+        Assert.True(parse.Success, FormatDiagnostics(parse));
+
+        var bind = BddBinder.Bind(parse.Document!, runtime.CreateCommandCatalog());
+        Assert.False(bind.Success);
+        return bind.Diagnostics.Where(x => x.Severity == BddDiagnosticSeverity.Error).ToList();
+    }
+
+    private static BddBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
+    {
+        var parse = BddMarkdownParser.Parse(markdown);
         Assert.True(parse.Success, FormatDiagnostics(parse));
         Assert.NotNull(parse.Document);
 
-        var bind = UatBinder.Bind(parse.Document, runtime.CreateCommandCatalog());
+        var bind = BddBinder.Bind(parse.Document, runtime.CreateCommandCatalog());
         Assert.True(bind.Success, FormatDiagnostics(bind));
         Assert.NotNull(bind.Document);
         return Assert.Single(bind.Document.Scenarios);
     }
 
-    private static string FormatDiagnostics(UatParseResult result)
+    private static string FormatDiagnostics(BddParseResult result)
     {
         return string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}"));
     }
 
-    private static string FormatDiagnostics(UatBindResult result)
+    private static string FormatDiagnostics(BddBindResult result)
     {
         return string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}"));
     }
 
-    private static string FormatResults(UatScenarioRunResult result)
+    private static string FormatResults(BddScenarioRunResult result)
     {
         return string.Join(
             Environment.NewLine,
@@ -195,6 +269,8 @@ public sealed class UatReflectionRuntimeTests
 
         public string RememberedTrainedPlayer { get; private set; } = string.Empty;
 
+        public int OtherPlayerChecks { get; private set; }
+
         public void NavigateToMain()
         {
             MainPage.Navigated = true;
@@ -205,16 +281,31 @@ public sealed class UatReflectionRuntimeTests
             UserFormPage.Navigated = true;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Given, "I remember {name} as a trained player")]
+        [BddGiven("I remember {name} as a trained player")]
         public void RememberTrainedPlayer(string name)
         {
             RememberedTrainedPlayer = name;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "remembered trained player should be {name}")]
+        [BddThen("remembered trained player should be {name}")]
         public void AssertRememberedTrainedPlayer(string name)
         {
             Assert.Equal(name, RememberedTrainedPlayer);
+        }
+
+        [BddThen("no other player should be remembered than {name}")]
+        public void AssertNoOtherPlayer(string name)
+        {
+            OtherPlayerChecks++;
+            Assert.Equal(name, RememberedTrainedPlayer);
+        }
+    }
+
+    private sealed class CommandIdFixture
+    {
+        [BddGiven("I remember something", CommandId = "Remember")]
+        public void Remember()
+        {
         }
     }
 
@@ -224,7 +315,7 @@ public sealed class UatReflectionRuntimeTests
 
         public string RawHost { get; private set; } = string.Empty;
 
-        [UatPhrase(UatEffectiveStepKeyword.Given, "the A9 camera settings are available")]
+        [BddGiven("the A9 camera settings are available")]
         public void UseTypedSettings(ExampleA9CameraSettings camera)
         {
             TypedHost = camera.Host;
@@ -232,7 +323,7 @@ public sealed class UatReflectionRuntimeTests
             Assert.Equal("secret", camera.Password);
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "the raw A9 host setting should match")]
+        [BddThen("the raw A9 host setting should match")]
         public void UseRawSettings(TestSettings settings)
         {
             RawHost = settings.GetRequired<string>("hardware.a9Camera.host");

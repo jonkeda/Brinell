@@ -22,6 +22,9 @@
 **/TestSettings/secrets/*
 !**/TestSettings/secrets/*.example.json
 
+# The narrator's cloud voice: its key (voice.secrets.example.json shows the shape)
+**/voice.secrets.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -455,3 +458,9 @@ FodyWeavers.xsd
 
 # Local test run output
 test-output.txt
+
+# Public sites' recordings (sites-plan Q1): their content is not ours
+Scraper.Sites/*/Recordings/
+
+# The Scraper workflow's per-person state (last check, verify, accepted controls)
+**/.scraper-state.json

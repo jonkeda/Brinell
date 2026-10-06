@@ -5,7 +5,7 @@ namespace Brinell.WinForms.Context;
 /// <summary>
 /// WinForms test context implementation using FlaUI driver.
 /// </summary>
-public class WinFormsTestContext : IWinFormsTestContext, IDisposable
+public class WinFormsTestContext : IWinFormsTestContext, IDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly IWinFormsDriver _driver;
     private readonly TimeoutSettings _timeouts;
@@ -69,6 +69,10 @@ public class WinFormsTestContext : IWinFormsTestContext, IDisposable
 
     /// <inheritdoc />
     public IPageObject? Page => null;
+
+    /// <summary>The app's window.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _disposed ? null : Brinell.Core.Recording.RecordingTarget.ForWindow((_driver as FlaUIWinFormsDriver)?.CurrentWindowHandle);
 
     /// <inheritdoc />
     public bool IsReady(int? timeoutMs = null) => !_disposed;
