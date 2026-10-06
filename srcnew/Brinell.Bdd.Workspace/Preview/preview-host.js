@@ -1,7 +1,7 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
 // In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines},
-//      paused {text, line, here, isCall, depth, calls} (or {} when the run goes on)
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line},
+//      paused {text, line, here, isCall, depth, calls, failed, message} (or {} when the run goes on)
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, step {line}, cancel, toggleBreak {line},
 //      debug {move: continue | over | into | out | stop}, deleteResults {scope: scenario | file, line?}
 (function () {
   "use strict";
@@ -124,7 +124,8 @@
       return;
     }
     const inCall = paused.calls && paused.calls.length ? " · in " + paused.calls[paused.calls.length - 1] : "";
-    pausedAt.textContent = "⏸ Paused " + (paused.isCall ? "at the call: " : "before: ") + paused.text + " (line " + paused.line + inCall + ")";
+    const where = paused.failed ? "after the failed step: " : paused.isCall ? "at the call: " : "before: ";
+    pausedAt.textContent = "⏸ Paused " + where + paused.text + " (line " + paused.line + inCall + ")" + (paused.failed && paused.message ? " · " + paused.message : "");
     pausedBar.querySelector('[data-move="into"]').disabled = !paused.isCall;
     pausedBar.querySelector('[data-move="out"]').disabled = !(paused.depth > 0);
     if (paused.here) {
@@ -188,7 +189,9 @@
     const run = event.target.closest(".uat-run");
     if (run) {
       event.stopPropagation();
-      if (!run.disabled) {
+      if (!run.disabled && run.hasAttribute("data-step")) {
+        host.post({ type: "step", line: Number(run.getAttribute("data-step")) });
+      } else if (!run.disabled) {
         const debug = run.hasAttribute("data-debug");
         host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug } : { type: "run", line: Number(run.getAttribute("data-run")), debug });
       }

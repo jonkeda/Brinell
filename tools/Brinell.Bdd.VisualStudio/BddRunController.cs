@@ -108,6 +108,90 @@ internal sealed class BddRunController : IVsDebuggerEvents
     }
 
     /// <summary>
+    /// Steps through the scenario at a heading's line (D1 of the debugger plan): the suite's project is
+    /// built, then the language server runs the scenario in the suite's runner, paused before its first
+    /// step. The run goes on until the server says it ended (<see cref="StepEnded"/>).
+    /// </summary>
+    /// <param name="path">The feature file.</param>
+    /// <param name="line">The scenario heading's line.</param>
+    /// <param name="suite">The suite picked for a linked file; null for the first.</param>
+    public async Task StepAsync(string path, int line, string? suite)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (IsRunning)
+        {
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before starting another.");
+            return;
+        }
+
+        IsRunning = true;
+        _runLine = line;
+        PostRunning(paused: false);
+        var stepping = false;
+        try
+        {
+            _log(string.Empty);
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to step through {Path.GetFileName(path)} line {line}...");
+            if (!await BuildAsync(toBuild))
+            {
+                await StatusAsync("The build failed, so the Step-through run did not start. See the Error List.");
+                return;
+            }
+
+            await _server.BuildDoneAsync(_package.DisposalToken);
+            var started = await _server.StepStartAsync(path, line, suite, _package.DisposalToken);
+            if ((bool?)started["started"] != true)
+            {
+                await StatusAsync($"This cannot be stepped through: {(string?)started["reason"]}");
+                return;
+            }
+
+            _log($"Stepping through '{(string?)started["scenario"]}' in {(string?)started["suite"]}: F10 over, F11 into, Shift+F11 out, F5 on to a breakpoint, Shift+F5 stop.");
+            stepping = true;
+            IsStepping = true;
+        }
+        finally
+        {
+            if (!stepping)
+            {
+                await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+                IsRunning = false;
+                _post(new { type = "running" });
+            }
+        }
+    }
+
+    /// <summary>Whether a Step-through run is going: the server runs it, and says when it pauses and ends.</summary>
+    public bool IsStepping { get; private set; }
+
+    /// <summary>The Step-through run paused, or went on: the preview says so on its scenario.</summary>
+    public void StepPaused(bool paused)
+    {
+        if (IsStepping)
+        {
+            PostRunning(paused);
+        }
+    }
+
+    /// <summary>The Step-through run ended: how, in the Output pane.</summary>
+    /// <param name="status"><c>passed</c>, <c>failed</c>, <c>stopped</c> or <c>error</c>.</param>
+    /// <param name="message">A failure's or an error's message.</param>
+    public void StepEnded(string? status, string? message)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!IsStepping)
+        {
+            return;
+        }
+
+        IsStepping = false;
+        IsRunning = false;
+        _post(new { type = "running" });
+        _log($"The Step-through run ended: {status}{(message is null ? string.Empty : $": {message}")}");
+    }
+
+    /// <summary>
     /// Records a video script, or the scenario at a heading's line (the narrator): the build, the
     /// gate run with <c>BRINELL_RECORD</c>, then the video it made, offered to watch.
     /// </summary>
@@ -209,9 +293,16 @@ internal sealed class BddRunController : IVsDebuggerEvents
         _debugger = null;
     }
 
-    /// <summary>Stops the run: the test process and everything it started, the app included.</summary>
+    /// <summary>Stops the run: the test process and everything it started, the app included; a Step-through run through the server.</summary>
     public void Cancel()
     {
+        if (IsStepping)
+        {
+            _log("Stopping the Step-through run...");
+            _package.JoinableTaskFactory.RunAsync(() => _server.StepMoveAsync("stop", _package.DisposalToken)).FileAndForget("Brinell/StepStop");
+            return;
+        }
+
         if (_process is { HasExited: false } process)
         {
             _log("Cancelling the BDD run...");

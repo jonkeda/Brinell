@@ -117,6 +117,8 @@ public sealed class BddPreviewTests
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run=\"3\" title=\"Run this scenario\">", result.Html);
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run=\"3\" title=\"Debug this scenario, stopping at step breakpoints\">", result.Html);
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run-file title=\"Debug every scenario of the file, stopping at step breakpoints\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-step=\"3\" title=\"Step through this scenario, paused before each step\">", result.Html);
+        Assert.DoesNotContain("data-step-file", result.Html);
     }
 
     [Fact]

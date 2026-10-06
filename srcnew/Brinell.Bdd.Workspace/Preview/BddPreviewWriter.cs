@@ -294,11 +294,18 @@ internal sealed partial class BddPreviewWriter
         var runState = run.CanRun ? $"title=\"{Encode(title)}\"" : $"disabled title=\"{reason}\"";
         var debugState = run.CanRun ? $"title=\"{Encode(title.Replace("Run", "Debug", StringComparison.Ordinal))}, stopping at step breakpoints\"" : $"disabled title=\"{reason}\"";
         // A scenario records on its own too (the narrator), silently, with its beats.
-        var record = attribute.StartsWith("data-run=", StringComparison.Ordinal)
+        var scenario = attribute.StartsWith("data-run=", StringComparison.Ordinal);
+        var record = scenario
             ? BddPreviewRecord.Button(_options.Record, attribute.Replace("data-run=", "data-record=", StringComparison.Ordinal), "Record", "Record this scenario on video")
             : string.Empty;
+
+        // Step through: one scenario, in the suite's runner, paused before each step.
+        var stepState = run.CanRun ? "title=\"Step through this scenario, paused before each step\"" : $"disabled title=\"{reason}\"";
+        var step = scenario
+            ? $" <button type=\"button\" class=\"uat-run\" {attribute.Replace("data-run=", "data-step=", StringComparison.Ordinal)} {stepState}>\u23ED Step</button>"
+            : string.Empty;
         return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {runState}>\u25B6 {label}</button>"
-            + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button>{record}</span>";
+            + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button>{step}{record}</span>";
     }
 
     // The last run's result; in a host, on a heading, with a button that deletes the scenario's results

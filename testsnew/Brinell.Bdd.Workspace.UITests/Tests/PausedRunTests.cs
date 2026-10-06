@@ -98,6 +98,26 @@ public sealed class PausedRunTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Step_AsksTheIdeToStepThroughTheScenario()
+    {
+        _ide.Show(Feature, canRun: true);
+
+        _preview.StepThrough(3).Click();
+
+        Assert.Contains(_ide.Sent(), message => Type(message) == "step" && message.GetProperty("line").GetInt32() == 3);
+        Assert.DoesNotContain(_ide.Sent(), message => Type(message) == "run");
+    }
+
+    [Fact]
+    public void AStopAfterAFailedStep_SaysSo_WithTheFailure()
+    {
+        _ide.Send(new { type = "paused", text = "the shelf holds 2 books", line = 8, here = true, isCall = false, depth = 0, calls = Array.Empty<string>(), failed = true, message = "It holds 1." });
+
+        _preview.PausedAt.AssertText("⏸ Paused after the failed step: the shelf holds 2 books (line 8) · It holds 1.");
+        _preview.Step(8).AssertAttribute("data-paused", string.Empty);
+    }
+
+    [Fact]
     public void AClickOnAStepsKeyword_TogglesItsBreakpoint()
     {
         _preview.StepKeyword(6).Click();

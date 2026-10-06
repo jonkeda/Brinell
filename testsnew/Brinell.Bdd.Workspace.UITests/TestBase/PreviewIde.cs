@@ -49,10 +49,11 @@ public sealed class PreviewIde : IAsyncDisposable
 
     /// <summary>Shows a feature file, rendered as the language server renders it before a build.</summary>
     /// <param name="featureText">The file's text.</param>
-    public void Show(string featureText)
+    /// <param name="canRun">Whether the suite can run it, so the page has its Run, Debug and Step buttons.</param>
+    public void Show(string featureText, bool canRun = false)
     {
         var path = Path.Combine(_folder, "Features", "Shelf.feature.md");
-        var html = BddPreview.Render(featureText, path).Html;
+        var html = BddPreview.Render(featureText, path, canRun ? new BddPreviewOptions { Run = new BddPreviewRunState(true) } : null).Html;
         Send(new { type = "update", html, suites = Array.Empty<string>(), bindState = "parse-only" });
     }
 

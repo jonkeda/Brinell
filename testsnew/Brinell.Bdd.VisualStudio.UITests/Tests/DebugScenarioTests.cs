@@ -58,6 +58,46 @@ public sealed class DebugScenarioTests(VisualStudioIde ide) : IClassFixture<Visu
         Assert.NotNull(VisualStudioIde.ResultSince(Scenario, started));
     }
 
+    [IdeFact]
+    public async Task Step_PausesBeforeTheFirstStep_F5GoesToTheBreakpoint_F10ToTheEnd_AndItPasses()
+    {
+        await ide.StartAsync();
+        ide.UseBreakpoints(Feature, 24);
+        var preview = await OpenPreviewAsync();
+        preview.BindState.AssertTextStartsWith("Bound in", timeoutMs: BindTimeoutMs);
+        var started = DateTime.Now;
+
+        VisualStudioIde.Log("click Step");
+        preview.StepThrough(HeadingLine).Click();
+
+        await WaitPausedAsync(preview, 18, FirstStop);
+        VisualStudioIde.Log("paused at line 18; F5");
+        ide.ExecuteCommand("Debug.Start");
+        await WaitPausedAsync(preview, 24, NextStop);
+        Assert.False(ide.InBreakMode);
+
+        foreach (var line in new[] { 25, 26, 27 })
+        {
+            VisualStudioIde.Log($"F10 to line {line}");
+            ide.ExecuteCommand("Debug.StepOver");
+            await WaitPausedAsync(preview, line, NextStop);
+        }
+
+        VisualStudioIde.Log("F10 past the last step");
+        ide.ExecuteCommand("Debug.StepOver");
+        await VisualStudioIde.WaitAsync(() => VisualStudioIde.ResultSince(Scenario, started) is not null, RunEnd, "the run's result");
+        Assert.Equal("passed", VisualStudioIde.ResultSince(Scenario, started));
+        preview.PausedBar.AssertVisible(false);
+        Assert.True(ide.InDesignMode);
+    }
+
+    // A Step-through stop: the bar says the line, and the feature file is in front at it.
+    private async Task WaitPausedAsync(ScenarioPreviewPage preview, int line, TimeSpan within)
+    {
+        preview.PausedAt.AssertTextContains($"(line {line})", timeoutMs: (int)within.TotalMilliseconds);
+        await VisualStudioIde.WaitAsync(() => IsFeatureAt(line), FileInFront, () => $"the feature file in front at line {line}; in front: {InFront()}");
+    }
+
     private async Task<ScenarioPreviewPage> OpenPreviewAsync()
     {
         await ide.StartAsync();
