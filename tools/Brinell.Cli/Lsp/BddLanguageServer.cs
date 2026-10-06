@@ -202,14 +202,16 @@ public sealed partial class BddLanguageServer : IDisposable
             return new RunTargetResult(false, "No suite holds or links this feature file.", null, null, [], null);
         }
 
+        // The project is named even when the scenario cannot run yet: a client builds it first,
+        // and before the first build there are no catalogs to say more.
         if (suite.TryGetCatalogs(out var reason) is null)
         {
-            return new RunTargetResult(false, reason, null, null, [], suite.Name);
+            return new RunTargetResult(false, reason, suite.ProjectFile, null, [], suite.Name);
         }
 
         if (RunState(suite, path) is { CanRun: false } || suite.ProjectFile is not { } project)
         {
-            return new RunTargetResult(false, RunState(suite, path)?.Reason ?? $"{suite.Name} has no project file.", null, null, [], suite.Name);
+            return new RunTargetResult(false, RunState(suite, path)?.Reason ?? $"{suite.Name} has no project file.", suite.ProjectFile, null, [], suite.Name);
         }
 
         var file = suite.RelativeToConfig(path);

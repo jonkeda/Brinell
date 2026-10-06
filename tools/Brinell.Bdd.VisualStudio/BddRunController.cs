@@ -80,8 +80,9 @@ internal sealed class BddRunController : IVsDebuggerEvents
         try
         {
             _log(string.Empty);
-            _log($"Building the solution for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
-            if (!await BuildAsync())
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            if (!await BuildAsync(toBuild))
             {
                 await StatusAsync("The build failed, so the BDD run did not start. See the Error List.");
                 return;
@@ -128,8 +129,9 @@ internal sealed class BddRunController : IVsDebuggerEvents
         try
         {
             _log(string.Empty);
-            _log($"Building the solution to record {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
-            if (!await BuildAsync())
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to record {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            if (!await BuildAsync(toBuild))
             {
                 await StatusAsync("The build failed, so the recording did not start. See the Error List.");
                 return;
@@ -223,7 +225,17 @@ internal sealed class BddRunController : IVsDebuggerEvents
     /// <summary>The build finished; the run waiting for it goes on when it succeeded.</summary>
     public void BuildFinished(bool succeeded) => _build?.TrySetResult(succeeded);
 
-    private async Task<bool> BuildAsync()
+    // The suite's project, which the server names even before its first build; null when no suite
+    // holds the file (the whole solution is built then).
+    private async Task<string?> SuiteProjectAsync(string path, int? line, string? suite)
+    {
+        var target = await _server.RunTargetAsync(path, line, suite, _package.DisposalToken);
+        return (string?)target["project"] is { Length: > 0 } project && File.Exists(project) ? project : null;
+    }
+
+    // The suite's project and what it references, not the whole solution (with Brinell.sln open,
+    // 86 projects): Visual Studio's own up-to-date check then makes a second Run start at once.
+    private async Task<bool> BuildAsync(string? project)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         if (await _package.GetServiceAsync(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager2 builds)
@@ -232,8 +244,10 @@ internal sealed class BddRunController : IVsDebuggerEvents
         }
 
         _build = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var started = builds.StartSimpleUpdateSolutionConfiguration((uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD, 0, 0);
-        if (started != Microsoft.VisualStudio.VSConstants.S_OK)
+        var started = project is not null && await FindProjectAsync(project) is { } inSolution
+            ? StartProjectBuild(inSolution)
+            : builds.StartSimpleUpdateSolutionConfiguration((uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD, 0, 0) == Microsoft.VisualStudio.VSConstants.S_OK;
+        if (!started)
         {
             _build = null;
             return false;
@@ -243,6 +257,67 @@ internal sealed class BddRunController : IVsDebuggerEvents
 #pragma warning disable VSTHRD003
         return await _build.Task;
 #pragma warning restore VSTHRD003
+    }
+
+    private bool StartProjectBuild(EnvDTE.Project project)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        var dte = (EnvDTE80.DTE2)project.DTE;
+        dte.Solution.SolutionBuild.BuildProject(dte.Solution.SolutionBuild.ActiveConfiguration.Name, project.UniqueName, WaitForBuildToFinish: false);
+        return true;
+    }
+
+    // The project in the open solution, inside solution folders too; null when it is not in it.
+    private async Task<EnvDTE.Project?> FindProjectAsync(string path)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
+        {
+            return null;
+        }
+
+        return Find(dte.Solution.Projects.Cast<EnvDTE.Project>());
+
+        EnvDTE.Project? Find(IEnumerable<EnvDTE.Project?> projects)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            foreach (var candidate in projects.OfType<EnvDTE.Project>())
+            {
+                if (candidate.Kind == EnvDTE80.ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    List<EnvDTE.Project?> children = [];
+                    foreach (EnvDTE.ProjectItem item in candidate.ProjectItems)
+                    {
+                        children.Add(item.SubProject);
+                    }
+
+                    if (Find(children) is { } nested)
+                    {
+                        return nested;
+                    }
+                }
+                else if (string.Equals(TryFullName(candidate), path, StringComparison.OrdinalIgnoreCase))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        // A project that failed to load has no file name.
+        static string? TryFullName(EnvDTE.Project project)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                return project.FullName;
+            }
+            catch (NotImplementedException)
+            {
+                return null;
+            }
+        }
     }
 
     private async Task<int> RunTestsAsync(string project, string filter, bool debug, IReadOnlyDictionary<string, string>? variables = null)

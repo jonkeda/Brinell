@@ -354,14 +354,17 @@ public sealed class LanguageServerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RunTarget_BeforeABuild_SaysWhy()
+    public async Task RunTarget_BeforeABuild_SaysWhy_AndNamesTheProjectToBuild()
     {
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
         await InitializeAsync(_client);
 
         var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
 
         Assert.False(target.CanRun);
         Assert.Contains("Build the UAT project first", target.Reason);
+        Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
+        Assert.Null(target.Filter);
     }
 
     [Fact]

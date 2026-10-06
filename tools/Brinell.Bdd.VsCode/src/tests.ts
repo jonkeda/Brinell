@@ -24,7 +24,21 @@ export class ScenarioTests implements vscode.Disposable {
   private readonly output = vscode.window.createOutputChannel("Brinell BDD");
   private process: ChildProcess | undefined;
 
+  // A file changed outside build output since, or a project built cleanly when: a Run with nothing
+  // changed skips dotnet build, which takes about 10 s even for a project that is up to date.
+  private lastChange = Date.now();
+  private readonly lastBuild = new Map<string, number>();
+  private readonly watcher = vscode.workspace.createFileSystemWatcher("**/*");
+
   constructor(private readonly client: LanguageClient, private readonly running: (line: number | undefined, file: boolean) => void) {
+    const changed = (uri: vscode.Uri) => {
+      if (!/[\\/](bin|obj|TestResults|node_modules|\.git|\.vs)[\\/]/i.test(uri.fsPath)) {
+        this.lastChange = Date.now();
+      }
+    };
+    this.watcher.onDidChange(changed);
+    this.watcher.onDidCreate(changed);
+    this.watcher.onDidDelete(changed);
     this.controller.resolveHandler = async () => this.discover();
     this.controller.refreshHandler = async () => this.discover();
     this.controller.createRunProfile("Run", vscode.TestRunProfileKind.Run, (request, token) => this.run(request, token, false), true);
@@ -109,7 +123,7 @@ export class ScenarioTests implements vscode.Disposable {
     this.running(line, line === undefined);
     try {
       this.output.appendLine(`Recording into ${target.folder}...`);
-      if (await this.exec(undefined, "dotnet", ["build", target.project, "-v:minimal", "-nologo"], false) !== 0) {
+      if (!await this.build(undefined, target.project)) {
         void vscode.window.showErrorMessage("The build failed, so the recording did not start.");
         return;
       }
@@ -143,6 +157,7 @@ export class ScenarioTests implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.watcher.dispose();
     this.controller.dispose();
     this.output.dispose();
   }
@@ -181,7 +196,7 @@ export class ScenarioTests implements vscode.Disposable {
         this.running(scenarios.length === 1 ? scenarios[0].range!.start.line + 1 : undefined, scenarios.length > 1);
 
         // Build first, so a stale app never runs; then the scenarios by their addresses.
-        if (await this.exec(run, "dotnet", ["build", data.project, "-v:minimal", "-nologo"], false) !== 0) {
+        if (!await this.build(run, data.project)) {
           scenarios.forEach((scenario) => run.errored(scenario, new vscode.TestMessage("The build failed, so the BDD run did not start.")));
           continue;
         }
@@ -264,6 +279,23 @@ export class ScenarioTests implements vscode.Disposable {
         fs.rmSync(path.join(announced, name), { force: true });
       }
     }, 500);
+  }
+
+  // Builds a project, unless nothing outside build output changed since its last clean build.
+  private async build(run: vscode.TestRun | undefined, project: string): Promise<boolean> {
+    const started = Date.now();
+    if ((this.lastBuild.get(project) ?? -1) > this.lastChange) {
+      this.output.appendLine(`Nothing changed since ${project} was last built: not built again.`);
+      return true;
+    }
+
+    if (await this.exec(run, "dotnet", ["build", project, "-v:minimal", "-nologo"], false) !== 0) {
+      return false;
+    }
+
+    // From when it started: a file saved during the build makes the next Run build again.
+    this.lastBuild.set(project, started);
+    return true;
   }
 
   // Runs a command with its output in the run and the Output channel; with debug, the testhost waits
