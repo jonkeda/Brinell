@@ -1,0 +1,272 @@
+using Brinell.Bdd.Runner;
+using Brinell.Core.Artifacts;
+using StreamJsonRpc;
+
+namespace Brinell.Bdd.LanguageServer;
+
+/// <summary>
+/// Step through (D1-D3 of the debugger plan): the server hosts the suite's runner process (AD-025),
+/// pauses between its steps, and moves as the IDE's step commands ask. One run at a time; its runner
+/// ends with the server.
+/// </summary>
+public sealed partial class BddLanguageServer
+{
+    private StepRun? _step;
+    private BddRunnerJob? _runnerJob;
+
+    /// <summary>The breakpoints file read between steps; the per-user one by default.</summary>
+    public string BreakpointsPath { get; init; } = BddBreakpoints.DefaultPath;
+
+    /// <summary>
+    /// <c>brinell/step/start</c>: opens a scenario in the suite's runner, paused before its first
+    /// step (<c>brinell/step/paused</c>). Its result is written as the gate writes it, marked <c>step</c>.
+    /// </summary>
+    [JsonRpcMethod("brinell/step/start")]
+    public async Task<StepStartResult> StepStartAsync(StepStartParams request)
+    {
+        var path = Key(request.Uri);
+        var file = Context(path, request.Suite);
+        if (file.Suite is not { } suite || !path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return StepStartResult.Not("No suite holds or links this feature file.");
+        }
+
+        if (file.Catalogs is null)
+        {
+            return StepStartResult.Not(file.Reason ?? $"{suite.Name} is not built yet.");
+        }
+
+        if (suite.RunnerAssemblies is not { } assemblies)
+        {
+            return StepStartResult.Not($"{suite.Name} has no built test project to run in. Build it first.");
+        }
+
+        var names = BddMarkdownParser.Parse(file.Text, path).Document?.Scenarios
+            .Where(scenario => scenario.Source.LineNumber == request.Line)
+            .Select(scenario => scenario.Name)
+            .ToList() ?? [];
+        if ((request.Scenario is { } wanted ? names.FirstOrDefault(name => name == wanted) : names.FirstOrDefault()) is not { } name)
+        {
+            return StepStartResult.Not($"There is no scenario heading at line {request.Line}.");
+        }
+
+        var run = new StepRun(request.Uri, name);
+        lock (_gate)
+        {
+            if (_step is not null)
+            {
+                return StepStartResult.Not("A Step-through run is going: stop it first.");
+            }
+
+            _step = run;
+        }
+
+        try
+        {
+            // Results where the preview reads them (P5 of AD-022).
+            var environment = new Dictionary<string, string> { [TestArtifactOptions.RootDirectoryEnvironmentVariable] = BddRunResults.RootFor(suite.ProjectDirectory) };
+            run.Runner = await BddRunnerClient.StartAsync(new BddRunnerStart(assemblies.Start, Environment: environment)).ConfigureAwait(false);
+            RunnerJob.Add(run.Runner.Process);
+            var opened = await run.Runner.RequestAsync(new BddRunnerOpen(suite.ConfigPath, assemblies.Pages, path, name, "step")).ConfigureAwait(false);
+            if (opened is not BddRunnerOpened ready)
+            {
+                throw new BddRunnerException(opened is BddRunnerFailed failed ? failed.Message : $"The runner answered {opened.GetType().Name}.");
+            }
+
+            run.Stepper = new BddRunnerStepper(ready.Next, run.NextAsync, (at, line) => BddBreakpoints.Lists(at, line, BreakpointsPath));
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            await EndStepAsync(run, null, null).ConfigureAwait(false);
+            return StepStartResult.Not(exception.Message);
+        }
+
+        _ = Task.Run(() => Report(run, run.Stepper.Paused));
+        return new StepStartResult(true, null, name, suite.Name);
+    }
+
+    /// <summary><c>brinell/step/move</c>: a move from the paused step; <c>stop</c> also while a step runs.</summary>
+    [JsonRpcMethod("brinell/step/move")]
+    public StepMoveResult StepMove(StepMoveParams request)
+    {
+        StepRun? run;
+        lock (_gate)
+        {
+            run = _step;
+        }
+
+        if (run?.Stepper is not { } stepper)
+        {
+            return new StepMoveResult(false, "No Step-through run is going.");
+        }
+
+        if (request.Move == "stop")
+        {
+            run.Cancel.Cancel();
+            _ = EndStepAsync(run, "stopped", null);
+            return new StepMoveResult(true, null);
+        }
+
+        BddStepMove? move;
+        switch (request.Move)
+        {
+            case "over": move = BddStepMove.Over; break;
+            case "into": move = BddStepMove.Into; break;
+            case "out": move = BddStepMove.Out; break;
+            case "continue": move = null; break;
+            default: return new StepMoveResult(false, $"'{request.Move}' is not a move: over, into, out, continue or stop.");
+        }
+
+        if (Interlocked.Exchange(ref run.Moving, 1) == 1)
+        {
+            return new StepMoveResult(false, "The run is not paused.");
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var stop = await stepper.MoveAsync(move, run.Cancel.Token).ConfigureAwait(false);
+                Interlocked.Exchange(ref run.Moving, 0);
+                await Report(run, stop).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (run.Cancel.IsCancellationRequested)
+            {
+                // Stopped: the stop ends the run and says so.
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                await EndStepAsync(run, "error", exception.Message).ConfigureAwait(false);
+            }
+        });
+        return new StepMoveResult(true, null);
+    }
+
+    private BddRunnerJob RunnerJob
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _runnerJob ??= new BddRunnerJob();
+            }
+        }
+    }
+
+    private async Task Report(StepRun run, BddRunnerStop? stop)
+    {
+        if (run.Cancel.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (stop is null)
+        {
+            await EndStepAsync(run, run.Failure is null ? "passed" : "failed", run.Failure).ConfigureAwait(false);
+            return;
+        }
+
+        _ = _rpc?.NotifyWithParameterObjectAsync("brinell/step/paused", new StepPausedParams(
+            run.Uri,
+            run.Scenario,
+            stop.File is { } at ? new Uri(at).AbsoluteUri : null,
+            stop.Line,
+            stop.Text,
+            stop.Depth,
+            stop.IsCall,
+            stop.Calls,
+            stop.Failed is not null,
+            stop.Failed?.Message));
+    }
+
+    // Closes the scenario, so a finished one keeps its result and the app ends, then ends the runner.
+    private async Task EndStepAsync(StepRun run, string? status, string? message)
+    {
+        if (Interlocked.Exchange(ref run.Ended, 1) == 1)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (ReferenceEquals(_step, run))
+            {
+                _step = null;
+            }
+        }
+
+        if (run.Runner is { } runner)
+        {
+            try
+            {
+                using var timeout = new CancellationTokenSource(BddRunnerClient.CancelGrace * 2);
+                await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
+            {
+                // A runner that cannot close the scenario is ended below all the same.
+            }
+
+            await runner.DisposeAsync().ConfigureAwait(false);
+        }
+
+        if (status is not null)
+        {
+            _ = _rpc?.NotifyWithParameterObjectAsync("brinell/step/ended", new StepEndedParams(run.Uri, run.Scenario, status, message));
+        }
+    }
+
+    private void DisposeStep()
+    {
+        StepRun? run;
+        BddRunnerJob? job;
+        lock (_gate)
+        {
+            run = _step;
+            _step = null;
+            job = _runnerJob;
+            _runnerJob = null;
+        }
+
+        if (run is not null && Interlocked.Exchange(ref run.Ended, 1) == 0)
+        {
+            run.Cancel.Cancel();
+            run.Runner?.DisposeAsync().AsTask().Wait(BddRunnerClient.CancelGrace);
+        }
+
+        // Ends whatever is left: the runner, and the app it started.
+        job?.Dispose();
+    }
+
+    private sealed class StepRun(string uri, string scenario)
+    {
+        public int Moving;
+        public int Ended;
+
+        public string Uri { get; } = uri;
+
+        public string Scenario { get; } = scenario;
+
+        public CancellationTokenSource Cancel { get; } = new();
+
+        public BddRunnerClient? Runner { get; set; }
+
+        public BddRunnerStepper? Stepper { get; set; }
+
+        // The first failed step's message: the run then ends "failed".
+        public string? Failure { get; private set; }
+
+        public async Task<BddRunnerStep> NextAsync(CancellationToken cancellationToken)
+        {
+            var answer = await Runner!.RequestAsync(new BddRunnerNext(), cancellationToken).ConfigureAwait(false);
+            var step = answer as BddRunnerStep
+                ?? throw new BddRunnerException(answer is BddRunnerFailed failed ? failed.Message : $"The runner answered {answer.GetType().Name}.");
+            if (step.Status == BddStepResultStatus.Failed)
+            {
+                Failure ??= step.Message ?? "A step failed.";
+            }
+
+            return step;
+        }
+    }
+}

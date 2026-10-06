@@ -10,7 +10,7 @@ namespace Brinell.Presenter.Services;
 public sealed class BddExecutionService : IBddExecutionService, IDisposable
 {
     private readonly object _lock = new();
-    private readonly RunnerJob _job = new();
+    private readonly BddRunnerJob _job = new();
     private readonly List<Task> _ending = [];
     private Idle? _idle;
     private int _runs;

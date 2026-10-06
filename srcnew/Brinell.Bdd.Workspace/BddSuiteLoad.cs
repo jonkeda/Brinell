@@ -16,6 +16,9 @@ internal sealed class BddSuiteLoad : IDisposable
 
     public BddCatalogSet Catalogs { get; set; } = null!;
 
+    // The built assembly the fixture was found in, as built: the runner starts from it, not from the copy.
+    public string? FixtureAssemblyPath { get; set; }
+
     // Whether a loaded assembly has a [UatScenarioTheory] method, so its scenarios have addresses to run by.
     public bool HasScenarioTheory { get; private set; }
 

@@ -403,3 +403,49 @@ public sealed record RecordingsParams(string Uri, string? Suite, string? Recordi
 /// <param name="Written">When it was made.</param>
 /// <param name="Captions">Its <c>.srt</c>; null when it has none.</param>
 public sealed record RecordingEntry(string Path, string Name, DateTime Written, string? Captions);
+
+/// <summary><c>brinell/step/start</c>: Step through a scenario in the suite's runner process (D1 of the debugger plan).</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Line">The scenario heading's line.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+/// <param name="Scenario">An outline's row by name; null for the first scenario under the heading.</param>
+public sealed record StepStartParams(string Uri, int Line, string? Suite, string? Scenario);
+
+/// <summary>Whether the run started; it then pauses before its first step (<c>brinell/step/paused</c>).</summary>
+/// <param name="Started">Whether it started.</param>
+/// <param name="Reason">Why not; null when it started.</param>
+/// <param name="Scenario">The scenario it runs.</param>
+/// <param name="Suite">The suite it runs in.</param>
+public sealed record StepStartResult(bool Started, string? Reason, string? Scenario, string? Suite)
+{
+    /// <summary>It did not start, for <paramref name="reason"/>.</summary>
+    public static StepStartResult Not(string reason) => new(false, reason, null, null);
+}
+
+/// <summary><c>brinell/step/move</c>: <c>over</c>, <c>into</c>, <c>out</c>, <c>continue</c> or <c>stop</c>.</summary>
+public sealed record StepMoveParams(string Move);
+
+/// <summary>Whether the move was taken: a run is paused (or, for <c>stop</c>, going).</summary>
+/// <param name="Taken">Whether it was taken.</param>
+/// <param name="Reason">Why not; null when it was.</param>
+public sealed record StepMoveResult(bool Taken, string? Reason);
+
+/// <summary><c>brinell/step/paused</c>: where a Step-through run is paused.</summary>
+/// <param name="Uri">The feature file the run is for.</param>
+/// <param name="Scenario">The scenario.</param>
+/// <param name="At">The file paused in: the feature file, or a step file inside a call.</param>
+/// <param name="Line">The paused line.</param>
+/// <param name="Text">The step or call there.</param>
+/// <param name="Depth">How many calls deep: 0 in the scenario.</param>
+/// <param name="IsCall">Whether it is paused at a call, so Step into goes inside.</param>
+/// <param name="Calls">The calls around it, outermost first.</param>
+/// <param name="Failed">Whether it is paused after the step failed.</param>
+/// <param name="Message">The failure's message.</param>
+public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message);
+
+/// <summary><c>brinell/step/ended</c>: the run is over.</summary>
+/// <param name="Uri">The feature file the run was for.</param>
+/// <param name="Scenario">The scenario.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c>, <c>stopped</c> or <c>error</c>.</param>
+/// <param name="Message">A failure's or an error's message.</param>
+public sealed record StepEndedParams(string Uri, string Scenario, string Status, string? Message);
