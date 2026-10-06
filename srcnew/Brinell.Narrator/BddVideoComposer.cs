@@ -87,15 +87,18 @@ public static class BddVideoComposer
         return new BddVideoComposition(combined, Captions(combined), Chapters(combined, offsets: Offsets(recorded)), Arguments(recorded, outputVideo), warnings);
     }
 
+    /// <summary>The extension of a run's scenes folder, removed once its video is made.</summary>
+    public const string RunFolderExtension = ".run";
+
     /// <summary>Composes the video from a run's scenes folder, then removes the folder.</summary>
     /// <param name="title">The video's title.</param>
-    /// <param name="scenesFolder">The run's scenes folder (<c>&lt;name&gt;.scenes</c>).</param>
+    /// <param name="scenesFolder">The run's scenes folder (<c>&lt;name&gt;.run</c>).</param>
     /// <param name="cancellationToken">Stops ffmpeg.</param>
-    /// <returns>The files beside the folder: <c>&lt;name&gt;.mp4</c>, <c>.srt</c> and <c>.timeline.json</c>.</returns>
+    /// <returns>The files beside the folder, replacing an earlier run's: <c>&lt;name&gt;.mp4</c>, <c>.srt</c> and <c>.timeline.json</c>.</returns>
     public static async Task<BddComposedVideo> ComposeAsync(string title, string scenesFolder, CancellationToken cancellationToken = default)
     {
         var folder = Path.GetFullPath(scenesFolder).TrimEnd(Path.DirectorySeparatorChar);
-        var basePath = folder.EndsWith(".scenes", StringComparison.OrdinalIgnoreCase) ? folder[..^".scenes".Length] : folder;
+        var basePath = folder.EndsWith(RunFolderExtension, StringComparison.OrdinalIgnoreCase) ? folder[..^RunFolderExtension.Length] : folder;
         var composed = await StitchAsync(title, folder, basePath + ".mp4", null, cancellationToken).ConfigureAwait(false);
         Directory.Delete(folder, recursive: true);
         return composed;

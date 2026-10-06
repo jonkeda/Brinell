@@ -189,7 +189,7 @@ public sealed partial class PresenterShellViewModel
             return;
         }
 
-        var video = Path.Combine(recordings, $"{BddKeptScenes.NameOf(script.FilePath)}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture)}.mp4");
+        var video = Path.Combine(recordings, $"{BddKeptScenes.NameOf(script.FilePath)}.mp4");
         RecordingStatus = "Stitching...";
         try
         {

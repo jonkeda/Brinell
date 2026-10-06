@@ -17,7 +17,7 @@ public sealed class FfmpegFactAttribute : FactAttribute
 
 public sealed class BddVideoComposerTests : IDisposable
 {
-    private readonly string _scenes = Directory.CreateTempSubdirectory("brinell-compose-").FullName + ".scenes";
+    private readonly string _scenes = Directory.CreateTempSubdirectory("brinell-compose-").FullName + ".run";
 
     public BddVideoComposerTests() => Directory.CreateDirectory(_scenes);
 

@@ -166,8 +166,7 @@ public sealed class BddRecordingSessionTests : IDisposable
 
         var session = BddRecordingSession.FromEnvironment(_suite, variables.GetValueOrDefault)!;
 
-        Assert.StartsWith(Path.Combine(_suite, "Recordings", "a-"), session.ScenesFolder, StringComparison.OrdinalIgnoreCase);
-        Assert.EndsWith(".scenes", session.ScenesFolder, StringComparison.Ordinal);
+        Assert.Equal(Path.Combine(_suite, "Recordings", "a.run"), session.ScenesFolder, ignoreCase: true);
         Assert.Equal(TimeSpan.FromMilliseconds(250), session.Beat);
     }
 
@@ -198,8 +197,8 @@ public sealed class BddRecordingSessionTests : IDisposable
 
         Assert.Equal((1, "Features/A.feature.md#A.1-Opens"), (first!.Number, first.Scenario));
         Assert.Equal((1, "scene-01"), (second!.Number, Path.GetFileName(second.Folder)));
-        Assert.StartsWith("A.1-Opens-", Path.GetFileName(Path.GetDirectoryName(first.Folder)), StringComparison.Ordinal);
-        Assert.StartsWith("A.2-Closes-", Path.GetFileName(Path.GetDirectoryName(second.Folder)), StringComparison.Ordinal);
+        Assert.Equal("A.1-Opens.run", Path.GetFileName(Path.GetDirectoryName(first.Folder)));
+        Assert.Equal("A.2-Closes.run", Path.GetFileName(Path.GetDirectoryName(second.Folder)));
         Assert.Same(BddSceneClips.Silent, first.Clips);
     }
 }

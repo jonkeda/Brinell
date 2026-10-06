@@ -279,8 +279,8 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Equal(script, target.Environment["BRINELL_RECORD"]);
         Assert.Equal(Path.Combine(_solution, "Videos"), target.Environment["BRINELL_RECORD_DIR"]);
         Assert.Equal("250", target.Environment["BRINELL_BEAT"]);
-        Assert.Equal(Path.Combine(_solution, "Videos", Path.GetFileNameWithoutExtension(target.Video!) + ".scenes"), target.Environment["BRINELL_RECORD_OUT"]);
-        Assert.StartsWith("shelf-", target.Video, StringComparison.Ordinal);
+        Assert.Equal(Path.Combine(_solution, "Videos", "shelf.run"), target.Environment["BRINELL_RECORD_OUT"]);
+        Assert.Equal("shelf.mp4", target.Video);
     }
 
     [Fact]

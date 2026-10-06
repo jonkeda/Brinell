@@ -119,8 +119,9 @@ public sealed class PresenterRecorder : IPresenterRecorder
         }
 
         var folder = settings.Folder is { Length: > 0 } named ? named : BddRecordings.DefaultFolder(workspacePath);
-        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-        var sceneFolder = Path.Combine(folder, $"{BddScenarioAddress.Slug(scenarioName)}-{stamp}.scenes", "scene-01");
+        var run = Path.Combine(folder, BddScenarioAddress.Slug(scenarioName) + BddVideoComposer.RunFolderExtension);
+        TryDelete(run);
+        var sceneFolder = Path.Combine(run, "scene-01");
         var address = BddScenarioAddress.Of(Path.GetRelativePath(workspacePath, featureFile), scenarioName);
 
         var clips = BddSceneClips.Silent;
