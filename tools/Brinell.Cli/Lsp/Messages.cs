@@ -394,7 +394,8 @@ internal static class Json
 /// <param name="RecordingsFolder">The Recordings folder setting; null for the suite's results.</param>
 /// <param name="Voice">The voice setting; null for the default voice.</param>
 /// <param name="Beat">The beat setting, in milliseconds; null for the default.</param>
-public sealed record RecordTargetParams(string Uri, int? Line, string? Suite, string? RecordingsFolder, string? Voice, int? Beat);
+/// <param name="TouchColor">The touch marks' accent setting, <c>#RRGGBB</c>; null for Exact red.</param>
+public sealed record RecordTargetParams(string Uri, int? Line, string? Suite, string? RecordingsFolder, string? Voice, int? Beat, string? TouchColor = null);
 
 /// <summary>How to record it: <c>dotnet test &lt;Project&gt; --no-build --filter &lt;Filter&gt;</c> with <paramref name="Environment"/> set.</summary>
 /// <param name="CanRecord">Whether it can be recorded here.</param>

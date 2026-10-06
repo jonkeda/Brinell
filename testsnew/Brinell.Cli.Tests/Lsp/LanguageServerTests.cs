@@ -272,7 +272,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         File.WriteAllText(script, "# Video: The shelf\n\n## Scene: Shelving\n\nScenario: Features/shelf.feature.md#One\n");
         await InitializeAsync(_client);
 
-        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = Path.Combine(_solution, "Videos"), beat = 250 }));
+        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = Path.Combine(_solution, "Videos"), beat = 250, touchColor = "#00A0FF" }));
 
         Assert.True(target.CanRecord, target.Reason);
         Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
@@ -280,6 +280,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Equal(script, target.Environment["BRINELL_RECORD"]);
         Assert.Equal(Path.Combine(_solution, "Videos"), target.Environment["BRINELL_RECORD_DIR"]);
         Assert.Equal("250", target.Environment["BRINELL_BEAT"]);
+        Assert.Equal("#00A0FF", target.Environment["BRINELL_TOUCH_COLOR"]);
         Assert.Equal(Path.Combine(_solution, "Videos", "shelf.run"), target.Environment["BRINELL_RECORD_OUT"]);
         Assert.Equal("shelf.mp4", target.Video);
     }

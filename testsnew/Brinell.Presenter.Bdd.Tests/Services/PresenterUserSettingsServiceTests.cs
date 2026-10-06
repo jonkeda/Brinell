@@ -363,6 +363,8 @@ public sealed class PresenterUserSettingsServiceTests
             viewModel.BeatText = "450";
             viewModel.BeatText = "slow";
             viewModel.SpeakAloud = true;
+            viewModel.TouchColorText = "#00a0ff";
+            viewModel.TouchColorText = "#00a0f";
             viewModel.ToggleRecordCommand.Execute(null);
 
             var saved = settingsService.Load();
@@ -370,6 +372,7 @@ public sealed class PresenterUserSettingsServiceTests
             Assert.Null(saved.Voice);
             Assert.Equal(450, saved.Beat);
             Assert.True(saved.SpeakAloud);
+            Assert.Equal("#00A0FF", saved.TouchColor);
             Assert.Equal(records, viewModel.IsRecording);
             Assert.Equal(unavailable ?? "Recording is on: the next run is recorded.", viewModel.RecordingStatus);
             Assert.False(viewModel.HasRecording);

@@ -49,6 +49,9 @@ public sealed class PresenterUserSettings
     /// <summary>Whether a recording also plays each line aloud while the run waits for it.</summary>
     public bool SpeakAloud { get; set; }
 
+    /// <summary>The touch marks' accent, <c>#RRGGBB</c>, when the video script names none; null for Exact red.</summary>
+    public string? TouchColor { get; set; }
+
     /// <summary>
     /// The build configuration and platform chosen per workspace folder.
     /// </summary>

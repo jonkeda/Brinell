@@ -192,6 +192,12 @@
           "default": 600,
           "description": "How long a recording waits after a step, in milliseconds, when the video script does not say."
         },
+        "brinellBdd.touchColor": {
+          "type": "string",
+          "default": "",
+          "pattern": "^(#[0-9A-Fa-f]{6})?$",
+          "description": "The colour of a recording's touch marks, as #RRGGBB, when the video script does not say (TouchColor). Empty: Exact red, #E8111E."
+        },
         "brinellBdd.warmRunner": {
           "type": "boolean",
           "default": true,

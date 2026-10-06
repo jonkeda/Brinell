@@ -27,6 +27,12 @@ public sealed class BddOptionsPage : DialogPage
     [Description("How long a recording waits after a step, in milliseconds, when the video script does not say.")]
     public int Beat { get; set; } = 600;
 
+    /// <summary>The touch marks' accent, <c>#RRGGBB</c>; empty for Exact red.</summary>
+    [Category("Recording")]
+    [DisplayName("Touch colour")]
+    [Description("The colour of a recording's touch marks, as #RRGGBB, when the video script does not say (TouchColor). Empty: Exact red, #E8111E.")]
+    public string TouchColor { get; set; } = string.Empty;
+
     /// <summary>Whether a suite's runner is kept ready (AD-025); read when the language server starts.</summary>
     [Category("Runs")]
     [DisplayName("Warm runner")]

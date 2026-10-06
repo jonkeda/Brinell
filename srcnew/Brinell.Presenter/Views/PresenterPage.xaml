@@ -853,6 +853,19 @@
                             <Label Text="ms" VerticalTextAlignment="Center" />
                         </HorizontalStackLayout>
                         <HorizontalStackLayout Spacing="6">
+                            <Label Text="Touch colour" VerticalTextAlignment="Center" />
+                            <Entry AutomationId="TouchColorInput"
+                                   MaxLength="7"
+                                   WidthRequest="100"
+                                   Placeholder="#E8111E"
+                                   Text="{Binding TouchColorText}"
+                                   SemanticProperties.Description="The colour of the touch marks, as #RRGGBB" />
+                            <Label Text="when the script names none; the marks are drawn when the video is made"
+                                   FontSize="11"
+                                   VerticalTextAlignment="Center"
+                                   Style="{StaticResource PresenterMutedLabel}" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
                             <Label Text="Speak aloud while recording, and in a rehearsal" VerticalTextAlignment="Center" />
                             <CheckBox AutomationId="SpeakAloudCheckBox"
                                       IsChecked="{Binding SpeakAloud}" />

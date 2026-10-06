@@ -35,13 +35,17 @@ public sealed record BddTouchMarks(BddTouchMode Mode, string Color)
     /// <summary>Every mark, in Exact red.</summary>
     public static BddTouchMarks Default { get; } = new(BddTouchMode.On, DefaultColor);
 
-    /// <summary>The marks a script asks for, with the environment's accent when it names none.</summary>
+    /// <summary>
+    /// The marks a script asks for. Its accent, else the host's setting, else
+    /// <see cref="ColorVariable"/>, else Exact red; a value that is not <c>#RRGGBB</c> is passed over.
+    /// </summary>
     /// <param name="script">The video script; null for a run without one.</param>
     /// <param name="read">Reads a process variable; the process's by default.</param>
-    public static BddTouchMarks For(BddVideoScript? script, Func<string, string?>? read = null)
+    /// <param name="setting">The host's touch colour setting (the Presenter's); null for none.</param>
+    public static BddTouchMarks For(BddVideoScript? script, Func<string, string?>? read = null, string? setting = null)
     {
         read ??= Environment.GetEnvironmentVariable;
-        var color = script?.TouchColor ?? (IsColor(read(ColorVariable)) ? read(ColorVariable)!.Trim() : DefaultColor);
+        var color = new[] { script?.TouchColor, setting, read(ColorVariable) }.FirstOrDefault(IsColor)?.Trim().ToUpperInvariant() ?? DefaultColor;
         return new BddTouchMarks(script?.Touches ?? BddTouchMode.On, color);
     }
 

@@ -57,6 +57,11 @@ public sealed partial class BddLanguageServer
             variables[BddRecordingSession.BeatVariable] = beat.ToString(CultureInfo.InvariantCulture);
         }
 
+        if (BddTouchMarks.IsColor(request.TouchColor))
+        {
+            variables[BddTouchMarks.ColorVariable] = request.TouchColor!.Trim();
+        }
+
         if (OperatingSystem.IsWindows() && Directory.Exists(RecordersFolder))
         {
             variables[RecordingPackages.Variable] = RecordersFolder;

@@ -11,7 +11,11 @@ namespace Brinell.Presenter.Services;
 /// <param name="Voice">The voice, by (part of) its name, when the video script names none; null for the default.</param>
 /// <param name="Beat">The wait after a step, when the video script does not say.</param>
 /// <param name="SpeakAloud">Whether each line is also played while the run waits for it.</param>
-public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud);
+public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud)
+{
+    /// <summary>The touch marks' accent setting, <c>#RRGGBB</c>; null for Exact red.</summary>
+    public string? TouchColor { get; init; }
+}
 
 /// <summary>A recording Presenter made.</summary>
 /// <param name="Video">The video file.</param>
@@ -137,10 +141,10 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var clips = BddSceneClips.Silent;
         var name = scenarioName;
         var beat = settings.Beat;
-        _touches = BddTouchMarks.For(null);
+        _touches = BddTouchMarks.For(null, setting: settings.TouchColor);
         if (BddRecordings.FindScene(workspacePath, featureFile, scenarioName) is { } found)
         {
-            _touches = BddTouchMarks.For(found.Script);
+            _touches = BddTouchMarks.For(found.Script, setting: settings.TouchColor);
             var voice = found.Script.Voice ?? settings.Voice;
             clips = await BddSceneClips.SpeakAsync(found.Scene, Speech.Find(voice, found.Script.Instructions, workspacePath), voice, sceneFolder, cancellationToken).ConfigureAwait(false);
             name = found.Scene.Scene.Name;

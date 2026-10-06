@@ -99,6 +99,8 @@ public sealed class BddTouchOverlayTests
         Assert.Equal("#E8111E", BddTouchMarks.For(null, _ => "red").Color);
         var script = new BddVideoScript("a.video.md", "A", null, null, []) { TouchColor = "#112233", Touches = BddTouchMode.OutlineOnly };
         Assert.Equal(new BddTouchMarks(BddTouchMode.OutlineOnly, "#112233"), BddTouchMarks.For(script, _ => "#00A0FF"));
+        Assert.Equal("#445566", BddTouchMarks.For(null, _ => "#00A0FF", setting: "#445566").Color);
+        Assert.Equal("#00A0FF", BddTouchMarks.For(null, _ => "#00A0FF", setting: "not a colour").Color);
         Assert.Equal(BddTouchMode.OutlineOnly, BddTouchMarks.ParseMode("Outline-only"));
         Assert.Null(BddTouchMarks.ParseMode("sometimes"));
     }
