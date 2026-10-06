@@ -161,6 +161,20 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
+    {
+        var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
+        Assert.Contains("%3A", uri);
+
+        var started = await _client.InvokeWithParameterObjectAsync<StepStartResult>("brinell/step/start", new { uri, line = 3 });
+
+        Assert.True(started.Started, started.Reason);
+        await PausedAsync();
+        await MoveOnlyAsync("stop");
+        Assert.Equal("stopped", (await EndedAsync()).Status);
+    }
+
+    [Fact]
     public async Task AHeadinglessLine_DoesNotStart()
     {
         var started = await StartAsync(6);

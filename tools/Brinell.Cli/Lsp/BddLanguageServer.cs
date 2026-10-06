@@ -420,5 +420,12 @@ public sealed partial class BddLanguageServer : IDisposable
         }
     }
 
-    private static string Key(string uri) => Path.GetFullPath(Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.IsFile ? parsed.LocalPath : uri);
+    private static string Key(string uri) => Path.GetFullPath(Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.IsFile ? LocalPath(parsed) : uri);
+
+    // VS Code escapes the drive's colon (file:///e%3A/...), which .NET reads as /e:/...
+    private static string LocalPath(Uri uri)
+    {
+        var local = uri.LocalPath;
+        return local.Length > 2 && local[0] == '/' && char.IsAsciiLetter(local[1]) && local[2] == ':' ? local[1..] : local;
+    }
 }

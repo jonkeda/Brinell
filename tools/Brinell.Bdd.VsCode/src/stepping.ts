@@ -1,9 +1,12 @@
-// Stepping through a scenario while a debugged run is paused at a step: the engine writes where it
-// is paused (bdd-paused.json); this shows it (the editor at the step, the preview's bar) and makes
-// the moves: a one-shot move in the breakpoints file, then the debugger goes on.
+// Stepping through a scenario, two ways. Step through: the language server runs the scenario in the
+// suite's runner and says where it pauses (brinell/step/paused); the moves go back to it. Debug: the
+// engine writes where a debugged run is paused (bdd-paused.json); a move is a one-shot move in the
+// breakpoints file, then the debugger goes on. Either way this shows the pause: the editor at the
+// step, and the preview's bar.
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { LanguageClient } from "vscode-languageclient/node";
 import * as breakpoints from "./breakpoints";
 
 /** What stepping asks of the preview. */
@@ -14,12 +17,28 @@ export interface SteppingView {
 
 export type Move = "continue" | "over" | "into" | "out" | "stop";
 
+/** Where a Step-through run paused, as the server says it. */
+export type StepPaused = {
+  uri: string;
+  scenario: string;
+  at?: string;
+  line: number;
+  text: string;
+  depth: number;
+  isCall: boolean;
+  calls: { text: string; file?: string; line: number; depth: number }[];
+  failed: boolean;
+  message?: string;
+};
+
 export class BddStepping implements vscode.Disposable {
   private readonly watcher: fs.FSWatcher | undefined;
-  private current: breakpoints.Paused | undefined;
+  private debugged: breakpoints.Paused | undefined;
+  private stepped: breakpoints.Paused | undefined;
+  private stepping = false;
   private settle: NodeJS.Timeout | undefined;
 
-  constructor(private readonly view: SteppingView) {
+  constructor(private readonly client: LanguageClient, private readonly view: SteppingView, private readonly moving: () => void = () => undefined) {
     const folder = path.dirname(breakpoints.pausedFile);
     fs.mkdirSync(folder, { recursive: true });
     this.watcher = fs.watch(folder, (_, name) => {
@@ -32,9 +51,55 @@ export class BddStepping implements vscode.Disposable {
     void this.onPausedChanged();
   }
 
+  /** Whether a Step-through run is going, paused or not. */
+  get isStepping(): boolean {
+    return this.stepping;
+  }
+
+  /** A Step-through run started: it pauses before its first step. */
+  started(): void {
+    this.stepping = true;
+  }
+
+  /** The server says the Step-through run paused. */
+  async onStepPaused(paused: StepPaused): Promise<void> {
+    this.stepped = {
+      process: 0,
+      file: paused.at ? vscode.Uri.parse(paused.at).fsPath : "",
+      line: paused.line,
+      depth: paused.depth,
+      isCall: paused.isCall,
+      text: paused.text,
+      calls: paused.calls.map((call) => `${call.text} at ${path.basename(call.file ?? "")}:${call.line}`),
+      failed: paused.failed,
+      message: paused.message,
+    };
+    await this.show(this.stepped);
+  }
+
+  /** The server says the Step-through run ended. */
+  async onStepEnded(): Promise<void> {
+    this.stepping = false;
+    this.stepped = undefined;
+    await this.show(this.debugged);
+  }
+
   /** Makes a move from the paused step; nothing when no run is paused. */
   async move(move: Move): Promise<void> {
-    const paused = this.current;
+    if (this.stepped || (this.stepping && move === "stop")) {
+      // The bar goes while the run moves; the server says where it pauses next.
+      this.moving();
+      this.stepped = undefined;
+      await this.show(undefined);
+      const taken = await this.client.sendRequest<{ taken: boolean; reason?: string }>("brinell/step/move", { move });
+      if (!taken.taken) {
+        void vscode.window.showWarningMessage(`The Step-through move did not go: ${taken.reason}`);
+      }
+
+      return;
+    }
+
+    const paused = this.debugged;
     if (!paused) {
       return;
     }
@@ -54,9 +119,16 @@ export class BddStepping implements vscode.Disposable {
   }
 
   private async onPausedChanged(): Promise<void> {
-    const paused = breakpoints.readPaused();
-    this.current = paused;
+    this.debugged = breakpoints.readPaused();
+    if (!this.stepping) {
+      await this.show(this.debugged);
+    }
+  }
+
+  // The context keys for the step keys, the editor at the step, and the preview's bar.
+  private async show(paused: breakpoints.Paused | undefined): Promise<void> {
     await vscode.commands.executeCommand("setContext", "brinellBdd.paused", paused !== undefined);
+    await vscode.commands.executeCommand("setContext", "brinellBdd.stepPaused", paused !== undefined && paused === this.stepped);
     await vscode.commands.executeCommand("setContext", "brinellBdd.pausedAtCall", paused?.isCall === true);
     await vscode.commands.executeCommand("setContext", "brinellBdd.pausedInCall", (paused?.depth ?? 0) > 0);
     if (!paused) {
@@ -76,11 +148,11 @@ export class BddStepping implements vscode.Disposable {
   }
 
   // The run's file is the build output's copy: the source is the file at the same path under a
-  // Features folder of the workspace, the preview's own first.
+  // Features folder of the workspace, the preview's own first. A Step-through run's is the source.
   private async sourceOf(running: string): Promise<string | undefined> {
     const normalized = running.replace(/\\/g, "/");
     const at = normalized.toLowerCase().lastIndexOf("/features/");
-    if (at < 0) {
+    if (at < 0 || !/\/bin\//i.test(normalized)) {
       return fs.existsSync(running) ? running : undefined;
     }
 

@@ -58,13 +58,30 @@
         "command": "brinellBdd.stepInto",
         "title": "Step Into BDD Call",
         "category": "Brinell BDD",
-        "enablement": "brinellBdd.pausedAtCall"
+        "enablement": "brinellBdd.pausedAtCall || brinellBdd.stepPaused"
       },
       {
         "command": "brinellBdd.stepOut",
         "title": "Step Out of BDD Call",
         "category": "Brinell BDD",
-        "enablement": "brinellBdd.pausedInCall"
+        "enablement": "brinellBdd.pausedInCall || brinellBdd.stepPaused"
+      },
+      {
+        "command": "brinellBdd.stepThrough",
+        "title": "Step Through Scenario",
+        "category": "Brinell BDD"
+      },
+      {
+        "command": "brinellBdd.continue",
+        "title": "Continue BDD Run",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.paused"
+      },
+      {
+        "command": "brinellBdd.stop",
+        "title": "Stop BDD Run",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.paused"
       }
     ],
     "menus": {
@@ -114,6 +131,31 @@
         "command": "brinellBdd.stepOut",
         "key": "ctrl+shift+f11",
         "when": "brinellBdd.pausedInCall"
+      },
+      {
+        "command": "brinellBdd.stepOver",
+        "key": "f10",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stepInto",
+        "key": "f11",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stepOut",
+        "key": "shift+f11",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.continue",
+        "key": "f5",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stop",
+        "key": "shift+f5",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
       }
     ],
     "configuration": {
@@ -145,6 +187,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
+    "test:ide": "tsc -p . && node out/test/run.js",
     "package": "npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license"
   },
   "dependencies": {

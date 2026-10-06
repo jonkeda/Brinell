@@ -10,6 +10,8 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 /** What the preview asks of the rest of the extension. */
 export interface PreviewHost {
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
+  /** Steps through the scenario at a heading's line, in the suite's runner. */
+  step(uri: vscode.Uri, line: number): void;
   /** Records a video script, or the scenario at a heading's line, on video. */
   record(uri: vscode.Uri, line: number | undefined, suite: string | undefined): void;
   cancel(): void;
@@ -110,14 +112,16 @@ export class ScenarioPreview implements vscode.Disposable {
           isCall: paused.isCall,
           depth: paused.depth,
           calls: paused.calls,
+          failed: paused.failed,
+          message: paused.message,
           here: source !== undefined && source.toLowerCase() === this.document?.uri.fsPath.toLowerCase(),
         }
       : { type: "paused" });
   }
 
-  /** Tells the page a run started (a line, or the whole file) or ended (nothing). */
-  running(line: number | undefined, file: boolean): void {
-    void this.panel?.webview.postMessage(line !== undefined || file ? { type: "running", line, file } : { type: "running" });
+  /** Tells the page a run started (a line, or the whole file) or ended (nothing), and whether it is paused. */
+  running(line: number | undefined, file: boolean, paused = false): void {
+    void this.panel?.webview.postMessage(line !== undefined || file ? { type: "running", line, file, paused } : { type: "running" });
   }
 
   dispose(): void {
@@ -169,6 +173,12 @@ export class ScenarioPreview implements vscode.Disposable {
         break;
       case "run":
         this.host.run(document.uri, message.line, message.debug === true);
+        break;
+      case "step":
+        if (message.line) {
+          this.host.step(document.uri, message.line);
+        }
+
         break;
       case "runFile":
         this.host.run(document.uri, undefined, message.debug === true);

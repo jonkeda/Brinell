@@ -15,6 +15,7 @@ type SuiteScenarios = { suite: string; project?: string; runnable: boolean; reas
 type ScenarioResult = { scenario: string; status: string; durationMs: number; message?: string; line?: number };
 
 type Data = { kind: "suite"; project?: string; runnable: boolean; reason?: string } | { kind: "file" } | { kind: "scenario"; filter: string; name: string };
+type StepStart = { started: boolean; reason?: string; scenario?: string; suite?: string };
 type RecordTarget = { canRecord: boolean; reason?: string; project?: string; filter?: string; environment: Record<string, string>; video?: string; folder?: string };
 type Recording = { path: string; name: string; written: string; captions?: string };
 
@@ -23,6 +24,7 @@ export class ScenarioTests implements vscode.Disposable {
   private readonly data = new WeakMap<vscode.TestItem, Data>();
   private readonly output = vscode.window.createOutputChannel("Brinell BDD");
   private process: ChildProcess | undefined;
+  private stepRun: { run: vscode.TestRun; scenario: vscode.TestItem; started: number } | undefined;
 
   // A file changed outside build output since, or a project built cleanly when: a Run with nothing
   // changed skips dotnet build, which takes about 10 s even for a project that is up to date.
@@ -30,7 +32,11 @@ export class ScenarioTests implements vscode.Disposable {
   private readonly lastBuild = new Map<string, number>();
   private readonly watcher = vscode.workspace.createFileSystemWatcher("**/*");
 
-  constructor(private readonly client: LanguageClient, private readonly running: (line: number | undefined, file: boolean) => void) {
+  constructor(
+    private readonly client: LanguageClient,
+    private readonly running: (line: number | undefined, file: boolean, paused?: boolean) => void,
+    private readonly stepping: { started(): void; readonly isStepping: boolean },
+  ) {
     const changed = (uri: vscode.Uri) => {
       if (!/[\\/](bin|obj|TestResults|node_modules|\.git|\.vs)[\\/]/i.test(uri.fsPath)) {
         this.lastChange = Date.now();
@@ -43,6 +49,9 @@ export class ScenarioTests implements vscode.Disposable {
     this.controller.refreshHandler = async () => this.discover();
     this.controller.createRunProfile("Run", vscode.TestRunProfileKind.Run, (request, token) => this.run(request, token, false), true);
     this.controller.createRunProfile("Debug", vscode.TestRunProfileKind.Debug, (request, token) => this.run(request, token, true), true);
+    this.controller.createRunProfile("Step through", vscode.TestRunProfileKind.Run, async (request, token) => {
+      await this.step(request, token);
+    }, false);
   }
 
   /** Reads every suite's scenarios from the server. */
@@ -70,6 +79,80 @@ export class ScenarioTests implements vscode.Disposable {
 
   /** Runs the scenario at a heading's line, or a whole file, from the preview. */
   async runAt(uri: vscode.Uri, line: number | undefined, debug: boolean): Promise<void> {
+    const matches = await this.itemsAt(uri, line);
+    if (matches.length === 0) {
+      void vscode.window.showWarningMessage("No suite runs this scenario by its address. Build the suite, and give its test class [UatScenarioTheory].");
+      return;
+    }
+
+    // A file linked into several suites runs in its own.
+    const request = new vscode.TestRunRequest([this.own(matches)]);
+    const source = new vscode.CancellationTokenSource();
+    await this.run(request, source.token, debug);
+  }
+
+  /** Steps through the scenario at a heading's line, from the preview; why it did not start, when it did not. */
+  async stepAt(uri: vscode.Uri, line: number): Promise<string | undefined> {
+    const matches = await this.itemsAt(uri, line);
+    return matches.length === 0
+      ? this.refuse("No suite holds this scenario. Build the suite first.")
+      : await this.step(new vscode.TestRunRequest([this.own(matches)]), new vscode.CancellationTokenSource().token);
+  }
+
+  // Of a file's items in the suites that hold or link it, the one of the suite whose project holds it.
+  private own(matches: vscode.TestItem[]): vscode.TestItem {
+    const holds = (item: vscode.TestItem) => {
+      let suite: vscode.TestItem = item;
+      while (suite.parent) {
+        suite = suite.parent;
+      }
+
+      const data = this.data.get(suite);
+      const folder = data?.kind === "suite" && data.project ? path.dirname(data.project).toLowerCase() + path.sep : undefined;
+      return folder !== undefined && item.uri!.fsPath.toLowerCase().startsWith(folder);
+    };
+    return matches.find(holds) ?? matches[0];
+  }
+
+  private refuse(reason: string): string {
+    this.output.appendLine(reason);
+    void vscode.window.showWarningMessage(reason);
+    return reason;
+  }
+
+  /** The server says the Step-through run paused, or went on. */
+  stepPaused(paused: boolean): void {
+    if (this.stepRun) {
+      this.running(this.stepRun.scenario.range!.start.line + 1, false, paused);
+    }
+  }
+
+  /** The server says the Step-through run ended: its test's result. */
+  stepEnded(status: string, message: string | undefined): void {
+    const step = this.stepRun;
+    if (!step) {
+      return;
+    }
+
+    this.stepRun = undefined;
+    const duration = Date.now() - step.started;
+    if (status === "passed") {
+      step.run.passed(step.scenario, duration);
+    } else if (status === "failed") {
+      step.run.failed(step.scenario, new vscode.TestMessage(message ?? "A step failed."), duration);
+    } else if (status === "stopped") {
+      step.run.skipped(step.scenario);
+    } else {
+      step.run.errored(step.scenario, new vscode.TestMessage(message ?? "The Step-through run failed."), duration);
+    }
+
+    this.output.appendLine(`The Step-through run ended: ${status}${message ? `: ${message}` : ""}`);
+    step.run.end();
+    this.running(undefined, false);
+  }
+
+  // The scenario at a heading's line, or the file when there is none; in every suite that holds it.
+  private async itemsAt(uri: vscode.Uri, line: number | undefined): Promise<vscode.TestItem[]> {
     if (this.controller.items.size === 0) {
       await this.discover();
     }
@@ -86,16 +169,58 @@ export class ScenarioTests implements vscode.Disposable {
         file.children.forEach((scenario) => scenario.range?.start.line === line - 1 && matches.push(scenario));
       }
     }));
+    return matches;
+  }
 
-    if (matches.length === 0) {
-      void vscode.window.showWarningMessage("No suite runs this scenario by its address. Build the suite, and give its test class [UatScenarioTheory].");
-      return;
+  // Step through one scenario (D1 of the debugger plan): its suite's project is built, then the
+  // server runs it in the suite's runner, paused before its first step; its test run ends when the
+  // server says the run ended.
+  private async step(request: vscode.TestRunRequest, token: vscode.CancellationToken): Promise<string | undefined> {
+    if (this.process || this.stepRun || this.stepping.isStepping) {
+      return this.refuse("A BDD run is going already. Wait for it, or cancel it, before starting another.");
     }
 
-    // A file linked into several suites runs in the first, its own.
-    const request = new vscode.TestRunRequest([matches[0]]);
-    const source = new vscode.CancellationTokenSource();
-    await this.run(request, source.token, debug);
+    const scenarios: vscode.TestItem[] = [];
+    const add = (item: vscode.TestItem): void => {
+      if (this.data.get(item)?.kind === "scenario") {
+        scenarios.push(item);
+      } else {
+        item.children.forEach(add);
+      }
+    };
+    (request.include ?? this.all()).forEach(add);
+    if (scenarios.length !== 1) {
+      return this.refuse("Step through runs one scenario: pick a scenario, not a file or a suite.");
+    }
+
+    const scenario = scenarios[0];
+    const suite = scenario.parent!.parent!;
+    const data = this.data.get(suite);
+    const line = scenario.range!.start.line + 1;
+    const run = this.controller.createTestRun(new vscode.TestRunRequest([scenario]));
+    run.started(scenario);
+    this.running(line, false);
+    this.output.show(true);
+    if (data?.kind === "suite" && data.project && !await this.build(run, data.project)) {
+      run.errored(scenario, new vscode.TestMessage("The build failed, so the Step-through run did not start."));
+      run.end();
+      this.running(undefined, false);
+      return this.refuse("The build failed, so the Step-through run did not start.");
+    }
+
+    const started = await this.client.sendRequest<StepStart>("brinell/step/start", { uri: scenario.uri!.toString(), line, suite: suite.label });
+    if (!started.started) {
+      run.errored(scenario, new vscode.TestMessage(`This cannot be stepped through: ${started.reason}`));
+      run.end();
+      this.running(undefined, false);
+      return this.refuse(`This cannot be stepped through: ${started.reason}`);
+    }
+
+    this.output.appendLine(`Stepping through '${started.scenario}' in ${started.suite}: F10 over, F11 into, Shift+F11 out, F5 on to a breakpoint, Shift+F5 stop.`);
+    this.stepRun = { run, scenario, started: Date.now() };
+    this.stepping.started();
+    token.onCancellationRequested(() => void this.client.sendRequest("brinell/step/move", { move: "stop" }));
+    return undefined;
   }
 
   /**
@@ -148,8 +273,14 @@ export class ScenarioTests implements vscode.Disposable {
     }
   }
 
-  /** Stops the run: the test process and everything it started, the app included. */
+  /** Stops the run: the test process and everything it started, the app included; a Step-through run through the server. */
   cancel(): void {
+    if (this.stepRun) {
+      this.output.appendLine("Stopping the Step-through run...");
+      void this.client.sendRequest("brinell/step/move", { move: "stop" });
+      return;
+    }
+
     if (this.process?.pid && this.process.exitCode === null) {
       this.output.appendLine("Cancelling the BDD run...");
       spawn("taskkill", ["/PID", String(this.process.pid), "/T", "/F"], { windowsHide: true });
