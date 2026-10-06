@@ -1,11 +1,50 @@
 # Running and debugging a scenario: the plan
 
-Status: **decided, not started**. Date: 2026-10-04.
+Status: **in progress**: Phases T and 0 done, Phase 1 done up to 1.5 (2026-10-06, last commit
+b954cb19, pushed). **Next: 1.6**, then 1.7, then Phase 2. Started 2026-10-04.
 The design and its reasons are in [proposal.md](proposal.md); this file is the work, in order, so
 a session can pick it up cold. Every open question of the proposal (Q1-Q11) is **accepted as its
 leaning** (section 2).
 
 Update the **Progress** column of section 4 after each step, with the commit.
+
+## 0. Pick up here
+
+**What works now.** A scenario can be *stepped through* without a debugger in both IDEs: the
+preview's **⏭ Step** button (VS Code also a Test Explorer profile and *Step Through Scenario*)
+builds the suite's project, the language server opens the scenario in the suite's runner process
+and pauses before each step; the bar and the keys move it; the result is written as the gate's,
+marked `step`. Debug (the C# debugger, the engine's own breaks) works as before.
+
+**How Step through flows** (read these files in this order to learn it):
+
+1. The IDE asks `brinell/step/start {uri, line, suite}` (`tools/Brinell.Cli/Lsp/BddLanguageServer.Step.cs`).
+2. The server starts the runner from `BddSuite.RunnerAssemblies` (the fixture's built assembly and
+   the test project's output; `srcnew/Brinell.Bdd.Workspace/BddSuite.cs`) in a `BddRunnerJob`, with
+   `BRINELL_TEST_RESULTS_DIR` set to the folder the preview reads, and sends
+   `BddRunnerOpen(..., Mode: "step")`.
+3. `BddRunnerStepper` (`srcnew/Brinell.Bdd/Runner/BddRunnerStepper.cs`) turns the runner's
+   positions (`BddRunnerPosition`: file, line, depth, the calls around it) into stops, a call being
+   a stop of its own, and makes the moves; between steps it asks `BddBreakpoints.Lists` (the same
+   breakpoints file and matching as Debug).
+4. The server notifies `brinell/step/paused` and `brinell/step/ended`; the IDE shows the stop as it
+   shows a debugged run's (same bar, `paused` message, same editor jump) and sends moves with
+   `brinell/step/move {over|into|out|continue|stop}`.
+5. At the scenario's end the runner records the result itself (`UatScenarioResults`,
+   `srcnew/Brinell.Uat/UatScenarioResults.cs`); the server then closes the scenario and ends the runner.
+
+**Known limits, decided or found:**
+- Visual Studio: Shift+F11 and Shift+F5 never reach the extension when nothing is debugged (the
+  commands are disabled then); the bar's buttons and Ctrl+Shift+F11 stand in. VS Code has all five keys.
+- A Step-through run starts a new runner (and app) each time: about 5 s from the click to the first
+  stop on TOD.01.1. Phase 2's warm runner removes that.
+- One Step-through run per language server at a time; a second start is refused with the reason.
+- The server reads every request's `uri` through `Key` (`BddLanguageServer.cs`), which also
+  accepts VS Code's escaped drive colon (`file:///e%3A/...`); keep using it for new requests.
+- `Brinell.Uat.Tests.BddRunnerProcessTests.ACanceledStep_AnswersCanceled` was red before this plan; still is.
+
+**The owner has not yet tried by hand:** Step through in the Visual Studio experimental instance
+(1.4) and in VS Code with the keys (1.5); VS Code's skipped build when nothing changed (0.2).
 
 ## 1. Where things are
 
@@ -21,6 +60,13 @@ Update the **Progress** column of section 4 after each step, with the commit.
 | The preview page (both IDEs): paused bar, breakpoint gutter, "running" label | `srcnew/Brinell.Bdd.Workspace/Preview/preview-host.js`, `preview.css` |
 | Visual Studio: runs, builds, debug attach, the paused bar, F10 takeover | `tools/Brinell.Bdd.VisualStudio/BddRunController.cs`, `PreviewController.cs`, `BrinellBddPackage.cs/.vsct` |
 | VS Code: runs (`dotnet build <project>` then `dotnet test`), debug attach, stepping, breakpoints | `tools/Brinell.Bdd.VsCode/src/tests.ts`, `stepping.ts`, `breakpoints.ts`, `preview.ts` |
+| Step through, host side: stops and moves (`BddRunnerStepper`), the runner's job object (`BddRunnerJob`, also the Presenter's) | `srcnew/Brinell.Bdd/Runner/BddRunnerStepper.cs`, `BddRunnerJob.cs`; breakpoint matching for a host: `BddBreakpoints.Lists` |
+| Step through, the server: `brinell/step/start`, `/move`, `/paused`, `/ended`; their messages | `tools/Brinell.Cli/Lsp/BddLanguageServer.Step.cs`, `Messages.cs` (`StepStartParams` ...) |
+| What a runner runs from | `BddSuite.RunnerAssemblies` (`srcnew/Brinell.Bdd.Workspace/BddSuite.cs`, set in `Load`) |
+| A runner run's result | `srcnew/Brinell.Uat/UatScenarioResults.cs` (the gate's and the runner's); the runner calls it in `BddRunnerHost.RecordIfFinished` |
+| Visual Studio, Step through | `BddRunController.StepAsync`/`StepEnded`, `PreviewController` (`_stepping`, `OnStepPaused`, `StepMove`, `Intercept` for the keys), `BddServerClient` (`StepStartAsync`, `StepPaused` event) |
+| VS Code, Step through | `src/tests.ts` (`step`, `stepAt`, `stepEnded`, `own`), `src/stepping.ts` (`onStepPaused`, `move`), `src/extension.ts` (notifications, `brinellBdd.stepThrough`, the `onStep` test API), `package.json` (keys with `brinellBdd.stepPaused && !inDebugMode`) |
+| Tests, by layer | 1: `testsnew/Brinell.Bdd.Tests/BddRunnerStepperTests.cs`, `testsnew/Brinell.Uat.Tests/BddRunnerProcessTests.cs`; 2: `testsnew/Brinell.Cli.Tests/Lsp/StepTests.cs`; 3: `testsnew/Brinell.Bdd.Workspace.UITests`; 4: `tools/Brinell.Bdd.VsCode/src/test/` (`run.ts`, `suite.ts`); 5: `testsnew/Brinell.Bdd.VisualStudio.UITests` |
 | Decisions to amend | `.docs/decisions/ad-022-the-ides-run-the-gates-engine.md`, `ad-025-a-suite-runs-in-a-process-of-its-own.md` |
 | Guides to update | `docs/guides/visual-studio-preview.md`, `docs/guides/vscode-extension.md`; the Presenter's guide (`docs/platform-guides/presenter.md`) |
 | Manual checks | `.my/uat/manual/visual-studio-test-plan.md` section 6 |
@@ -55,13 +101,28 @@ From the proposal, with its questions settled as their leanings:
   (`DeployExtension=false`: the owner runs the experimental instance; they F5 the VSIX solution to load a new build).
   VS Code: `npx tsc -p . --noEmit` in `tools\Brinell.Bdd.VsCode`.
 - **One UI test process at a time**, across clones: another session may be running UI tests in
-  `E:\repos\MainConstruction`. Check `Get-Process testhost` before a UI run; prefer the Todo
-  **service** suite (`Brinell.Samples.Todo.IntegrationTests`, no UI) for server and runner tests.
+  `E:\repos\MainConstruction`. Check `Get-Process testhost,devenv` before a UI run, and build
+  nothing while one runs. Server and runner tests need no app: `StepTests` uses a small counter suite
+  whose fixture lives in the test project (the Todo service suite is a *head* of the MAUI suite and
+  links its feature files, so it is awkward to drive alone).
+- **The test layers** (section 4, Phase T), commands from the Brinell root unless said:
+  - 1 and 2: `dotnet test testsnew\Brinell.Bdd.Tests`, `testsnew\Brinell.Uat.Tests`,
+    `testsnew\Brinell.Cli.Tests --filter "FullyQualifiedName~LanguageServer.Tests"` (seconds).
+  - 3: `dotnet test testsnew\Brinell.Bdd.Workspace.UITests` (headless Chromium, ~30 s).
+  - 4: in `tools\Brinell.Bdd.VsCode`, `npm run test:ide` (opens a VS Code window and the Todo app;
+    needs `tools\Brinell.Cli` built; ~15 s).
+  - 5: `$env:BRINELL_IDE_TESTS=1; dotnet test testsnew\Brinell.Bdd.VisualStudio.UITests` (a test
+    Visual Studio, root suffix `BrinellTest`, and the Todo app; ~2 min). Do not touch either while it runs.
+  Layers 4 and 5 set the developer's step breakpoints aside and put them back.
+- **Editing files from a shell**: string edits through `python -c`/heredocs mangle backslashes
+  (`\u25B6`, regexes, Windows paths) and Git Bash rejects some heredocs; use the editor tool, or a
+  script file.
 - **Never launch the Construction app** unless asked.
 - **IDE behaviour is checked by the owner** in the experimental instance (Visual Studio) and in VS
   Code; write what to check in the step's "Done when", and in the manual test plan.
 - Known red test before any of this: `Brinell.Uat.Tests.BddRunnerProcessTests.ACanceledStep_AnswersCanceled`.
-- Commit per step; end messages with the repo's attribution line. Push only when asked.
+- Commit per step; end messages with the repo's attribution line. Steps 0.1 to 1.5 were
+  each pushed once done, while the owner had asked to continue; push only when asked.
 
 ## 4. Steps
 
@@ -105,6 +166,33 @@ does; layers 1 and 2 already exist and catch none of them):
 | 1.6 | **The stop's details and Screenshot now** (D5): the paused notification carries arguments as read, app, page; a `brinell/step/screenshot` request. | `BddLanguageServer.Step.cs`, `preview-host.js` | Server test for the payload; owner sees it in the bar. Automated: layer 2 (the payload); layer 3 (the bar shows the details). | |
 | 1.7 | **The Presenter** shows its runs' results in the IDEs (from 1.1) and uses 1.2 for stepping into calls. | Presenter view models | Presenter tests; a Presenter run visible in the IDE preview. Automated: Presenter tests; layer 3 (a Presenter run in the preview). | |
 
+**Notes for 1.6** (not started):
+- The runner knows a stop's details only while the scenario runs: the next step's arguments as bound
+  (`BddStepInvocation.Arguments`), its app (`invocation.App ?? context.CurrentSession`) and the page
+  (`context.CurrentPageName`); `BddBreakpoints.Describe` builds the same for Debug. Add them as
+  optional fields of `BddRunnerPosition` (`BddRunnerMessages.cs`, filled in `BddRunnerHost.Position`;
+  the page is the context's after the step before), keep protocol 2 if they stay optional, carry
+  them in `BddRunnerStop` and `StepPausedParams`, and post them in the `paused` message.
+- **Screenshot now**: a runner request (say `BddRunnerScreenshot` answered with a path) taken through
+  `UatScenarioResults.ScreenshotServiceOf(fixture)?.Capture(...)`, like the failure screenshot in
+  `RecordIfFinished`; the server's `brinell/step/screenshot` sends it while paused (the runner is idle
+  then, so it does not wait on a step); the IDE opens the file. A button on the paused bar
+  (`preview-host.js`, `#uat-paused`), shown only for a Step-through stop (add a `stepping` field to
+  the `paused` message: a debugged run's process is frozen and cannot take one).
+- Tests: the stepper and server tests for the payload, the runner process test for a screenshot
+  (its counter fixture has no screenshot service: add one, or assert the refusal), layer 3 for the bar.
+
+**Notes for 1.7** (not started):
+- The Presenter already writes results through 1.1 (mode `runner`); its runner runs in the build
+  output, so the results folder is the repository's `TestResults` (`DefaultTestArtifactPathProvider`),
+  which is what the preview reads (`BddRunResults.RootFor`) for a suite in a git repository. Check it
+  with a Presenter run of TOD.01.1 and the preview open; set `BRINELL_TEST_RESULTS_DIR` as the server
+  does if not.
+- Its stepping (`srcnew/Brinell.Presenter/Services/IUatExecutionService.cs`,
+  `PresenterUatExecutionSession`) is one `Next` a step; to step into and out of calls, drive it
+  with `BddRunnerStepper` (from `BddRunnerOpened.Next`), and show a stop's calls (`BddRunnerStop.Calls`)
+  and `IsCall` in its step list.
+
 ### Phase 2: Instant Run (I1-I4)
 
 | # | Step | Files | Done when | Progress |
@@ -138,8 +226,8 @@ does; layers 1 and 2 already exist and catch none of them):
 
 ## 6. What was already done (before this plan)
 
-Found while trying Debug on Todo's TOD.01.1, 2026-10-03/04; pushed up to 8131cee5, the last two
-not pushed yet:
+Found while trying Debug on Todo's TOD.01.1, 2026-10-03/04; all pushed:
+
 
 | Commit | What |
 | --- | --- |
