@@ -182,6 +182,17 @@ On the Settings page, **Narrator**: the Recordings folder (the suite's `TestResu
 when empty), the voice when the script names none, with **Try** to hear it, the beat after a step,
 and **Speak aloud**, which also plays each line while the run waits for it.
 
+Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
+([Cloud Voice](../guides/narrated-recordings.md#cloud-voice)): it says whether one is set up and
+from where (a file, or the environment), and takes the endpoint, the key, the deployment, the API
+version and the default voice. **Try** speaks a sample line with the fields as they are, before
+anything is saved; **Save** writes `voice.secrets.json` for this machine
+(`%USERPROFILE%\.brinell`), or beside the open workspace when its repository's `.gitignore`
+ignores the file (**Add the line to .gitignore** adds it); **Remove** deletes the file, after a
+second click. The key is typed into a password field and never shown again: after Save the part
+says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
+lists the `azure:` voices.
+
 ### Narrator mode
 
 Narrator mode makes a whole video script (`*.video.md`) into its video from Presenter, a scene at

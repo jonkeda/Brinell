@@ -102,8 +102,10 @@ every platform's runs. A script can set its tone:
 | Instructions | calm and friendly, a product demo |
 ```
 
-Its endpoint and key go in `voice.secrets.json`, which git ignores; `voice.secrets.example.json` at
-the repository root shows its shape:
+Its endpoint and key go in `voice.secrets.json`, which git ignores. The Presenter writes it for you
+(Settings, Narrator, Cloud voice: [the Presenter](../platform-guides/presenter.md#record)), with
+Try to hear it first; or write it by hand, as `voice.secrets.example.json` at the repository root
+shows:
 
 ```json
 {

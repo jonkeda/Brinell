@@ -1,6 +1,15 @@
 # The cloud voice's settings in the Presenter
 
-Status: **decided**, not started: every question in section 5 is settled as its leaning. Date: 2026-10-05.
+Status: **built**, steps 1-6 (2026-10-06): every question in section 5 settled as its leaning.
+Date: 2026-10-05.
+
+As built: the dogfood scenarios (`testsnew/Brinell.Presenter.Bdd.Tests/Features/cloud-voice-settings.feature.md`)
+found that Brinell's MAUI driver set a **password field** through UI Automation's Value pattern,
+which WinUI's password box takes without passing it to MAUI's `Entry.Text`: the step passed, the
+app had nothing. A password field now takes its text through the app's `SetText` verb, and fails
+saying so when the app does not declare it (`FlaUIMauiElement`); the key field declares it. The
+Presenter's UAT fixture also sends the presented app to the back (`AppWindow = Background`), as
+the Presenter itself is. Try with a real key is left to the owner.
 Follows [plan.md](plan.md) (the cloud voice, built). Today `voice.secrets.json` is written by hand;
 this lets the Presenter create, change, try and remove it.
 
