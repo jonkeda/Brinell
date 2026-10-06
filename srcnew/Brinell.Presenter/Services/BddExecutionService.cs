@@ -35,7 +35,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // The suite's warm runner, or a new one, from a copy of its output (I2 of the debugger plan).
+        // The suite's warm runner, or a new one, from a copy of its output (AD-025).
         var start = StartFor(workspacePath, out var configPath, out var pages);
         var runner = await _runners.TakeAsync(start, cancellationToken).ConfigureAwait(false);
         try
@@ -139,7 +139,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         await runner.DisposeAsync().ConfigureAwait(false);
     }
 
-    // Runners wait between sessions anyway (I2 of the debugger plan): a run needs nothing of its own.
+    // Runners wait between sessions anyway (AD-025): a run needs nothing of its own.
     private sealed class Run : IDisposable
     {
         public void Dispose()
@@ -192,10 +192,10 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         // The recorders a suite does not reference itself (Brinell.Narrator.Windows) are Presenter's.
         environment.TryAdd(Brinell.Recording.RecordingPackages.Variable, AppContext.BaseDirectory);
 
-        // Results where the IDEs' preview reads them (1.7 of the debugger plan), whichever folder the runner runs in.
+        // Results where the IDEs' preview reads them (AD-022), whichever folder the runner runs in.
         environment.TryAdd(Brinell.Core.Artifacts.TestArtifactOptions.RootDirectoryEnvironmentVariable, Brinell.Core.Artifacts.TestArtifactOptions.RootFor(workspacePath));
 
-        // The scenario files from the workspace, not the build's copies (I1 of the debugger plan).
+        // The scenario files from the workspace, not the build's copies (AD-022).
         environment.TryAdd(BddScenarioSource.SourceDirectoryEnvironmentVariable, Path.GetDirectoryName(Path.GetFullPath(BddFileFormat.FindConfig(workspacePath)))!);
         return environment;
     }

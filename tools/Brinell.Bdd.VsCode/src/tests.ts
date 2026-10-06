@@ -273,7 +273,7 @@ export class ScenarioTests implements vscode.Disposable {
     return undefined;
   }
 
-  // Step through one scenario (D1 of the debugger plan): its suite's project is built, then the
+  // Step through one scenario (AD-022): its suite's project is built, then the
   // server runs it in the suite's runner, paused before its first step; its test run ends when the
   // server says the run ended.
   private async step(request: vscode.TestRunRequest, token: vscode.CancellationToken): Promise<string | undefined> {
@@ -582,5 +582,5 @@ export class ScenarioTests implements vscode.Disposable {
   }
 }
 
-// What a run on the suite's runner reads from the source folder, not the build's copies (I1 of the debugger plan).
+// What a run on the suite's runner reads from the source folder, not the build's copies (AD-022).
 const readFromSource = /(\.feature\.md|\.steps\.md|\.video\.md|[\\/](uat|bdd)\.config\.md)$/i;

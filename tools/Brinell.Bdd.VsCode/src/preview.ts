@@ -11,7 +11,7 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 export interface PreviewHost {
   /** Runs as a test (dotnet test), under the debugger with debug. */
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
-  /** Runs on the suite's runner (I4 of the debugger plan): the preview's Run. */
+  /** Runs on the suite's runner (AD-022): the preview's Run. */
   runOnRunner(uri: vscode.Uri, line: number | undefined): void;
   /** Steps through the scenario at a heading's line, in the suite's runner. */
   step(uri: vscode.Uri, line: number): void;

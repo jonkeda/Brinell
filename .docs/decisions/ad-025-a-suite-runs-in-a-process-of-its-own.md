@@ -26,8 +26,8 @@ the host at the same 81 assemblies. Evidence (at f20deb4b):
 [the RCA](https://github.com/exact-mobile-apps/test-tooling/blob/f20deb4b/.my/rca/rca-001-presenter-memory-grows-per-run.md),
 [the plan as built](https://github.com/exact-mobile-apps/test-tooling/blob/f20deb4b/.my/rca/rca-001-plan-runner-process.md).
 A runner kept ready makes a Run or Step through start in under a second; from a copy, it no longer
-holds the suite's files. Evidence (at fc26a5ae):
-[the debugger plan as built](https://github.com/exact-mobile-apps/test-tooling/blob/fc26a5ae/.my/debugger/plan.md), steps 2.3 and 2.4.
+holds the suite's files. Evidence (at 6b201bcc):
+[the debugger plan as built](https://github.com/exact-mobile-apps/test-tooling/blob/6b201bcc/.my/debugger/plan.md), steps 2.3 and 2.4.
 
 **Ruled out:**
 - loading the suite into the host, in a collectible load context or read from memory;

@@ -86,7 +86,7 @@ public static class PresenterStepping
 
     /// <summary>
     /// Whether the next step is written in a step file (a <c>## Step:</c> body) on a line an IDE set a
-    /// breakpoint on: the runner says where it is (1.2 of the debugger plan). The feature file's own
+    /// breakpoint on: the runner says where it is (AD-022). The feature file's own
     /// lines are the rows' breakpoints (<see cref="BreakBefore"/>).
     /// </summary>
     /// <param name="next">Where the next step is, as the runner says.</param>

@@ -27,7 +27,7 @@ public sealed class BddOptionsPage : DialogPage
     [Description("How long a recording waits after a step, in milliseconds, when the video script does not say.")]
     public int Beat { get; set; } = 600;
 
-    /// <summary>Whether a suite's runner is kept ready (I2 of the debugger plan); read when the language server starts.</summary>
+    /// <summary>Whether a suite's runner is kept ready (AD-025); read when the language server starts.</summary>
     [Category("Runs")]
     [DisplayName("Warm runner")]
     [Description("Start a suite's runner, from a copy of its build output, when one of its feature files opens and after each build, so Run and Step start at once. False: each run starts its own. Takes effect when the solution is opened again.")]

@@ -7,7 +7,7 @@ namespace Brinell.Bdd.Runner;
 
 /// <summary>
 /// A copy of a suite's build output a runner starts from, so the runner holds none of the output's
-/// files and a build goes through while it waits (I2 of the debugger plan). A file the newest earlier
+/// files and a build goes through while it waits (AD-025). A file the newest earlier
 /// copy has unchanged is a hard link to it, so a copy after a build costs little. Each host process
 /// has its own copies, and removes them itself (<see cref="Clean"/>): a copy a runner runs from is
 /// never removed, since only the files it has not loaded yet would go.

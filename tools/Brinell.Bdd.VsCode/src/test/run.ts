@@ -1,4 +1,4 @@
-// Layer 4 of the debugger plan: the extension in a real VS Code window. Starts the installed VS Code
+// The extension in a real VS Code window. Starts the installed VS Code
 // (BRINELL_VSCODE, else the per-user install) with a profile of its own, this extension loaded from
 // source, and the tests of suite.ts, on the Todo sample. The developer's step breakpoints are set
 // aside for the run and put back after it. Run: npm run test:ide (needs tools/Brinell.Cli built).

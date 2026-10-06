@@ -4,7 +4,7 @@ using StreamJsonRpc;
 namespace Brinell.Bdd.LanguageServer;
 
 /// <summary>
-/// The warm runner (I2 of the debugger plan): a suite's runner starts, from a copy of its build output,
+/// The warm runner (AD-025): a suite's runner starts, from a copy of its build output,
 /// when one of its feature files opens and again after a build, so a Run or Step through starts at once
 /// and a build goes through while it waits. It ends once the suite's last feature file has been closed
 /// for the idle minutes, and with the server.

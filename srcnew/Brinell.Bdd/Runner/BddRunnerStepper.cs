@@ -25,7 +25,7 @@ public sealed record BddRunnerStop(string? File, int Line, string Text, int Dept
 }
 
 /// <summary>
-/// Step through on a host (D1-D3 of the debugger plan): the host pauses between the runner's steps
+/// Step through on a host (AD-022): the host pauses between the runner's steps
 /// and moves as an IDE's step commands do, as <see cref="BddBreakpoints"/> does in a debugged run.
 /// Over at depth d runs to the next step at depth d or less, or to a call starting at level d + 1;
 /// out of depth d is over at d - 1; into goes to the next position, inside a call; continue runs to

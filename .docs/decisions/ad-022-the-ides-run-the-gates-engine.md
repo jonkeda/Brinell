@@ -28,9 +28,9 @@ its build, test host and debugger in the way. Evidence (at ea9513e):
 [visualstudio-plan.md](https://github.com/exact-mobile-apps/test-tooling/blob/ea9513e/.my/uat/tools/visualstudio-plan.md)
 sections 3-5,
 [vscode-extension.md](https://github.com/exact-mobile-apps/test-tooling/blob/ea9513e/.my/uat/tools/vscode-extension.md) section 1;
-Step through, Run on the runner and Debug from here (at fc26a5ae):
-[the debugger proposal](https://github.com/exact-mobile-apps/test-tooling/blob/fc26a5ae/.my/debugger/proposal.md),
-[the plan as built](https://github.com/exact-mobile-apps/test-tooling/blob/fc26a5ae/.my/debugger/plan.md).
+Step through, Run on the runner and Debug from here (at 6b201bcc):
+[the debugger proposal](https://github.com/exact-mobile-apps/test-tooling/blob/6b201bcc/.my/debugger/proposal.md),
+[the plan as built](https://github.com/exact-mobile-apps/test-tooling/blob/6b201bcc/.my/debugger/plan.md).
 
 **Ruled out:**
 - a markdown-it or TextMate grammar as the preview or the checker, since it knows syntax, not

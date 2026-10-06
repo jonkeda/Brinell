@@ -5,7 +5,7 @@ using Xunit;
 namespace Brinell.Uat.Tests;
 
 /// <summary>
-/// Warm runners (I2 of the debugger plan): this test project's output, copied to a folder of its own
+/// Warm runners (AD-025): this test project's output, copied to a folder of its own
 /// as if it were a suite's build output, with a runner kept ready from a copy of that.
 /// </summary>
 public sealed class BddWarmRunnersTests : IAsyncLifetime

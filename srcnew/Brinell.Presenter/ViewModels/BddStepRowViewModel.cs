@@ -205,7 +205,7 @@ public interface IStepRowHost
     /// <summary>Whether the run is paused before the row, so a debugger can be put on its runner.</summary>
     bool CanDebugFrom(BddStepRowViewModel row) => false;
 
-    /// <summary>Debug from here (D6 of the debugger plan): asks Windows for a debugger on the runner, then runs the row's step, which breaks in its definition.</summary>
+    /// <summary>Debug from here (AD-022): asks Windows for a debugger on the runner, then runs the row's step, which breaks in its definition.</summary>
     void DebugFrom(BddStepRowViewModel row)
     {
     }

@@ -875,7 +875,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _package.JoinableTaskFactory.RunAsync(() => _runs!.StepAsync(path, line, suite)).FileAndForget("Brinell/PreviewStep");
     }
 
-    // Run is the suite's runner's; Run as test and Debug are dotnet test's (I4 of the debugger plan).
+    // Run is the suite's runner's; Run as test and Debug are dotnet test's (AD-022).
     private void Run(string path, int? line, bool debug, bool test)
     {
         var suite = _suites.TryGetValue(path, out var picked) ? picked : null;

@@ -52,5 +52,5 @@ public sealed record ScenarioPreviewState(
 /// <param name="Line">Its line in the feature file.</param>
 /// <param name="IsCall">Whether it is a <c>## Step:</c> call: Step into is offered.</param>
 /// <param name="InCall">Whether it is inside one: Step out is offered.</param>
-/// <param name="Details">The step's page, app and arguments as the runner read them (1.6 of the debugger plan); null when not known.</param>
+/// <param name="Details">The step's page, app and arguments as the runner read them (AD-022); null when not known.</param>
 public sealed record ScenarioPreviewPause(string Text, int Line, bool IsCall, bool InCall, Brinell.Bdd.Runner.BddRunnerPosition? Details = null);

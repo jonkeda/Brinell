@@ -305,7 +305,7 @@ internal sealed partial class BddPreviewWriter
         var step = scenario
             ? $" <button type=\"button\" class=\"uat-run\" {attribute.Replace("data-run=", "data-step=", StringComparison.Ordinal)} {stepState}>\u23ED Step</button>"
             : string.Empty;
-        // Run (the runner), Run as test (dotnet test, the gate), Debug, Step: I4 of the debugger plan.
+        // Run (the runner), Run as test (dotnet test, the gate), Debug, Step: AD-022.
         return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {runState}>\u25B6 {label}</button>"
             + $" <button type=\"button\" class=\"uat-run\" data-test {attribute} {testState}>\u25B7 {label} as test</button>"
             + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button>{step}{record}</span>";

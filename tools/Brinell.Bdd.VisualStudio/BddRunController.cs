@@ -109,7 +109,7 @@ internal sealed class BddRunController : IVsDebuggerEvents
     }
 
     /// <summary>
-    /// Steps through the scenario at a heading's line (D1 of the debugger plan): the suite's project is
+    /// Steps through the scenario at a heading's line (AD-022): the suite's project is
     /// built, then the language server runs the scenario in the suite's runner, paused before its first
     /// step. The run goes on until the server says it ended (<see cref="StepEnded"/>).
     /// </summary>
@@ -658,7 +658,7 @@ internal sealed class BddRunController : IVsDebuggerEvents
     }
 
     /// <summary>
-    /// Debug from here (D6 of the debugger plan): attaches Visual Studio's debugger to the paused
+    /// Debug from here (AD-022): attaches Visual Studio's debugger to the paused
     /// Step-through run's runner, which then breaks before the next step that runs.
     /// </summary>
     /// <returns>Whether the debugger is attached: the caller makes the move that runs the step.</returns>

@@ -47,7 +47,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
     ],
     initializationOptions: {
       solutionDir: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-      // I2 of the debugger plan: a suite's runner kept ready, from a copy of its build output.
+      // AD-025: a suite's runner kept ready, from a copy of its build output.
       warmRunner: vscode.workspace.getConfiguration("brinellBdd").get<boolean>("warmRunner", true),
       warmRunnerIdleMinutes: vscode.workspace.getConfiguration("brinellBdd").get<number>("warmRunnerIdleMinutes", 10),
     },

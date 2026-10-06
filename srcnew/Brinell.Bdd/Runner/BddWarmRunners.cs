@@ -5,7 +5,7 @@ namespace Brinell.Bdd.Runner;
 /// <summary>
 /// Runners kept ready, one per suite output, each started from a copy of the output
 /// (<see cref="BddShadowCopy"/>), so a run starts at once and a build goes through while one waits
-/// (I2 of the debugger plan). A host takes one for a run and gives it back after; one whose output
+/// (AD-025). A host takes one for a run and gives it back after; one whose output
 /// has changed since its copy is replaced.
 /// </summary>
 public sealed class BddWarmRunners : IAsyncDisposable

@@ -7,7 +7,7 @@ namespace Brinell.Presenter.Bdd.Tests.Services;
 /// <summary>
 /// A run must not make its own workspace unbuildable, nor grow Presenter: a session's scenario
 /// runs in a runner process (AD-025) started from a copy of the suite's output, which waits for the
-/// next session (I2 of the debugger plan) and ends with Presenter. This test project's own output is the suite.
+/// next session (AD-025) and ends with Presenter. This test project's own output is the suite.
 /// </summary>
 public sealed class RunnerSessionTests : IDisposable
 {
@@ -196,7 +196,7 @@ public sealed class ProbeFixture
     public bool Ready() => true;
 
     /// <summary>Passes when the process runs in the suite's output, as under <c>dotnet test</c>.</summary>
-    /// <summary>Passes when the process runs from a copy of the suite's output (I2 of the debugger plan), so the output is free.</summary>
+    /// <summary>Passes when the process runs from a copy of the suite's output (AD-025), so the output is free.</summary>
     [BddGiven("the probe runs from a copy of its output")]
     public void RunsFromACopy()
         => Assert.StartsWith(Brinell.Bdd.Runner.BddShadowCopy.DefaultRoot, AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase);

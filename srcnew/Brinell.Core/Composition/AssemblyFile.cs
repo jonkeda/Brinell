@@ -9,8 +9,8 @@ namespace Brinell.Core.Composition;
 public static class AssemblyFile
 {
     /// <summary>
-    /// Set for a runner started from a copy of a suite's build output (a warm runner, I2 of the
-    /// debugger plan) to the output it was copied from: <see cref="FolderOf"/> answers with that.
+    /// Set for a runner started from a copy of a suite's build output (a warm runner, AD-025) to the
+    /// output it was copied from: <see cref="FolderOf"/> answers with that.
     /// </summary>
     public const string BuiltOutputEnvironmentVariable = "BRINELL_BUILT_OUTPUT";
 

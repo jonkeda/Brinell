@@ -370,7 +370,7 @@ public sealed class BddRunnerProcessTests : IDisposable
 /// <summary>The fixture the runner tests' scenarios run on: no app, a counter.</summary>
 public sealed class RunnerProcessFixture : IUatScenarioLifecycle
 {
-    // How many fixtures the runner made: one kept between scenarios is made once (I3 of the debugger plan).
+    // How many fixtures the runner made: one kept between scenarios is made once (AD-025).
     private static int _made;
     private int _count;
 

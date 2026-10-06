@@ -26,7 +26,7 @@ public interface IBddExecutionService
     /// <summary>Completes when every ended session's scenario is closed, and its app with it.</summary>
     Task EndRunnersAsync() => Task.CompletedTask;
 
-    /// <summary>Starts the suite's runner ahead of a session (I2 of the debugger plan): on opening a workspace, and after a build.</summary>
+    /// <summary>Starts the suite's runner ahead of a session (AD-025): on opening a workspace, and after a build.</summary>
     /// <param name="workspacePath">The suite's folder.</param>
     Task WarmAsync(string workspacePath) => Task.CompletedTask;
 
@@ -125,7 +125,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         => Expect<BddRunnerRecorded>(await _runner.RequestAsync(new BddRunnerFinishRecording(), cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// Debug from here (D6 of the debugger plan): Windows asks which debugger to attach to the runner;
+    /// Debug from here (AD-022): Windows asks which debugger to attach to the runner;
     /// once one is, the next step breaks just before its step definition runs.
     /// </summary>
     /// <param name="cancellationToken">Gives up the wait for the debugger.</param>

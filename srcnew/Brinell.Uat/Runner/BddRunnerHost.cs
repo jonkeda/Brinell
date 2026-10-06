@@ -20,7 +20,7 @@ public sealed class BddRunnerHost
     private OpenScenario? _open;
 
     // A fixture kept for the next open of the same suite: a prepared one, or one that starts a
-    // scenario clean without a launch (I3 of the debugger plan).
+    // scenario clean without a launch (AD-025).
     private KeptFixture? _kept;
     private BddSceneRecording? _recording;
     private BddNarrationPacer? _rehearsal;
@@ -449,7 +449,7 @@ public sealed class BddRunnerHost
         public string Catalog { get; }
 
         // Once its last step has run, the scenario's result is written as the gate writes it, so a
-        // run from a host shows in the IDEs' preview and the BDD Explorer (D4 of the debugger plan).
+        // run from a host shows in the IDEs' preview and the BDD Explorer (AD-022).
         public void RecordIfFinished()
         {
             if (_recorded || Session.HasNext)

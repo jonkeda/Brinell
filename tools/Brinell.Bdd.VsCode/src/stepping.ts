@@ -92,7 +92,7 @@ export class BddStepping implements vscode.Disposable {
   }
 
   /**
-   * Debug from here (D6 of the debugger plan): the C# debugger attaches to the paused Step-through
+   * Debug from here (AD-022): the C# debugger attaches to the paused Step-through
    * run's runner, then Step over runs the paused step, which breaks in it. Why not, when it did not.
    */
   async debugFromHere(): Promise<string | undefined> {

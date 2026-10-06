@@ -8,7 +8,7 @@ using Xunit;
 namespace Brinell.Bdd.LanguageServer.Tests;
 
 /// <summary>
-/// Step through on the server (1.3 of the debugger plan): a suite whose fixture is in this test
+/// Step through on the server (AD-022): a suite whose fixture is in this test
 /// project, so its runner starts from this project's output, as a built suite's does.
 /// </summary>
 public sealed class StepTests : IAsyncLifetime
@@ -184,7 +184,7 @@ public sealed class StepTests : IAsyncLifetime
     [Fact]
     public async Task AnEditedStepFile_AndTheConfigTheFixtureReads_AreTheSources_WithNoBuild()
     {
-        // Nothing is built or copied here: the runner reads the suite's folder (I1 of the debugger plan).
+        // Nothing is built or copied here: the runner reads the suite's folder (AD-022).
         File.WriteAllText(Steps, File.ReadAllText(Steps).ReplaceLineEndings("\n").Replace("When the counter counts\n", "When the counter counts\nThen the config says hello from the source\n", StringComparison.Ordinal));
         await StartAsync(3);
         await PausedAsync();

@@ -6,7 +6,7 @@ namespace Brinell.Bdd.VisualStudio;
 
 /// <summary>
 /// Whether a project needs a build before a run on the suite's runner, which reads the scenario files
-/// from the source (I1 of the debugger plan): only a change to anything else since the project last
+/// from the source (AD-022): only a change to anything else since the project last
 /// built, in the folders of the solution's projects, or a document not saved yet, needs one.
 /// </summary>
 internal sealed class BddCodeChanges : IDisposable

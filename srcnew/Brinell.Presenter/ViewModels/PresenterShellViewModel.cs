@@ -1149,7 +1149,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
 
-        // The suite's runner, ready before the first run; after a build, from the new output (I2 of the debugger plan).
+        // The suite's runner, ready before the first run; after a build, from the new output (AD-025).
         if (result.Catalogs is not null)
         {
             _ = _executionService.WarmAsync(result.FolderPath);

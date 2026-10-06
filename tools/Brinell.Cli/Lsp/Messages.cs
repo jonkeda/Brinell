@@ -19,7 +19,7 @@ public sealed record InitializeParams(
 /// <param name="SolutionDir">The folder whose suites the server serves.</param>
 public sealed record InitializationOptions(string? SolutionDir)
 {
-    /// <summary>Whether a suite's runner is started when one of its feature files opens, and kept between runs (I2 of the debugger plan); on by default.</summary>
+    /// <summary>Whether a suite's runner is started when one of its feature files opens, and kept between runs (AD-025); on by default.</summary>
     public bool? WarmRunner { get; init; }
 
     /// <summary>How long a suite's runner waits after its last feature file closes before it ends; 10 by default.</summary>
@@ -421,7 +421,7 @@ public sealed record RecordingsParams(string Uri, string? Suite, string? Recordi
 /// <param name="Captions">Its <c>.srt</c>; null when it has none.</param>
 public sealed record RecordingEntry(string Path, string Name, DateTime Written, string? Captions);
 
-/// <summary><c>brinell/step/start</c>: Step through a scenario in the suite's runner process (D1 of the debugger plan).</summary>
+/// <summary><c>brinell/step/start</c>: Step through a scenario in the suite's runner process (AD-022).</summary>
 /// <param name="Uri">The feature file.</param>
 /// <param name="Line">The scenario heading's line.</param>
 /// <param name="Suite">The suite picked for a linked file; null for the first.</param>
@@ -463,7 +463,7 @@ public sealed record StepMoveResult(bool Taken, string? Reason);
 /// <param name="Page">The page the scenario is on; null when not known.</param>
 public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message, IReadOnlyDictionary<string, string>? Arguments = null, string? App = null, string? Page = null);
 
-/// <summary><c>brinell/run/start</c>: Run on the suite's runner (I4 of the debugger plan), with no stops.</summary>
+/// <summary><c>brinell/run/start</c>: Run on the suite's runner (AD-022), with no stops.</summary>
 /// <param name="Uri">The feature file.</param>
 /// <param name="Line">A scenario heading's line; null for every scenario of the file.</param>
 /// <param name="Suite">The suite picked for a linked file; null for the first.</param>
@@ -494,7 +494,7 @@ public sealed record RunEndedParams(string Uri, string Status, string? Message, 
 public sealed record RunScenarioResult(string Scenario, string Status, string? Message);
 
 /// <summary>
-/// The answer to <c>brinell/step/debug</c> (Debug from here, D6 of the debugger plan): the runner
+/// The answer to <c>brinell/step/debug</c> (Debug from here, AD-022): the runner
 /// process to attach the debugger to. Once attached, a move runs the next step, which breaks in it.
 /// </summary>
 /// <param name="ProcessId">The runner's process; null when the run is not paused.</param>

@@ -42,7 +42,7 @@ public sealed class UatAppsHostTests
         File.WriteAllText(suite.ConfigFilePath, File.ReadAllText(suite.ConfigFilePath).Replace("shared/apps.md", name, StringComparison.Ordinal));
         try
         {
-            // As a runner reads its suite's source config, where the apps file is not (I1 of the debugger plan).
+            // As a runner reads its suite's source config, where the apps file is not (AD-022).
             var config = BddConfigParser.ParseFile(suite.ConfigFilePath);
 
             Assert.Equal(["Alice's PC", "Bob"], config.Apps.Select(app => app.Name));

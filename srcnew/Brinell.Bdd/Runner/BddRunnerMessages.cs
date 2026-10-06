@@ -145,7 +145,7 @@ public sealed record BddRunnerSay(string Wav, double Seconds) : BddRunnerMessage
 public sealed record BddRunnerScreenshot(string Description) : BddRunnerMessage;
 
 /// <summary>
-/// Debug from here (D6 of the debugger plan): while paused between steps, waits for a debugger to
+/// Debug from here (AD-022): while paused between steps, waits for a debugger to
 /// attach (or asks Windows for one), then breaks before the next step that runs, so the debugger
 /// stops there and Step into goes into its step definition. Answered by <see cref="BddRunnerDone"/>
 /// once a debugger is attached, or <see cref="BddRunnerFailed"/> when none came.
@@ -161,13 +161,13 @@ public sealed record BddRunnerScreenshotTaken(string Path) : BddRunnerMessage;
 /// <summary>Closes the open scenario: its fixture and app. Answered by <see cref="BddRunnerDone"/>.</summary>
 /// <param name="Keep">
 /// Keep the fixture and its app for the next open of the same suite, when the fixture starts a
-/// scenario clean without a launch (<c>IUatScenarioLifecycle.StartsCleanWithoutLaunch</c>; I3 of the debugger plan).
+/// scenario clean without a launch (<c>IUatScenarioLifecycle.StartsCleanWithoutLaunch</c>; AD-025).
 /// </param>
 public sealed record BddRunnerClose(bool Keep = false) : BddRunnerMessage;
 
 /// <summary>
 /// Makes the suite's fixture, and so starts its app, before any scenario opens: the next open uses
-/// it (a warm runner's, I3 of the debugger plan). Answered by <see cref="BddRunnerDone"/> or <see cref="BddRunnerFailed"/>.
+/// it (a warm runner's, AD-025). Answered by <see cref="BddRunnerDone"/> or <see cref="BddRunnerFailed"/>.
 /// </summary>
 /// <param name="Config">The suite's config file.</param>
 /// <param name="Pages">The suite's Pages assembly, which has the fixture.</param>

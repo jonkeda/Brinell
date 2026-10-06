@@ -6,7 +6,7 @@ using StreamJsonRpc;
 namespace Brinell.Bdd.LanguageServer;
 
 /// <summary>
-/// Run on the runner (I4 of the debugger plan): the preview's Run runs the scenarios in the suite's
+/// Run on the runner (AD-022): the preview's Run runs the scenarios in the suite's
 /// runner process (AD-025), from the source (I1), with no stops; Run as test stays the IDE's
 /// <c>dotnet test</c>. One run at a time, a Step-through run included.
 /// </summary>
@@ -61,7 +61,7 @@ public sealed partial class BddLanguageServer
 
         try
         {
-            // The suite's warm runner, or a new one from a copy of its output (I2 of the debugger plan).
+            // The suite's warm runner, or a new one from a copy of its output (AD-025).
             run.Start = new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite));
             run.Runner = await Warm.TakeAsync(run.Start).ConfigureAwait(false);
         }
