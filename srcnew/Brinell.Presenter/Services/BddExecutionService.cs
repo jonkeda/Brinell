@@ -41,7 +41,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         var start = new BddRunnerStart(
             pages,
             BddWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config),
-            CreateTargetEnvironment(config, BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config), WindowEnvironment));
+            CreateTargetEnvironment(workspacePath, config, BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config), WindowEnvironment));
 
         var runner = await TakeOrStartAsync(start, cancellationToken).ConfigureAwait(false);
         try
@@ -252,6 +252,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
 
     // What the runner, and so the app it starts, gets beside Presenter's own environment.
     private static Dictionary<string, string> CreateTargetEnvironment(
+        string workspacePath,
         BddConfig config,
         string? appPath,
         IReadOnlyDictionary<string, string> windowEnvironment)
@@ -269,6 +270,9 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
 
         // The recorders a suite does not reference itself (Brinell.Narrator.Windows) are Presenter's.
         environment.TryAdd(Brinell.Recording.RecordingPackages.Variable, AppContext.BaseDirectory);
+
+        // Results where the IDEs' preview reads them (1.7 of the debugger plan), whichever folder the runner runs in.
+        environment.TryAdd(Brinell.Core.Artifacts.TestArtifactOptions.RootDirectoryEnvironmentVariable, Brinell.Core.Artifacts.TestArtifactOptions.RootFor(workspacePath));
         return environment;
     }
 

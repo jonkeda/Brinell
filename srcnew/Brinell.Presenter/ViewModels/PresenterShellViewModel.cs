@@ -1673,7 +1673,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             IsDarkThemeActive,
             WorkspaceName,
             IsPaused && CurrentRow is { } paused
-                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall)
+                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall, _activeSession?.Next)
                 : null));
     }
 

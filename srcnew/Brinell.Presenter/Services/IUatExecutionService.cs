@@ -64,6 +64,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         ArgumentNullException.ThrowIfNull(opened);
         RunnerProcessId = runner.Process.Id;
         StepCount = opened.Steps;
+        Next = opened.Next;
         DiscoveryReport = opened.Discovery;
         CommandCatalogReport = opened.Catalog;
     }
@@ -84,6 +85,9 @@ public sealed class PresenterUatExecutionSession : IDisposable
     public int CompletedStepCount => _steps.Count;
 
     public bool HasNext => _steps.Count < StepCount;
+
+    /// <summary>Where the next step is, as the runner says (its file, the calls around it, its page and arguments); null when none is left.</summary>
+    public BddRunnerPosition? Next { get; private set; }
 
     /// <summary>Whether every step ran and passed.</summary>
     public bool Passed => !HasNext && _steps.Count > 0 && _steps.All(step => step.Status == BddStepResultStatus.Passed);
@@ -149,6 +153,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
 
         var step = Expect<BddRunnerStep>(await _runner.RequestAsync(request, cancellationToken).ConfigureAwait(false));
         _steps.Add(step);
+        Next = step.Next;
         return step;
     }
 

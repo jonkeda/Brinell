@@ -329,6 +329,12 @@ public sealed partial class PresenterShellViewModel
                 return RunOutcome.Paused;
             }
 
+            if (plan.CheckBreaks && !_recordingScenes && (checkFirst || !first) && PresenterStepping.BreaksInStepFile(session.Next, scenario.FilePath, _breakpoints.Path) && RowOfStep(step) is { } innerRow)
+            {
+                Pause(innerRow, "Breakpoint");
+                return RunOutcome.Paused;
+            }
+
             first = false;
             var result = await RunNextStepAsync(session, scenario).ConfigureAwait(true);
             if (!ReferenceEquals(_activeSession, session))

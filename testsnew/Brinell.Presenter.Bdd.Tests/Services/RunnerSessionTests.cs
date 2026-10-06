@@ -34,6 +34,23 @@ public sealed class RunnerSessionTests : IDisposable
             ```gherkin
             Given the probe runs in its own output
             ```
+
+            ## Scenario: The probe is checked
+
+            ```gherkin
+            Given the probe is checked
+            ```
+            """);
+        File.WriteAllText(
+            Path.Combine(_root, "probe.steps.md"),
+            """
+            # Steps: Probe
+
+            ## Step: the probe is checked
+
+            ```gherkin
+            Given the probe is ready
+            ```
             """);
     }
 
@@ -100,6 +117,37 @@ public sealed class RunnerSessionTests : IDisposable
         Assert.Equal(("Probe", "hash-1", BddStepResultStatus.Passed), (timeline.Name, timeline.Hash, timeline.Status));
         Assert.Contains(recorded.Warnings, warning => warning.Contains("IRecordable"));
         Assert.Equal(["intro.wav"], said);
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task AFinishedScenario_IsWrittenWhereTheIdesPreviewReadsIt_NotInTheOutputsRepository()
+    {
+        Config(nameof(ProbeFixture));
+        using var service = new BddExecutionService();
+        using var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
+
+        await session.RunNextAsync(CancellationToken.None);
+
+        // The suite's folder is in no repository here, so its results folder is its own (TestArtifactOptions.RootFor).
+        var results = Path.Combine(_root, "TestResults");
+        Assert.Single(Directory.EnumerateFiles(results, "*__result.json", SearchOption.AllDirectories));
+        var manifest = File.ReadAllText(Assert.Single(Directory.EnumerateFiles(results, "manifest.json", SearchOption.AllDirectories)));
+        Assert.Matches("\"mode\":\\s*\"runner\"", manifest);
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task ASession_SaysWhereTheNextStepIs_InsideACall()
+    {
+        Config(nameof(ProbeFixture));
+        using var service = new BddExecutionService();
+        using var session = await service.CreateSessionAsync(_root, _feature, "The probe is checked", CancellationToken.None);
+
+        var next = session.Next!;
+        Assert.Equal((Path.Combine(_root, "probe.steps.md"), 6, 1), (next.File, next.Line, next.Depth));
+        Assert.Equal((_feature, 18), (next.Calls[0].File, next.Calls[0].Line));
+
+        await session.RunNextAsync(CancellationToken.None);
+        Assert.Null(session.Next);
     }
 
     [Fact(Timeout = 120000)]

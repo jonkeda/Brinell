@@ -1,7 +1,7 @@
 # Running and debugging a scenario: the plan
 
-Status: **in progress**: Phases T and 0 done, Phase 1 done up to 1.6 (2026-10-06). **Next: 1.7**,
-then Phase 2. Started 2026-10-04.
+Status: **in progress**: Phases T, 0 and 1 done (2026-10-06). **Next: Phase 2 (2.1)**.
+Started 2026-10-04.
 The design and its reasons are in [proposal.md](proposal.md); this file is the work, in order, so
 a session can pick it up cold. Every open question of the proposal (Q1-Q11) is **accepted as its
 leaning** (section 2).
@@ -16,7 +16,8 @@ builds the suite's project, the language server opens the scenario in the suite'
 and pauses before each step; the bar and the keys move it; the result is written as the gate's,
 marked `step`. A stop shows the step's page, app and arguments as read (a debugged stop too), and a
 Step-through stop offers **📷 Screenshot** (the runner takes it while idle). Debug (the C# debugger,
-the engine's own breaks) works as before.
+the engine's own breaks) works as before. A Presenter run's result shows in the IDEs' preview, and
+the Presenter stops at an IDE breakpoint inside a `## Step:` body.
 
 **How Step through flows** (read these files in this order to learn it):
 
@@ -47,7 +48,8 @@ the engine's own breaks) works as before.
 
 **The owner has not yet tried by hand:** Step through in the Visual Studio experimental instance
 (1.4, with 1.6's details and Screenshot: manual plan B-21 to B-24) and in VS Code with the keys
-(1.5); VS Code's skipped build when nothing changed (0.2).
+(1.5); VS Code's skipped build when nothing changed (0.2); a Presenter run of TOD.01.1 showing in
+the IDE preview (1.7).
 
 ## 1. Where things are
 
@@ -167,18 +169,7 @@ does; layers 1 and 2 already exist and catch none of them):
 | 1.4 | **Visual Studio: Step** button beside Debug; the paused bar fed by `brinell/step/paused`; the keys of D3 only while a Step-through run is paused and no debugger is in break mode; the feature file at the paused line. | `PreviewController.cs`, `BddRunController.cs`, `.vsct`, `preview-host.js` | Owner: TOD.01.1 with a breakpoint on `When I tap Sync`, F10 to the end, it **passes**. Automated: layer 3 (Step sends its message; the bar on `step/paused`); layer 5 (Step through TOD.01.1 with F10 to the end, and it passes). || **done** 2026-10-06: a **Step** button on each scenario (`data-step`, beside Run and Debug, in both IDEs' page); Visual Studio builds the suite's project, then `brinell/step/start`; the paused bar is fed by `brinell/step/paused` (a failed stop says so, with the message), the moves go to `brinell/step/move`, Cancel stops it. F10, F11 and F5 are the moves while a Step-through run is paused and no debugger is in break mode (command events, as the Debug F10 takeover). **Not as D3 asked:** Shift+F11 and Shift+F5 never reach the extension when nothing is debugged, since Visual Studio disables those commands then; the bar's buttons and Ctrl+Shift+F11 stand in. Tests: layer 3 (Step sends `step {line}`; a failed stop's bar); layer 5 (Step through TOD.01.1: paused at 18, F5 to the breakpoint at 24, F10 to the end, passed; 5 s from the click to the first pause). Owner: try it in the experimental instance. |
 | 1.5 | **VS Code: Step** as a Test Explorer run profile and a preview button; keybindings with a `when` context `brinell.stepPaused`. | `tests.ts`, `stepping.ts`, `preview.ts`, `package.json` | Owner: the same check in VS Code. Automated: layer 4 (VS Code in a test window). || **done** 2026-10-06: the preview's Step button, a **Step through** Test Explorer profile and a *Step Through Scenario* command (the scenario at the caret); the run is the suite's whose project holds the file (a file linked into the service suite went there before); its test result comes from `brinell/step/ended`. F10, F11, Shift+F11, F5 and Shift+F5 are the moves while `brinellBdd.stepPaused && !inDebugMode`: unlike Visual Studio, all five of D3. Found and fixed: the server read VS Code's `file:///e%3A/...` as `/e:/...`, so no suite held the file (server test added). Tests: layer 4, `npm run test:ide` in `tools/Brinell.Bdd.VsCode`, starts the installed VS Code with a profile of its own (`BRINELL_VSCODE` to point elsewhere), sets the developer's step breakpoints aside, and steps TOD.01.1 through the extension's commands: 18, over 19, into 23, continue to the breakpoint at 24, over to the end, passed (15 s, the build included). Owner: the same by hand, with the keys. |
 | 1.6 | **The stop's details and Screenshot now** (D5): the paused notification carries arguments as read, app, page; a `brinell/step/screenshot` request. | `BddLanguageServer.Step.cs`, `preview-host.js` | Server test for the payload; owner sees it in the bar. Automated: layer 2 (the payload); layer 3 (the bar shows the details). | **done** 2026-10-06: `BddRunnerPosition` and `BddRunnerStop` carry optional `Arguments`, `App`, `Page` (from `BddBreakpoints.Describe`; protocol stays 2); a call's stop has the page only (its text has its values). `brinell/step/paused` carries them; so does Debug's `bdd-paused.json`. `BddRunnerScreenshot` (answered `BddRunnerScreenshotTaken` or `Failed`) goes through the fixture's `ScreenshotService` as the failure screenshot does; `brinell/step/screenshot` holds the run still while the runner takes it. The bar has a details line and **📷 Screenshot** (only when the `paused` message says `stepping`); Visual Studio opens the file in the editor, VS Code beside. Tests: layer 1 (a stop's details, a call's page only); layer 2 (arguments at line 8 of the counter suite; a screenshot while paused, refused when none is); layer 3 (the details line and Screenshot sent; a debugged stop has no Screenshot); layer 4 asserts TOD.01.1's breakpoint stop: page `Todo List`, `control = "Sync"`. Owner: manual plan B-21 to B-24. |
-| 1.7 | **The Presenter** shows its runs' results in the IDEs (from 1.1) and uses 1.2 for stepping into calls. | Presenter view models | Presenter tests; a Presenter run visible in the IDE preview. Automated: Presenter tests; layer 3 (a Presenter run in the preview). | |
-
-**Notes for 1.7** (not started):
-- The Presenter already writes results through 1.1 (mode `runner`); its runner runs in the build
-  output, so the results folder is the repository's `TestResults` (`DefaultTestArtifactPathProvider`),
-  which is what the preview reads (`BddRunResults.RootFor`) for a suite in a git repository. Check it
-  with a Presenter run of TOD.01.1 and the preview open; set `BRINELL_TEST_RESULTS_DIR` as the server
-  does if not.
-- Its stepping (`srcnew/Brinell.Presenter/Services/IUatExecutionService.cs`,
-  `PresenterUatExecutionSession`) is one `Next` a step; to step into and out of calls, drive it
-  with `BddRunnerStepper` (from `BddRunnerOpened.Next`), and show a stop's calls (`BddRunnerStop.Calls`)
-  and `IsCall` in its step list.
+| 1.7 | **The Presenter** shows its runs' results in the IDEs (from 1.1) and uses 1.2 for stepping into calls. | Presenter view models | Presenter tests; a Presenter run visible in the IDE preview. Automated: Presenter tests; layer 3 (a Presenter run in the preview). | **done** 2026-10-06: the results-folder rule is one function, `TestArtifactOptions.RootFor` (`Brinell.Core`), which the server's `BddRunResults.RootFor` now calls; the Presenter tells its runner that folder (`BRINELL_TEST_RESULTS_DIR`), so a run lands where the preview reads even from a copy of the output (Phase 2's shadow copy). Before, its results went to the repository above the **output** (its own tests wrote into Brinell's `TestResults`). The session keeps the runner's `Next` position: Play stops at an IDE breakpoint inside a `## Step:` body (`PresenterStepping.BreaksInStepFile`; the feature file's lines stay the rows'), and the Presenter's preview bar shows the stop's page, app and arguments. **Not as the notes said:** the Presenter keeps its row-based into/out (its rows already show calls and their steps, with their own tests) rather than moving to `BddRunnerStepper`. The preview showing a runner-mode run is 1.1's layer 2 test. Tests: Presenter (a finished scenario's result and manifest, mode `runner`, in the suite's results folder; `Next` inside a call; a step-file breakpoint). |
 
 ### Phase 2: Instant Run (I1-I4)
 
@@ -204,7 +195,7 @@ does; layers 1 and 2 already exist and catch none of them):
 | --- | --- | --- | --- |
 | F1 project build | 0.1 | already | already |
 | F2 skip build | 0.2 | 0.2 | already (builds on its Build only) |
-| Step through | 1.3, 1.4 | 1.3, 1.5 | already; calls from 1.2 |
+| Step through | 1.3, 1.4 | 1.3, 1.5 | already; step-file breakpoints and stop details from 1.2/1.6 (1.7) |
 | Results in the preview | 1.1 | 1.1 | 1.1, 1.7 |
 | Files from source | 2.1 | 2.1 | already |
 | Warm runner and app | 2.3, 2.4 | 2.3, 2.4 | 2.3, 2.4 |

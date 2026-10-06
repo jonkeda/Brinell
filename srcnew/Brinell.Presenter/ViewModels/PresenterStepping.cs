@@ -84,6 +84,19 @@ public static class PresenterStepping
         => rows.FirstOrDefault(row => row.IsCall && row.FirstStep == step && row.HasBreakpoint)
            ?? rows.FirstOrDefault(row => !row.IsCall && row.FirstStep == step && row.HasBreakpoint);
 
+    /// <summary>
+    /// Whether the next step is written in a step file (a <c>## Step:</c> body) on a line an IDE set a
+    /// breakpoint on: the runner says where it is (1.2 of the debugger plan). The feature file's own
+    /// lines are the rows' breakpoints (<see cref="BreakBefore"/>).
+    /// </summary>
+    /// <param name="next">Where the next step is, as the runner says.</param>
+    /// <param name="scenarioFile">The scenario's feature file.</param>
+    /// <param name="breakpointsPath">The breakpoints file.</param>
+    public static bool BreaksInStepFile(Brinell.Bdd.Runner.BddRunnerPosition? next, string scenarioFile, string breakpointsPath)
+        => next is { File: { } file }
+           && !string.Equals(Path.GetFullPath(file), Path.GetFullPath(scenarioFile), StringComparison.OrdinalIgnoreCase)
+           && BddBreakpoints.Lists(file, next.Line, breakpointsPath);
+
     /// <summary>The call a row is inside, as its row index; null for a row outside every call, and for a call's own row.</summary>
     /// <param name="rows">The step list.</param>
     /// <param name="at">The row.</param>
