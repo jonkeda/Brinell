@@ -58,68 +58,93 @@ Update the extension, or the suite's Brinell packages.
 
 ## Run From The Preview
 
-Each scenario heading has **Run**, and the title **Run file**. A run:
+Each scenario heading has four buttons, and the title the file's **Run**, **Run as test** and
+**Debug**:
 
-1. builds the solution through Visual Studio, so a stale app never runs;
-2. runs `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an
-   outline, or `BddScenario~<file>#` for the file), its output in the **Brinell BDD** Output pane;
-3. shows the results in the preview when the run writes them.
+| Button | What it does | Use it |
+| --- | --- | --- |
+| **▶ Run** | Runs the scenario in the suite's runner, reading the feature, step and config files from the source: no build when only those changed. No stops. | to try an edit; the quickest way to a result |
+| **▷ Run as test** | Builds the suite's project, then `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an outline, or `BddScenario~<file>#` for the file), its output in the **Brinell BDD** Output pane. | to see what CI will say |
+| **● Debug** | Run as test with the testhost under Visual Studio's debugger: it stops at step breakpoints and C# breakpoints. | to debug C# from the start of a test |
+| **⏭ Step** | Step through: the scenario in the suite's runner, paused before each step. | to stop at a step (see below) |
 
-The suite's test class must use `[UatScenarioTheory]`, which gives each case its address; with
+Every way writes the same result, marked with how it ran, and the preview shows it. Run as test and
+Debug need `[UatScenarioTheory]` on the suite's test class, which gives each case its address; with
 `[Theory]` the buttons are disabled and say why. Test Explorer runs the same cases either way.
 
-While a run goes, the UI test rules hold: a second run is refused, a build started during the run
-is cancelled (it would overwrite the binaries under the run), and **Cancel run** in the bar stops
-the test process and the app it started.
+The suite's runner is kept ready: it starts, from a copy of the build output, when you open one of
+the suite's feature files and again after a build, so Run and Step start at once and a build goes
+through while it waits. After a run it starts the app for the next one. It ends ten minutes after
+the suite's last feature file closes. Both are in **Tools > Options > Brinell BDD > General > Runs**,
+read when the solution opens.
 
+While a run goes, the UI test rules hold: a second run is refused, a build started during a Run as
+test is cancelled (it would overwrite the binaries under the run), and **Cancel run** in the bar
+stops the run and the app it started.
 ## Record On Video
 
 A video script (`*.video.md`) previews as the scenes it will record, and its title has **Record**;
-a scenario heading has **Record** beside **Run**. Record builds the solution, runs the scenes
+a scenario heading has **Record** beside **Step**. Record builds the solution, runs the scenes
 with `BRINELL_RECORD`, and offers to watch the video when it is made; the preview lists the
 file's recordings to watch. The folder, the voice and the beat are in **Tools > Options > Brinell
-BDD > Recording**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
+BDD > General**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
 
-## Break At A Step
+## Stop At A Step
 
-A step breakpoint stops the debugger before that step, whichever way the test was started (the
-preview's Debug, or Test Explorer's own **Debug**).
+A step breakpoint stops a run before that step. **Set one** by clicking a step's keyword in the
+preview, or with the caret on the step, by right-clicking and choosing **Toggle BDD Step
+Breakpoint**, or by pressing **Ctrl+K, F9** (or **Ctrl+K, Ctrl+F9**). A red dot shows in the
+preview's gutter and in the editor's glyph margin. A line that is not a step gets none, and the
+status bar says so. The breakpoints move with their steps as you edit lines above them.
 
-- **Set one** by clicking a step's keyword in the preview, or with the caret on the step, by
-  right-clicking and choosing **Toggle BDD Step Breakpoint**, or by pressing **Ctrl+K, F9** (or
-  **Ctrl+K, Ctrl+F9**). A red
-  dot shows in the preview's gutter and in the editor's glyph margin. A line that is not a step
-  gets none, and the status bar says so.
-- **Debug** beside each **Run** (and **Debug file** beside **Run file**) runs the same way, with
-  the testhost waiting for a debugger (`VSTEST_HOST_DEBUG`). The extension attaches Visual Studio's
-  debugger to the testhost and the run goes on to the first breakpoint. If the attach fails, the run
-  is cancelled. The app the fixture starts is its own process and is not attached.
-- The breakpoints move with their steps as you edit lines above them. Deleting a step's line
-  removes its breakpoint.
-- The app under test is debugged too. The MAUI app on Windows, or a web app started from its
-  build, is attached after the testhost, so a breakpoint in the app's own code also stops. A web
-  app started with `dotnet run` is not, since that process is the CLI.
+### Step Through (The Default)
 
-### Step Through A Scenario
-
-While the run is paused at a step, the preview shows a bar with where it is paused, the step is
-marked, and the editor shows its line (in the step file, for a call's step). From there:
+**⏭ Step** runs the scenario in the suite's runner and pauses before its first step, with no
+debugger. The preview shows a bar with where it is paused, the step's page, app and arguments as
+read; the step is marked, and the editor shows its line (in the step file, for a call's step).
 
 | Move | Keys | Goes to |
 | --- | --- | --- |
-| **Step over** | Alt+Shift+F10 | the next step; a `## Step:` call runs whole |
-| **Step into** | Alt+Shift+F11 | inside a `## Step:` call, before its first step, without running anything |
-| **Step out** | Ctrl+Shift+F11 | the first step after the call the run is in |
-| **Continue** | F5 | the next step breakpoint |
-| **Stop** | Shift+F5 | the end of the run |
+| **Step over** | F10 | the next step; a `## Step:` call runs whole |
+| **Step into** | F11 | inside a `## Step:` call, before its first step, without running anything |
+| **Step out** | Ctrl+Shift+F11 (the bar's button) | the first step after the call the run is in |
+| **Continue** | F5 | the next step breakpoint, a failed step, or the end |
+| **Stop** | the bar's button | the end of the run |
 
-The same moves are the bar's buttons and the **Debug** menu's **Step Over BDD Step**, **Step Into
-BDD Call** and **Step Out of BDD Call**. A `## Step:` call is a position of its own: the run stops
-at the call first (its line in the feature file), and Step into goes inside. F10 and F11 stay the
-C# debugger's: F11 at a paused step goes into its step definition's code.
+A `## Step:` call is a position of its own: the run stops at the call first (its line in the
+feature file), and Step into goes inside. Shift+F11 and Shift+F5 are not taken: Visual Studio turns
+those commands off while nothing is debugged. A failed step pauses, with its message.
 
-The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, read only
-while a debugger is attached:
+- **📷 Screenshot** saves the app as it is now and opens it.
+- **🐞 Debug from here** attaches Visual Studio's debugger to the runner. The next step stops just
+  before its step definition is called: the local `stepBreak` holds the step, and **F11** goes into
+  the definition (a control's verb, a page's or a phrase class's method). The runner ends with the
+  run, and the debugging session with it.
+
+### Debug (The Advanced Way)
+
+**● Debug** (and **Debug file**, and Test Explorer's own **Debug**) runs the test under the
+debugger: the testhost waits for a debugger (`VSTEST_HOST_DEBUG`), the extension attaches, and the
+run goes on to the first breakpoint. If the attach fails, the run is cancelled. The app under test
+is debugged too: the MAUI app on Windows, or a web app started from its build, is attached after
+the testhost, so a breakpoint in the app's own code also stops (not a web app started with
+`dotnet run`, since that process is the CLI).
+
+A stop freezes the whole test process: a fake server it runs (WireMock, say) stops answering, and
+an app waiting on it may time out. Step through freezes nothing, which is why it is the default.
+
+While paused, the moves are **Alt+Shift+F10** (Step over), **Alt+Shift+F11** (Step into), **Ctrl+Shift+F11**
+(Step out), **F5** (Continue) and **Shift+F5** (Stop), the same bar's buttons, and the **Debug**
+menu's **Step Over BDD Step**, **Step Into BDD Call** and **Step Out of BDD Call**; F10 at a paused
+step is the BDD Step over too. The debugger stops in `BddStepExecutionSession.RunNextAsync`, where
+the local `stepBreak` holds the step's text, its arguments as read, the app, the page and the call
+chain; **F11** there goes into the step definition.
+
+### The Breakpoints File
+
+The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, read by the
+engine while a debugger is attached and by the runner's host between steps (Step through, the
+Presenter); a CI run reads neither:
 
 ```json
 { "files": { "C:\\src\\Suite\\Features\\TOD.01-see-my-todos.feature.md": [19, 25] }, "breakOnFailure": false }
@@ -127,17 +152,13 @@ while a debugger is attached:
 
 - A line of a feature file stops before that step; the line of a call to a callable stops once,
   at the call, before its first step.
-- While paused, the engine writes `bdd-paused.json` beside it (where, and the test process); a
-  step move is a one-shot `"next": { "mode": "over", "depth": 0, "process": 4711 }` the extension
-  writes and the engine removes when it stops.
 - A line in a `.steps.md` stops at that step each time a scenario calls it.
-- `breakOnFailure` stops after a step that fails, before the scenario ends.
-
-The debugger stops in `BddStepExecutionSession.RunNextAsync`. The local `stepBreak` holds the
-step's text, its arguments as read, the app, the page and the call chain; **F11** goes into the
-step definition. A test runs the build output's copy of a feature file; a listed file matches it
-by its path below the `Features` folder.
-
+- `breakOnFailure` stops a debugged run after a step that fails, before the scenario ends.
+- While a debugged run is paused, the engine writes `bdd-paused.json` beside it (where, and the test
+  process); a step move is a one-shot `"next": { "mode": "over", "depth": 0, "process": 4711 }` the
+  extension writes and the engine removes when it stops.
+- A test runs the build output's copy of a feature file; a listed file matches it by its path below
+  the `Features` folder.
 The extension starts `dotnet Server\brinell.dll lsp` from its own folder; its log is
 the **Brinell BDD** pane of the Output window.
 

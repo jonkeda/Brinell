@@ -110,7 +110,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | R-10 | Click **Delete results** in the preview's bar, then **OK**. | Every scenario of TOD.01 loses its result; the button hides. `TestResults` keeps the runs that hold other files' results. | ☐ |
 | R-11 | In the BDD Explorer's **Results**, click **Delete** on a file, then **Delete all results**. | The file's results, then all of the suite's, go; the view refreshes each time. | ☐ |
 
-## 6. Step breakpoints and Debug
+## 6. Step breakpoints: Step through, Debug, and Debug from here
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
