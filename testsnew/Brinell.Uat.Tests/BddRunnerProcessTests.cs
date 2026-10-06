@@ -67,6 +67,20 @@ public sealed class BddRunnerProcessTests : IDisposable
             Then the runner's base directory is the suite's output
             Then the runner sees RUNNER_TEST_VALUE as from-the-host
             ```
+
+            ## Scenario: Calls a step
+
+            ```gherkin
+            Given the runner counts twice
+            Then the runner has counted 2 times
+            ```
+
+            ## Step: the runner counts twice
+
+            ```gherkin
+            Given the runner counts
+            When the runner counts
+            ```
             """);
     }
 
@@ -262,6 +276,28 @@ public sealed class BddRunnerProcessTests : IDisposable
         Assert.Equal(("passed", "step", "runner.feature.md", "3"), (records["Counts to two"].Status, records["Counts to two"].Metadata["mode"], records["Counts to two"].Metadata["file"], records["Counts to two"].Metadata["line"]));
         Assert.Equal(("failed", UatScenarioResults.RunnerMode), (records["Counts wrong"].Status, records["Counts wrong"].Metadata["mode"]));
         Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(Directory.EnumerateFiles(results, "manifest.json", SearchOption.AllDirectories).First())!, records["Counts to two"].Path)));
+    }
+
+    [Fact]
+    public async Task EachStep_SaysWhereItIs_AndWhereTheNextIs_WithTheCallsAroundIt()
+    {
+        await using var runner = await StartAsync();
+
+        var opened = Assert.IsType<BddRunnerOpened>(await runner.RequestAsync(Open("Calls a step")));
+        var first = Assert.IsType<BddRunnerStep>(await runner.RequestAsync(new BddRunnerNext()));
+        var second = Assert.IsType<BddRunnerStep>(await runner.RequestAsync(new BddRunnerNext()));
+        var last = Assert.IsType<BddRunnerStep>(await runner.RequestAsync(new BddRunnerNext()));
+
+        // The call's body (lines 42 and 43 of the file), then the scenario's own step after the call (36).
+        Assert.Equal((42, 1, "the runner counts"), (opened.Next!.Line, opened.Next.Depth, opened.Next.Text));
+        var call = Assert.Single(opened.Next.Calls);
+        Assert.Equal((35, 1), (call.Line, call.Depth));
+        Assert.Equal(Path.GetFullPath(_feature), Path.GetFullPath(call.File!), ignoreCase: true);
+        Assert.Equal((42, 43), (first.Ran!.Line, first.Next!.Line));
+        Assert.Equal((43, 1, 36, 0), (second.Ran!.Line, second.Ran.Depth, second.Next!.Line, second.Next.Depth));
+        Assert.Empty(second.Next.Calls);
+        Assert.Equal((36, false), (last.Ran!.Line, last.HasNext));
+        Assert.Null(last.Next);
     }
 
     [Fact]

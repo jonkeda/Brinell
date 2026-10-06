@@ -88,14 +88,15 @@ public sealed class BddRunnerHost
                 await DropRecordingAsync().ConfigureAwait(false);
                 Close();
                 _open = OpenScenario.Open(open);
-                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog);
+                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next));
 
             case BddRunnerNext:
                 return await StepAsync(Opened()).ConfigureAwait(false);
 
             case BddRunnerSkip skip:
                 var session = Opened();
-                var skipped = Step(session, session.Session.SkipNext(skip.Message));
+                var passedOver = session.Session.Next;
+                var skipped = Step(session, session.Session.SkipNext(skip.Message), passedOver);
                 session.RecordIfFinished();
                 return skipped;
 
@@ -143,7 +144,8 @@ public sealed class BddRunnerHost
 
         try
         {
-            var step = Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false));
+            var ran = open.Session.Next;
+            var step = Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false), ran);
             open.RecordIfFinished();
             return step;
         }
@@ -158,14 +160,27 @@ public sealed class BddRunnerHost
         }
     }
 
-    private static BddRunnerStep Step(OpenScenario open, BddStepResult result)
+    private static BddRunnerStep Step(OpenScenario open, BddStepResult result, BddStepInvocation? ran)
         => new(
             open.Session.Results.Count - 1,
             result.Status,
             result.Message,
             open.Session.HasNext,
             [.. BddDiagnosticsFormatter.FormatSteps(open.Session.Results)],
-            [.. open.Runner.Context.Diagnostics]);
+            [.. open.Runner.Context.Diagnostics],
+            Position(ran),
+            Position(open.Session.Next));
+
+    // Plain text and numbers: a host holds no engine types (AD-025).
+    private static BddRunnerPosition? Position(BddStepInvocation? invocation)
+        => invocation is null
+            ? null
+            : new BddRunnerPosition(
+                invocation.Step.Source.FilePath,
+                invocation.Step.Source.LineNumber,
+                invocation.Step.Text,
+                invocation.Call?.Depth ?? 0,
+                invocation.Call?.Chain.Select(frame => new BddRunnerCall(frame.Describe(), frame.Location.FilePath, frame.Location.LineNumber, frame.Depth)).ToList() ?? []);
 
     private void CancelStep()
     {

@@ -42,7 +42,8 @@ public sealed record BddRunnerOpen(string Config, string Pages, string Feature, 
 /// <param name="Steps">How many steps it runs.</param>
 /// <param name="Discovery">The discovery report.</param>
 /// <param name="Catalog">The command catalog report.</param>
-public sealed record BddRunnerOpened(int Steps, string Discovery, string Catalog) : BddRunnerMessage;
+/// <param name="Next">Where its first step is; null when it has none.</param>
+public sealed record BddRunnerOpened(int Steps, string Discovery, string Catalog, BddRunnerPosition? Next = null) : BddRunnerMessage;
 
 /// <summary>Runs the next step. Answered by <see cref="BddRunnerStep"/>.</summary>
 public sealed record BddRunnerNext : BddRunnerMessage;
@@ -58,7 +59,27 @@ public sealed record BddRunnerSkip(string? Message) : BddRunnerMessage;
 /// <param name="HasNext">Whether a step is left.</param>
 /// <param name="Report">Every step so far, as the diagnostics show them.</param>
 /// <param name="Diagnostics">The context's runtime trace so far.</param>
-public sealed record BddRunnerStep(int Index, BddStepResultStatus Status, string? Message, bool HasNext, IReadOnlyList<string> Report, IReadOnlyList<string> Diagnostics) : BddRunnerMessage;
+/// <param name="Ran">Where the step that ran is.</param>
+/// <param name="Next">Where the next step is; null when none is left.</param>
+public sealed record BddRunnerStep(int Index, BddStepResultStatus Status, string? Message, bool HasNext, IReadOnlyList<string> Report, IReadOnlyList<string> Diagnostics, BddRunnerPosition? Ran = null, BddRunnerPosition? Next = null) : BddRunnerMessage;
+
+/// <summary>
+/// Where a step is, for a host that pauses before steps and steps over, into and out of
+/// <c>## Step:</c> calls: the step's own line, and the calls that put it there.
+/// </summary>
+/// <param name="File">The step's file: the feature file, or the step file of a call's body.</param>
+/// <param name="Line">The step's line.</param>
+/// <param name="Text">The step's text, with a call's values filled in.</param>
+/// <param name="Depth">How many calls deep it is: 0 for a step written in the scenario.</param>
+/// <param name="Calls">The calls around it, outermost first.</param>
+public sealed record BddRunnerPosition(string? File, int Line, string Text, int Depth, IReadOnlyList<BddRunnerCall> Calls);
+
+/// <summary>A <c>## Step:</c> call a step runs inside.</summary>
+/// <param name="Text">The call as written.</param>
+/// <param name="File">The file the call is written in.</param>
+/// <param name="Line">The call's line, or its row's for a per-row call.</param>
+/// <param name="Depth">1 for a call written in the scenario.</param>
+public sealed record BddRunnerCall(string Text, string? File, int Line, int Depth);
 
 /// <summary>A spoken line, made before the run.</summary>
 /// <param name="Text">What is said.</param>
