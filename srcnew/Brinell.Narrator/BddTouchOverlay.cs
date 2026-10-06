@@ -105,9 +105,19 @@ public static class BddTouchOverlay
             var sceneEnd = sceneStart + scene.Duration;
             if (scene.Interactions is { Count: > 0 } interactions && Frame.Of(scene, width, height) is { } frame)
             {
-                foreach (var interaction in interactions)
+                for (var index = 0; index < interactions.Count; index++)
                 {
-                    draw.Mark(interaction, frame, sceneStart, sceneEnd);
+                    // Setting a field's text clears it first: one mark, the typing.
+                    if (interactions[index] is { Kind: InteractionKind.Clear } clear
+                        && index + 1 < interactions.Count
+                        && interactions[index + 1] is { Kind: InteractionKind.Type } typed
+                        && typed.Bounds == clear.Bounds
+                        && typed.At - clear.At < TypeTime)
+                    {
+                        continue;
+                    }
+
+                    draw.Mark(interactions[index], frame, sceneStart, sceneEnd);
                 }
             }
 

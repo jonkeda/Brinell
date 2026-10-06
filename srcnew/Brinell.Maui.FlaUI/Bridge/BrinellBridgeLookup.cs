@@ -106,8 +106,8 @@ internal static class BrinellBridgeLookup
     }
 
     /// <summary>
-    /// A bridge target's screen rectangle, from its <c>GetBounds</c>, in this process's units (as UI
-    /// Automation gives them): for a recorded video's touch mark on a control the tree cannot show.
+    /// A bridge target's screen rectangle from its <c>GetBounds</c>, in physical pixels: for a
+    /// recorded video's touch mark on a control the tree cannot show.
     /// </summary>
     /// <exception cref="InvalidOperationException">The app publishes no such target, or it does not answer.</exception>
     internal static Rectangle TargetBounds(AutomationElement root, UIA3Automation automation, string automationId)
@@ -118,12 +118,7 @@ internal static class BrinellBridgeLookup
             throw new InvalidOperationException($"'{automationId}' answers no bounds on the bridge.");
         }
 
-        var factor = PhysicalPerCaller(root);
-        return Rectangle.FromLTRB(
-            (int)Math.Round(left / factor),
-            (int)Math.Round(top / factor),
-            (int)Math.Round((left + width) / factor),
-            (int)Math.Round((top + height) / factor));
+        return Rectangle.FromLTRB((int)Math.Round(left), (int)Math.Round(top), (int)Math.Round(left + width), (int)Math.Round(top + height));
     }
 
     private static (double X, double Y) ToPhysical(AutomationElement root, double x, double y)

@@ -66,29 +66,12 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
         }
     }
 
-    // What a window's frames show: its visible frame (DWM's extended frame bounds, in physical
-    // pixels), in this process's units, which are those UI Automation gives an element's bounds in.
+    // What a window's frames show: its visible frame (DWM's extended frame bounds), in physical
+    // pixels whatever this process's DPI awareness, as the Windows driver reports its interactions.
     private static Rectangle? TryWindowArea(nint window)
-    {
-        if (DwmGetWindowAttribute(window, ExtendedFrameBounds, out var frame, Marshal.SizeOf<Rect>()) != 0)
-        {
-            return null;
-        }
-
-        var callerDpi = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext()) switch
-        {
-            0 => 96u,
-            1 => GetDpiForSystem(),
-            _ => 0u,
-        };
-        var windowDpi = GetDpiForWindow(window);
-        var factor = callerDpi > 0 && windowDpi > 0 ? (double)callerDpi / windowDpi : 1;
-        return Rectangle.FromLTRB(
-            (int)Math.Round(frame.Left * factor),
-            (int)Math.Round(frame.Top * factor),
-            (int)Math.Round(frame.Right * factor),
-            (int)Math.Round(frame.Bottom * factor));
-    }
+        => DwmGetWindowAttribute(window, ExtendedFrameBounds, out var frame, Marshal.SizeOf<Rect>()) == 0
+            ? Rectangle.FromLTRB(frame.Left, frame.Top, frame.Right, frame.Bottom)
+            : null;
 
     private const int ExtendedFrameBounds = 9;
 
@@ -103,18 +86,6 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(nint window, int attribute, out Rect value, int size);
-
-    [DllImport("user32.dll")]
-    private static extern nint GetThreadDpiAwarenessContext();
-
-    [DllImport("user32.dll")]
-    private static extern int GetAwarenessFromDpiAwarenessContext(nint context);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetDpiForSystem();
-
-    [DllImport("user32.dll")]
-    private static extern uint GetDpiForWindow(nint window);
 
     private sealed class Recording : IRecording
     {

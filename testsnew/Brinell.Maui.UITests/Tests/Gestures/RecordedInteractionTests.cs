@@ -30,10 +30,9 @@ public class RecordedInteractionTests
     private ContainerTestPage Page => _fixture.ContainerTestPage;
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    public Task ATap_AndAPullToRefresh_AreLogged_OverTheirControls_InTheWindow()
+    public Task ATap_AndAPullToRefresh_AreLogged_OverTheirControls_InPhysicalPixels()
     {
         var log = new Log();
-        var window = _fixture.Context.Driver.AppElement.Rect;
 
         using (Interactions.Begin(log))
         {
@@ -48,17 +47,16 @@ public class RecordedInteractionTests
         Assert.Equal([InteractionKind.Tap, InteractionKind.Swipe], log.Taken.Select(interaction => interaction.Kind));
         var tap = log.Taken[0];
         Assert.False(tap.Bounds.IsEmpty);
-        Assert.True(window.Contains(Center(tap.Bounds)), $"The button at {tap.Bounds} is in the window at {window}.");
         Assert.Equal("TriggerRefreshButton", tap.Label);
 
         var swipe = log.Taken[1];
         Assert.False(swipe.Bounds.IsEmpty, "The RefreshView's bounds came from the bridge.");
-        Assert.True(window.Contains(Center(swipe.Bounds)), $"The RefreshView at {swipe.Bounds} is in the window at {window}.");
+
+        // Both in physical pixels, as the video's frames are: the button sits below the RefreshView.
+        Assert.True(tap.Bounds.Top >= swipe.Bounds.Bottom - 1, $"The button at {tap.Bounds} is below the RefreshView at {swipe.Bounds}.");
         Assert.True(swipe.From!.Value.Y < swipe.To!.Value.Y, "A pull to refresh is drawn downwards.");
         return Task.CompletedTask;
     }
-
-    private static Point Center(Rectangle bounds) => new(bounds.X + (bounds.Width / 2), bounds.Y + (bounds.Height / 2));
 
     private sealed class Log : IInteractionLog
     {

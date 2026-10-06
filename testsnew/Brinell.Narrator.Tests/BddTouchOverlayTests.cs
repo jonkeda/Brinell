@@ -66,6 +66,17 @@ public sealed class BddTouchOverlayTests
     }
 
     [Fact]
+    public void Setting_a_fields_text_which_clears_it_first_is_one_keyboard_chip()
+    {
+        var field = new BddBox(100, 100, 300, 40);
+
+        var ass = Ass(Scene(1000, 500, new BddTimedInteraction(InteractionKind.Clear, 1, field), new BddTimedInteraction(InteractionKind.Type, 1.01, field)));
+
+        Assert.Single(ass.Split('\n'), line => line.Contains(",Chip,", StringComparison.Ordinal));
+        Assert.DoesNotContain("⌫", ass, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_tap_at_the_start_of_a_scene_starts_its_ring_with_the_scene_on_the_videos_clock()
     {
         var first = Scene(1000, 500) with { Duration = 5 };

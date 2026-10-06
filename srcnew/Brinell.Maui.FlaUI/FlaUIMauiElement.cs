@@ -361,9 +361,12 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #region Actions
 
-    // A recorded video's touch mark (AD-024): the target as it is, before the action runs.
+    // A recorded video's touch mark (AD-024): the target as it is, before the action runs, in
+    // physical pixels as the video's frames are.
     private Interactions.Scope Report(InteractionKind kind, string? key = null)
-        => Interactions.Report(kind, () => Rect, () => AutomationId, key: key);
+        => Interactions.Report(kind, PhysicalRect, () => AutomationId, key: key);
+
+    private Rectangle PhysicalRect() => Windowing.PhysicalPixels.Read(() => Rect);
 
     private void Marked(InteractionKind kind, Action action)
     {
@@ -433,7 +436,15 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// screen must declare. Never the Invoke pattern: a toolbar item's peer accepts it and does
     /// nothing.
     /// </remarks>
-    public void InvokeToolbarItem(string automationId) => _driver.InvokeToolbarItem(automationId);
+    public void InvokeToolbarItem(string automationId)
+    {
+        // Marked on the item itself; asked of the app element, the item's place is unknown.
+        using var mark = Interactions.Report(
+            InteractionKind.Tap,
+            () => AutomationId == automationId ? PhysicalRect() : throw new InvalidOperationException("Not the item itself."),
+            () => automationId);
+        _driver.InvokeToolbarItem(automationId);
+    }
 
     /// <summary>
     /// Runs one automation pattern, or explains which half of it was missing.
@@ -1357,7 +1368,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </exception>
     public void PerformGesture(MauiGesture gesture)
     {
-        using var mark = MauiInteractions.Report(gesture, () => Rect, () => AutomationId);
+        using var mark = MauiInteractions.Report(gesture, PhysicalRect, () => AutomationId);
         GestureRunner.Perform(
             _driver.RootElement, _driver.Automation, AutomationId, gesture, near: BridgeNear);
     }
