@@ -79,6 +79,7 @@ public static class BddVideoComposer
                 Steps = [.. scene.Steps.Select(step => step with { Start = step.Start + offset, End = step.End + offset })],
                 // The scenes' WAVs go with their folder once the voice is in the video.
                 Clips = [.. scene.Clips.Select(clip => clip with { Wav = null, Start = clip.Start + offset, End = clip.End + offset })],
+                Interactions = scene.Interactions?.Select(interaction => interaction with { At = interaction.At + offset }).ToList(),
             });
             offset += scene.Duration;
         }
