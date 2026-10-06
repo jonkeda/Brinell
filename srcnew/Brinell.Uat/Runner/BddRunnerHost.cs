@@ -95,7 +95,9 @@ public sealed class BddRunnerHost
 
             case BddRunnerSkip skip:
                 var session = Opened();
-                return Step(session, session.Session.SkipNext(skip.Message));
+                var skipped = Step(session, session.Session.SkipNext(skip.Message));
+                session.RecordIfFinished();
+                return skipped;
 
             case BddRunnerRecord record:
                 await DropRecordingAsync().ConfigureAwait(false);
@@ -141,7 +143,9 @@ public sealed class BddRunnerHost
 
         try
         {
-            return Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false));
+            var step = Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false));
+            open.RecordIfFinished();
+            return step;
         }
         finally
         {
@@ -249,7 +253,13 @@ public sealed class BddRunnerHost
     {
         private readonly IDisposable? _scope;
 
-        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog)
+        private readonly UatRuntime _runtime;
+        private readonly BddCommandCatalog _commands;
+        private readonly string _mode;
+        private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
+        private bool _recorded;
+
+        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog, UatRuntime runtime, BddCommandCatalog commands, string mode)
         {
             Fixture = fixture;
             Runner = runner;
@@ -258,6 +268,9 @@ public sealed class BddRunnerHost
             _scope = scope;
             Discovery = discovery;
             Catalog = catalog;
+            _runtime = runtime;
+            _commands = commands;
+            _mode = mode;
         }
 
         public object Fixture { get; }
@@ -271,6 +284,31 @@ public sealed class BddRunnerHost
         public string Discovery { get; }
 
         public string Catalog { get; }
+
+        // Once its last step has run, the scenario's result is written as the gate writes it, so a
+        // run from a host shows in the IDEs' preview and the BDD Explorer (D4 of the debugger plan).
+        public void RecordIfFinished()
+        {
+            if (_recorded || Session.HasNext)
+            {
+                return;
+            }
+
+            _recorded = true;
+            var result = Session.ToResult();
+            var evidence = !result.Passed && !result.Skipped && _runtime.Config.Reporting.ScreenshotOnFailure
+                ? UatScenarioResults.ScreenshotServiceOf(Fixture)?.Capture("BddRunner", UatScenarioResults.EvidenceName(Scenario), "failure")
+                : null;
+            UatScenarioResults.Record(
+                _runtime,
+                _commands,
+                Scenario,
+                new BddScenarioExecutionResult(result, Runner.Context, evidence),
+                _clock.Elapsed,
+                Fixture.GetType().Assembly.GetName().Name,
+                UatScenarioResults.EvidenceName(Scenario),
+                _mode);
+        }
 
         public static OpenScenario Open(BddRunnerOpen open)
         {
@@ -321,7 +359,7 @@ public sealed class BddRunnerHost
                     UatRuntime.ConfigureScope(runner.Context, serviceScope.ServiceProvider);
                 }
 
-                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport);
+                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport, runtime, catalog, open.Mode ?? UatScenarioResults.RunnerMode);
             }
             catch
             {

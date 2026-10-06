@@ -235,6 +235,48 @@ public sealed class BddRunnerProcessTests : IDisposable
         Assert.Contains("reference Brinell.Uat", exception.Message);
     }
 
+    [Fact]
+    public async Task AScenarioRunToItsEnd_WritesItsResult_AsTheGateDoes_MarkedByItsMode()
+    {
+        var results = Path.Combine(_root, "TestResults");
+        await using var runner = await StartAsync(new Dictionary<string, string> { [Brinell.Core.Artifacts.TestArtifactOptions.RootDirectoryEnvironmentVariable] = results });
+        await runner.RequestAsync(Open("Counts to two") with { Mode = "step" });
+        for (var index = 0; index < 3; index++)
+        {
+            await runner.RequestAsync(new BddRunnerNext());
+        }
+
+        await runner.RequestAsync(Open("Counts wrong"));
+        for (var index = 0; index < 3; index++)
+        {
+            await runner.RequestAsync(new BddRunnerNext());
+        }
+
+        var records = Directory.EnumerateDirectories(results)
+            .Select(Brinell.Core.Artifacts.TestArtifactManifestWriter.Read)
+            .OfType<Brinell.Core.Artifacts.TestArtifactManifest>()
+            .SelectMany(manifest => manifest.Suites.SelectMany(suite => suite.Artifacts))
+            .Where(record => record.Kind == "uat-scenario")
+            .ToDictionary(record => record.Name);
+
+        Assert.Equal(("passed", "step", "runner.feature.md", "3"), (records["Counts to two"].Status, records["Counts to two"].Metadata["mode"], records["Counts to two"].Metadata["file"], records["Counts to two"].Metadata["line"]));
+        Assert.Equal(("failed", UatScenarioResults.RunnerMode), (records["Counts wrong"].Status, records["Counts wrong"].Metadata["mode"]));
+        Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(Directory.EnumerateFiles(results, "manifest.json", SearchOption.AllDirectories).First())!, records["Counts to two"].Path)));
+    }
+
+    [Fact]
+    public async Task AScenarioLeftBeforeItsEnd_WritesNoResult()
+    {
+        var results = Path.Combine(_root, "TestResults");
+        await using var runner = await StartAsync(new Dictionary<string, string> { [Brinell.Core.Artifacts.TestArtifactOptions.RootDirectoryEnvironmentVariable] = results });
+        await runner.RequestAsync(Open("Counts to two"));
+        await runner.RequestAsync(new BddRunnerNext());
+
+        await runner.RequestAsync(new BddRunnerClose());
+
+        Assert.Empty(Directory.Exists(results) ? Directory.EnumerateFiles(results, "*__result.json", SearchOption.AllDirectories) : []);
+    }
+
     private Task<BddRunnerClient> StartAsync(IReadOnlyDictionary<string, string>? environment = null)
         => BddRunnerClient.StartAsync(new BddRunnerStart(_pages, Environment: environment));
 

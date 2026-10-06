@@ -35,7 +35,8 @@ public sealed record BddRunnerHello(int Version) : BddRunnerMessage;
 /// <param name="Pages">The suite's Pages assembly, which has the fixture.</param>
 /// <param name="Feature">The feature file.</param>
 /// <param name="Scenario">The scenario's name.</param>
-public sealed record BddRunnerOpen(string Config, string Pages, string Feature, string Scenario) : BddRunnerMessage;
+/// <param name="Mode">What the run is, in its result's metadata (<c>runner</c>, <c>step</c>, <c>run</c>); null for <c>runner</c>.</param>
+public sealed record BddRunnerOpen(string Config, string Pages, string Feature, string Scenario, string? Mode = null) : BddRunnerMessage;
 
 /// <summary>The scenario is open, before its first step.</summary>
 /// <param name="Steps">How many steps it runs.</param>
