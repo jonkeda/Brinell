@@ -244,7 +244,7 @@ public sealed partial class BddLanguageServer
             try
             {
                 using var timeout = new CancellationTokenSource(BddRunnerClient.CancelGrace * 2);
-                closed = await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
+                closed = await runner.RequestAsync(new BddRunnerClose(Keep: _warmRunner), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
             }
             catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
             {

@@ -22,6 +22,7 @@ namespace Brinell.Bdd.Runner;
 [JsonDerivedType(typeof(BddRunnerScreenshot), "screenshot")]
 [JsonDerivedType(typeof(BddRunnerScreenshotTaken), "screenshotTaken")]
 [JsonDerivedType(typeof(BddRunnerClose), "close")]
+[JsonDerivedType(typeof(BddRunnerPrepare), "prepare")]
 [JsonDerivedType(typeof(BddRunnerCancel), "cancel")]
 [JsonDerivedType(typeof(BddRunnerExit), "exit")]
 [JsonDerivedType(typeof(BddRunnerDone), "done")]
@@ -147,7 +148,19 @@ public sealed record BddRunnerScreenshot(string Description) : BddRunnerMessage;
 public sealed record BddRunnerScreenshotTaken(string Path) : BddRunnerMessage;
 
 /// <summary>Closes the open scenario: its fixture and app. Answered by <see cref="BddRunnerDone"/>.</summary>
-public sealed record BddRunnerClose : BddRunnerMessage;
+/// <param name="Keep">
+/// Keep the fixture and its app for the next open of the same suite, when the fixture starts a
+/// scenario clean without a launch (<c>IUatScenarioLifecycle.StartsCleanWithoutLaunch</c>; I3 of the debugger plan).
+/// </param>
+public sealed record BddRunnerClose(bool Keep = false) : BddRunnerMessage;
+
+/// <summary>
+/// Makes the suite's fixture, and so starts its app, before any scenario opens: the next open uses
+/// it (a warm runner's, I3 of the debugger plan). Answered by <see cref="BddRunnerDone"/> or <see cref="BddRunnerFailed"/>.
+/// </summary>
+/// <param name="Config">The suite's config file.</param>
+/// <param name="Pages">The suite's Pages assembly, which has the fixture.</param>
+public sealed record BddRunnerPrepare(string Config, string Pages) : BddRunnerMessage;
 
 /// <summary>Cancels the step that is running. Not answered: the step's own answer says it was canceled.</summary>
 public sealed record BddRunnerCancel : BddRunnerMessage;

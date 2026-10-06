@@ -35,8 +35,9 @@ public sealed class BddWarmRunners : IAsyncDisposable
 
     /// <summary>Starts a runner for <paramref name="start"/> in the background, unless a current one waits already.</summary>
     /// <param name="start">How the suite's runner starts, from its output.</param>
+    /// <param name="prepare">What the new runner does before it waits, such as making the suite's fixture (<see cref="BddRunnerPrepare"/>); a failure leaves it to the run.</param>
     /// <returns>Completes when it is ready; a failure is the next take's to report.</returns>
-    public Task WarmAsync(BddRunnerStart start)
+    public Task WarmAsync(BddRunnerStart start, Func<BddRunnerClient, Task>? prepare = null)
     {
         ArgumentNullException.ThrowIfNull(start);
         Entry? stale;
@@ -51,7 +52,7 @@ public sealed class BddWarmRunners : IAsyncDisposable
             }
 
             stale = waiting;
-            entry = Start(start, fingerprint);
+            entry = Start(start, fingerprint, prepare);
             _waiting[Output(start)] = entry;
         }
 
@@ -114,7 +115,8 @@ public sealed class BddWarmRunners : IAsyncDisposable
     /// output changed since its copy, another waits already, or it has ended. Otherwise it ends.
     /// </summary>
     /// <param name="runner">A runner <see cref="TakeAsync"/> gave.</param>
-    public void Return(BddRunnerClient runner)
+    /// <param name="prepare">What it does again before it waits, such as making the suite's next fixture; the next take waits for it.</param>
+    public void Return(BddRunnerClient runner, Func<BddRunnerClient, Task>? prepare = null)
     {
         ArgumentNullException.ThrowIfNull(runner);
         Entry? end;
@@ -128,6 +130,11 @@ public sealed class BddWarmRunners : IAsyncDisposable
             else if (!_disposed && !runner.Process.HasExited && !_waiting.ContainsKey(entry.Key)
                      && BddShadowCopy.Fingerprint(entry.Key) == entry.Fingerprint)
             {
+                if (prepare is not null)
+                {
+                    entry.Ready = PrepareAsync(runner, prepare);
+                }
+
                 _waiting[entry.Key] = entry;
                 end = null;
             }
@@ -187,7 +194,7 @@ public sealed class BddWarmRunners : IAsyncDisposable
     private static string Output(BddRunnerStart start) => Path.GetDirectoryName(Path.GetFullPath(start.PagesAssembly))!;
 
     // Copies the output and starts a runner there, off the caller's thread: the copy takes a moment.
-    private Entry Start(BddRunnerStart start, string fingerprint)
+    private Entry Start(BddRunnerStart start, string fingerprint, Func<BddRunnerClient, Task>? prepare = null)
     {
         var entry = new Entry(Output(start), start, fingerprint) { Copy = BddShadowCopy.NewFolder(Output(start), _root, _owner) };
         _live.Add(entry);
@@ -196,9 +203,24 @@ public sealed class BddWarmRunners : IAsyncDisposable
             BddShadowCopy.Make(entry.Key, entry.Copy);
             var runner = await BddRunnerClient.StartAsync(BddShadowCopy.Into(start, entry.Copy)).ConfigureAwait(false);
             _started?.Invoke(runner.Process);
-            return runner;
+            return prepare is null ? runner : await PrepareAsync(runner, prepare).ConfigureAwait(false);
         });
         return entry;
+    }
+
+    // The run before closed its fixture: the next is made now, while nothing waits on the runner.
+    private static async Task<BddRunnerClient> PrepareAsync(BddRunnerClient runner, Func<BddRunnerClient, Task> prepare)
+    {
+        try
+        {
+            await prepare(runner).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException)
+        {
+            // The run makes what was not prepared, and says what went wrong then.
+        }
+
+        return runner;
     }
 
     private async Task EndAsync(Entry? entry)

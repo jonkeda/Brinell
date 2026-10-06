@@ -12,6 +12,9 @@ namespace Brinell.Bdd.LanguageServer;
 public sealed partial class BddLanguageServer
 {
     private readonly Dictionary<string, Timer> _idle = new(StringComparer.OrdinalIgnoreCase);
+
+    // Each suite's config and Pages assembly, by its runner's start, for making its fixture ahead.
+    private readonly Dictionary<string, (string Config, string Pages)> _suiteFiles = new(StringComparer.OrdinalIgnoreCase);
     private BddWarmRunners? _warm;
     private bool _warmRunner = true;
     private TimeSpan _warmIdle = TimeSpan.FromMinutes(10);
@@ -27,7 +30,7 @@ public sealed partial class BddLanguageServer
 
         try
         {
-            await Warm.WarmAsync(start).ConfigureAwait(false);
+            await Warm.WarmAsync(start, Prepare(start)).ConfigureAwait(false);
             return new RunnerWarmResult(true, null);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -63,7 +66,35 @@ public sealed partial class BddLanguageServer
 
         // As a run finds it, so the warm runner is the one a run takes.
         var suite = Context(path, suiteName).Suite;
-        return suite?.RunnerAssemblies is { } assemblies ? new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite)) : null;
+        if (suite?.RunnerAssemblies is not { } assemblies)
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            _suiteFiles[assemblies.Start] = (suite.ConfigPath, assemblies.Pages);
+        }
+
+        return new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite));
+    }
+
+    // I3: the warm runner makes the suite's fixture, and so starts its app, before the first run.
+    private Func<BddRunnerClient, Task>? Prepare(BddRunnerStart start)
+    {
+        lock (_gate)
+        {
+            if (!_suiteFiles.TryGetValue(start.PagesAssembly, out var files))
+            {
+                return null;
+            }
+
+            return async runner =>
+            {
+                using var timeout = new CancellationTokenSource(BddRunnerClient.ConnectTimeout * 4);
+                await runner.RequestAsync(new BddRunnerPrepare(files.Config, files.Pages), timeout.Token).ConfigureAwait(false);
+            };
+        }
     }
 
     // A feature file opened: its suite's runner gets ready, and no longer waits to end.
@@ -132,10 +163,10 @@ public sealed partial class BddLanguageServer
         }
     }
 
-    // A runner a run took goes back to wait, unless warm runners are off.
+    // A runner a run took goes back to wait, making the suite's next fixture (I3), unless warm runners are off.
     private void ReturnRunner(BddRunnerClient runner, BddRunnerStart start)
     {
-        Warm.Return(runner);
+        Warm.Return(runner, _warmRunner ? Prepare(start) : null);
         if (!_warmRunner)
         {
             _ = Warm.EndAsync(start);
@@ -147,7 +178,7 @@ public sealed partial class BddLanguageServer
     {
         try
         {
-            await Warm.WarmAsync(start).ConfigureAwait(false);
+            await Warm.WarmAsync(start, Prepare(start)).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {

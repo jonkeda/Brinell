@@ -14,4 +14,11 @@ public interface IUatScenarioLifecycle
     /// <summary>Before each scenario: a clean start.</summary>
     /// <param name="scenario">The scenario about to run.</param>
     void BeforeScenario(BddBoundScenario scenario);
+
+    /// <summary>
+    /// Whether <see cref="BeforeScenario"/> starts a scenario clean on the app as it is, with no new
+    /// launch, as a test class's scenarios share the fixture: a host's runner may then keep the
+    /// fixture and its app between runs (I3 of the debugger plan). False unless the fixture says so.
+    /// </summary>
+    bool StartsCleanWithoutLaunch => false;
 }

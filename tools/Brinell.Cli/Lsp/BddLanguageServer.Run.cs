@@ -48,7 +48,7 @@ public sealed partial class BddLanguageServer
             return RunStartResult.Not(request.Line is { } at ? $"There is no scenario heading at line {at}." : "The file has no scenarios.");
         }
 
-        var run = new RunnerRun(request.Uri, names);
+        var run = new RunnerRun(request.Uri, names) { Keep = _warmRunner };
         lock (_gate)
         {
             if (_step is not null || _run is not null)
@@ -170,7 +170,7 @@ public sealed partial class BddLanguageServer
             try
             {
                 using var timeout = new CancellationTokenSource(BddRunnerClient.CancelGrace * 2);
-                run.Closed = await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
+                run.Closed = await runner.RequestAsync(new BddRunnerClose(Keep: run.Keep), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
             }
             catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
             {
@@ -236,5 +236,8 @@ public sealed partial class BddLanguageServer
 
         // Whether the last scenario opened was closed: the runner is clean for the next run.
         public bool Closed { get; set; } = true;
+
+        // Whether a fixture that starts clean without a launch stays, with its app, for the next scenario (I3).
+        public bool Keep { get; init; }
     }
 }

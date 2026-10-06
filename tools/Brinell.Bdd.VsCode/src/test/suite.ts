@@ -1,6 +1,7 @@
 // The tests run.ts starts inside VS Code: Step through Todo's TOD.01.1 as a user does, through the
 // extension's commands (the keys F10, F11 and F5 are bound to them), with a breakpoint at line 24.
 import * as assert from "assert";
+import * as childProcess from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
@@ -17,6 +18,24 @@ const nextStopMs = 60_000;
 // How long VS Code's file watcher takes to report a write.
 const watcherSettleMs = 1_000;
 const breakpointsFile = path.join(process.env.LOCALAPPDATA!, "Brinell", "bdd-breakpoints.json");
+
+// Polls a condition the extension cannot announce: an app process the runner starts.
+async function waitFor(condition: () => boolean, withinMs: number, message: string): Promise<void> {
+  const deadline = Date.now() + withinMs;
+  while (!condition()) {
+    assert.ok(Date.now() < deadline, message);
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
+// How often waitFor looks.
+const pollMs = 250;
+
+// The Todo app's processes now, by id.
+function todoApps(): number[] {
+  const list = childProcess.execFileSync("tasklist", ["/FI", "IMAGENAME eq Brinell.Samples.Todo.App.exe", "/FO", "CSV", "/NH"], { encoding: "utf8" });
+  return [...list.matchAll(/^"[^"]+","(\d+)"/gm)].map((match) => Number(match[1])).sort((a, b) => a - b);
+}
 
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension<BrinellBddApi>("brinell.brinell-bdd");
@@ -113,4 +132,13 @@ export async function run(): Promise<void> {
   assert.ok(ran.kind === "runEnded" && ran.status === "passed", `The run on the runner did not pass: ${JSON.stringify(ran)}.`);
   assert.deepStrictEqual(builds, [true, false, false], "A run on the runner built though nothing but a feature file changed.");
   console.log(`run on the runner: ${ran.status}`);
+
+  // I3: after a run the warm runner makes the next fixture, and so starts the app, before the next
+  // run asks; Todo's needs a new app per scenario (its clean start keeps the app's database).
+  await waitFor(() => todoApps().length === 1, nextStopMs, "The warm runner did not start the app again after the run.");
+  const prepared = todoApps();
+  await vscode.commands.executeCommand("brinellBdd.runScenario", vscode.Uri.file(feature), heading);
+  const ranAgain = await next(firstStopMs);
+  assert.ok(ranAgain.kind === "runEnded" && ranAgain.status === "passed", `The second run on the runner did not pass: ${JSON.stringify(ranAgain)}.`);
+  console.log(`second run on the runner: ${ranAgain.status}, on the app started after the first (${prepared[0]})`);
 }

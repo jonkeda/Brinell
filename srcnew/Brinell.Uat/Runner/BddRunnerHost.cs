@@ -18,6 +18,10 @@ public sealed class BddRunnerHost
     private readonly object _stepLock = new();
     private CancellationTokenSource? _step;
     private OpenScenario? _open;
+
+    // A fixture kept for the next open of the same suite: a prepared one, or one that starts a
+    // scenario clean without a launch (I3 of the debugger plan).
+    private KeptFixture? _kept;
     private BddSceneRecording? _recording;
     private BddNarrationPacer? _rehearsal;
 
@@ -86,8 +90,8 @@ public sealed class BddRunnerHost
         {
             case BddRunnerOpen open:
                 await DropRecordingAsync().ConfigureAwait(false);
-                Close();
-                _open = OpenScenario.Open(open);
+                Close(keep: true);
+                _open = OpenScenario.Open(open, TakeKept(open.Config, open.Pages));
                 return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next, _open.Runner.Context));
 
             case BddRunnerNext:
@@ -124,9 +128,24 @@ public sealed class BddRunnerHost
             case BddRunnerScreenshot screenshot:
                 return Screenshot(Opened(), screenshot.Description);
 
-            case BddRunnerClose:
+            case BddRunnerClose close:
                 await DropRecordingAsync().ConfigureAwait(false);
-                Close();
+                Close(close.Keep);
+                return new BddRunnerDone();
+
+            case BddRunnerPrepare prepare:
+                if (_open is not null)
+                {
+                    return new BddRunnerFailed("A scenario is open: close it before preparing the fixture.");
+                }
+
+                // A fixture kept from the run before is ready already.
+                if (_kept?.Same(prepare.Config, prepare.Pages) != true)
+                {
+                    DisposeKept();
+                    _kept = new KeptFixture(prepare.Config, prepare.Pages, OpenScenario.MakeFixture(prepare.Config, prepare.Pages));
+                }
+
                 return new BddRunnerDone();
 
             default:
@@ -259,10 +278,55 @@ public sealed class BddRunnerHost
         }
     }
 
-    private void Close()
+    // Closes the open scenario. With keep, a fixture that starts clean without a launch stays, its
+    // app open, for the next open of the same suite; without, the kept one ends too.
+    private void Close(bool keep = false)
     {
-        _open?.Dispose();
-        _open = null;
+        if (_open is { } open)
+        {
+            _open = null;
+            var fixture = open.Release();
+            if (keep && fixture is IUatScenarioLifecycle { StartsCleanWithoutLaunch: true })
+            {
+                DisposeKept();
+                _kept = new KeptFixture(open.Config, open.Pages, fixture);
+            }
+            else
+            {
+                (fixture as IDisposable)?.Dispose();
+            }
+        }
+
+        if (!keep)
+        {
+            DisposeKept();
+        }
+    }
+
+    // The kept fixture, when it is the same suite's; another suite's ends.
+    private object? TakeKept(string config, string pages)
+    {
+        if (_kept is { } kept && kept.Same(config, pages))
+        {
+            _kept = null;
+            return kept.Fixture;
+        }
+
+        DisposeKept();
+        return null;
+    }
+
+    private void DisposeKept()
+    {
+        (_kept?.Fixture as IDisposable)?.Dispose();
+        _kept = null;
+    }
+
+    private sealed record KeptFixture(string Config, string Pages, object Fixture)
+    {
+        public bool Same(string config, string pages)
+            => Path.GetFullPath(config).Equals(Path.GetFullPath(Config), StringComparison.OrdinalIgnoreCase)
+               && Path.GetFileName(pages).Equals(Path.GetFileName(Pages), StringComparison.OrdinalIgnoreCase);
     }
 
     // The host plays the line: it has the voice's player, and a suite need not.
@@ -301,8 +365,10 @@ public sealed class BddRunnerHost
         private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
         private bool _recorded;
 
-        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog, UatRuntime runtime, BddCommandCatalog commands, string mode)
+        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog, UatRuntime runtime, BddCommandCatalog commands, string mode, BddRunnerOpen open)
         {
+            Config = open.Config;
+            Pages = open.Pages;
             Fixture = fixture;
             Runner = runner;
             Scenario = scenario;
@@ -316,6 +382,10 @@ public sealed class BddRunnerHost
         }
 
         public object Fixture { get; }
+
+        public string Config { get; }
+
+        public string Pages { get; }
 
         public BddScenarioRunner Runner { get; }
 
@@ -352,10 +422,13 @@ public sealed class BddRunnerHost
                 _mode);
         }
 
-        public static OpenScenario Open(BddRunnerOpen open)
+        // The suite's fixture, made as an open makes it: for a prepare ahead of the first open.
+        public static object MakeFixture(string config, string pages) => CreateFixture(BddConfigParser.ParseFile(config), LoadPages(pages));
+
+        // With a kept fixture, its app as it is: BeforeFile and BeforeScenario give the clean start.
+        public static OpenScenario Open(BddRunnerOpen open, object? kept)
         {
-            var config = BddConfigParser.ParseFile(open.Config);
-            var fixture = CreateFixture(config, LoadPages(open.Pages));
+            var fixture = kept ?? MakeFixture(open.Config, open.Pages);
             IDisposable? scope = null;
             try
             {
@@ -401,7 +474,7 @@ public sealed class BddRunnerHost
                     UatRuntime.ConfigureScope(runner.Context, serviceScope.ServiceProvider);
                 }
 
-                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport, runtime, catalog, open.Mode ?? UatScenarioResults.RunnerMode);
+                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport, runtime, catalog, open.Mode ?? UatScenarioResults.RunnerMode, open);
             }
             catch
             {
@@ -415,6 +488,13 @@ public sealed class BddRunnerHost
         {
             _scope?.Dispose();
             (Fixture as IDisposable)?.Dispose();
+        }
+
+        // The scenario's scope ends; its fixture is the caller's to keep or end.
+        public object Release()
+        {
+            _scope?.Dispose();
+            return Fixture;
         }
 
         // By name first: the suite's own deps.json knows it, and its types are then the ones the

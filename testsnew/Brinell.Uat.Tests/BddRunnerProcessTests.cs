@@ -81,10 +81,58 @@ public sealed class BddRunnerProcessTests : IDisposable
             Given the runner counts
             When the runner counts
             ```
+
+            ## Scenario: Made once
+
+            ```gherkin
+            Then the runner made its fixture 1 times
+            ```
+
+            ## Scenario: Made twice
+
+            ```gherkin
+            Then the runner made its fixture 2 times
+            ```
             """);
     }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
+
+    [Fact]
+    public async Task AKeptFixture_RunsTheNextScenario_WithNoNewFixture_AndAPlainClose_EndsIt()
+    {
+        await using var runner = await StartAsync();
+        await RunAsync(runner, "Counts to two", keep: true);
+
+        // Kept: the same fixture, its count started clean by BeforeScenario; then closed for good.
+        await RunAsync(runner, "Counts to two", keep: true);
+        await RunAsync(runner, "Made once", keep: false);
+        await RunAsync(runner, "Made twice", keep: false);
+    }
+
+    [Fact]
+    public async Task APreparedFixture_IsTheOneTheFirstOpenUses()
+    {
+        await using var runner = await StartAsync();
+
+        Assert.IsType<BddRunnerDone>(await runner.RequestAsync(new BddRunnerPrepare(_config, _pages)));
+
+        await RunAsync(runner, "Made once", keep: true);
+    }
+
+    private async Task RunAsync(BddRunnerClient runner, string scenario, bool keep)
+    {
+        Assert.IsType<BddRunnerOpened>(await runner.RequestAsync(Open(scenario)));
+        BddRunnerStep step;
+        do
+        {
+            step = Assert.IsType<BddRunnerStep>(await runner.RequestAsync(new BddRunnerNext()));
+            Assert.True(step.Status == BddStepResultStatus.Passed, $"{scenario}: {step.Message}");
+        }
+        while (step.HasNext);
+
+        Assert.IsType<BddRunnerDone>(await runner.RequestAsync(new BddRunnerClose(keep)));
+    }
 
     [Fact]
     public async Task AScenario_RunsStepByStep_AndEveryStepAnswers()
@@ -320,9 +368,25 @@ public sealed class BddRunnerProcessTests : IDisposable
 }
 
 /// <summary>The fixture the runner tests' scenarios run on: no app, a counter.</summary>
-public sealed class RunnerProcessFixture
+public sealed class RunnerProcessFixture : IUatScenarioLifecycle
 {
+    // How many fixtures the runner made: one kept between scenarios is made once (I3 of the debugger plan).
+    private static int _made;
     private int _count;
+
+    public RunnerProcessFixture() => Interlocked.Increment(ref _made);
+
+    public bool StartsCleanWithoutLaunch => true;
+
+    public void BeforeFile(BddDocument document)
+    {
+    }
+
+    // The clean start: the count, as a new fixture's.
+    public void BeforeScenario(BddBoundScenario scenario) => _count = 0;
+
+    [BddThen("the runner made its fixture {times} times")]
+    public void Made(int times) => Assert.True(times == _made, $"The runner made its fixture {_made} times, not {times}.");
 
     [BddGiven("the runner counts")]
     [BddWhen("the runner counts")]
