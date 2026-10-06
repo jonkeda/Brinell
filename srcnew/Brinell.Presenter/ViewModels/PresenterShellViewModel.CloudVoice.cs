@@ -17,7 +17,7 @@ public sealed partial class PresenterShellViewModel
 
     /// <summary>The cloud voices offered, as a script names them.</summary>
     public static IReadOnlyList<string> CloudVoices { get; } =
-        ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse"];
+        ["alloy", "ash", "ballad", "cedar", "coral", "echo", "fable", "marin", "nova", "onyx", "sage", "shimmer", "verse"];
 
     private string _userFolder = null!;
     private Func<string, string?> _readVariable = Environment.GetEnvironmentVariable;
@@ -55,7 +55,7 @@ public sealed partial class PresenterShellViewModel
         set => SetProperty(ref _cloudEndpoint, value ?? string.Empty);
     }
 
-    /// <summary>The text-to-speech deployment; empty for gpt-4o-mini-tts.</summary>
+    /// <summary>The deployment, text to speech or gpt-audio; empty for gpt-4o-mini-tts.</summary>
     public string CloudDeploymentText
     {
         get => _cloudDeployment;
@@ -202,9 +202,9 @@ public sealed partial class PresenterShellViewModel
 
     private void SaveCloudVoice()
     {
-        if (CloudEndpointText.Trim().Length == 0)
+        if (VoiceSecrets.EndpointProblem(CloudEndpointText) is { } problem)
         {
-            CloudVoiceStatus = "The endpoint is needed: https://<resource>.openai.azure.com.";
+            CloudVoiceStatus = problem;
             return;
         }
 
@@ -228,6 +228,12 @@ public sealed partial class PresenterShellViewModel
         if (CloudEndpointText.Trim().Length == 0 || key is null)
         {
             CloudVoiceStatus = "Try needs an endpoint and a key.";
+            return;
+        }
+
+        if (VoiceSecrets.EndpointProblem(CloudEndpointText) is { } problem)
+        {
+            CloudVoiceStatus = problem;
             return;
         }
 

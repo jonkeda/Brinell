@@ -177,6 +177,19 @@ public sealed class NarratorRunTests : IDisposable
     }
 
     [Fact]
+    public void CloudVoice_ARealtimeUrl_IsNotSaved_AndTheStatusSaysWhy()
+    {
+        var shell = Shell(new FailingExecutionService());
+
+        shell.CloudEndpointText = "wss://voice.openai.azure.com/openai/v1/realtime?model=gpt-realtime-mini";
+        shell.CloudKeyText = CloudKey;
+        shell.SaveCloudVoiceCommand.Execute(null);
+
+        Assert.Contains("Realtime URL", shell.CloudVoiceStatus, StringComparison.Ordinal);
+        Assert.Equal("Not set up.", shell.CloudVoiceState);
+    }
+
+    [Fact]
     public void CloudVoice_AWorkspaceInNoRepository_CannotHoldTheFile()
     {
         var shell = Shell(new FailingExecutionService());

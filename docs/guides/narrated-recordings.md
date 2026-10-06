@@ -90,7 +90,7 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 
 ## Cloud Voice
 
-Azure OpenAI's text to speech (`gpt-4o-mini-tts`) speaks the lines when a script, `BRINELL_VOICE`
+Azure OpenAI's text to speech (`gpt-4o-mini-tts`), or an audio chat model such as `gpt-audio`, speaks the lines when a script, `BRINELL_VOICE`
 or the IDEs' Voice setting names `azure:<voice>` (`azure:coral`, `azure:alloy`, `azure:sage`, ...),
 or names no voice while a cloud voice is set up. It sounds the same on every machine and works for
 every platform's runs. A script can set its tone:
@@ -116,6 +116,18 @@ shows:
   "voice": "coral"
 }
 ```
+
+The endpoint is the resource; a URL copied from Foundry with its path (`/openai/...`) works too, a
+Realtime URL (`wss://`) does not.
+
+**An audio chat model.** A deployment whose name says `audio` (`gpt-audio`, `gpt-audio-1.5`,
+`gpt-4o-audio-preview`), or an endpoint copied from a chat completions URL, is asked through chat
+completions (`/openai/v1/chat/completions`) to read each line as written, with the script's
+`Instructions` as its tone. A chat model may reword or answer a line, so what it says it said is
+checked: nearly all the line's words, in order (numbers may come back spelled out). A misread line
+is asked again, twice; then the recording fails, quoting what it said. For a script that must be
+read as written, text to speech is the surer voice. Its voices are those of the Presenter's list
+(`marin` and `cedar` are its newest).
 
 The first of these that has an endpoint and a key is used:
 

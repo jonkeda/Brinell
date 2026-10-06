@@ -201,8 +201,95 @@ public sealed class CloudVoiceTests : IDisposable
         Assert.DoesNotContain(parse.Diagnostics, diagnostic => diagnostic.Code == BddVideoScriptParser.UnknownFieldCode);
     }
 
-    private AzureOpenAiSpeech Speech(FakeService service, string? instructions = null)
-        => new(new VoiceSecrets(Endpoint, VoiceSecrets.DefaultDeployment, VoiceSecrets.DefaultApiVersion, Key), service, Path.Combine(_root, "cache")) { Instructions = instructions };
+    [Fact]
+    public async Task AnAudioChatModel_IsAskedThroughChatCompletions_ToReadTheLine_AndItsAudio_IsDecoded()
+    {
+        // The URL as Foundry shows it: the resource is what is before /openai.
+        const string Copied = "https://voice.services.ai.azure.com/openai/v1/chat/completions";
+        var service = new FakeService(Chat(Wav(1.5), "The app opens on your list."));
+        var speech = Speech(service, instructions: "calm and friendly", endpoint: Copied, deployment: "gpt-audio-1.5");
+        var wav = Path.Combine(_root, "line.wav");
+
+        var duration = await speech.SynthesizeAsync("The app opens on your list.", "azure:marin", wav, CancellationToken.None);
+
+        var request = Assert.Single(service.Requests);
+        Assert.Equal("https://voice.services.ai.azure.com/openai/v1/chat/completions", request.Url);
+        Assert.Equal(Key, request.ApiKey);
+        using var body = JsonDocument.Parse(request.Body);
+        Assert.Equal("gpt-audio-1.5", body.RootElement.GetProperty("model").GetString());
+        Assert.Equal(["text", "audio"], body.RootElement.GetProperty("modalities").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal("marin", body.RootElement.GetProperty("audio").GetProperty("voice").GetString());
+        Assert.Equal("wav", body.RootElement.GetProperty("audio").GetProperty("format").GetString());
+        var messages = body.RootElement.GetProperty("messages");
+        Assert.Contains("exactly as written", messages[0].GetProperty("content").GetString(), StringComparison.Ordinal);
+        Assert.Contains("calm and friendly", messages[0].GetProperty("content").GetString(), StringComparison.Ordinal);
+        Assert.Equal("The app opens on your list.", messages[1].GetProperty("content").GetString());
+        Assert.Equal(TimeSpan.FromSeconds(1.5), duration);
+    }
+
+    [Fact]
+    public async Task AnAudioChatModel_ThatMisreadsTheLine_IsAskedAgain_ThenFails_SayingWhatItSaid()
+    {
+        const string Line = "Tap Add to make a new todo.";
+        var misread = new FakeService(Chat(Wav(1), "Sure! What should the todo be called?"), Chat(Wav(1), Line));
+        var speech = Speech(misread, deployment: "gpt-audio-1.5");
+
+        await speech.SynthesizeAsync(Line, "azure:coral", Path.Combine(_root, "line.wav"), CancellationToken.None);
+        Assert.Equal(2, misread.Requests.Count);
+
+        var answers = Enumerable.Range(0, 3).Select(_ => Chat(Wav(1), "Sure! What should the todo be called?")).ToArray();
+        var failure = await Assert.ThrowsAsync<VoiceServiceException>(() => Speech(new FakeService(answers), deployment: "gpt-audio-1.5")
+            .SynthesizeAsync("Another line, never read.", "azure:coral", Path.Combine(_root, "other.wav"), CancellationToken.None));
+        Assert.Contains("did not read the line as written, 3 times", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("What should the todo be called?", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Version 2 adds 3 filters.", "Version two adds three filters.", true)]
+    [InlineData("The app opens on your list.", "The app opens on your list!", true)]
+    [InlineData("The app opens on your list.", "Okay. The app opens on your list, as you asked, and then I will explain more.", false)]
+    [InlineData("Tap Add to make a new todo.", "Tap Add.", false)]
+    public void ALineIsSaid_WhenNearlyAllItsWords_AreSaidInOrder(string line, string transcript, bool said)
+        => Assert.Equal(said, AzureOpenAiSpeech.SaidTheLine(line, transcript));
+
+    [Theory]
+    [InlineData("https://voice.openai.azure.com/", "https://voice.openai.azure.com", false)]
+    [InlineData("https://voice.services.ai.azure.com/openai/v1/chat/completions", "https://voice.services.ai.azure.com", true)]
+    [InlineData("https://voice.openai.azure.com/openai/deployments/tts/audio/speech?api-version=x", "https://voice.openai.azure.com", false)]
+    public void AnEndpoint_CopiedWithItsPath_NamesTheResource(string endpoint, string resource, bool chat)
+    {
+        var secrets = new VoiceSecrets(endpoint, VoiceSecrets.DefaultDeployment, VoiceSecrets.DefaultApiVersion, Key);
+
+        Assert.Equal(resource, secrets.Resource);
+        Assert.Equal(chat, secrets.IsChatAudio);
+        Assert.Null(VoiceSecrets.EndpointProblem(endpoint));
+    }
+
+    [Fact]
+    public void ARealtimeUrl_IsNotSaved_AndSaysWhy()
+    {
+        const string Realtime = "wss://voice.openai.azure.com/openai/v1/realtime?model=gpt-realtime-mini";
+        var path = Path.Combine(_home, ".brinell", VoiceSecrets.FileName);
+
+        var failure = Assert.Throws<InvalidOperationException>(() => VoiceSecrets.Save(path, Realtime, null, null, Key, null));
+
+        Assert.Contains("Realtime", failure.Message, StringComparison.Ordinal);
+        Assert.False(File.Exists(path));
+        Assert.True(new VoiceSecrets(Endpoint, "gpt-audio-1.5", VoiceSecrets.DefaultApiVersion, Key).IsChatAudio);
+    }
+
+    private AzureOpenAiSpeech Speech(FakeService service, string? instructions = null, string endpoint = Endpoint, string deployment = VoiceSecrets.DefaultDeployment)
+        => new(new VoiceSecrets(endpoint, deployment, VoiceSecrets.DefaultApiVersion, Key), service, Path.Combine(_root, "cache")) { Instructions = instructions };
+
+    // A chat completion with audio, as an audio chat model answers.
+    private static HttpResponseMessage Chat(byte[] wav, string transcript)
+        => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new
+            {
+                choices = new[] { new { message = new { role = "assistant", audio = new { id = "audio_1", data = Convert.ToBase64String(wav), transcript } } } },
+            })),
+        };
 
     private static string? NoVariables(string name) => null;
 

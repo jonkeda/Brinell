@@ -8,8 +8,8 @@ namespace Brinell.Narrator;
 /// folder or a folder above it up to the repository's root, then in <c>%USERPROFILE%\.brinell</c>.
 /// The file is ignored by git; the key is never written anywhere but the request's header.
 /// </summary>
-/// <param name="Endpoint">The Azure OpenAI resource, e.g. <c>https://name.openai.azure.com</c>.</param>
-/// <param name="Deployment">The text-to-speech deployment's name.</param>
+/// <param name="Endpoint">The Azure OpenAI resource, e.g. <c>https://name.openai.azure.com</c>; a URL copied with its path works too.</param>
+/// <param name="Deployment">The deployment's name: a text-to-speech model, or an audio chat model (<see cref="IsChatAudio"/>).</param>
 /// <param name="ApiVersion">The REST API version.</param>
 /// <param name="Key">The resource's key.</param>
 public sealed record VoiceSecrets(string Endpoint, string Deployment, string ApiVersion, string Key)
@@ -38,8 +38,55 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
     /// <summary>The voice when a script names none, e.g. <c>coral</c>; null for <see cref="AzureOpenAiSpeech.DefaultVoice"/>.</summary>
     public string? Voice { get; init; }
 
+    /// <summary>
+    /// Whether the deployment is a chat model that answers in audio (<c>gpt-audio</c>,
+    /// <c>gpt-4o-audio-preview</c>), asked through chat completions: its name says <c>audio</c>, or the
+    /// endpoint was copied from its chat completions URL. Otherwise it is text to speech.
+    /// </summary>
+    public bool IsChatAudio => Deployment.Contains("audio", StringComparison.OrdinalIgnoreCase)
+        || Endpoint.Contains("/chat/completions", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The resource the endpoint names, without a path, a query or a trailing slash.</summary>
+    public string Resource => ResourceOf(Endpoint);
+
     /// <summary>The settings without the key, so they can be shown.</summary>
     public override string ToString() => $"{Endpoint}, deployment {Deployment}, api-version {ApiVersion}, key set";
+
+    /// <summary>The resource an endpoint names: what is before <c>/openai</c>, so a URL copied from Foundry works.</summary>
+    /// <param name="endpoint">The endpoint as given.</param>
+    public static string ResourceOf(string endpoint)
+    {
+        ArgumentNullException.ThrowIfNull(endpoint);
+        var text = endpoint.Trim();
+        if (text.IndexOf('?', StringComparison.Ordinal) is var query and >= 0)
+        {
+            text = text[..query];
+        }
+
+        if (text.IndexOf("/openai", StringComparison.OrdinalIgnoreCase) is var path and >= 0)
+        {
+            text = text[..path];
+        }
+
+        return text.TrimEnd('/');
+    }
+
+    /// <summary>Why an endpoint cannot be used, or null when it can.</summary>
+    /// <param name="endpoint">The endpoint as given.</param>
+    public static string? EndpointProblem(string? endpoint)
+    {
+        if (!Uri.TryCreate(endpoint?.Trim(), UriKind.Absolute, out var uri))
+        {
+            return "The endpoint is needed: https://<resource>.openai.azure.com.";
+        }
+
+        return uri.Scheme switch
+        {
+            "https" => null,
+            "wss" or "ws" => "That is a Realtime URL, which the narrator does not use: give the resource, https://<resource>.openai.azure.com, and a text-to-speech or gpt-audio deployment.",
+            _ => $"The endpoint must start with https://, not {uri.Scheme}://.",
+        };
+    }
 
     /// <summary>The settings, or null when no endpoint and key are found.</summary>
     /// <param name="folder">The suite's folder; null to look only in the environment and the user's folder.</param>
@@ -118,11 +165,16 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
     /// <param name="apiVersion">The API version; null for <see cref="DefaultApiVersion"/>.</param>
     /// <param name="key">The key; empty to keep the saved one.</param>
     /// <param name="voice">The default voice; null for none.</param>
-    /// <exception cref="InvalidOperationException">No key is given and the file has none.</exception>
+    /// <exception cref="InvalidOperationException">No key is given and the file has none, or the endpoint cannot be used.</exception>
     public static void Save(string path, string endpoint, string? deployment, string? apiVersion, string? key, string? voice)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        if (EndpointProblem(endpoint) is { } problem)
+        {
+            throw new InvalidOperationException(problem);
+        }
+
         var kept = Value(key) ?? (File.Exists(path) ? Read(path).Key : null)
             ?? throw new InvalidOperationException("A cloud voice needs a key: none was given, and there is none saved.");
         var fields = new Dictionary<string, string>

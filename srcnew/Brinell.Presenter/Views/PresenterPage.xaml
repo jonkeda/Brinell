@@ -881,7 +881,7 @@
                             <Entry Grid.Row="0" Grid.Column="1"
                                    AutomationId="CloudDeploymentInput"
                                    Text="{Binding CloudDeploymentText}"
-                                   Placeholder="gpt-4o-mini-tts" />
+                                   Placeholder="gpt-4o-mini-tts, or gpt-audio" />
                             <Label Grid.Row="1" Grid.Column="0" Text="API version" VerticalTextAlignment="Center" />
                             <Entry Grid.Row="1" Grid.Column="1"
                                    AutomationId="CloudApiVersionInput"
