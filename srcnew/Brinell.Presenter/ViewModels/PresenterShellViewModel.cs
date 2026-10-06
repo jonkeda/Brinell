@@ -1148,6 +1148,12 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         _catalogs = result.Catalogs;
         NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
+
+        // The suite's runner, ready before the first run; after a build, from the new output (I2 of the debugger plan).
+        if (result.Catalogs is not null)
+        {
+            _ = _executionService.WarmAsync(result.FolderPath);
+        }
         WorkspaceName = result.WorkspaceName;
 
         Files.Clear();
@@ -1330,8 +1336,8 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             return;
         }
 
-        // A run's runner process holds the suite's files until it has ended, and building over
-        // them would fail.
+        // A session's app holds its files until it has ended, and building over them would fail;
+        // the runner itself runs from a copy of the output.
         StopActiveSession();
         ReleaseEndedSession();
         await _executionService.EndRunnersAsync().ConfigureAwait(true);

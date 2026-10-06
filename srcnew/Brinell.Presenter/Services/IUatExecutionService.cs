@@ -20,17 +20,15 @@ public interface IBddExecutionService
         string scenarioName,
         CancellationToken cancellationToken);
 
-    /// <summary>
-    /// A run of several scenarios: until the returned scope is disposed, a session that ends
-    /// leaves its runner process for the next one. Outside a run, a runner ends with its session.
-    /// </summary>
+    /// <summary>A run of several scenarios, until the returned scope is disposed.</summary>
     IDisposable BeginRun() => NoRun.Instance;
 
-    /// <summary>
-    /// Completes when no runner process of an ended session is left: the suite's files are free,
-    /// and it can be built.
-    /// </summary>
+    /// <summary>Completes when every ended session's scenario is closed, and its app with it.</summary>
     Task EndRunnersAsync() => Task.CompletedTask;
+
+    /// <summary>Starts the suite's runner ahead of a session (I2 of the debugger plan): on opening a workspace, and after a build.</summary>
+    /// <param name="workspacePath">The suite's folder.</param>
+    Task WarmAsync(string workspacePath) => Task.CompletedTask;
 
     private sealed class NoRun : IDisposable
     {

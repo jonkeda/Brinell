@@ -7,6 +7,7 @@ using Xunit;
 namespace Brinell.Bdd.LanguageServer.Tests;
 
 /// <summary>The server over JSON-RPC with LSP framing, on an in-memory stream, as a client talks to it.</summary>
+[Collection(FfmpegVariable.Name)]
 public sealed class LanguageServerTests : IAsyncLifetime
 {
     private readonly string _solution = Path.Combine(Path.GetTempPath(), "Brinell", "LanguageServerTests", Guid.NewGuid().ToString("N"));

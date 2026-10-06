@@ -63,8 +63,9 @@ public sealed partial class BddLanguageServer
 
         try
         {
-            run.Runner = await BddRunnerClient.StartAsync(new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite))).ConfigureAwait(false);
-            RunnerJob.Add(run.Runner.Process);
+            // The suite's warm runner, or a new one from a copy of its output (I2 of the debugger plan).
+            run.Start = new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite));
+            run.Runner = await Warm.TakeAsync(run.Start).ConfigureAwait(false);
             var opened = await run.Runner.RequestAsync(new BddRunnerOpen(suite.ConfigPath, assemblies.Pages, path, name, "step")).ConfigureAwait(false);
             if (opened is not BddRunnerOpened ready)
             {
@@ -239,17 +240,26 @@ public sealed partial class BddLanguageServer
 
         if (run.Runner is { } runner)
         {
+            var closed = false;
             try
             {
                 using var timeout = new CancellationTokenSource(BddRunnerClient.CancelGrace * 2);
-                await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false);
+                closed = await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
             }
             catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
             {
                 // A runner that cannot close the scenario is ended below all the same.
             }
 
-            await runner.DisposeAsync().ConfigureAwait(false);
+            // A closed scenario leaves the runner ready for the next run; otherwise it ends.
+            if (closed && run.Start is { } start)
+            {
+                ReturnRunner(runner, start);
+            }
+            else
+            {
+                await runner.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         if (status is not null)
@@ -290,6 +300,8 @@ public sealed partial class BddLanguageServer
         public string Scenario { get; } = scenario;
 
         public CancellationTokenSource Cancel { get; } = new();
+
+        public BddRunnerStart? Start { get; set; }
 
         public BddRunnerClient? Runner { get; set; }
 

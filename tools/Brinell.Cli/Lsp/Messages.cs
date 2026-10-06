@@ -17,7 +17,24 @@ public sealed record InitializeParams(
 
 /// <summary>What the client tells the server beyond LSP's own fields.</summary>
 /// <param name="SolutionDir">The folder whose suites the server serves.</param>
-public sealed record InitializationOptions(string? SolutionDir);
+public sealed record InitializationOptions(string? SolutionDir)
+{
+    /// <summary>Whether a suite's runner is started when one of its feature files opens, and kept between runs (I2 of the debugger plan); on by default.</summary>
+    public bool? WarmRunner { get; init; }
+
+    /// <summary>How long a suite's runner waits after its last feature file closes before it ends; 10 by default.</summary>
+    public double? WarmRunnerIdleMinutes { get; init; }
+}
+
+/// <summary><c>brinell/runner/warm</c>: the runner of the suite that holds a feature file, ready now.</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+public sealed record RunnerWarmParams(string Uri, string? Suite);
+
+/// <summary>Whether the suite's runner is ready.</summary>
+/// <param name="Warm">Whether it is.</param>
+/// <param name="Reason">Why not; null when it is.</param>
+public sealed record RunnerWarmResult(bool Warm, string? Reason);
 
 /// <summary>The server's answer to <c>initialize</c>: LSP capabilities, and the suites it found.</summary>
 public sealed record InitializeResult(ServerCapabilities Capabilities, ServerInfo ServerInfo, IReadOnlyList<SuiteInfo> Suites);

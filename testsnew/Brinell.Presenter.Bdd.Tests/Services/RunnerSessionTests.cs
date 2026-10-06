@@ -6,8 +6,8 @@ namespace Brinell.Presenter.Bdd.Tests.Services;
 
 /// <summary>
 /// A run must not make its own workspace unbuildable, nor grow Presenter: a session's scenario
-/// runs in a runner process (AD-025), which ends with the session, or with the run it is part of.
-/// This test project's own output is the suite.
+/// runs in a runner process (AD-025) started from a copy of the suite's output, which waits for the
+/// next session (I2 of the debugger plan) and ends with Presenter. This test project's own output is the suite.
 /// </summary>
 public sealed class RunnerSessionTests : IDisposable
 {
@@ -35,6 +35,12 @@ public sealed class RunnerSessionTests : IDisposable
             Given the probe runs in its own output
             ```
 
+            ## Scenario: The probe runs from a copy
+
+            ```gherkin
+            Given the probe runs from a copy of its output
+            ```
+
             ## Scenario: The probe is checked
 
             ```gherkin
@@ -57,44 +63,43 @@ public sealed class RunnerSessionTests : IDisposable
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     [Fact(Timeout = 120000)]
-    public async Task ASession_RunsInAProcessOfItsOwn_WhichEndsWithIt()
+    public async Task ASession_RunsInAProcessOfItsOwn_FromACopyOfTheOutput_ThatWaitsForTheNext_AndEndsWithPresenter()
     {
         Config(nameof(ProbeFixture));
-        using var service = new BddExecutionService();
-
-        var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
-        var runner = Process.GetProcessById(session.RunnerProcessId);
-        var step = await session.RunNextAsync(CancellationToken.None);
-        session.Dispose();
-        await service.EndRunnersAsync();
-
-        Assert.True(runner.HasExited, "No runner is left once EndRunnersAsync completes: the suite can be built.");
-        Assert.NotEqual(Environment.ProcessId, runner.Id);
-        Assert.Equal(BddStepResultStatus.Passed, step.Status);
-        Assert.True(session.Passed);
-    }
-
-    [Fact(Timeout = 120000)]
-    public async Task ARun_KeepsOneRunnerForItsScenarios_AndEndsItWhenTheRunEnds()
-    {
-        Config(nameof(ProbeFixture));
-        using var service = new BddExecutionService();
-        var run = service.BeginRun();
+        var service = new BddExecutionService();
 
         var first = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
         var runner = Process.GetProcessById(first.RunnerProcessId);
-        await first.RunNextAsync(CancellationToken.None);
+        var step = await first.RunNextAsync(CancellationToken.None);
         first.Dispose();
-        var second = await service.CreateSessionAsync(_root, _feature, "The probe knows its folder", CancellationToken.None);
-        var step = await second.RunNextAsync(CancellationToken.None);
+        await service.EndRunnersAsync();
+        var second = await service.CreateSessionAsync(_root, _feature, "The probe runs from a copy", CancellationToken.None);
+        var inCopy = await second.RunNextAsync(CancellationToken.None);
         second.Dispose();
 
+        Assert.NotEqual(Environment.ProcessId, runner.Id);
+        Assert.Equal(BddStepResultStatus.Passed, step.Status);
+        Assert.True(first.Passed);
         Assert.Equal(first.RunnerProcessId, second.RunnerProcessId);
-        Assert.True(step.Status == BddStepResultStatus.Passed, step.Message);
-        Assert.False(runner.HasExited, "The runner waits for the run's next scenario.");
+        Assert.False(runner.HasExited, "The runner waits for the next session.");
 
-        run.Dispose();
+        Assert.True(inCopy.Status == BddStepResultStatus.Passed, inCopy.Message);
+        await service.EndRunnersAsync();
+        service.Dispose();
         await runner.WaitForExitAsync();
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task Warm_StartsTheRunnerAhead_SoASessionTakesIt()
+    {
+        Config(nameof(ProbeFixture));
+        using var service = new BddExecutionService();
+
+        await service.WarmAsync(_root);
+        var clock = Stopwatch.StartNew();
+        using var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"The session took {clock.Elapsed} to open on a warm runner.");
     }
 
     [Fact(Timeout = 120000)]
@@ -144,7 +149,7 @@ public sealed class RunnerSessionTests : IDisposable
 
         var next = session.Next!;
         Assert.Equal((Path.Combine(_root, "probe.steps.md"), 6, 1), (next.File, next.Line, next.Depth));
-        Assert.Equal((_feature, 18), (next.Calls[0].File, next.Calls[0].Line));
+        Assert.Equal((_feature, 24), (next.Calls[0].File, next.Calls[0].Line));
 
         await session.RunNextAsync(CancellationToken.None);
         Assert.Null(session.Next);
@@ -191,6 +196,11 @@ public sealed class ProbeFixture
     public bool Ready() => true;
 
     /// <summary>Passes when the process runs in the suite's output, as under <c>dotnet test</c>.</summary>
+    /// <summary>Passes when the process runs from a copy of the suite's output (I2 of the debugger plan), so the output is free.</summary>
+    [BddGiven("the probe runs from a copy of its output")]
+    public void RunsFromACopy()
+        => Assert.StartsWith(Brinell.Bdd.Runner.BddShadowCopy.DefaultRoot, AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase);
+
     [BddGiven("the probe runs in its own output")]
     public void RunsInItsOutput()
         => Assert.Equal(

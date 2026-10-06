@@ -43,6 +43,9 @@ public sealed class BddServerClient : IDisposable
     /// <summary>A Step-through run ended (brinell/step/ended): its status, as sent.</summary>
     public event EventHandler<JObject>? StepEnded;
 
+    /// <summary>The warm runner's settings (Tools, Options), read when the server starts.</summary>
+    public Func<(bool Warm, double IdleMinutes)>? RunnerSettings { get; set; }
+
     /// <summary>A run on the suite's runner ended (brinell/run/ended): its status and each scenario's, as sent.</summary>
     public event EventHandler<JObject>? RunEnded;
 
@@ -239,7 +242,7 @@ public sealed class BddServerClient : IDisposable
             rpc.StartListening();
             await rpc.InvokeWithParameterObjectAsync<JObject>(
                 "initialize",
-                new { processId = Process.GetCurrentProcess().Id, initializationOptions = new { solutionDir = _solutionDir } },
+                new { processId = Process.GetCurrentProcess().Id, initializationOptions = new { solutionDir = _solutionDir, warmRunner = RunnerSettings?.Invoke().Warm ?? true, warmRunnerIdleMinutes = RunnerSettings?.Invoke().IdleMinutes ?? 10 } },
                 cancellationToken).ConfigureAwait(false);
             await rpc.NotifyWithParameterObjectAsync("initialized", new { }).ConfigureAwait(false);
             _log($"Started the language server for {_solutionDir}.");

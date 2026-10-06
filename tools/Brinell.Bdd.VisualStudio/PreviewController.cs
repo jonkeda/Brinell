@@ -74,7 +74,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         _output = await CreateOutputPaneAsync();
-        _server = new BddServerClient(BddServerClient.DefaultServerPath, Log);
+        _server = new BddServerClient(BddServerClient.DefaultServerPath, Log)
+        {
+            RunnerSettings = () => (((BrinellBddPackage)_package).Options.WarmRunner, ((BrinellBddPackage)_package).Options.WarmRunnerIdleMinutes),
+        };
         _server.ResultsChanged += OnResultsChanged;
         _server.StepPaused += OnStepPaused;
         _server.StepEnded += OnStepEnded;

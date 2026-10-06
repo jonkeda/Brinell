@@ -4,16 +4,22 @@ using Brinell.Uat;
 namespace Brinell.Presenter.Services;
 
 /// <summary>
-/// Runs a suite's scenarios in a runner process started in the suite's output (AD-025), one
-/// session a scenario. Presenter loads none of the suite's code for a run.
+/// Runs a suite's scenarios in a runner process (AD-025), one session a scenario. Presenter loads
+/// none of the suite's code for a run. The runner starts from a copy of the suite's output and waits
+/// between sessions (<see cref="BddWarmRunners"/>), so the suite can be built while it does.
 /// </summary>
 public sealed class BddExecutionService : IBddExecutionService, IDisposable
 {
     private readonly object _lock = new();
     private readonly BddRunnerJob _job = new();
     private readonly List<Task> _ending = [];
-    private Idle? _idle;
-    private int _runs;
+    private readonly BddWarmRunners _runners;
+
+    /// <summary>Creates the service; its runners end with Presenter.</summary>
+    public BddExecutionService()
+    {
+        _runners = new BddWarmRunners(started: process => _job.Add(process));
+    }
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> WindowEnvironment { get; set; } = new Dictionary<string, string>();
@@ -29,27 +35,15 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var configPath = BddFileFormat.FindConfig(workspacePath);
-        if (!File.Exists(configPath))
-        {
-            throw new InvalidOperationException($"UAT config was not found: {configPath}");
-        }
-
-        var config = BddConfigParser.ParseFile(configPath);
-        ValidateConfig(config, configPath);
-        var pages = ResolvePagesAssembly(workspacePath, config);
-        var start = new BddRunnerStart(
-            pages,
-            BddWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config),
-            CreateTargetEnvironment(workspacePath, config, BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config), WindowEnvironment));
-
-        var runner = await TakeOrStartAsync(start, cancellationToken).ConfigureAwait(false);
+        // The suite's warm runner, or a new one, from a copy of its output (I2 of the debugger plan).
+        var start = StartFor(workspacePath, out var configPath, out var pages);
+        var runner = await _runners.TakeAsync(start, cancellationToken).ConfigureAwait(false);
         try
         {
             var opened = await runner.RequestAsync(new BddRunnerOpen(configPath, pages, scenarioFilePath, scenarioName), cancellationToken).ConfigureAwait(false);
             return opened switch
             {
-                BddRunnerOpened ready => new PresenterUatExecutionSession(runner, ready, (ended, closing) => Release(ended, start, closing)),
+                BddRunnerOpened ready => new PresenterUatExecutionSession(runner, ready, (ended, closing) => Release(ended, closing)),
                 BddRunnerFailed failed => throw new InvalidOperationException(failed.Message),
                 _ => throw new BddRunnerException($"The runner answered '{opened.GetType().Name}' to an open request."),
             };
@@ -62,119 +56,62 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
     }
 
     /// <inheritdoc />
-    public IDisposable BeginRun()
-    {
-        lock (_lock)
-        {
-            _runs++;
-        }
-
-        return new Run(this);
-    }
+    public IDisposable BeginRun() => new Run();
 
     /// <inheritdoc />
     public Task EndRunnersAsync()
     {
-        EndIdle();
         lock (_lock)
         {
+            _ending.RemoveAll(task => task.IsCompleted);
             return Task.WhenAll(_ending);
         }
     }
 
-    /// <summary>Ends the runner that waits for a next session, and every runner when Presenter closes.</summary>
+    /// <inheritdoc />
+    public Task WarmAsync(string workspacePath)
+    {
+        try
+        {
+            return _runners.WarmAsync(StartFor(workspacePath, out _, out _));
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or BddRunnerException)
+        {
+            // Not runnable yet (not built, no config): a session says why.
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Ends every runner, waiting or in a session, when Presenter closes.</summary>
     public void Dispose()
     {
-        EndIdle();
+        _runners.DisposeAsync().AsTask().Wait(BddRunnerClient.CancelGrace);
         _job.Dispose();
     }
 
-    // The runner a run's previous scenario left, when it was started the same way; else a new one.
-    private async Task<BddRunnerClient> TakeOrStartAsync(BddRunnerStart start, CancellationToken cancellationToken)
+    // How the suite's runner starts, from its output; the config and Pages assembly it opens with.
+    private BddRunnerStart StartFor(string workspacePath, out string configPath, out string pages)
     {
-        Idle? idle;
-        lock (_lock)
+        configPath = BddFileFormat.FindConfig(workspacePath);
+        if (!File.Exists(configPath))
         {
-            idle = _idle;
-            _idle = null;
+            throw new InvalidOperationException($"UAT config was not found: {configPath}");
         }
 
-        if (idle is not null)
-        {
-            if (idle.Matches(start) && !idle.Runner.Process.HasExited)
-            {
-                return idle.Runner;
-            }
-
-            await idle.Runner.DisposeAsync().ConfigureAwait(false);
-        }
-
-        var runner = await BddRunnerClient.StartAsync(start, cancellationToken).ConfigureAwait(false);
-        _job.Add(runner.Process);
-        return runner;
+        var config = BddConfigParser.ParseFile(configPath);
+        ValidateConfig(config, configPath);
+        pages = ResolvePagesAssembly(workspacePath, config);
+        return new BddRunnerStart(
+            pages,
+            BddWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config),
+            CreateTargetEnvironment(workspacePath, config, BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config), WindowEnvironment));
     }
 
-    // A session ended. In a run of several scenarios its runner waits for the next one; otherwise
-    // it ends, once the scenario is closed, and the suite's files are free again.
-    private void Release(BddRunnerClient runner, BddRunnerStart start, Task closing)
+    // A session ended: once its scenario is closed, its runner waits for the next session, from its
+    // copy of the output; one that could not close the scenario ends.
+    private void Release(BddRunnerClient runner, Task closing)
     {
-        Idle? replaced = null;
-        bool keep;
-        lock (_lock)
-        {
-            keep = _runs > 0 && !runner.Process.HasExited;
-            if (keep)
-            {
-                replaced = _idle;
-                _idle = new Idle(runner, start);
-            }
-        }
-
-        End(replaced?.Runner, Task.CompletedTask);
-        if (keep)
-        {
-            _ = ObserveAsync(closing);
-        }
-        else
-        {
-            End(runner, closing);
-        }
-    }
-
-    private void EndRun()
-    {
-        bool last;
-        lock (_lock)
-        {
-            last = --_runs == 0;
-        }
-
-        if (last)
-        {
-            EndIdle();
-        }
-    }
-
-    private void EndIdle()
-    {
-        Idle? idle;
-        lock (_lock)
-        {
-            idle = _idle;
-            _idle = null;
-        }
-
-        End(idle?.Runner, Task.CompletedTask);
-    }
-
-    private void End(BddRunnerClient? runner, Task closing)
-    {
-        if (runner is null)
-        {
-            return;
-        }
-
-        var ending = EndAsync(runner, closing);
+        var ending = ReleaseAsync(runner, closing);
         lock (_lock)
         {
             _ending.RemoveAll(task => task.IsCompleted);
@@ -182,49 +119,32 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         }
     }
 
-    private static async Task EndAsync(BddRunnerClient runner, Task closing)
-    {
-        await ObserveAsync(closing).ConfigureAwait(false);
-        await runner.DisposeAsync().ConfigureAwait(false);
-    }
-
-    // A scenario that could not be closed nicely is closed with its runner.
-    private static async Task ObserveAsync(Task closing)
+    private async Task ReleaseAsync(BddRunnerClient runner, Task closing)
     {
         try
         {
             await closing.ConfigureAwait(false);
+            if (closing is Task<BddRunnerMessage> { Result: BddRunnerDone })
+            {
+                _runners.Return(runner);
+                return;
+            }
         }
         catch (Exception exception) when (exception is BddRunnerException or OperationCanceledException or ObjectDisposedException or IOException)
         {
+            // Closed with its runner, below.
         }
+
+        await runner.DisposeAsync().ConfigureAwait(false);
     }
 
-    private sealed record Idle(BddRunnerClient Runner, BddRunnerStart Start)
+    // Runners wait between sessions anyway (I2 of the debugger plan): a run needs nothing of its own.
+    private sealed class Run : IDisposable
     {
-        public bool Matches(BddRunnerStart start)
-            => string.Equals(Start.PagesAssembly, start.PagesAssembly, StringComparison.OrdinalIgnoreCase)
-               && string.Equals(Start.WorkingDirectory, start.WorkingDirectory, StringComparison.OrdinalIgnoreCase)
-               && Same(Start.Environment, start.Environment);
-
-        private static bool Same(IReadOnlyDictionary<string, string>? left, IReadOnlyDictionary<string, string>? right)
-            => (left?.Count ?? 0) == (right?.Count ?? 0)
-               && (left ?? new Dictionary<string, string>()).All(pair => right!.TryGetValue(pair.Key, out var value) && value == pair.Value);
-    }
-
-    private sealed class Run(BddExecutionService service) : IDisposable
-    {
-        private int _ended;
-
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _ended, 1) == 0)
-            {
-                service.EndRun();
-            }
         }
     }
-
     private static void ValidateConfig(BddConfig config, string configPath)
     {
         if (!config.Runtime.TryGetValue("Target", out var target) ||

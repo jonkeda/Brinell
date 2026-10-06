@@ -61,8 +61,9 @@ public sealed partial class BddLanguageServer
 
         try
         {
-            run.Runner = await BddRunnerClient.StartAsync(new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite))).ConfigureAwait(false);
-            RunnerJob.Add(run.Runner.Process);
+            // The suite's warm runner, or a new one from a copy of its output (I2 of the debugger plan).
+            run.Start = new BddRunnerStart(assemblies.Start, Environment: RunnerEnvironment(suite));
+            run.Runner = await Warm.TakeAsync(run.Start).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -169,11 +170,12 @@ public sealed partial class BddLanguageServer
             try
             {
                 using var timeout = new CancellationTokenSource(BddRunnerClient.CancelGrace * 2);
-                await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false);
+                run.Closed = await runner.RequestAsync(new BddRunnerClose(), timeout.Token).ConfigureAwait(false) is BddRunnerDone;
             }
             catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
             {
                 // A runner that cannot close the scenario is ended with the run all the same.
+                run.Closed = false;
             }
         }
     }
@@ -188,9 +190,17 @@ public sealed partial class BddLanguageServer
             }
         }
 
+        // A runner whose last scenario closed waits for the next run; otherwise it ends.
         if (run.Runner is { } runner)
         {
-            await runner.DisposeAsync().ConfigureAwait(false);
+            if (run.Closed && !run.Cancel.IsCancellationRequested && run.Start is { } start)
+            {
+                ReturnRunner(runner, start);
+            }
+            else
+            {
+                await runner.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 
@@ -220,6 +230,11 @@ public sealed partial class BddLanguageServer
 
         public CancellationTokenSource Cancel { get; } = new();
 
+        public BddRunnerStart? Start { get; set; }
+
         public BddRunnerClient? Runner { get; set; }
+
+        // Whether the last scenario opened was closed: the runner is clean for the next run.
+        public bool Closed { get; set; } = true;
     }
 }

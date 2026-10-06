@@ -536,8 +536,10 @@ export class ScenarioTests implements vscode.Disposable {
       return false;
     }
 
-    // From when it started: a file saved during the build makes the next Run build again.
+    // From when it started: a file saved during the build makes the next Run build again. The server
+    // loads the new output, and starts the suite's warm runner from it.
     this.lastBuild.set(project, started);
+    void this.client.sendNotification("brinell/buildDone", {});
     this.buildEvents.fire({ project, built: true });
     return true;
   }

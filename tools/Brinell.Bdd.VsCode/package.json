@@ -185,6 +185,17 @@
           "type": "number",
           "default": 600,
           "description": "How long a recording waits after a step, in milliseconds, when the video script does not say."
+        },
+        "brinellBdd.warmRunner": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start a suite's runner, from a copy of its build output, when one of its feature files opens and after each build, so Run and Step start at once. Off: each run starts its own."
+        },
+        "brinellBdd.warmRunnerIdleMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "How long a suite's warm runner waits after its last feature file closes before it ends."
         }
       }
     }

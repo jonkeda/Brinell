@@ -232,6 +232,25 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AWarmRunner_StartsAStepThroughInUnderASecond_AndWaitsAgainAfterTheRun()
+    {
+        var warm = await _client.InvokeWithParameterObjectAsync<RunnerWarmResult>("brinell/runner/warm", new { uri = new Uri(Feature).AbsoluteUri });
+        Assert.True(warm.Warm, warm.Reason);
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        await StartAsync(3);
+        await PausedAsync();
+        var firstStop = clock.Elapsed;
+
+        Assert.True(firstStop < TimeSpan.FromSeconds(1), $"The first stop took {firstStop}.");
+        await MoveOnlyAsync("continue");
+        Assert.Equal("passed", (await EndedAsync()).Status);
+        clock.Restart();
+        var again = await _client.InvokeWithParameterObjectAsync<RunnerWarmResult>("brinell/runner/warm", new { uri = new Uri(Feature).AbsoluteUri });
+        Assert.True(again.Warm && clock.Elapsed < TimeSpan.FromSeconds(1), $"The runner did not wait again: {again.Reason} ({clock.Elapsed}).");
+    }
+
+    [Fact]
     public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
     {
         var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
