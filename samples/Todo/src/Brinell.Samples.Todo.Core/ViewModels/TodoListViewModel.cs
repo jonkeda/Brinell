@@ -169,6 +169,29 @@ public sealed class TodoListViewModel : ParentViewModel
         Reloading = AppearAsync();
     }
 
+    /// <summary>
+    /// Starts over as a fresh launch does, on the database as it is now: no sync error, the filter
+    /// on All, then the first appearance (the rows reloaded, and a sync if the app syncs on start).
+    /// A test's reset without a restart; <see cref="ISyncService.Forget"/> goes with it.
+    /// </summary>
+    public Task StartOverAsync()
+    {
+        _lastSyncError = default;
+        OnPropertyChanged(nameof(ErrorMessage));
+        _isLoading = true;
+        _hasAppeared = false;
+        if (_filterIndex != 0)
+        {
+            _filterIndex = 0;
+            OnPropertyChanged(nameof(FilterIndex));
+            OnPropertyChanged(nameof(Filter));
+        }
+
+        UpdateSyncLine();
+        Reloading = AppearAsync();
+        return Reloading;
+    }
+
     /// <summary>What <see cref="OnViewAppearing"/> starts, awaitable for tests.</summary>
     public async Task AppearAsync()
     {

@@ -34,6 +34,9 @@ public sealed class SyncService(
     public SyncResult? LastResult { get; private set; }
 
     /// <inheritdoc />
+    public void Forget() => LastResult = null;
+
+    /// <inheritdoc />
     public async Task<SyncResult> SyncAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);

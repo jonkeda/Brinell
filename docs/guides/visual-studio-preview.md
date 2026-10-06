@@ -74,7 +74,9 @@ Debug need `[UatScenarioTheory]` on the suite's test class, which gives each cas
 
 The suite's runner is kept ready: it starts, from a copy of the build output, when you open one of
 the suite's feature files and again after a build, so Run and Step start at once and a build goes
-through while it waits. After a run it starts the app for the next one. It ends ten minutes after
+through while it waits. It keeps the app open between runs when the suite's fixture can start a
+scenario clean without a launch (Todo's can, on Windows: it resets the app's data in place);
+otherwise it starts the app for the next run as soon as one ends. It ends ten minutes after
 the suite's last feature file closes. Both are in **Tools > Options > Brinell BDD > General > Runs**,
 read when the solution opens.
 

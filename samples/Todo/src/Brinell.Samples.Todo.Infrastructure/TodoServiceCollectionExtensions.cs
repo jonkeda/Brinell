@@ -82,6 +82,11 @@ public static class TodoServiceCollectionExtensions
         services.AddSingleton<TodoService>();
 
         services.AddSingleton<TodoListViewModel>();
+        services.AddSingleton(provider => new TodoTestReset(
+            provider.GetRequiredService<LaunchSettings>(),
+            provider.GetRequiredService<ISyncService>(),
+            provider.GetRequiredService<TodoListViewModel>(),
+            platform.Dispatch));
         services.AddTransient<TodoDetailViewModel>();
         services.AddTransient<TodoEditViewModel>();
         services.AddTransient<UserListViewModel>();

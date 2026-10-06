@@ -133,12 +133,13 @@ export async function run(): Promise<void> {
   assert.deepStrictEqual(builds, [true, false, false], "A run on the runner built though nothing but a feature file changed.");
   console.log(`run on the runner: ${ran.status}`);
 
-  // I3: after a run the warm runner makes the next fixture, and so starts the app, before the next
-  // run asks; Todo's needs a new app per scenario (its clean start keeps the app's database).
-  await waitFor(() => todoApps().length === 1, nextStopMs, "The warm runner did not start the app again after the run.");
-  const prepared = todoApps();
+  // AD-025: Todo's fixture starts each scenario clean on the app as it is (its data reset in place),
+  // so the warm runner keeps the app: the second run uses the same app process, and passes.
+  await waitFor(() => todoApps().length === 1, nextStopMs, "The Todo app is not open after the run.");
+  const apps = todoApps();
   await vscode.commands.executeCommand("brinellBdd.runScenario", vscode.Uri.file(feature), heading);
   const ranAgain = await next(firstStopMs);
   assert.ok(ranAgain.kind === "runEnded" && ranAgain.status === "passed", `The second run on the runner did not pass: ${JSON.stringify(ranAgain)}.`);
-  console.log(`second run on the runner: ${ranAgain.status}, on the app started after the first (${prepared[0]})`);
+  assert.deepStrictEqual(todoApps(), apps, "The second run started another app.");
+  console.log(`second run on the runner: ${ranAgain.status}, same app ${apps[0]}`);
 }

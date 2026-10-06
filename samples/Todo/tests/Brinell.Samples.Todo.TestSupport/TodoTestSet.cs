@@ -109,6 +109,28 @@ public sealed class TodoTestSet
         await new SqliteUserRepository(database).ReplaceAllAsync(LocalUsers, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Puts a database back to this test set's local half, in place: its todos and users replaced,
+    /// the file kept, so an app that has it open sees the test set on its next read (no restart).
+    /// </summary>
+    /// <param name="path">The app's database file.</param>
+    /// <param name="cancellationToken">Cancels the writes.</param>
+    public async Task RestoreDatabaseAsync(string path, CancellationToken cancellationToken = default)
+    {
+        var database = new TodoDatabase(path);
+        await using (var connection = await database.OpenAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM todos;";
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await SeedDatabaseAsync(path, cancellationToken).ConfigureAwait(false);
+
+        // This process's pooled handles go, so the app alone has the file.
+        TodoDatabase.ReleaseFileHandles();
+    }
+
     /// <summary>Serves the server half from <paramref name="mock"/>, as a fake that remembers writes.</summary>
     public TodoServerStub StubServer(MockApiServer mock, string apiKey = TodoApi.DevelopmentApiKey)
         => TodoServerStub.Install(mock, Server, apiKey, ServerUsers);
