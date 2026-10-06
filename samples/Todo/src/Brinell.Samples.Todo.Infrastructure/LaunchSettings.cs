@@ -44,6 +44,9 @@ public sealed record LaunchSettings
     /// <summary>The name this app instance gives the backend in <see cref="TodoApi.ClientHeader"/>.</summary>
     public const string ClientIdVariable = "TODO_CLIENT_ID";
 
+    /// <summary>A reset file: written, the app starts over on its database as it is, with no restart.</summary>
+    public const string ResetFileVariable = "TODO_RESET_FILE";
+
     /// <summary>The SQLite file.</summary>
     public required string DatabasePath { get; init; }
 
@@ -67,6 +70,9 @@ public sealed record LaunchSettings
 
     /// <summary>The client name sent with every request; <c>null</c> sends none.</summary>
     public string? ClientId { get; init; }
+
+    /// <summary>A reset file (<see cref="TodoTestReset"/>); <c>null</c> for none, as in a normal launch.</summary>
+    public string? ResetFile { get; init; }
 
     /// <summary>
     /// Builds settings from named values (environment variables, intent extras), falling back to
@@ -93,6 +99,7 @@ public sealed record LaunchSettings
                 ? TimeSpan.FromSeconds(Parse(ApiTimeoutVariable, seconds, text => double.Parse(text, CultureInfo.InvariantCulture)))
                 : TimeSpan.FromSeconds(10),
             ClientId = Value(ClientIdVariable),
+            ResetFile = Value(ResetFileVariable),
         };
     }
 
@@ -121,6 +128,11 @@ public sealed record LaunchSettings
         if (ClientId is { } client)
         {
             variables[ClientIdVariable] = client;
+        }
+
+        if (ResetFile is { } reset)
+        {
+            variables[ResetFileVariable] = reset;
         }
 
         return variables;

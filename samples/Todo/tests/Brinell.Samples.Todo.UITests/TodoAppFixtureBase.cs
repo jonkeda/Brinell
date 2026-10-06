@@ -87,6 +87,32 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         return list;
     }
 
+    /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows, where the test can write the app's files.</summary>
+    public bool CanStartOverInPlace => Context.Platform == MauiPlatform.Windows;
+
+    /// <summary>
+    /// Puts the app back to where its test set starts, with no restart, and returns to the list:
+    /// what <see cref="StartTest"/> does, and the app's own data too.
+    /// </summary>
+    /// <remarks>
+    /// The database is restored in place (<see cref="TodoTestSet.RestoreDatabaseAsync"/>) and the app
+    /// told to start over on it (<see cref="TodoResetFile"/>): the last sync and the list's state
+    /// forgotten, the rows reloaded. Elsewhere than on Windows it is <see cref="StartTest"/>.
+    /// </remarks>
+    public TodoListPage StartOver()
+    {
+        if (!CanStartOverInPlace)
+        {
+            return StartTest();
+        }
+
+        Network.SetOnline();
+        ResetBackendForTest();
+        Arranged.TestSet.RestoreDatabaseAsync(Arranged.Database.Path).GetAwaiter().GetResult();
+        Arranged.Reset.Request();
+        return StartTest();
+    }
+
     /// <summary>
     /// Closes the app and starts it again with the same launch settings - the same database and
     /// backend on Windows - and waits for the list.
@@ -170,6 +196,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
 
         var network = NetworkStateFile.Create(Path.Combine(database.Folder, "network-state.txt"));
+        var reset = new TodoResetFile(Path.Combine(database.Folder, "reset.txt"));
         var apiBaseUrl = StartBackend(testSet, database.Folder);
 
         var settings = AdjustSettings(new LaunchSettings
@@ -178,10 +205,11 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
             ApiBaseUrl = apiBaseUrl,
             FixedNow = testSet.Now,
             NetworkStateFile = network.Path,
+            ResetFile = reset.Path,
             ApiTimeout = TimeSpan.FromSeconds(5),
         });
 
-        _arrangement = new Arrangement(testSet, database, network);
+        _arrangement = new Arrangement(testSet, database, network, reset);
         _settings = settings;
 
         var options = base.CreateTestContextOptions();
@@ -233,7 +261,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 
         // The first database's folder holds the network-state file, so earlier ones stay until Dispose.
         _retired.Add(Arranged.Database);
-        _arrangement = new Arrangement(testSet, database, Arranged.Network);
+        _arrangement = new Arrangement(testSet, database, Arranged.Network, Arranged.Reset);
         ResetBackendForTest();
 
         RestartApp();
@@ -303,9 +331,11 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 
     private TodoListPage ReturnToList() => TodoMauiLaunch.ReturnToList(Context);
 
-    private sealed class Arrangement(TodoTestSet testSet, TempDatabase database, NetworkStateFile network)
+    private sealed class Arrangement(TodoTestSet testSet, TempDatabase database, NetworkStateFile network, TodoResetFile reset)
     {
         public TodoTestSet TestSet { get; } = testSet;
+
+        public TodoResetFile Reset { get; } = reset;
 
         public TempDatabase Database { get; } = database;
 

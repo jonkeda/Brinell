@@ -33,6 +33,27 @@ public sealed class UatAppsHostTests
     }
 
     [Fact]
+    public void AppsFile_TheBuildCopiesIn_IsReadFromTheOutput_ForASourceConfig()
+    {
+        using var suite = new Suite();
+        var name = $"apps-{Guid.NewGuid():N}.md";
+        var built = Path.Combine(AppContext.BaseDirectory, name);
+        File.WriteAllText(built, AppsFile);
+        File.WriteAllText(suite.ConfigFilePath, File.ReadAllText(suite.ConfigFilePath).Replace("shared/apps.md", name, StringComparison.Ordinal));
+        try
+        {
+            // As a runner reads its suite's source config, where the apps file is not (AD-022).
+            var config = BddConfigParser.ParseFile(suite.ConfigFilePath);
+
+            Assert.Equal(["Alice's PC", "Bob"], config.Apps.Select(app => app.Name));
+        }
+        finally
+        {
+            File.Delete(built);
+        }
+    }
+
+    [Fact]
     public async Task EachApp_StartsOnce_AndKeepsItsScope()
     {
         using var suite = new Suite();

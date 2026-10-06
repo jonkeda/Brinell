@@ -110,7 +110,22 @@ const saveRetryPauseMs = 20;
 export const pausedFile = path.join(path.dirname(file), "bdd-paused.json");
 
 /** Where a debugged run is paused, as the engine wrote it. */
-export type Paused = { process: number; file: string; line: number; depth: number; isCall: boolean; text: string; calls: string[]; failed: boolean };
+export type Paused = {
+  process: number;
+  file: string;
+  line: number;
+  depth: number;
+  isCall: boolean;
+  text: string;
+  calls: string[];
+  failed: boolean;
+  message?: string;
+  arguments?: Record<string, string>;
+  app?: string;
+  page?: string;
+  /** A Step-through run's stop (the runner can take a screenshot), not a debugged run's. */
+  stepping?: boolean;
+};
 
 /** Where a debugged run is paused; undefined when none is. */
 export function readPaused(): Paused | undefined {

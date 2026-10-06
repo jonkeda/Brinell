@@ -9,7 +9,12 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 
 /** What the preview asks of the rest of the extension. */
 export interface PreviewHost {
+  /** Runs as a test (dotnet test), under the debugger with debug. */
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
+  /** Runs on the suite's runner (AD-022): the preview's Run. */
+  runOnRunner(uri: vscode.Uri, line: number | undefined): void;
+  /** Steps through the scenario at a heading's line, in the suite's runner. */
+  step(uri: vscode.Uri, line: number): void;
   /** Records a video script, or the scenario at a heading's line, on video. */
   record(uri: vscode.Uri, line: number | undefined, suite: string | undefined): void;
   cancel(): void;
@@ -110,14 +115,20 @@ export class ScenarioPreview implements vscode.Disposable {
           isCall: paused.isCall,
           depth: paused.depth,
           calls: paused.calls,
+          failed: paused.failed,
+          message: paused.message,
+          arguments: paused.arguments,
+          app: paused.app,
+          page: paused.page,
+          stepping: paused.stepping === true,
           here: source !== undefined && source.toLowerCase() === this.document?.uri.fsPath.toLowerCase(),
         }
       : { type: "paused" });
   }
 
-  /** Tells the page a run started (a line, or the whole file) or ended (nothing). */
-  running(line: number | undefined, file: boolean): void {
-    void this.panel?.webview.postMessage(line !== undefined || file ? { type: "running", line, file } : { type: "running" });
+  /** Tells the page a run started (a line, or the whole file) or ended (nothing), and whether it is paused. */
+  running(line: number | undefined, file: boolean, paused = false): void {
+    void this.panel?.webview.postMessage(line !== undefined || file ? { type: "running", line, file, paused } : { type: "running" });
   }
 
   dispose(): void {
@@ -132,9 +143,29 @@ export class ScenarioPreview implements vscode.Disposable {
     }
   }
 
-  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string; move?: string }): void {
+  // A Step-through run's app as it is now, taken by the runner while paused, opened beside.
+  private async screenshot(): Promise<void> {
+    const shot = await this.client.sendRequest<{ path?: string; reason?: string }>("brinell/step/screenshot", {});
+    if (shot.path) {
+      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(shot.path), { viewColumn: vscode.ViewColumn.Beside, preview: true });
+    } else {
+      void vscode.window.showWarningMessage(`No screenshot: ${shot.reason}`);
+    }
+  }
+
+  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; test?: boolean; scope?: string; move?: string }): void {
     if (message.type === "debug" && message.move) {
       this.host.move(message.move);
+      return;
+    }
+
+    if (message.type === "screenshot") {
+      void this.screenshot();
+      return;
+    }
+
+    if (message.type === "debugHere") {
+      void vscode.commands.executeCommand("brinellBdd.debugFromHere");
       return;
     }
 
@@ -168,10 +199,26 @@ export class ScenarioPreview implements vscode.Disposable {
 
         break;
       case "run":
-        this.host.run(document.uri, message.line, message.debug === true);
+        if (message.test === true || message.debug === true) {
+          this.host.run(document.uri, message.line, message.debug === true);
+        } else {
+          this.host.runOnRunner(document.uri, message.line);
+        }
+
+        break;
+      case "step":
+        if (message.line) {
+          this.host.step(document.uri, message.line);
+        }
+
         break;
       case "runFile":
-        this.host.run(document.uri, undefined, message.debug === true);
+        if (message.test === true || message.debug === true) {
+          this.host.run(document.uri, undefined, message.debug === true);
+        } else {
+          this.host.runOnRunner(document.uri, undefined);
+        }
+
         break;
       case "record":
         this.host.record(document.uri, message.line, this.suite.get(document.uri.fsPath));

@@ -7,6 +7,8 @@ namespace Brinell.Bdd.LanguageServer.Tests;
 /// The Brinell MCP server over the Todo sample, one JSON-RPC line at a time as an agent sends them.
 /// Needs the Todo sample built (<c>dotnet build samples/Todo/Brinell.Samples.Todo.slnx</c>).
 /// </summary>
+// Not beside LanguageServerTests: both set BRINELL_FFMPEG, which the whole process shares.
+[Collection(FfmpegVariable.Name)]
 public sealed class McpServerTests : IDisposable
 {
     private readonly BddMcpServer _server = new(TodoPaths.Todo);

@@ -58,13 +58,41 @@
         "command": "brinellBdd.stepInto",
         "title": "Step Into BDD Call",
         "category": "Brinell BDD",
-        "enablement": "brinellBdd.pausedAtCall"
+        "enablement": "brinellBdd.pausedAtCall || brinellBdd.stepPaused"
       },
       {
         "command": "brinellBdd.stepOut",
         "title": "Step Out of BDD Call",
         "category": "Brinell BDD",
-        "enablement": "brinellBdd.pausedInCall"
+        "enablement": "brinellBdd.pausedInCall || brinellBdd.stepPaused"
+      },
+      {
+        "command": "brinellBdd.stepThrough",
+        "title": "Step Through Scenario",
+        "category": "Brinell BDD"
+      },
+      {
+        "command": "brinellBdd.debugFromHere",
+        "title": "Debug From Here",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.stepPaused"
+      },
+      {
+        "command": "brinellBdd.runScenario",
+        "title": "Run Scenario on the Runner",
+        "category": "Brinell BDD"
+      },
+      {
+        "command": "brinellBdd.continue",
+        "title": "Continue BDD Run",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.paused"
+      },
+      {
+        "command": "brinellBdd.stop",
+        "title": "Stop BDD Run",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.paused"
       }
     ],
     "menus": {
@@ -114,6 +142,31 @@
         "command": "brinellBdd.stepOut",
         "key": "ctrl+shift+f11",
         "when": "brinellBdd.pausedInCall"
+      },
+      {
+        "command": "brinellBdd.stepOver",
+        "key": "f10",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stepInto",
+        "key": "f11",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stepOut",
+        "key": "shift+f11",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.continue",
+        "key": "f5",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
+      },
+      {
+        "command": "brinellBdd.stop",
+        "key": "shift+f5",
+        "when": "brinellBdd.stepPaused && !inDebugMode"
       }
     ],
     "configuration": {
@@ -138,6 +191,17 @@
           "type": "number",
           "default": 600,
           "description": "How long a recording waits after a step, in milliseconds, when the video script does not say."
+        },
+        "brinellBdd.warmRunner": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start a suite's runner, from a copy of its build output, when one of its feature files opens and after each build, so Run and Step start at once. Off: each run starts its own."
+        },
+        "brinellBdd.warmRunnerIdleMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "How long a suite's warm runner waits after its last feature file closes before it ends."
         }
       }
     }
@@ -145,6 +209,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
+    "test:ide": "tsc -p . && node out/test/run.js",
     "package": "npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license"
   },
   "dependencies": {

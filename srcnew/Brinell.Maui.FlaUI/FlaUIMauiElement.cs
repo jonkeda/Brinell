@@ -481,6 +481,20 @@ public sealed class FlaUIMauiElement : IMauiElement
                     "Declare the SetText verb on the element in the app under test.");
 
             case TextInputMethod.SetValue:
+                // A password field takes a Value write and keeps it from MAUI: its Entry.Text stays
+                // as it was, so the write would pass and the app would have nothing. Only the
+                // app's SetText reaches the Entry.
+                if (IsPasswordField)
+                {
+                    if (TryBridge(BrinellVerb.SetText, text, out _))
+                        return;
+
+                    throw NoQuietRoute(
+                        "have its text set",
+                        "It is a password field: MAUI on Windows keeps its text apart from what UI "
+                        + "Automation writes, so the app under test needs to declare SetText on it.");
+                }
+
                 // The Value pattern first, and the bridge second. Both are semantic, so the
                 // ordering is not about avoiding physical input at all - it is that the pattern
                 // is two cross-process calls against an element already in hand, where the
@@ -1269,6 +1283,11 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Writes a value through the UIA Value pattern, reaching into a wrapper if it has to.
     /// </summary>
+    // The field itself, or the TextBox a MAUI Entry renders inside it.
+    private bool IsPasswordField => Live(() =>
+        _element.Properties.IsPassword.ValueOrDefault
+        || FindNestedTextBoxElement()?.Properties.IsPassword.ValueOrDefault == true);
+
     private bool TrySetTextValue(string text)
     {
         if (TryWriteValue(_element, text))

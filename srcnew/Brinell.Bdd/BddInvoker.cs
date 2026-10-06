@@ -54,7 +54,59 @@ internal static class BddInvoker
         return Invoke(instance, method, providedArguments);
     }
 
+    // A break for the next step definition called (Debug from here, AD-022).
+    private static BddStepBreak? _definitionBreak;
+
+    // The next step definition called breaks in the debugger, just before it runs.
+    internal static void ArmDefinitionBreak(BddStepBreak stepBreak) => Volatile.Write(ref _definitionBreak, stepBreak);
+
+    // A step ended without calling a definition: its armed break goes.
+    internal static void DisarmDefinitionBreak() => Volatile.Write(ref _definitionBreak, null);
+
+    // A step's own definition (a control's verb, a page's or a phrase class's method), breaking first when armed.
+    internal static object? InvokeDefinition(object instance, string methodName, params object?[] providedArguments)
+    {
+        var method = FindInvokableMethod(instance.GetType(), methodName, providedArguments)
+            ?? throw new MissingMethodException(instance.GetType().FullName, methodName);
+        return InvokeDefinition(instance, method, providedArguments);
+    }
+
+    internal static object? InvokeDefinition(object instance, MethodInfo method, params object?[] providedArguments)
+    {
+        var arguments = Arguments(method, providedArguments);
+        var stepBreak = Interlocked.Exchange(ref _definitionBreak, null);
+        try
+        {
+            if (stepBreak is not null && System.Diagnostics.Debugger.IsAttached)
+            {
+                // Debug from here: stepBreak is the step. F11 on the call below goes into its definition.
+                System.Diagnostics.Debugger.Break();
+            }
+
+            return method.Invoke(instance, arguments);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            throw ex.InnerException;
+        }
+    }
+
     internal static object? Invoke(object instance, MethodInfo method, params object?[] providedArguments)
+    {
+        var arguments = Arguments(method, providedArguments);
+        try
+        {
+            var result = method.Invoke(instance, arguments);
+            return result;
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            throw ex.InnerException;
+        }
+    }
+
+    // What a method is called with: the arguments given, Type.Missing for the optional rest.
+    private static object?[] Arguments(MethodInfo method, object?[] providedArguments)
     {
         var parameters = method.GetParameters();
         object?[] arguments = new object?[parameters.Length];
@@ -65,15 +117,7 @@ internal static class BddInvoker
                 : Type.Missing;
         }
 
-        try
-        {
-            var result = method.Invoke(instance, arguments);
-            return result;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            throw ex.InnerException;
-        }
+        return arguments;
     }
 
     internal static MethodInfo? FindInvokableMethod(Type type, string methodName, IReadOnlyList<object?> providedArguments)

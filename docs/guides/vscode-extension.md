@@ -33,8 +33,15 @@ references, quick fixes and rename, as in Visual Studio.
 ## Scenario Preview
 
 **Ctrl+K V** in a feature or step file, or the preview button in the editor's title bar, opens the
-preview beside it. It follows the active file, the caret and the preview follow each other, and
-**Run** and **Debug** on a heading run that scenario through Test Explorer.
+preview beside it. It follows the active file, and the caret and the preview follow each other. A
+heading's four buttons are Visual Studio's ([Run From The Preview](visual-studio-preview.md#run-from-the-preview)):
+**▶ Run** on the suite's runner, **▷ Run as test** and **● Debug** through Test Explorer, and
+**⏭ Step**. **Brinell BDD: Run Scenario on the Runner** and **Brinell BDD: Step Through Scenario**
+in the Command Palette take the scenario at the caret.
+
+The suite's runner is kept ready as in Visual Studio. Settings: `brinellBdd.warmRunner` (on) and
+`brinellBdd.warmRunnerIdleMinutes` (10), read when the extension starts. A Run or Step builds the
+suite's project only when something other than a scenario file changed since its last build.
 
 Old results are deleted as in Visual Studio: **✕** beside a scenario's result, **Delete results**
 in the preview's bar for the file, and **Brinell BDD: Delete All Results of a Suite** in the
@@ -50,12 +57,14 @@ needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
 ## Test Explorer
 
 The **Testing** view lists each suite, its feature files and their scenarios; an outline is one
-test for all its rows. **Run** builds the suite's project, then runs
+test for all its rows. Its **Run** is Run as test: it builds the suite's project (unless nothing
+changed since its last build), then runs
 `dotnet test --no-build --filter BddScenario=<address>`, and marks each scenario from the report
 its run wrote. A failed scenario points at its failed step. **Debug** runs the same way; the C#
 debugger attaches to the testhost, and step breakpoints stop the run. The suite's test class must
 use `[UatScenarioTheory]`; a suite that does not says so in the view. One run at a time, and
-cancelling a run stops the test process and the app it started.
+cancelling a run stops the test process and the app it started. The **Run on the runner** and
+**Step through** profiles (the run button's menu) run one scenario or file on the suite's runner.
 
 ## Step Breakpoints
 
@@ -66,16 +75,24 @@ stops a run started from the other.
 
 ## Step Through A Scenario
 
-While a debugged run is paused at a step, the paused step's file opens at its line, and the
-preview shows the paused bar with the step marked, as in Visual Studio. The moves:
+**⏭ Step** (or the **Step through** profile) pauses before the scenario's first step, as in Visual
+Studio ([Stop At A Step](visual-studio-preview.md#stop-at-a-step)), with no debugger. The paused
+step's file opens at its line, and the preview shows the bar with the step's page, app and
+arguments, **📷 Screenshot** and **🐞 Debug from here** (**Brinell BDD: Debug From Here**: the C#
+debugger attaches to the runner, and the next step stops just before its step definition). The
+moves:
 
 | Move | Keys | Command |
 | --- | --- | --- |
-| Step over | Alt+Shift+F10 | **Brinell BDD: Step Over BDD Step** |
-| Step into (a `## Step:` call) | Alt+Shift+F11 | **Brinell BDD: Step Into BDD Call** |
-| Step out (of a call) | Ctrl+Shift+F11 | **Brinell BDD: Step Out of BDD Call** |
-| Continue / Stop | F5 / Shift+F5 | the debugger's own |
+| Step over | F10 | **Brinell BDD: Step Over BDD Step** |
+| Step into (a `## Step:` call) | F11 | **Brinell BDD: Step Into BDD Call** |
+| Step out (of a call) | Shift+F11 | **Brinell BDD: Step Out of BDD Call** |
+| Continue / Stop | F5 / Shift+F5 | **Brinell BDD: Continue BDD Run** / **Stop BDD Run** |
 
-The keys work only while a run is paused at a step (the context keys `brinellBdd.paused`,
-`brinellBdd.pausedAtCall`, `brinellBdd.pausedInCall`), so they take no key from VS Code otherwise.
-The bar's buttons do the same. F10 and F11 stay the C# debugger's.
+These keys are the moves only while a Step-through run is paused and nothing is debugged
+(`brinellBdd.stepPaused && !inDebugMode`); otherwise they are VS Code's and the debugger's.
+
+While a **debugged** run is paused at a step, the moves are **Alt+Shift+F10**, **Alt+Shift+F11**
+and **Ctrl+Shift+F11** (the context keys `brinellBdd.paused`, `brinellBdd.pausedAtCall`,
+`brinellBdd.pausedInCall`), with the debugger's own F5 and Shift+F5; F10 and F11 stay the C#
+debugger's. The bar's buttons do the same either way.

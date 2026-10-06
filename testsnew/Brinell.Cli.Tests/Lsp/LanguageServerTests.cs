@@ -7,6 +7,7 @@ using Xunit;
 namespace Brinell.Bdd.LanguageServer.Tests;
 
 /// <summary>The server over JSON-RPC with LSP framing, on an in-memory stream, as a client talks to it.</summary>
+[Collection(FfmpegVariable.Name)]
 public sealed class LanguageServerTests : IAsyncLifetime
 {
     private readonly string _solution = Path.Combine(Path.GetTempPath(), "Brinell", "LanguageServerTests", Guid.NewGuid().ToString("N"));
@@ -354,14 +355,17 @@ public sealed class LanguageServerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RunTarget_BeforeABuild_SaysWhy()
+    public async Task RunTarget_BeforeABuild_SaysWhy_AndNamesTheProjectToBuild()
     {
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
         await InitializeAsync(_client);
 
         var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
 
         Assert.False(target.CanRun);
         Assert.Contains("Build the UAT project first", target.Reason);
+        Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
+        Assert.Null(target.Filter);
     }
 
     [Fact]

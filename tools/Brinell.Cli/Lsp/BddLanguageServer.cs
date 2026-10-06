@@ -56,6 +56,7 @@ public sealed partial class BddLanguageServer : IDisposable
             _results = new BddRunResults();
             WatchResults(_workspace.Suites.Select(suite => BddRunResults.RootFor(suite.ProjectDirectory)).Append(BddRunResults.RootFor(_workspace.Root)));
             _publishes = ClientTakesDiagnostics(request.Capabilities);
+            WarmSettings(request.InitializationOptions);
             _renamesFiles = ClientRenamesFiles(request.Capabilities);
             return new InitializeResult(
                 Capabilities(),
@@ -92,6 +93,7 @@ public sealed partial class BddLanguageServer : IDisposable
         }
 
         ScheduleDiagnostics(Key(request.TextDocument.Uri));
+        WarmOnOpen(Key(request.TextDocument.Uri));
     }
 
     /// <summary>LSP <c>textDocument/didChange</c>, full sync.</summary>
@@ -122,6 +124,7 @@ public sealed partial class BddLanguageServer : IDisposable
 
         // The saved text is what counts now, for the Error List.
         ScheduleDiagnostics(Key(request.TextDocument.Uri));
+        WarmOnClose(Key(request.TextDocument.Uri));
     }
 
     /// <summary>LSP <c>textDocument/didSave</c>: the file's suites are checked whole, since a saved step file changes what every feature file binds to.</summary>
@@ -144,6 +147,7 @@ public sealed partial class BddLanguageServer : IDisposable
         }
 
         PublishSuitesOf(open);
+        WarmAfterBuild(open);
     }
 
     /// <summary><c>brinell/previewHost</c>: the page the client's webview loads once; <c>brinell/preview</c> fills it.</summary>
@@ -202,14 +206,16 @@ public sealed partial class BddLanguageServer : IDisposable
             return new RunTargetResult(false, "No suite holds or links this feature file.", null, null, [], null);
         }
 
+        // The project is named even when the scenario cannot run yet: a client builds it first,
+        // and before the first build there are no catalogs to say more.
         if (suite.TryGetCatalogs(out var reason) is null)
         {
-            return new RunTargetResult(false, reason, null, null, [], suite.Name);
+            return new RunTargetResult(false, reason, suite.ProjectFile, null, [], suite.Name);
         }
 
         if (RunState(suite, path) is { CanRun: false } || suite.ProjectFile is not { } project)
         {
-            return new RunTargetResult(false, RunState(suite, path)?.Reason ?? $"{suite.Name} has no project file.", null, null, [], suite.Name);
+            return new RunTargetResult(false, RunState(suite, path)?.Reason ?? $"{suite.Name} has no project file.", suite.ProjectFile, null, [], suite.Name);
         }
 
         var file = suite.RelativeToConfig(path);
@@ -375,6 +381,9 @@ public sealed partial class BddLanguageServer : IDisposable
     public void Dispose()
     {
         DisposeScraper();
+        DisposeRun();
+        DisposeWarm();
+        DisposeStep();
         lock (_gate)
         {
             foreach (var watcher in _resultsWatchers)
@@ -417,5 +426,12 @@ public sealed partial class BddLanguageServer : IDisposable
         }
     }
 
-    private static string Key(string uri) => Path.GetFullPath(Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.IsFile ? parsed.LocalPath : uri);
+    private static string Key(string uri) => Path.GetFullPath(Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.IsFile ? LocalPath(parsed) : uri);
+
+    // VS Code escapes the drive's colon (file:///e%3A/...), which .NET reads as /e:/...
+    private static string LocalPath(Uri uri)
+    {
+        var local = uri.LocalPath;
+        return local.Length > 2 && local[0] == '/' && char.IsAsciiLetter(local[1]) && local[2] == ':' ? local[1..] : local;
+    }
 }

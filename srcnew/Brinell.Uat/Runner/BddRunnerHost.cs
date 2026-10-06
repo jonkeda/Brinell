@@ -18,6 +18,10 @@ public sealed class BddRunnerHost
     private readonly object _stepLock = new();
     private CancellationTokenSource? _step;
     private OpenScenario? _open;
+
+    // A fixture kept for the next open of the same suite: a prepared one, or one that starts a
+    // scenario clean without a launch (AD-025).
+    private KeptFixture? _kept;
     private BddSceneRecording? _recording;
     private BddNarrationPacer? _rehearsal;
 
@@ -86,16 +90,19 @@ public sealed class BddRunnerHost
         {
             case BddRunnerOpen open:
                 await DropRecordingAsync().ConfigureAwait(false);
-                Close();
-                _open = OpenScenario.Open(open);
-                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog);
+                Close(keep: true);
+                _open = OpenScenario.Open(open, TakeKept(open.Config, open.Pages));
+                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next, _open.Runner.Context));
 
             case BddRunnerNext:
                 return await StepAsync(Opened()).ConfigureAwait(false);
 
             case BddRunnerSkip skip:
                 var session = Opened();
-                return Step(session, session.Session.SkipNext(skip.Message));
+                var passedOver = session.Session.Next;
+                var skipped = Step(session, session.Session.SkipNext(skip.Message), passedOver);
+                session.RecordIfFinished();
+                return skipped;
 
             case BddRunnerRecord record:
                 await DropRecordingAsync().ConfigureAwait(false);
@@ -118,9 +125,30 @@ public sealed class BddRunnerHost
                 await DropRecordingAsync().ConfigureAwait(false);
                 return new BddRunnerDone();
 
-            case BddRunnerClose:
+            case BddRunnerScreenshot screenshot:
+                return Screenshot(Opened(), screenshot.Description);
+
+            case BddRunnerBreak debug:
+                return await BreakAsync(Opened(), debug).ConfigureAwait(false);
+
+            case BddRunnerClose close:
                 await DropRecordingAsync().ConfigureAwait(false);
-                Close();
+                Close(close.Keep);
+                return new BddRunnerDone();
+
+            case BddRunnerPrepare prepare:
+                if (_open is not null)
+                {
+                    return new BddRunnerFailed("A scenario is open: close it before preparing the fixture.");
+                }
+
+                // A fixture kept from the run before is ready already.
+                if (_kept?.Same(prepare.Config, prepare.Pages) != true)
+                {
+                    DisposeKept();
+                    _kept = new KeptFixture(prepare.Config, prepare.Pages, OpenScenario.MakeFixture(prepare.Config, prepare.Pages));
+                }
+
                 return new BddRunnerDone();
 
             default:
@@ -141,7 +169,14 @@ public sealed class BddRunnerHost
 
         try
         {
-            return Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false));
+            var ran = open.Session.Next;
+            var result = await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false);
+
+            // A step that called no definition leaves no break for the next.
+            BddInvoker.DisarmDefinitionBreak();
+            var step = Step(open, result, ran);
+            open.RecordIfFinished();
+            return step;
         }
         finally
         {
@@ -154,14 +189,95 @@ public sealed class BddRunnerHost
         }
     }
 
-    private static BddRunnerStep Step(OpenScenario open, BddStepResult result)
+    private static BddRunnerStep Step(OpenScenario open, BddStepResult result, BddStepInvocation? ran)
         => new(
             open.Session.Results.Count - 1,
             result.Status,
             result.Message,
             open.Session.HasNext,
             [.. BddDiagnosticsFormatter.FormatSteps(open.Session.Results)],
-            [.. open.Runner.Context.Diagnostics]);
+            [.. open.Runner.Context.Diagnostics],
+            Position(ran, open.Runner.Context),
+            Position(open.Session.Next, open.Runner.Context));
+
+    // Plain text and numbers: a host holds no engine types (AD-025). The page is the context's now:
+    // for the next step, where the step before left the scenario.
+    private static BddRunnerPosition? Position(BddStepInvocation? invocation, BddExecutionContext context)
+    {
+        if (invocation is null)
+        {
+            return null;
+        }
+
+        var details = BddBreakpoints.Describe(invocation, context);
+        return new BddRunnerPosition(
+            invocation.Step.Source.FilePath,
+            invocation.Step.Source.LineNumber,
+            invocation.Step.Text,
+            invocation.Call?.Depth ?? 0,
+            invocation.Call?.Chain.Select(frame => new BddRunnerCall(frame.Describe(), frame.Location.FilePath, frame.Location.LineNumber, frame.Depth)).ToList() ?? [])
+        {
+            Arguments = details.Arguments.Count == 0 ? null : details.Arguments.ToDictionary(),
+            App = details.App,
+            Page = details.Page,
+        };
+    }
+
+    // D6: once a debugger is attached, the next step that runs breaks in it just before its step
+    // definition is called, so Step into goes straight into the definition.
+    private static async Task<BddRunnerMessage> BreakAsync(OpenScenario open, BddRunnerBreak request)
+    {
+        if (request.Launch && !System.Diagnostics.Debugger.IsAttached)
+        {
+            System.Diagnostics.Debugger.Launch();
+        }
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(request.WaitSeconds);
+        while (!System.Diagnostics.Debugger.IsAttached && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(AttachPoll).ConfigureAwait(false);
+        }
+
+        if (!System.Diagnostics.Debugger.IsAttached)
+        {
+            return new BddRunnerFailed($"No debugger attached to the runner (process {Environment.ProcessId}) within {request.WaitSeconds} s.");
+        }
+
+        open.Runner.Context.Breaks = new BreakOnce(open.Runner.Context);
+        return new BddRunnerDone();
+    }
+
+    // How often a Debug from here looks for the debugger.
+    private static readonly TimeSpan AttachPoll = TimeSpan.FromMilliseconds(100);
+
+    // The next step that runs breaks; then the host's pauses are the only ones again.
+    private sealed class BreakOnce(BddExecutionContext context) : IBddBreakHook
+    {
+        public BddStepBreak? Before(BddStepInvocation invocation, BddExecutionContext stepContext)
+            => BddBreakpoints.Describe(invocation, stepContext);
+
+        public bool AfterFailure(BddStepResult result) => false;
+
+        // The engine calls this right after Before, through the context: only now is it let go. The
+        // break itself is where the step's definition is called, past the engine's lookups.
+        public void Break(BddStepBreak stepBreak)
+        {
+            context.Breaks = null;
+            BddInvoker.ArmDefinitionBreak(stepBreak);
+        }
+    }
+
+    // Between steps, while a host is paused: the runner is idle, so this never waits on a step.
+    private static BddRunnerMessage Screenshot(OpenScenario open, string description)
+    {
+        if (UatScenarioResults.ScreenshotServiceOf(open.Fixture) is not { } screenshots)
+        {
+            return new BddRunnerFailed("The suite's fixture takes no screenshots.");
+        }
+
+        var path = screenshots.Capture("BddRunner", UatScenarioResults.EvidenceName(open.Scenario), description);
+        return string.IsNullOrEmpty(path) ? new BddRunnerFailed("The screenshot was not written; the test log says why.") : new BddRunnerScreenshotTaken(path);
+    }
 
     private void CancelStep()
     {
@@ -213,10 +329,55 @@ public sealed class BddRunnerHost
         }
     }
 
-    private void Close()
+    // Closes the open scenario. With keep, a fixture that starts clean without a launch stays, its
+    // app open, for the next open of the same suite; without, the kept one ends too.
+    private void Close(bool keep = false)
     {
-        _open?.Dispose();
-        _open = null;
+        if (_open is { } open)
+        {
+            _open = null;
+            var fixture = open.Release();
+            if (keep && fixture is IUatScenarioLifecycle { StartsCleanWithoutLaunch: true })
+            {
+                DisposeKept();
+                _kept = new KeptFixture(open.Config, open.Pages, fixture);
+            }
+            else
+            {
+                (fixture as IDisposable)?.Dispose();
+            }
+        }
+
+        if (!keep)
+        {
+            DisposeKept();
+        }
+    }
+
+    // The kept fixture, when it is the same suite's; another suite's ends.
+    private object? TakeKept(string config, string pages)
+    {
+        if (_kept is { } kept && kept.Same(config, pages))
+        {
+            _kept = null;
+            return kept.Fixture;
+        }
+
+        DisposeKept();
+        return null;
+    }
+
+    private void DisposeKept()
+    {
+        (_kept?.Fixture as IDisposable)?.Dispose();
+        _kept = null;
+    }
+
+    private sealed record KeptFixture(string Config, string Pages, object Fixture)
+    {
+        public bool Same(string config, string pages)
+            => Path.GetFullPath(config).Equals(Path.GetFullPath(Config), StringComparison.OrdinalIgnoreCase)
+               && Path.GetFileName(pages).Equals(Path.GetFileName(Pages), StringComparison.OrdinalIgnoreCase);
     }
 
     // The host plays the line: it has the voice's player, and a suite need not.
@@ -249,8 +410,16 @@ public sealed class BddRunnerHost
     {
         private readonly IDisposable? _scope;
 
-        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog)
+        private readonly UatRuntime _runtime;
+        private readonly BddCommandCatalog _commands;
+        private readonly string _mode;
+        private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
+        private bool _recorded;
+
+        private OpenScenario(object fixture, BddScenarioRunner runner, BddBoundScenario scenario, IDisposable? scope, string discovery, string catalog, UatRuntime runtime, BddCommandCatalog commands, string mode, BddRunnerOpen open)
         {
+            Config = open.Config;
+            Pages = open.Pages;
             Fixture = fixture;
             Runner = runner;
             Scenario = scenario;
@@ -258,9 +427,16 @@ public sealed class BddRunnerHost
             _scope = scope;
             Discovery = discovery;
             Catalog = catalog;
+            _runtime = runtime;
+            _commands = commands;
+            _mode = mode;
         }
 
         public object Fixture { get; }
+
+        public string Config { get; }
+
+        public string Pages { get; }
 
         public BddScenarioRunner Runner { get; }
 
@@ -272,10 +448,38 @@ public sealed class BddRunnerHost
 
         public string Catalog { get; }
 
-        public static OpenScenario Open(BddRunnerOpen open)
+        // Once its last step has run, the scenario's result is written as the gate writes it, so a
+        // run from a host shows in the IDEs' preview and the BDD Explorer (AD-022).
+        public void RecordIfFinished()
         {
-            var config = BddConfigParser.ParseFile(open.Config);
-            var fixture = CreateFixture(config, LoadPages(open.Pages));
+            if (_recorded || Session.HasNext)
+            {
+                return;
+            }
+
+            _recorded = true;
+            var result = Session.ToResult();
+            var evidence = !result.Passed && !result.Skipped && _runtime.Config.Reporting.ScreenshotOnFailure
+                ? UatScenarioResults.ScreenshotServiceOf(Fixture)?.Capture("BddRunner", UatScenarioResults.EvidenceName(Scenario), "failure")
+                : null;
+            UatScenarioResults.Record(
+                _runtime,
+                _commands,
+                Scenario,
+                new BddScenarioExecutionResult(result, Runner.Context, evidence),
+                _clock.Elapsed,
+                Fixture.GetType().Assembly.GetName().Name,
+                UatScenarioResults.EvidenceName(Scenario),
+                _mode);
+        }
+
+        // The suite's fixture, made as an open makes it: for a prepare ahead of the first open.
+        public static object MakeFixture(string config, string pages) => CreateFixture(BddConfigParser.ParseFile(config), LoadPages(pages));
+
+        // With a kept fixture, its app as it is: BeforeFile and BeforeScenario give the clean start.
+        public static OpenScenario Open(BddRunnerOpen open, object? kept)
+        {
+            var fixture = kept ?? MakeFixture(open.Config, open.Pages);
             IDisposable? scope = null;
             try
             {
@@ -321,7 +525,7 @@ public sealed class BddRunnerHost
                     UatRuntime.ConfigureScope(runner.Context, serviceScope.ServiceProvider);
                 }
 
-                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport);
+                return new OpenScenario(fixture, runner, scenario, scope, runtime.DiscoveryReport, catalogReport, runtime, catalog, open.Mode ?? UatScenarioResults.RunnerMode, open);
             }
             catch
             {
@@ -335,6 +539,13 @@ public sealed class BddRunnerHost
         {
             _scope?.Dispose();
             (Fixture as IDisposable)?.Dispose();
+        }
+
+        // The scenario's scope ends; its fixture is the caller's to keep or end.
+        public object Release()
+        {
+            _scope?.Dispose();
+            return Fixture;
         }
 
         // By name first: the suite's own deps.json knows it, and its types are then the ones the

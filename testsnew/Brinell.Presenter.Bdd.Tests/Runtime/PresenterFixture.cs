@@ -29,9 +29,21 @@ public sealed class PresenterFixture : MauiTestFixtureBase
         var settingsPath = Path.Combine(settingsDirectory, "presenter-settings.json");
         Environment.SetEnvironmentVariable("BRINELL_PRESENTER_SETTINGS_PATH", settingsPath);
 
+        // The cloud voice's file goes to a user folder of the suite's own: the developer's real
+        // %USERPROFILE%\.brinell\voice.secrets.json is never read or written by these scenarios.
+        var userFolder = Path.Combine(settingsDirectory, "home");
+        Directory.CreateDirectory(userFolder);
+        Environment.SetEnvironmentVariable(Brinell.Presenter.ViewModels.PresenterShellViewModel.UserFolderVariable, userFolder);
+
         // Recordings go beside the settings, not into the repository's TestResults.
         RecordingsFolder = Path.Combine(settingsDirectory, "recordings");
-        File.WriteAllText(settingsPath, System.Text.Json.JsonSerializer.Serialize(new { RecordingsFolder }));
+        // The app the Presenter presents goes behind everything, as the Presenter itself does in a
+        // test run: neither takes the screen from the person at the machine.
+        File.WriteAllText(settingsPath, System.Text.Json.JsonSerializer.Serialize(new
+        {
+            RecordingsFolder,
+            AppWindow = Brinell.Presenter.Services.PresenterAppWindow.Background,
+        }));
 
         return base.CreateTestContextOptions();
     }

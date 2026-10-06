@@ -2,12 +2,28 @@ namespace Brinell.Bdd;
 
 public static class BddScenarioSource
 {
+    /// <summary>
+    /// Set by a host that starts a suite's runner (the IDEs' language server, the Presenter) to the
+    /// suite's source folder: the runner reads the scenario files from there, so an edit runs without a build.
+    /// </summary>
+    public const string SourceDirectoryEnvironmentVariable = "BRINELL_SUITE_SOURCE";
+
+    /// <summary>The suite's source folder when a host runs it from there; null under <c>dotnet test</c>, which reads its output.</summary>
+    public static string? SourceDirectory
+        => Environment.GetEnvironmentVariable(SourceDirectoryEnvironmentVariable) is { Length: > 0 } source && Directory.Exists(source) ? source : null;
+
+    /// <summary>The suite's folder its scenario files are read from: <see cref="SourceDirectory"/>, else <paramref name="output"/>.</summary>
+    /// <param name="output">The suite's output folder, as the gate reads it.</param>
+    public static string SuiteDirectory(string output) => SourceDirectory ?? output;
+
     /// <summary>The suite's config: <paramref name="configFileName"/>, or else <c>uat.config.md</c> or <c>bdd.config.md</c>.</summary>
+    /// <param name="baseDirectory">The folder it is in; <see cref="SourceDirectory"/>, else the output, by default.</param>
+    /// <param name="configFileName">Its name, when not one of the usual two.</param>
     public static string GetConfigFilePath(
         string? baseDirectory = null,
         string? configFileName = null)
     {
-        var directory = baseDirectory ?? AppContext.BaseDirectory;
+        var directory = baseDirectory ?? SuiteDirectory(AppContext.BaseDirectory);
         return configFileName is null ? BddFileFormat.FindConfig(directory) : Path.Combine(directory, configFileName);
     }
 

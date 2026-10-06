@@ -20,7 +20,7 @@ namespace Brinell.Bdd.VisualStudio;
 [ProvideToolWindow(typeof(BddExplorerWindow), Style = VsDockStyle.Tabbed, Window = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}")]
 [ProvideToolWindow(typeof(ScraperWindow), Style = VsDockStyle.MDI)]
 [ProvideAutoLoad(PackageIds.FeatureFileContext, PackageAutoLoadFlags.BackgroundLoad)]
-[ProvideOptionPage(typeof(BddOptionsPage), "Brinell BDD", "Recording", 0, 0, true)]
+[ProvideOptionPage(typeof(BddOptionsPage), "Brinell BDD", "General", 0, 0, true)]
 // Loaded when debugging starts too, so a run debugged from Test Explorer can be stepped through.
 [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.Debugging_string, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideUIContextRule(

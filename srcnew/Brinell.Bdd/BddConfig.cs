@@ -355,6 +355,14 @@ public static class BddConfigParser
         }
 
         var path = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(filePath))!, appsFile));
+
+        // A runner reads its suite's source config; an apps file the build copies in is in its output.
+        var built = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, appsFile));
+        if (!File.Exists(path) && File.Exists(built))
+        {
+            path = built;
+        }
+
         return config with
         {
             Apps = TestAppDefinition.ReadMarkdownFile(path).Select(app => new BddAppConfig(app.Name, app.Values)).ToArray(),

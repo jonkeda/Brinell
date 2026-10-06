@@ -56,8 +56,12 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
     // Held so their handlers stay subscribed (DTE events are dropped with their object).
     private EnvDTE.DebuggerEvents? _debuggerEvents;
-    private EnvDTE.CommandEvents? _stepOverEvents;
+    private readonly List<(EnvDTE.CommandEvents Events, EnvDTE._dispCommandEvents_BeforeExecuteEventHandler Handler)> _keys = [];
     private JObject? _paused;
+
+    // A Step-through run paused (brinell/step/paused), in the shape of the engine's paused file;
+    // null while it moves and when none is going.
+    private JObject? _stepping;
     private string _explorerView = "steps";
     private string? _explorerSuite;
 
@@ -70,8 +74,18 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         _output = await CreateOutputPaneAsync();
-        _server = new BddServerClient(BddServerClient.DefaultServerPath, Log);
+        _server = new BddServerClient(BddServerClient.DefaultServerPath, Log)
+        {
+            RunnerSettings = () => (((BrinellBddPackage)_package).Options.WarmRunner, ((BrinellBddPackage)_package).Options.WarmRunnerIdleMinutes),
+        };
         _server.ResultsChanged += OnResultsChanged;
+        _server.StepPaused += OnStepPaused;
+        _server.StepEnded += OnStepEnded;
+        _server.RunEnded += (_, ended) => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            _runs?.RunEnded(ended);
+        }).FileAndForget("Brinell/RunEnded");
         _runs = new BddRunController(_package, _server, Log, Post);
 
         _selection = await _package.GetServiceAsync(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
@@ -188,31 +202,40 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             _debuggerEvents.OnEnterBreakMode -= OnEnterBreakMode;
         }
 
-        if (_stepOverEvents is not null)
+        foreach (var (events, handler) in _keys)
         {
-            _stepOverEvents.BeforeExecute -= OnStepOver;
+            events.BeforeExecute -= handler;
         }
+
         _typing?.Cancel();
         _server?.Dispose();
     }
 
-    /// <summary>Whether a debugged run is paused at a step (the engine's <c>bdd-paused.json</c>).</summary>
-    public bool IsPaused => _paused is not null;
+    /// <summary>Whether a run is paused at a step: a Step-through run, or a debugged one (the engine's <c>bdd-paused.json</c>).</summary>
+    public bool IsPaused => Current is not null;
 
     /// <summary>Paused at a <c>## Step:</c> call: Step into goes inside.</summary>
-    public bool PausedAtCall => _paused?["isCall"]?.Value<bool>() == true;
+    public bool PausedAtCall => Current?["isCall"]?.Value<bool>() == true;
 
     /// <summary>Paused inside a call: Step out goes after it.</summary>
-    public bool PausedInCall => (_paused?["depth"]?.Value<int>() ?? 0) > 0;
+    public bool PausedInCall => (Current?["depth"]?.Value<int>() ?? 0) > 0;
+
+    private JObject? Current => _stepping ?? _paused;
 
     /// <summary>
-    /// A move from the paused step: <c>over</c>, <c>into</c> and <c>out</c> are written for the
-    /// engine and the debugger goes on; <c>continue</c> goes on to the next breakpoint; <c>stop</c>
-    /// ends the debugging.
+    /// A move from the paused step. A Step-through run's go to the server. A debugged run's
+    /// <c>over</c>, <c>into</c> and <c>out</c> are written for the engine and the debugger goes on;
+    /// <c>continue</c> goes on to the next breakpoint; <c>stop</c> ends the debugging.
     /// </summary>
     public void Move(string move)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
+        if (_stepping is not null)
+        {
+            StepMove(move);
+            return;
+        }
+
         if (_paused is not { } paused)
         {
             return;
@@ -269,7 +292,17 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         _paused = ReadPaused(BddBreakpointStore.Instance.PausedPath);
-        if (_paused is not { } paused || (string?)paused["file"] is not { } running)
+        if (_stepping is null)
+        {
+            ShowPaused(_paused);
+        }
+    }
+
+    // The bar in every preview, and the step's source file at its line; for null, the bar goes.
+    private void ShowPaused(JObject? paused)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (paused is null || (string?)paused["file"] is not { } running)
         {
             foreach (var (control, _) in _views.ToList())
             {
@@ -293,6 +326,12 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 isCall = paused["isCall"]?.Value<bool>() == true,
                 depth = paused["depth"]?.Value<int>() ?? 0,
                 calls = paused["calls"]?.ToObject<string[]>() ?? [],
+                failed = paused["failed"]?.Value<bool>() == true,
+                message = (string?)paused["message"],
+                arguments = paused["arguments"] as JObject,
+                app = (string?)paused["app"],
+                page = (string?)paused["page"],
+                stepping = paused["stepping"]?.Value<bool>() == true,
                 here = string.Equals(path ?? file, file, StringComparison.OrdinalIgnoreCase),
             });
         }
@@ -303,7 +342,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void ShowPausedStep()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (_paused is not { } paused || (string?)paused["file"] is not { } running)
+        if (Current is not { } paused || (string?)paused["file"] is not { } running)
         {
             return;
         }
@@ -333,8 +372,123 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         _debuggerEvents = dte.Events.DebuggerEvents;
         _debuggerEvents.OnEnterBreakMode += OnEnterBreakMode;
-        _stepOverEvents = dte.Events.CommandEvents[VSConstants.GUID_VSStandardCommandSet97.ToString("B"), (int)VSConstants.VSStd97CmdID.StepOver];
-        _stepOverEvents.BeforeExecute += OnStepOver;
+
+        // D3: while a Step-through run is paused and no debugger is in break mode, the debugger's keys
+        // are its moves. A key whose command Visual Studio disables when nothing is debugged (Shift+F11,
+        // Shift+F5) never comes here: the bar's buttons and Ctrl+Shift+F11 stand in.
+        Intercept(dte, VSConstants.VSStd97CmdID.StepOver, "over", () => IsPausedHere() || SteppingHere());
+        Intercept(dte, VSConstants.VSStd97CmdID.StepInto, "into", SteppingHere);
+        Intercept(dte, VSConstants.VSStd97CmdID.StepOut, "out", SteppingHere);
+        Intercept(dte, VSConstants.VSStd97CmdID.Start, "continue", SteppingHere);
+        Intercept(dte, VSConstants.VSStd97CmdID.Stop, "stop", SteppingHere);
+    }
+
+    private void Intercept(EnvDTE80.DTE2 dte, VSConstants.VSStd97CmdID command, string move, Func<bool> ours)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        var events = dte.Events.CommandEvents[VSConstants.GUID_VSStandardCommandSet97.ToString("B"), (int)command];
+        EnvDTE._dispCommandEvents_BeforeExecuteEventHandler handler = (string guid, int id, object customIn, object customOut, ref bool cancelDefault) =>
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (ours())
+            {
+                cancelDefault = true;
+                Move(move);
+            }
+        };
+        events.BeforeExecute += handler;
+        _keys.Add((events, handler));
+    }
+
+    private bool SteppingHere()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        return _stepping is not null &&
+               Package.GetGlobalService(typeof(EnvDTE.DTE)) is EnvDTE80.DTE2 dte &&
+               dte.Debugger.CurrentMode != EnvDTE.dbgDebugMode.dbgBreakMode;
+    }
+
+    // From the server: the Step-through run paused. The bar shows it as a debugged run's pause.
+    private void OnStepPaused(object sender, JObject paused)
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            var calls = paused["calls"] as JArray ?? [];
+            _stepping = new JObject
+            {
+                ["file"] = (string?)paused["at"] is { } at ? new Uri(at).LocalPath : null,
+                ["line"] = paused["line"],
+                ["depth"] = paused["depth"],
+                ["isCall"] = paused["isCall"],
+                ["text"] = paused["text"],
+                ["calls"] = new JArray(calls.Select(call => $"{(string?)call["text"]} at {Path.GetFileName((string?)call["file"] ?? string.Empty)}:{(int?)call["line"]}")),
+                ["failed"] = paused["failed"],
+                ["message"] = paused["message"],
+                ["arguments"] = paused["arguments"],
+                ["app"] = paused["app"],
+                ["page"] = paused["page"],
+                ["stepping"] = true,
+            };
+            _runs?.StepPaused(paused: true);
+            ShowPaused(_stepping);
+        }).FileAndForget("Brinell/StepPaused");
+
+    private void OnStepEnded(object sender, JObject ended)
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            _stepping = null;
+            ShowPaused(null);
+            _runs?.StepEnded((string?)ended["status"], (string?)ended["message"]);
+        }).FileAndForget("Brinell/StepEnded");
+
+    // D6: the debugger on the runner; once attached, Step over runs the paused step, which breaks in it.
+    private void DebugFromHere()
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            if (_runs is null || !await _runs.AttachToRunnerAsync())
+            {
+                return;
+            }
+
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if (_stepping is not null)
+            {
+                StepMove("over");
+            }
+        }).FileAndForget("Brinell/DebugFromHere");
+
+    // D5: the paused Step-through run's app as it is now, taken by the runner and opened in Visual Studio.
+    private void Screenshot()
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            var shot = await _server!.StepScreenshotAsync(_package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if ((string?)shot["path"] is { } path && File.Exists(path))
+            {
+                VsShellUtilities.OpenDocument(_package, path);
+            }
+            else
+            {
+                Log($"No screenshot: {(string?)shot["reason"]}");
+            }
+        }).FileAndForget("Brinell/StepScreenshot");
+
+    // The bar goes while the run moves; the server says where it pauses next.
+    private void StepMove(string move)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        _stepping = null;
+        _runs?.StepPaused(paused: false);
+        ShowPaused(null);
+        _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            var taken = await _server!.StepMoveAsync(move, _package.DisposalToken);
+            if ((bool?)taken["taken"] != true)
+            {
+                Log($"The Step-through move '{move}' did not go: {(string?)taken["reason"]}");
+            }
+        }).FileAndForget("Brinell/StepMove");
     }
 
     private void OnEnterBreakMode(EnvDTE.dbgEventReason reason, ref EnvDTE.dbgExecutionAction executionAction)
@@ -347,16 +501,6 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         if (IsPausedHere())
         {
             _package.JoinableTaskFactory.StartOnIdle(ShowPausedStep).FileAndForget("Brinell/PausedStep");
-        }
-    }
-
-    private void OnStepOver(string guid, int id, object customIn, object customOut, ref bool cancelDefault)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (IsPausedHere())
-        {
-            cancelDefault = true;
-            Move("over");
         }
     }
 
@@ -614,10 +758,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 view.ViewScroller.EnsureSpanVisible(new SnapshotSpan(start, 0), EnsureSpanVisibleOptions.AlwaysCenter);
                 break;
             case "run" when _path is { } file && (int?)message["line"] is { } heading:
-                Run(file, heading, (bool?)message["debug"] == true);
+                Run(file, heading, (bool?)message["debug"] == true, (bool?)message["test"] == true);
                 break;
             case "runFile" when _path is { } file:
-                Run(file, null, (bool?)message["debug"] == true);
+                Run(file, null, (bool?)message["debug"] == true, (bool?)message["test"] == true);
                 break;
             case "record" when _path is { } file:
                 Record(file, (int?)message["line"]);
@@ -632,11 +776,20 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             case "toggleBreak" when _path is { } file && (int?)message["line"] is { } step:
                 BddBreakpointStore.Instance.Toggle(file, step);
                 break;
+            case "step" when _path is { } file && (int?)message["line"] is { } scenario:
+                Step(file, scenario);
+                break;
             case "cancel":
                 _runs?.Cancel();
                 break;
             case "debug" when (string?)message["move"] is { } move:
                 Move(move);
+                break;
+            case "screenshot":
+                Screenshot();
+                break;
+            case "debugHere":
+                DebugFromHere();
                 break;
             case "deleteResults" when _path is { } file && (string?)message["scope"] is { } scope:
                 DeleteResults(scope, new Uri(file).AbsoluteUri, (int?)message["line"], _suites.TryGetValue(file, out var picked) ? picked : null);
@@ -716,10 +869,17 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }).FileAndForget("Brinell/PreviewRecord");
     }
 
-    private void Run(string path, int? line, bool debug)
+    private void Step(string path, int line)
     {
         var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
-        _package.JoinableTaskFactory.RunAsync(() => _runs!.RunAsync(path, line, suite, debug)).FileAndForget("Brinell/PreviewRun");
+        _package.JoinableTaskFactory.RunAsync(() => _runs!.StepAsync(path, line, suite)).FileAndForget("Brinell/PreviewStep");
+    }
+
+    // Run is the suite's runner's; Run as test and Debug are dotnet test's (AD-022).
+    private void Run(string path, int? line, bool debug, bool test)
+    {
+        var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
+        _package.JoinableTaskFactory.RunAsync(() => debug || test ? _runs!.RunAsync(path, line, suite, debug) : _runs!.RunOnRunnerAsync(path, line, suite)).FileAndForget("Brinell/PreviewRun");
     }
 
     /// <summary>

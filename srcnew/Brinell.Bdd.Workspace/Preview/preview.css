@@ -310,6 +310,9 @@ p.uat-video-say { font-style: italic; border-left: 3px solid var(--uat-accent); 
 }
 .uat-paused[hidden] { display: none; }
 .uat-paused-at { color: var(--uat-fg); }
+/* The stop's app, page and arguments: a line of their own under where and the moves. */
+.uat-paused-details { order: 1; flex-basis: 100%; color: var(--uat-muted); overflow-wrap: anywhere; }
+.uat-paused-details[hidden] { display: none; }
 .uat-moves { display: flex; gap: 4px; margin-left: auto; }
 .uat-moves button {
   padding: 1px 8px;

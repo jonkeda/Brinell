@@ -1,7 +1,8 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
 // In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines},
-//      paused {text, line, here, isCall, depth, calls} (or {} when the run goes on)
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line},
+//      paused {text, line, here, isCall, depth, calls, failed, message, arguments, app, page, stepping} (or {} when the run goes on)
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug, test}, runFile {debug, test}, step {line}, cancel, toggleBreak {line},
+//      screenshot (a Step-through run's app, now), debugHere (the debugger on its runner),
 //      debug {move: continue | over | into | out | stop}, deleteResults {scope: scenario | file, line?}
 (function () {
   "use strict";
@@ -34,6 +35,9 @@
   const deleteFile = document.getElementById("uat-delete-file");
   const pausedBar = document.getElementById("uat-paused");
   const pausedAt = document.getElementById("uat-paused-at");
+  const pausedDetails = document.getElementById("uat-paused-details");
+  const screenshot = document.getElementById("uat-screenshot");
+  const debugHere = document.getElementById("uat-debug-here");
   let current = null;
   let running = null;
   let breaks = [];
@@ -124,7 +128,24 @@
       return;
     }
     const inCall = paused.calls && paused.calls.length ? " · in " + paused.calls[paused.calls.length - 1] : "";
-    pausedAt.textContent = "⏸ Paused " + (paused.isCall ? "at the call: " : "before: ") + paused.text + " (line " + paused.line + inCall + ")";
+    const where = paused.failed ? "after the failed step: " : paused.isCall ? "at the call: " : "before: ";
+    pausedAt.textContent = "⏸ Paused " + where + paused.text + " (line " + paused.line + inCall + ")" + (paused.failed && paused.message ? " · " + paused.message : "");
+    // What the step works with: its app, the page, its arguments as read.
+    const details = [];
+    if (paused.app) {
+      details.push("App: " + paused.app);
+    }
+    if (paused.page) {
+      details.push("Page: " + paused.page);
+    }
+    for (const [name, value] of Object.entries(paused.arguments || {})) {
+      details.push(name + " = " + JSON.stringify(value));
+    }
+    pausedDetails.textContent = details.join(" · ");
+    pausedDetails.hidden = details.length === 0;
+    // A Step-through run's runner is idle while paused and can take one; a debugged run's process is frozen.
+    screenshot.hidden = paused.stepping !== true;
+    debugHere.hidden = paused.stepping !== true;
     pausedBar.querySelector('[data-move="into"]').disabled = !paused.isCall;
     pausedBar.querySelector('[data-move="out"]').disabled = !(paused.depth > 0);
     if (paused.here) {
@@ -158,6 +179,14 @@
   });
 
   pausedBar.addEventListener("click", (event) => {
+    if (event.target.closest("[data-screenshot]")) {
+      host.post({ type: "screenshot" });
+      return;
+    }
+    if (event.target.closest("[data-debug-here]")) {
+      host.post({ type: "debugHere" });
+      return;
+    }
     const move = event.target.closest("[data-move]");
     if (move && !move.disabled) {
       host.post({ type: "debug", move: move.getAttribute("data-move") });
@@ -188,9 +217,13 @@
     const run = event.target.closest(".uat-run");
     if (run) {
       event.stopPropagation();
-      if (!run.disabled) {
+      if (!run.disabled && run.hasAttribute("data-step")) {
+        host.post({ type: "step", line: Number(run.getAttribute("data-step")) });
+      } else if (!run.disabled) {
+        // Run is the suite's runner's; Run as test (test) and Debug are dotnet test's.
         const debug = run.hasAttribute("data-debug");
-        host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug } : { type: "run", line: Number(run.getAttribute("data-run")), debug });
+        const test = debug || run.hasAttribute("data-test");
+        host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug, test } : { type: "run", line: Number(run.getAttribute("data-run")), debug, test });
       }
       return;
     }

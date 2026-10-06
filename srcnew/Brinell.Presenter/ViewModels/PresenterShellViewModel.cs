@@ -90,7 +90,9 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         IScenarioPreviewService? previewService = null,
         PresenterBreakpointStore? breakpoints = null,
         IPresenterWindowService? windowService = null,
-        IPresenterRecorder? recorder = null)
+        IPresenterRecorder? recorder = null,
+        string? userFolder = null,
+        Func<string, string?>? readVariable = null)
     {
         _workspaceService = workspaceService;
         _windowService = windowService;
@@ -146,6 +148,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         _speed = settings.Speed;
         ExecutionDelayMilliseconds = _speeds.Of(_speed);
         InitializeRecording(settings, recorder);
+        InitializeCloudVoice(userFolder ?? Environment.GetEnvironmentVariable(UserFolderVariable), readVariable);
         InitializeNarrator();
         ApplyTheme();
 
@@ -555,7 +558,13 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     public string? WorkspacePath
     {
         get => _workspacePath;
-        private set => SetProperty(ref _workspacePath, value);
+        private set
+        {
+            if (SetProperty(ref _workspacePath, value) && _userFolder is not null)
+            {
+                RefreshCloudVoicePlace();
+            }
+        }
     }
 
     public string WorkspaceSummaryText
@@ -1139,6 +1148,12 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         _catalogs = result.Catalogs;
         NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
+
+        // The suite's runner, ready before the first run; after a build, from the new output (AD-025).
+        if (result.Catalogs is not null)
+        {
+            _ = _executionService.WarmAsync(result.FolderPath);
+        }
         WorkspaceName = result.WorkspaceName;
 
         Files.Clear();
@@ -1321,8 +1336,8 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             return;
         }
 
-        // A run's runner process holds the suite's files until it has ended, and building over
-        // them would fail.
+        // A session's app holds its files until it has ended, and building over them would fail;
+        // the runner itself runs from a copy of the output.
         StopActiveSession();
         ReleaseEndedSession();
         await _executionService.EndRunnersAsync().ConfigureAwait(true);
@@ -1664,7 +1679,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             IsDarkThemeActive,
             WorkspaceName,
             IsPaused && CurrentRow is { } paused
-                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall)
+                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall, _activeSession?.Next)
                 : null));
     }
 

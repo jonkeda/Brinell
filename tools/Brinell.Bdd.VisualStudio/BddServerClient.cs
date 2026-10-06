@@ -37,6 +37,18 @@ public sealed class BddServerClient : IDisposable
     /// <summary>The server says the Scraper recorded, started or stopped (brinell/scraper/changed): the change as sent.</summary>
     public event EventHandler<JObject>? ScraperChanged;
 
+    /// <summary>A Step-through run paused (brinell/step/paused): where, as sent.</summary>
+    public event EventHandler<JObject>? StepPaused;
+
+    /// <summary>A Step-through run ended (brinell/step/ended): its status, as sent.</summary>
+    public event EventHandler<JObject>? StepEnded;
+
+    /// <summary>The warm runner's settings (Tools, Options), read when the server starts.</summary>
+    public Func<(bool Warm, double IdleMinutes)>? RunnerSettings { get; set; }
+
+    /// <summary>A run on the suite's runner ended (brinell/run/ended): its status and each scenario's, as sent.</summary>
+    public event EventHandler<JObject>? RunEnded;
+
     /// <summary>The server's path beside the extension's assembly.</summary>
     public static string DefaultServerPath =>
         Path.Combine(Path.GetDirectoryName(typeof(BddServerClient).Assembly.Location)!, "Server", "brinell.dll");
@@ -117,6 +129,36 @@ public sealed class BddServerClient : IDisposable
     public async Task<JObject> RunTargetAsync(string path, int? line, string? suite, CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/step/start</c>: Step through the scenario at a heading's line, in the suite's runner.</summary>
+    public async Task<JObject> StepStartAsync(string path, int line, string? suite, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/start", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/step/move</c>: <c>over</c>, <c>into</c>, <c>out</c>, <c>continue</c> or <c>stop</c>.</summary>
+    public async Task<JObject> StepMoveAsync(string move, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/move", new { move }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/step/debug</c>: Debug from here; the runner's <c>processId</c> to attach to, or the <c>reason</c> there is none.</summary>
+    public async Task<JObject> StepDebugAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/debug", new { }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/run/start</c>: runs the scenario at a heading's line, or the file, on the suite's runner (AD-022).</summary>
+    public async Task<JObject> RunStartAsync(string path, int? line, string? suite, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/run/start", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/run/cancel</c>: cancels the run on the runner.</summary>
+    public async Task<JObject> RunCancelAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/run/cancel", new { }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/step/screenshot</c>: the paused Step-through run's app, now; its <c>path</c> or the <c>reason</c> there is none.</summary>
+    public async Task<JObject> StepScreenshotAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/screenshot", new { }, cancellationToken).ConfigureAwait(false);
 
     /// <summary><c>brinell/deleteResults</c>: deletes, or counts in a dry run, the old results of a scenario, a file or a suite.</summary>
     public async Task<JObject> DeleteResultsAsync(string scope, string? uri, int? line, string? suite, bool dryRun, CancellationToken cancellationToken)
@@ -199,10 +241,13 @@ public sealed class BddServerClient : IDisposable
             rpc.Disconnected += (_, e) => _log($"The language server stopped: {e.Description}");
             rpc.AddLocalRpcMethod("brinell/resultsChanged", new Action<string>(uri => ResultsChanged?.Invoke(this, new Uri(uri).LocalPath)));
             rpc.AddLocalRpcMethod("brinell/scraper/changed", new Action<string?, JToken?, JToken?, string?>(OnScraperChanged));
+            AddWhole(rpc, "brinell/step/paused", paused => StepPaused?.Invoke(this, paused));
+            AddWhole(rpc, "brinell/step/ended", ended => StepEnded?.Invoke(this, ended));
+            AddWhole(rpc, "brinell/run/ended", ended => RunEnded?.Invoke(this, ended));
             rpc.StartListening();
             await rpc.InvokeWithParameterObjectAsync<JObject>(
                 "initialize",
-                new { processId = Process.GetCurrentProcess().Id, initializationOptions = new { solutionDir = _solutionDir } },
+                new { processId = Process.GetCurrentProcess().Id, initializationOptions = new { solutionDir = _solutionDir, warmRunner = RunnerSettings?.Invoke().Warm ?? true, warmRunnerIdleMinutes = RunnerSettings?.Invoke().IdleMinutes ?? 10 } },
                 cancellationToken).ConfigureAwait(false);
             await rpc.NotifyWithParameterObjectAsync("initialized", new { }).ConfigureAwait(false);
             _log($"Started the language server for {_solutionDir}.");
@@ -216,6 +261,10 @@ public sealed class BddServerClient : IDisposable
             _starting.Release();
         }
     }
+
+    // A notification whose params object comes whole, not by parameter name.
+    private static void AddWhole(JsonRpc rpc, string name, Action<JObject> handler)
+        => rpc.AddLocalRpcMethod(handler.Method, handler.Target, new JsonRpcMethodAttribute(name) { UseSingleObjectParameterDeserialization = true });
 
     // The change's fields by name; a null one is not sent, so each has a default.
     private void OnScraperChanged(string? kind = null, JToken? recording = null, JToken? captured = null, string? message = null)

@@ -93,9 +93,14 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
+| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▷ Run as test**. | The suite's project builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
 | R-2 | Wait for the run to end. | The preview shows each step's status (a pass mark per step), and the scenario's result and duration. | ☐ |
-| R-3 | Click **▶ Run file** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
+| R-3 | Click **▷ Run file as test** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
+| R-12 | Click **▶ Run** on TOD.01.3. | No `dotnet test`: the Output pane says "Running 'TOD.01.3 ...' on the runner", the app opens, the scenario runs past any step breakpoint, and the pane lists its result. The preview shows it. | ☐ |
+| R-13 | Change a step's text in TOD.01.3 to another valid phrase (or only add a blank line), save, and click **▶ Run** again. | The Output pane says "Nothing but scenario files changed ... not built again"; the run starts within seconds and runs the text as it is now. Undo the change. | ☐ |
+| R-14 | Click **▶ Run file**, then **Cancel run** while it goes. | The file's scenarios run one after another on the runner; Cancel ends it, the app closes, and the pane says the run ended canceled. | ☐ |
+| R-15 | Close and reopen TOD.01, wait ten seconds, then click **▶ Run** on TOD.01.1. With it done, **Build > Rebuild** `Brinell.Samples.Todo.Uat`. | The run starts at once (the app opens within a second or two: the runner was ready). The rebuild succeeds while the runner waits (Task Manager shows a `dotnet` runner from `%TEMP%\Brinell\runners`). The next Run starts at once again. | ☐ |
+| R-16 | **Tools > Options > Brinell BDD > General**: set **Warm runner** to False; reopen the solution, then Run TOD.01.1. | The run still works, a little slower to start; no runner stays after it. | ☐ |
 | R-4 | While a run goes, click **Run** again on another scenario. | The second run is refused, with a message (in the status bar and the Output pane). | ☐ |
 | R-5 | While a run goes, start **Build > Build Solution**. | The build is cancelled, and the Output pane says why. | ☐ |
 | R-6 | While a run goes, click **Cancel run** in the preview's bar. | The test process stops and the Todo app closes. | ☐ |
@@ -105,7 +110,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | R-10 | Click **Delete results** in the preview's bar, then **OK**. | Every scenario of TOD.01 loses its result; the button hides. `TestResults` keeps the runs that hold other files' results. | ☐ |
 | R-11 | In the BDD Explorer's **Results**, click **Delete** on a file, then **Delete all results**. | The file's results, then all of the suite's, go; the view refreshes each time. | ☐ |
 
-## 6. Step breakpoints and Debug
+## 6. Step breakpoints: Step through, Debug, and Debug from here
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
@@ -128,6 +133,13 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-18 | Press **Alt+Shift+F11** (Step into). | The step file opens at the call's first step, "Paused before: …", without the app having done anything; Step out is enabled. | ☐ |
 | B-19 | Press **Ctrl+Shift+F11** (Step out). | Back in TOD.01, at the first step after the call. | ☐ |
 | B-20 | Use the bar's buttons instead of the keys for a few moves, then **Debug** menu > **Step Over BDD Step**; then **Continue**, and last **Stop**. | Each does the same as its key. Continue runs to the next breakpoint or the end; Stop ends the run and the bar goes. | ☐ |
+| B-21 | With a step breakpoint on `When I tap Sync` (line 24, TOD.01.1), click **⏭ Step** on TOD.01.1's heading. | The suite's project builds, then the run pauses before the first step (no debugger: the title bar does not say debugging). The bar shows "Paused before: …" and a **📷 Screenshot** button. | ☐ |
+| B-22 | Press **F5**, then **F10** a few times. | F5 runs to line 24; F10 moves a step each time. Under "Paused before" the bar shows the step's page and arguments, e.g. `Page: Todo List · control = "Sync"` at line 24. | ☐ |
+| B-23 | At a stop, click **📷 Screenshot**. | A screenshot of the Todo app as it is now opens in Visual Studio; the run stays paused. | ☐ |
+| B-24 | Press **F5** to the end. | The run passes; the preview shows TOD.01.1's result. | ☐ |
+| B-25 | Step through TOD.01.1 again, to the breakpoint at line 24; click **🐞 Debug from here** in the bar. | Visual Studio attaches (the title says Debugging) and breaks in `BddInvoker.InvokeDefinition`; Locals show `stepBreak` (the step, its arguments, page). Press **F11** two or three times: you are in the control's `Click`. | ☐ |
+| B-26 | Press **F5** (the debugger's Continue), then **Stop** in the bar. | The run pauses at line 25; Stop ends the run, and the debugging session ends with it. | ☐ |
+| B-27 | In the Presenter, pause TOD.01.1 before `When I tap Sync`; right-click that row > **Debug from here**, and pick the open Visual Studio in the dialog Windows shows. | Visual Studio attaches to the runner and breaks just before the step's definition; F11 goes into `Click`. | ☐ |
 | B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it), and no `next`. | ☐ |
 
 ## 7. Editing help

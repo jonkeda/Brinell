@@ -30,6 +30,7 @@ public sealed class BddStepRowViewModel : ViewModelBase
 
         RunUntilCommand = new RelayCommand(() => Host?.RunUntil(this), () => Host?.CanRunUntil(this) == true);
         RunFromCommand = new RelayCommand(() => Host?.RunFrom(this), () => Host?.CanRunFrom(this) == true);
+        DebugFromCommand = new RelayCommand(() => Host?.DebugFrom(this), () => Host?.CanDebugFrom(this) == true);
         ToggleBreakpointCommand = new RelayCommand(() => Host?.ToggleBreakpoint(this), () => CanBreak);
     }
 
@@ -42,6 +43,9 @@ public sealed class BddStepRowViewModel : ViewModelBase
     /// <summary>Skips the rows before this one and runs on from it; only while a run is paused before it.</summary>
     public ICommand RunFromCommand { get; }
 
+    /// <summary>Debug from here: a debugger on the runner, which breaks in this row's step definition; only while paused before it.</summary>
+    public ICommand DebugFromCommand { get; }
+
     /// <summary>Sets or clears the breakpoint on this row's line.</summary>
     public ICommand ToggleBreakpointCommand { get; }
 
@@ -53,6 +57,7 @@ public sealed class BddStepRowViewModel : ViewModelBase
     {
         ((RelayCommand)RunUntilCommand).NotifyCanExecuteChanged();
         ((RelayCommand)RunFromCommand).NotifyCanExecuteChanged();
+        ((RelayCommand)DebugFromCommand).NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(RunFromText));
     }
 
@@ -196,4 +201,12 @@ public interface IStepRowHost
 
     /// <summary>Sets or clears the row's breakpoint.</summary>
     void ToggleBreakpoint(BddStepRowViewModel row);
+
+    /// <summary>Whether the run is paused before the row, so a debugger can be put on its runner.</summary>
+    bool CanDebugFrom(BddStepRowViewModel row) => false;
+
+    /// <summary>Debug from here (AD-022): asks Windows for a debugger on the runner, then runs the row's step, which breaks in its definition.</summary>
+    void DebugFrom(BddStepRowViewModel row)
+    {
+    }
 }
