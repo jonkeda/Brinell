@@ -254,7 +254,7 @@ public static class BddTouchOverlay
 
         public override string ToString()
         {
-            var size = Math.Max(14, Math.Round(Math.Min(_width, _height) * 0.028));
+            var size = Math.Max(16, Math.Round(Math.Min(_width, _height) * 0.035));
             var text = new StringBuilder()
                 .Append("[Script Info]\n")
                 .Append("; Touch marks drawn by Brinell's narrator from the timeline's interactions.\n")
@@ -333,13 +333,13 @@ public static class BddTouchOverlay
             }
 
             var angle = Math.Atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
-            Shape(Start(finish), Start(finish + 0.35), $"\\pos({F(x2)},{F(y2)})\\org({F(x2)},{F(y2)})\\frz{F(angle)}\\fad(0,150)", Arrow(_r * 0.9), fill: true);
+            Shape(Start(finish), Start(finish + 0.35), $"\\pos({F(x2)},{F(y2)})\\org({F(x2)},{F(y2)})\\frz{F(angle)}\\fad(0,150)", Arrow(_r * 1.4), fill: true);
         }
 
         private void Outline((double X, double Y, double Width, double Height) box, double start, double end)
         {
             var (w, h) = (box.Width + (_stroke * 4), box.Height + (_stroke * 4));
-            var drawing = string.Create(CultureInfo.InvariantCulture, $"m {F(-w / 2)} {F(-h / 2)} l {F(w / 2)} {F(-h / 2)} l {F(w / 2)} {F(h / 2)} l {F(-w / 2)} {F(h / 2)}");
+            var drawing = string.Create(CultureInfo.InvariantCulture, $"m 0 0 l {F(w)} 0 l {F(w)} {F(h)} l 0 {F(h)}");
             Shape(start, end, $"\\pos({F(box.X + (box.Width / 2))},{F(box.Y + (box.Height / 2))})\\fad(80,150)", drawing, fill: false, thin: true);
         }
 
@@ -409,17 +409,22 @@ public static class BddTouchOverlay
 
         private static string Escape(string text) => text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("{", "\\{", StringComparison.Ordinal);
 
-        // A circle round the origin, from four Bezier arcs.
+        // libass boxes a drawing from (0, 0) to its furthest point, and \an5 puts that box's centre on
+        // \pos: so every shape is drawn in positive coordinates, symmetric in its box, to be centred
+        // on its point and to scale round it.
+
+        // A circle in a 2r box, from four Bezier arcs.
         private static string Circle(double r)
         {
             var k = r * 0.5523;
+            var (a, b, c, d) = (r - k, r + k, 2 * r, r);
             return string.Create(CultureInfo.InvariantCulture,
-                $"m 0 {F(-r)} b {F(k)} {F(-r)} {F(r)} {F(-k)} {F(r)} 0 b {F(r)} {F(k)} {F(k)} {F(r)} 0 {F(r)} b {F(-k)} {F(r)} {F(-r)} {F(k)} {F(-r)} 0 b {F(-r)} {F(-k)} {F(-k)} {F(-r)} 0 {F(-r)}");
+                $"m {F(d)} 0 b {F(b)} 0 {F(c)} {F(a)} {F(c)} {F(d)} b {F(c)} {F(b)} {F(b)} {F(c)} {F(d)} {F(c)} b {F(a)} {F(c)} 0 {F(b)} 0 {F(d)} b 0 {F(a)} {F(a)} 0 {F(d)} 0");
         }
 
-        // An arrowhead pointing right, round the origin; turned with \frz.
+        // An arrowhead pointing right in a square box; turned with \frz.
         private static string Arrow(double size)
-            => string.Create(CultureInfo.InvariantCulture, $"m {F(-size / 2)} {F(-size / 2)} l {F(size / 2)} 0 l {F(-size / 2)} {F(size / 2)} l {F(-size / 4)} 0");
+            => string.Create(CultureInfo.InvariantCulture, $"m 0 0 l {F(size)} {F(size / 2)} l 0 {F(size)} l {F(size / 4)} {F(size / 2)}");
 
         private static int Ms(double seconds) => (int)Math.Round(Math.Max(0, seconds) * 1000);
     }

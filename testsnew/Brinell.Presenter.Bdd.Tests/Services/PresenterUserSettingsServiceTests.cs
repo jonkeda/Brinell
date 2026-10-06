@@ -401,7 +401,7 @@ public sealed class PresenterUserSettingsServiceTests
 
         public Task DropSceneAsync() => Task.CompletedTask;
 
-        public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
+        public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, Brinell.Narrator.BddTouchMarks touches, CancellationToken cancellationToken)
             => Task.FromResult(new PresenterRecorded(video, true, []));
 
         public Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken) => Task.FromResult(false);
