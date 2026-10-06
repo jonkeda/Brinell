@@ -20,6 +20,7 @@ namespace Brinell.Bdd.Runner;
 [JsonDerivedType(typeof(BddRunnerRecorded), "recorded")]
 [JsonDerivedType(typeof(BddRunnerSay), "say")]
 [JsonDerivedType(typeof(BddRunnerScreenshot), "screenshot")]
+[JsonDerivedType(typeof(BddRunnerBreak), "break")]
 [JsonDerivedType(typeof(BddRunnerScreenshotTaken), "screenshotTaken")]
 [JsonDerivedType(typeof(BddRunnerClose), "close")]
 [JsonDerivedType(typeof(BddRunnerPrepare), "prepare")]
@@ -142,6 +143,16 @@ public sealed record BddRunnerSay(string Wav, double Seconds) : BddRunnerMessage
 /// <summary>Takes a screenshot of the open scenario's app between steps. Answered by <see cref="BddRunnerScreenshotTaken"/> or <see cref="BddRunnerFailed"/>.</summary>
 /// <param name="Description">Put in the file's name.</param>
 public sealed record BddRunnerScreenshot(string Description) : BddRunnerMessage;
+
+/// <summary>
+/// Debug from here (D6 of the debugger plan): while paused between steps, waits for a debugger to
+/// attach (or asks Windows for one), then breaks before the next step that runs, so the debugger
+/// stops there and Step into goes into its step definition. Answered by <see cref="BddRunnerDone"/>
+/// once a debugger is attached, or <see cref="BddRunnerFailed"/> when none came.
+/// </summary>
+/// <param name="WaitSeconds">How long to wait for the debugger.</param>
+/// <param name="Launch">Ask Windows to start one (<c>Debugger.Launch</c>), for a host that is no IDE (the Presenter).</param>
+public sealed record BddRunnerBreak(double WaitSeconds, bool Launch = false) : BddRunnerMessage;
 
 /// <summary>A screenshot was taken.</summary>
 /// <param name="Path">Its file.</param>

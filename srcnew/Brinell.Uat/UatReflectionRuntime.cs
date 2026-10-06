@@ -74,7 +74,7 @@ public sealed class UatReflectionRuntime
                 page.GetType(),
                 page,
                 DiscoverControls(page),
-                navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+                navigation is null ? null : () => BddInvoker.InvokeDefinition(root, navigation))
             {
                 Namespace = BddNamespaces.Normalize(BddNamespaceAttribute.Of(page.GetType())),
             });
@@ -98,7 +98,7 @@ public sealed class UatReflectionRuntime
                     page.PageType,
                     Instance: null,
                     DiscoverControls(page.PageType),
-                    navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+                    navigation is null ? null : () => BddInvoker.InvokeDefinition(root, navigation))
                 {
                     Namespace = BddNamespaces.Normalize(page.Namespace),
                 };
@@ -300,7 +300,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            BddInvoker.Invoke(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
+            BddInvoker.InvokeDefinition(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
         }
         catch (Exception ex)
         {
@@ -521,7 +521,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            BddInvoker.Invoke(controlResult.Control!, methodName, arguments);
+            BddInvoker.InvokeDefinition(controlResult.Control!, methodName, arguments);
             context.Diagnostics.Add($"{methodName}:{controlResult.ControlName}");
             return Task.FromResult(FollowPage(context, invocation));
         }

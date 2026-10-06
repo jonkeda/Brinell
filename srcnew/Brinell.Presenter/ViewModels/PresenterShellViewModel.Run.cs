@@ -443,6 +443,33 @@ public sealed partial class PresenterShellViewModel
     }
 
     /// <inheritdoc />
+    public bool CanDebugFrom(BddStepRowViewModel row)
+        => IsPaused && !_isMoving && ReferenceEquals(CurrentRow, row) && _activeSession is not null;
+
+    /// <inheritdoc />
+    public async void DebugFrom(BddStepRowViewModel row)
+    {
+        if (!CanDebugFrom(row) || _activeSession is not { } session)
+        {
+            return;
+        }
+
+        StatusSummary = "Pick a debugger in the dialog Windows shows: the step then stops in it.";
+        try
+        {
+            await session.DebugAsync(_executionCancellation?.Token ?? CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Brinell.Bdd.Runner.BddRunnerException or OperationCanceledException)
+        {
+            StatusSummary = $"Debug from here: {exception.Message}";
+            return;
+        }
+
+        StatusSummary = "Debugger attached: the step stops in its definition.";
+        await MoveAsync(PresenterMove.Step).ConfigureAwait(true);
+    }
+
+    /// <inheritdoc />
     public void ToggleBreakpoint(BddStepRowViewModel row)
     {
         if (row.CanBreak && SelectedScenario is { } scenario)

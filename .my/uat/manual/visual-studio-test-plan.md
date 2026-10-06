@@ -137,6 +137,9 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-22 | Press **F5**, then **F10** a few times. | F5 runs to line 24; F10 moves a step each time. Under "Paused before" the bar shows the step's page and arguments, e.g. `Page: Todo List · control = "Sync"` at line 24. | ☐ |
 | B-23 | At a stop, click **📷 Screenshot**. | A screenshot of the Todo app as it is now opens in Visual Studio; the run stays paused. | ☐ |
 | B-24 | Press **F5** to the end. | The run passes; the preview shows TOD.01.1's result. | ☐ |
+| B-25 | Step through TOD.01.1 again, to the breakpoint at line 24; click **🐞 Debug from here** in the bar. | Visual Studio attaches (the title says Debugging) and breaks in `BddInvoker.InvokeDefinition`; Locals show `stepBreak` (the step, its arguments, page). Press **F11** two or three times: you are in the control's `Click`. | ☐ |
+| B-26 | Press **F5** (the debugger's Continue), then **Stop** in the bar. | The run pauses at line 25; Stop ends the run, and the debugging session ends with it. | ☐ |
+| B-27 | In the Presenter, pause TOD.01.1 before `When I tap Sync`; right-click that row > **Debug from here**, and pick the open Visual Studio in the dialog Windows shows. | Visual Studio attaches to the runner and breaks just before the step's definition; F11 goes into `Click`. | ☐ |
 | B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it), and no `next`. | ☐ |
 
 ## 7. Editing help

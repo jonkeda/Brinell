@@ -21,6 +21,9 @@ public sealed class ScenarioPreviewPage(IHtmlTestContext context) : HtmlPageObje
     /// <summary>Screenshot now: on a Step-through run's stop only.</summary>
     public ButtonControl<ScenarioPreviewPage> Screenshot => new(this, "#uat-screenshot");
 
+    /// <summary>Debug from here: on a Step-through run's stop only.</summary>
+    public ButtonControl<ScenarioPreviewPage> DebugHere => new(this, "#uat-debug-here");
+
     public ButtonControl<ScenarioPreviewPage> Continue => new(this, "#uat-paused [data-move='continue']");
 
     public ButtonControl<ScenarioPreviewPage> StepOver => new(this, "#uat-paused [data-move='over']");

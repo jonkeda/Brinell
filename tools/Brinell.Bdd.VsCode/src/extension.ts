@@ -137,6 +137,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
       return "No scenario at the caret.";
     }),
     vscode.commands.registerCommand("brinellBdd.stop", () => stepping.move("stop")),
+    vscode.commands.registerCommand("brinellBdd.debugFromHere", async () => {
+      const refused = await stepping.debugFromHere();
+      if (refused) {
+        void vscode.window.showWarningMessage(`Debug from here: ${refused}`);
+      }
+
+      return refused;
+    }),
     vscode.commands.registerCommand("brinellBdd.openPreview", async () => {
       const document = vscode.window.activeTextEditor?.document;
       if (document && previewable.test(document.fileName)) {

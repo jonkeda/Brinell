@@ -128,6 +128,9 @@ public sealed class BddRunnerHost
             case BddRunnerScreenshot screenshot:
                 return Screenshot(Opened(), screenshot.Description);
 
+            case BddRunnerBreak debug:
+                return await BreakAsync(Opened(), debug).ConfigureAwait(false);
+
             case BddRunnerClose close:
                 await DropRecordingAsync().ConfigureAwait(false);
                 Close(close.Keep);
@@ -167,7 +170,11 @@ public sealed class BddRunnerHost
         try
         {
             var ran = open.Session.Next;
-            var step = Step(open, await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false), ran);
+            var result = await open.Session.RunNextAsync(cancel.Token).ConfigureAwait(false);
+
+            // A step that called no definition leaves no break for the next.
+            BddInvoker.DisarmDefinitionBreak();
+            var step = Step(open, result, ran);
             open.RecordIfFinished();
             return step;
         }
@@ -214,6 +221,50 @@ public sealed class BddRunnerHost
             App = details.App,
             Page = details.Page,
         };
+    }
+
+    // D6: once a debugger is attached, the next step that runs breaks in it just before its step
+    // definition is called, so Step into goes straight into the definition.
+    private static async Task<BddRunnerMessage> BreakAsync(OpenScenario open, BddRunnerBreak request)
+    {
+        if (request.Launch && !System.Diagnostics.Debugger.IsAttached)
+        {
+            System.Diagnostics.Debugger.Launch();
+        }
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(request.WaitSeconds);
+        while (!System.Diagnostics.Debugger.IsAttached && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(AttachPoll).ConfigureAwait(false);
+        }
+
+        if (!System.Diagnostics.Debugger.IsAttached)
+        {
+            return new BddRunnerFailed($"No debugger attached to the runner (process {Environment.ProcessId}) within {request.WaitSeconds} s.");
+        }
+
+        open.Runner.Context.Breaks = new BreakOnce(open.Runner.Context);
+        return new BddRunnerDone();
+    }
+
+    // How often a Debug from here looks for the debugger.
+    private static readonly TimeSpan AttachPoll = TimeSpan.FromMilliseconds(100);
+
+    // The next step that runs breaks; then the host's pauses are the only ones again.
+    private sealed class BreakOnce(BddExecutionContext context) : IBddBreakHook
+    {
+        public BddStepBreak? Before(BddStepInvocation invocation, BddExecutionContext stepContext)
+            => BddBreakpoints.Describe(invocation, stepContext);
+
+        public bool AfterFailure(BddStepResult result) => false;
+
+        // The engine calls this right after Before, through the context: only now is it let go. The
+        // break itself is where the step's definition is called, past the engine's lookups.
+        public void Break(BddStepBreak stepBreak)
+        {
+            context.Breaks = null;
+            BddInvoker.ArmDefinitionBreak(stepBreak);
+        }
     }
 
     // Between steps, while a host is paused: the runner is idle, so this never waits on a step.

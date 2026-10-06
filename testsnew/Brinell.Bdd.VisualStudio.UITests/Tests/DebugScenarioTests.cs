@@ -91,6 +91,46 @@ public sealed class DebugScenarioTests(VisualStudioIde ide) : IClassFixture<Visu
         Assert.True(ide.InDesignMode);
     }
 
+    [IdeFact]
+    public async Task DebugFromHere_AtAStepThroughStop_BreaksBeforeTheStep_AndF11LandsInItsStepDefinition()
+    {
+        await ide.StartAsync();
+        ide.UseBreakpoints(Feature, 24);
+        var preview = await OpenPreviewAsync();
+        preview.BindState.AssertTextStartsWith("Bound in", timeoutMs: BindTimeoutMs);
+
+        VisualStudioIde.Log("click Step");
+        preview.StepThrough(HeadingLine).Click();
+        await WaitPausedAsync(preview, 18, FirstStop);
+        ide.ExecuteCommand("Debug.Start");
+        await WaitPausedAsync(preview, 24, NextStop);
+
+        VisualStudioIde.Log("paused at line 24 (When I tap Sync); Debug from here");
+        preview.DebugHere.Click();
+        await VisualStudioIde.WaitAsync(() => ide.InBreakMode, NextStop, "the debugger to break in the runner");
+        VisualStudioIde.Log($"break mode in {ide.CurrentFunction}");
+
+        // F11 as a developer would, until the step definition: the control's Click (I tap {control}).
+        for (var step = 0; step < StepIntoLimit && ide.CurrentFunction?.EndsWith(".Click", StringComparison.Ordinal) != true; step++)
+        {
+            ide.ExecuteCommand("Debug.StepInto");
+            await VisualStudioIde.WaitAsync(() => ide.InBreakMode, NextStop, "F11 to stop again");
+            VisualStudioIde.Log($"F11 {step + 1}: {ide.CurrentFunction}");
+        }
+
+        Assert.EndsWith(".Click", ide.CurrentFunction ?? "(none)", StringComparison.Ordinal);
+        VisualStudioIde.Log("in the step definition; Continue, then Stop");
+        ide.ExecuteCommand("Debug.Start");
+        await WaitPausedAsync(preview, 25, NextStop);
+        preview.Stop.Click();
+
+        // The debugged runner ends with its run, and the debugging session with it.
+        await VisualStudioIde.WaitAsync(() => ide.InDesignMode, RunEnd, "the debugging session to end");
+    }
+
+    // How many F11 presses the step definition may take from the break: the call is the next statement.
+    private const int StepIntoLimit = 3;
+
     // A Step-through stop: the bar says the line, and the feature file is in front at it.
     private async Task WaitPausedAsync(ScenarioPreviewPage preview, int line, TimeSpan within)
     {

@@ -164,6 +164,11 @@ export class ScenarioPreview implements vscode.Disposable {
       return;
     }
 
+    if (message.type === "debugHere") {
+      void vscode.commands.executeCommand("brinellBdd.debugFromHere");
+      return;
+    }
+
     const document = this.document;
     if (!document) {
       return;

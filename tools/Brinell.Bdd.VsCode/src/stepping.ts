@@ -91,6 +91,34 @@ export class BddStepping implements vscode.Disposable {
     await this.show(this.debugged);
   }
 
+  /**
+   * Debug from here (D6 of the debugger plan): the C# debugger attaches to the paused Step-through
+   * run's runner, then Step over runs the paused step, which breaks in it. Why not, when it did not.
+   */
+  async debugFromHere(): Promise<string | undefined> {
+    if (!this.stepped) {
+      return "No Step-through run is paused.";
+    }
+
+    const debug = await this.client.sendRequest<{ processId?: number; reason?: string }>("brinell/step/debug", {});
+    if (!debug.processId) {
+      return debug.reason ?? "The runner could not be debugged.";
+    }
+
+    const attached = await vscode.debug.startDebugging(vscode.workspace.workspaceFolders?.[0], {
+      name: `Brinell BDD runner ${debug.processId}`,
+      type: "coreclr",
+      request: "attach",
+      processId: String(debug.processId),
+    });
+    if (!attached) {
+      return `The debugger could not attach to the runner (process ${debug.processId}).`;
+    }
+
+    await this.move("over");
+    return undefined;
+  }
+
   /** Makes a move from the paused step; nothing when no run is paused. */
   async move(move: Move): Promise<void> {
     if (this.stepped || (this.stepping && move === "stop")) {

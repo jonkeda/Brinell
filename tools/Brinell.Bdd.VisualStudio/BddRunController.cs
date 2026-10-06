@@ -657,6 +657,33 @@ internal sealed class BddRunController : IVsDebuggerEvents
         }
     }
 
+    /// <summary>
+    /// Debug from here (D6 of the debugger plan): attaches Visual Studio's debugger to the paused
+    /// Step-through run's runner, which then breaks before the next step that runs.
+    /// </summary>
+    /// <returns>Whether the debugger is attached: the caller makes the move that runs the step.</returns>
+    public async Task<bool> AttachToRunnerAsync()
+    {
+        var debug = await _server.StepDebugAsync(_package.DisposalToken);
+        if ((int?)debug["processId"] is not { } id)
+        {
+            await StatusAsync($"Debug from here did not start: {(string?)debug["reason"]}");
+            return false;
+        }
+
+        try
+        {
+            await AttachToAsync(id);
+            _log($"The debugger is attached to the runner (process {id}): the next step stops in it; F11 there goes into its step definition. The runner ends with this run.");
+            return true;
+        }
+        catch (Exception exception) when (exception is COMException or InvalidOperationException)
+        {
+            await StatusAsync($"The debugger could not attach to the runner: {exception.Message}");
+            return false;
+        }
+    }
+
     private async Task AttachToAsync(int processId)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);

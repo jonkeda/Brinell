@@ -442,6 +442,22 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             _runs?.StepEnded((string?)ended["status"], (string?)ended["message"]);
         }).FileAndForget("Brinell/StepEnded");
 
+    // D6: the debugger on the runner; once attached, Step over runs the paused step, which breaks in it.
+    private void DebugFromHere()
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            if (_runs is null || !await _runs.AttachToRunnerAsync())
+            {
+                return;
+            }
+
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if (_stepping is not null)
+            {
+                StepMove("over");
+            }
+        }).FileAndForget("Brinell/DebugFromHere");
+
     // D5: the paused Step-through run's app as it is now, taken by the runner and opened in Visual Studio.
     private void Screenshot()
         => _package.JoinableTaskFactory.RunAsync(async () =>
@@ -771,6 +787,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 break;
             case "screenshot":
                 Screenshot();
+                break;
+            case "debugHere":
+                DebugFromHere();
                 break;
             case "deleteResults" when _path is { } file && (string?)message["scope"] is { } scope:
                 DeleteResults(scope, new Uri(file).AbsoluteUri, (int?)message["line"], _suites.TryGetValue(file, out var picked) ? picked : null);

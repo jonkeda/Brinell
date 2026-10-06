@@ -72,6 +72,12 @@
         "category": "Brinell BDD"
       },
       {
+        "command": "brinellBdd.debugFromHere",
+        "title": "Debug From Here",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.stepPaused"
+      },
+      {
         "command": "brinellBdd.runScenario",
         "title": "Run Scenario on the Runner",
         "category": "Brinell BDD"

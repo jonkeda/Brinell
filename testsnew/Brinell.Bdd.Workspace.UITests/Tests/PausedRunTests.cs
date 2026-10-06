@@ -144,8 +144,10 @@ public sealed class PausedRunTests : IAsyncLifetime
 
         _preview.PausedDetails.AssertText("App: Library · Page: ShelfPage · title = \"Emma\"");
         _preview.Screenshot.Click();
+        _preview.DebugHere.Click();
 
         Assert.Contains(_ide.Sent(), message => Type(message) == "screenshot");
+        Assert.Contains(_ide.Sent(), message => Type(message) == "debugHere");
     }
 
     [Fact]
@@ -155,6 +157,7 @@ public sealed class PausedRunTests : IAsyncLifetime
 
         _preview.PausedBar.AssertVisible();
         _preview.Screenshot.AssertVisible(false);
+        _preview.DebugHere.AssertVisible(false);
         _preview.PausedDetails.AssertVisible(false);
     }
 

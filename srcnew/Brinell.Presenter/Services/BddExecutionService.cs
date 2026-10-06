@@ -43,7 +43,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
             var opened = await runner.RequestAsync(new BddRunnerOpen(configPath, pages, scenarioFilePath, scenarioName), cancellationToken).ConfigureAwait(false);
             return opened switch
             {
-                BddRunnerOpened ready => new PresenterUatExecutionSession(runner, ready, (ended, closing) => Release(ended, closing)),
+                BddRunnerOpened ready => new PresenterUatExecutionSession(runner, ready, (ended, closing, debugged) => Release(ended, closing, debugged)),
                 BddRunnerFailed failed => throw new InvalidOperationException(failed.Message),
                 _ => throw new BddRunnerException($"The runner answered '{opened.GetType().Name}' to an open request."),
             };
@@ -109,9 +109,9 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
 
     // A session ended: once its scenario is closed, its runner waits for the next session, from its
     // copy of the output; one that could not close the scenario ends.
-    private void Release(BddRunnerClient runner, Task closing)
+    private void Release(BddRunnerClient runner, Task closing, bool debugged)
     {
-        var ending = ReleaseAsync(runner, closing);
+        var ending = ReleaseAsync(runner, closing, debugged);
         lock (_lock)
         {
             _ending.RemoveAll(task => task.IsCompleted);
@@ -119,12 +119,13 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         }
     }
 
-    private async Task ReleaseAsync(BddRunnerClient runner, Task closing)
+    private async Task ReleaseAsync(BddRunnerClient runner, Task closing, bool debugged)
     {
         try
         {
             await closing.ConfigureAwait(false);
-            if (closing is Task<BddRunnerMessage> { Result: BddRunnerDone })
+            // A debugged runner ends with its session, and the debugging session with it.
+            if (!debugged && closing is Task<BddRunnerMessage> { Result: BddRunnerDone })
             {
                 _runners.Return(runner);
                 return;

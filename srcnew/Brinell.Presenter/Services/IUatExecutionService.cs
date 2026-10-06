@@ -47,15 +47,15 @@ public interface IBddExecutionService
 public sealed class PresenterUatExecutionSession : IDisposable
 {
     private readonly BddRunnerClient _runner;
-    private readonly Action<BddRunnerClient, Task> _release;
+    private readonly Action<BddRunnerClient, Task, bool> _release;
     private readonly List<BddRunnerStep> _steps = [];
     private bool _disposed;
 
     /// <summary>Creates the session for a scenario the runner has opened.</summary>
     /// <param name="runner">The runner.</param>
     /// <param name="opened">Its answer to the open request.</param>
-    /// <param name="release">Called once when the session ends, with the runner and its closing of the scenario.</param>
-    public PresenterUatExecutionSession(BddRunnerClient runner, BddRunnerOpened opened, Action<BddRunnerClient, Task> release)
+    /// <param name="release">Called once when the session ends, with the runner, its closing of the scenario, and whether a debugger was put on it.</param>
+    public PresenterUatExecutionSession(BddRunnerClient runner, BddRunnerOpened opened, Action<BddRunnerClient, Task, bool> release)
     {
         _runner = runner ?? throw new ArgumentNullException(nameof(runner));
         _release = release ?? throw new ArgumentNullException(nameof(release));
@@ -124,6 +124,24 @@ public sealed class PresenterUatExecutionSession : IDisposable
     public async Task<BddRunnerRecorded> FinishRecordingAsync(CancellationToken cancellationToken)
         => Expect<BddRunnerRecorded>(await _runner.RequestAsync(new BddRunnerFinishRecording(), cancellationToken).ConfigureAwait(false));
 
+    /// <summary>
+    /// Debug from here (D6 of the debugger plan): Windows asks which debugger to attach to the runner;
+    /// once one is, the next step breaks just before its step definition runs.
+    /// </summary>
+    /// <param name="cancellationToken">Gives up the wait for the debugger.</param>
+    public async Task DebugAsync(CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Debugged = true;
+        Expect<BddRunnerDone>(await _runner.RequestAsync(new BddRunnerBreak(DebugAttachWait.TotalSeconds, Launch: true), cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>Whether a debugger was put on the runner: it then ends with the session.</summary>
+    public bool Debugged { get; private set; }
+
+    // How long the runner waits for the debugger Windows offers to start.
+    private static readonly TimeSpan DebugAttachWait = TimeSpan.FromMinutes(2);
+
     /// <summary>Gives up the recording or rehearsal.</summary>
     public Task DropRecordingAsync() => DoneAsync(new BddRunnerDropRecording());
 
@@ -138,7 +156,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
 
         // The request is in line before this returns, so the scenario is closed (its fixture and
         // app) before the runner answers whatever a next session asks of it.
-        _release(_runner, _runner.RequestAsync(new BddRunnerClose(), CancellationToken.None));
+        _release(_runner, _runner.RequestAsync(new BddRunnerClose(), CancellationToken.None), Debugged);
     }
 
     private async Task<BddRunnerStep> StepAsync(BddRunnerMessage request, CancellationToken cancellationToken)

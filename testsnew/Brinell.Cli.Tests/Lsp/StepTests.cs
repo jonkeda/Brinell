@@ -21,7 +21,7 @@ public sealed class StepTests : IAsyncLifetime
 
     public StepTests()
     {
-        _server = new BddLanguageServer { BreakpointsPath = Path.Combine(_solution, "bdd-breakpoints.json") };
+        _server = new BddLanguageServer { BreakpointsPath = Path.Combine(_solution, "bdd-breakpoints.json"), DebugAttachWait = TimeSpan.FromSeconds(1) };
     }
 
     private string Suite => Path.Combine(_solution, "Counter.Uat");
@@ -251,6 +251,28 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DebugFromHere_GivesTheRunnersProcess_AndWithNoDebuggerTheRunGoesOn_ThenItsRunnerEnds()
+    {
+        Assert.Equal("No Step-through run is paused.", (await DebugAsync()).Reason);
+        await StartAsync(3);
+        await PausedAsync();
+
+        var debug = await DebugAsync();
+
+        Assert.True(debug.ProcessId is { } id && !System.Diagnostics.Process.GetProcessById(id).HasExited, debug.Reason);
+        using var runner = System.Diagnostics.Process.GetProcessById(debug.ProcessId!.Value);
+
+        // No debugger attaches here: the runner waits its while, then the move's step runs.
+        Assert.Equal((Feature, 7, true), At(await MoveAsync("over")));
+        await MoveOnlyAsync("continue");
+        Assert.Equal("passed", (await EndedAsync()).Status);
+
+        // Not given back to wait: a debugging session ends with its run.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await runner.WaitForExitAsync(timeout.Token);
+    }
+
+    [Fact]
     public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
     {
         var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
@@ -275,6 +297,9 @@ public sealed class StepTests : IAsyncLifetime
 
     private Task<StepStartResult> StartAsync(int line)
         => _client.InvokeWithParameterObjectAsync<StepStartResult>("brinell/step/start", new { uri = new Uri(Feature).AbsoluteUri, line });
+
+    private Task<StepDebugResult> DebugAsync()
+        => _client.InvokeWithParameterObjectAsync<StepDebugResult>("brinell/step/debug", new { });
 
     private Task<RunStartResult> RunAsync(int? line)
         => _client.InvokeWithParameterObjectAsync<RunStartResult>("brinell/run/start", new { uri = new Uri(Feature).AbsoluteUri, line });

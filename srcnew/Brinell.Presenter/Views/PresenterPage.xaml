@@ -556,6 +556,8 @@
                                                             Command="{Binding RunUntilCommand}" />
                                             <MenuFlyoutItem Text="{Binding RunFromText}"
                                                             Command="{Binding RunFromCommand}" />
+                                            <MenuFlyoutItem Text="Debug from here"
+                                                            Command="{Binding DebugFromCommand}" />
                                             <MenuFlyoutItem Text="Toggle breakpoint"
                                                             Command="{Binding ToggleBreakpointCommand}" />
                                         </MenuFlyout>

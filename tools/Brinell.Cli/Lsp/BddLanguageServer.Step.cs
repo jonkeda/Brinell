@@ -182,6 +182,35 @@ public sealed partial class BddLanguageServer
         }
     }
 
+    /// <summary>
+    /// <c>brinell/step/debug</c>: Debug from here (D6). Answers the runner's process id at once; the
+    /// runner then waits for the IDE's debugger, and the next move's first step breaks in it. A
+    /// debugged runner ends with its run, so the debugging session does too.
+    /// </summary>
+    [JsonRpcMethod("brinell/step/debug")]
+    public StepDebugResult StepDebug()
+    {
+        StepRun? run;
+        lock (_gate)
+        {
+            run = _step;
+        }
+
+        if (run?.Stepper?.Paused is null || run.Runner is not { } runner || Volatile.Read(ref run.Moving) == 1)
+        {
+            return new StepDebugResult(null, "No Step-through run is paused.");
+        }
+
+        run.Debugged = true;
+
+        // Queued before the move the IDE sends once attached: that move's step waits for the break.
+        _ = runner.RequestAsync(new BddRunnerBreak(DebugAttachWait.TotalSeconds), run.Cancel.Token);
+        return new StepDebugResult(runner.Process.Id, null);
+    }
+
+    /// <summary>How long a runner waits for the IDE's debugger to attach after <c>brinell/step/debug</c>.</summary>
+    public TimeSpan DebugAttachWait { get; init; } = TimeSpan.FromSeconds(60);
+
     private BddRunnerJob RunnerJob
     {
         get
@@ -252,7 +281,7 @@ public sealed partial class BddLanguageServer
             }
 
             // A closed scenario leaves the runner ready for the next run; otherwise it ends.
-            if (closed && run.Start is { } start)
+            if (closed && !run.Debugged && run.Start is { } start)
             {
                 ReturnRunner(runner, start);
             }
@@ -302,6 +331,9 @@ public sealed partial class BddLanguageServer
         public CancellationTokenSource Cancel { get; } = new();
 
         public BddRunnerStart? Start { get; set; }
+
+        // A debugger is (or was to be) attached to its runner: the runner ends with the run.
+        public bool Debugged { get; set; }
 
         public BddRunnerClient? Runner { get; set; }
 

@@ -493,6 +493,14 @@ public sealed record RunEndedParams(string Uri, string Status, string? Message, 
 /// <param name="Message">The failure's or the error's message.</param>
 public sealed record RunScenarioResult(string Scenario, string Status, string? Message);
 
+/// <summary>
+/// The answer to <c>brinell/step/debug</c> (Debug from here, D6 of the debugger plan): the runner
+/// process to attach the debugger to. Once attached, a move runs the next step, which breaks in it.
+/// </summary>
+/// <param name="ProcessId">The runner's process; null when the run is not paused.</param>
+/// <param name="Reason">Why not; null when it is.</param>
+public sealed record StepDebugResult(int? ProcessId, string? Reason);
+
 /// <summary>The answer to <c>brinell/step/screenshot</c>: a screenshot of the app while the run is paused.</summary>
 /// <param name="Path">The screenshot's file; null when none was taken.</param>
 /// <param name="Reason">Why not; null when it was.</param>

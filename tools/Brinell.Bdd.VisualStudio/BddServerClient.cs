@@ -140,6 +140,11 @@ public sealed class BddServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/step/move", new { move }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/step/debug</c>: Debug from here; the runner's <c>processId</c> to attach to, or the <c>reason</c> there is none.</summary>
+    public async Task<JObject> StepDebugAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/debug", new { }, cancellationToken).ConfigureAwait(false);
+
     /// <summary><c>brinell/run/start</c>: runs the scenario at a heading's line, or the file, on the suite's runner (I4 of the debugger plan).</summary>
     public async Task<JObject> RunStartAsync(string path, int? line, string? suite, CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
