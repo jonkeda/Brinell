@@ -88,7 +88,7 @@ public sealed class BddRunnerHost
                 await DropRecordingAsync().ConfigureAwait(false);
                 Close();
                 _open = OpenScenario.Open(open);
-                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next));
+                return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next, _open.Runner.Context));
 
             case BddRunnerNext:
                 return await StepAsync(Opened()).ConfigureAwait(false);
@@ -120,6 +120,9 @@ public sealed class BddRunnerHost
             case BddRunnerDropRecording:
                 await DropRecordingAsync().ConfigureAwait(false);
                 return new BddRunnerDone();
+
+            case BddRunnerScreenshot screenshot:
+                return Screenshot(Opened(), screenshot.Description);
 
             case BddRunnerClose:
                 await DropRecordingAsync().ConfigureAwait(false);
@@ -168,19 +171,43 @@ public sealed class BddRunnerHost
             open.Session.HasNext,
             [.. BddDiagnosticsFormatter.FormatSteps(open.Session.Results)],
             [.. open.Runner.Context.Diagnostics],
-            Position(ran),
-            Position(open.Session.Next));
+            Position(ran, open.Runner.Context),
+            Position(open.Session.Next, open.Runner.Context));
 
-    // Plain text and numbers: a host holds no engine types (AD-025).
-    private static BddRunnerPosition? Position(BddStepInvocation? invocation)
-        => invocation is null
-            ? null
-            : new BddRunnerPosition(
-                invocation.Step.Source.FilePath,
-                invocation.Step.Source.LineNumber,
-                invocation.Step.Text,
-                invocation.Call?.Depth ?? 0,
-                invocation.Call?.Chain.Select(frame => new BddRunnerCall(frame.Describe(), frame.Location.FilePath, frame.Location.LineNumber, frame.Depth)).ToList() ?? []);
+    // Plain text and numbers: a host holds no engine types (AD-025). The page is the context's now:
+    // for the next step, where the step before left the scenario.
+    private static BddRunnerPosition? Position(BddStepInvocation? invocation, BddExecutionContext context)
+    {
+        if (invocation is null)
+        {
+            return null;
+        }
+
+        var details = BddBreakpoints.Describe(invocation, context);
+        return new BddRunnerPosition(
+            invocation.Step.Source.FilePath,
+            invocation.Step.Source.LineNumber,
+            invocation.Step.Text,
+            invocation.Call?.Depth ?? 0,
+            invocation.Call?.Chain.Select(frame => new BddRunnerCall(frame.Describe(), frame.Location.FilePath, frame.Location.LineNumber, frame.Depth)).ToList() ?? [])
+        {
+            Arguments = details.Arguments.Count == 0 ? null : details.Arguments.ToDictionary(),
+            App = details.App,
+            Page = details.Page,
+        };
+    }
+
+    // Between steps, while a host is paused: the runner is idle, so this never waits on a step.
+    private static BddRunnerMessage Screenshot(OpenScenario open, string description)
+    {
+        if (UatScenarioResults.ScreenshotServiceOf(open.Fixture) is not { } screenshots)
+        {
+            return new BddRunnerFailed("The suite's fixture takes no screenshots.");
+        }
+
+        var path = screenshots.Capture("BddRunner", UatScenarioResults.EvidenceName(open.Scenario), description);
+        return string.IsNullOrEmpty(path) ? new BddRunnerFailed("The screenshot was not written; the test log says why.") : new BddRunnerScreenshotTaken(path);
+    }
 
     private void CancelStep()
     {

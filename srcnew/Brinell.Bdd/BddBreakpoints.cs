@@ -214,6 +214,9 @@ public sealed class BddBreakpoints : IBddBreakHook
             text = position.Text,
             calls = position.Calls,
             failed = position.Result is not null,
+            arguments = position.IsCall || position.Arguments.Count == 0 ? null : position.Arguments,
+            app = position.App,
+            page = position.Page,
         }));
 
     // A move for this process that the step fits: it stops here, once. "Over" at depth d stops at a

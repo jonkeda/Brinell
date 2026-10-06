@@ -118,6 +118,27 @@ public sealed class PausedRunTests : IAsyncLifetime
     }
 
     [Fact]
+    public void AStepThroughStop_ShowsTheAppPageAndArguments_AndScreenshotIsSentToTheIde()
+    {
+        _ide.Send(new { type = "paused", text = "I shelve \"Emma\"", line = 7, here = true, isCall = false, depth = 0, calls = Array.Empty<string>(), app = "Library", page = "ShelfPage", arguments = new Dictionary<string, string> { ["title"] = "Emma" }, stepping = true });
+
+        _preview.PausedDetails.AssertText("App: Library · Page: ShelfPage · title = \"Emma\"");
+        _preview.Screenshot.Click();
+
+        Assert.Contains(_ide.Sent(), message => Type(message) == "screenshot");
+    }
+
+    [Fact]
+    public void ADebuggedStop_OffersNoScreenshot_AndWithNoDetails_ShowsNoDetailsLine()
+    {
+        _ide.Send(Paused("I shelve \"Emma\"", line: 7));
+
+        _preview.PausedBar.AssertVisible();
+        _preview.Screenshot.AssertVisible(false);
+        _preview.PausedDetails.AssertVisible(false);
+    }
+
+    [Fact]
     public void AClickOnAStepsKeyword_TogglesItsBreakpoint()
     {
         _preview.StepKeyword(6).Click();

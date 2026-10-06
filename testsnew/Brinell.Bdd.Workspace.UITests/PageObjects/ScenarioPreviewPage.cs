@@ -15,6 +15,12 @@ public sealed class ScenarioPreviewPage(IHtmlTestContext context) : HtmlPageObje
     /// <summary>Where the run is paused, in words.</summary>
     public LabelControl<ScenarioPreviewPage> PausedAt => new(this, "#uat-paused-at");
 
+    /// <summary>The stop's app, page and arguments.</summary>
+    public LabelControl<ScenarioPreviewPage> PausedDetails => new(this, "#uat-paused-details");
+
+    /// <summary>Screenshot now: on a Step-through run's stop only.</summary>
+    public ButtonControl<ScenarioPreviewPage> Screenshot => new(this, "#uat-screenshot");
+
     public ButtonControl<ScenarioPreviewPage> Continue => new(this, "#uat-paused [data-move='continue']");
 
     public ButtonControl<ScenarioPreviewPage> StepOver => new(this, "#uat-paused [data-move='over']");

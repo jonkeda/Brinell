@@ -29,6 +29,9 @@ export type StepPaused = {
   calls: { text: string; file?: string; line: number; depth: number }[];
   failed: boolean;
   message?: string;
+  arguments?: Record<string, string>;
+  app?: string;
+  page?: string;
 };
 
 export class BddStepping implements vscode.Disposable {
@@ -73,6 +76,10 @@ export class BddStepping implements vscode.Disposable {
       calls: paused.calls.map((call) => `${call.text} at ${path.basename(call.file ?? "")}:${call.line}`),
       failed: paused.failed,
       message: paused.message,
+      arguments: paused.arguments,
+      app: paused.app,
+      page: paused.page,
+      stepping: true,
     };
     await this.show(this.stepped);
   }

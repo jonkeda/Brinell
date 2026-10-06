@@ -19,6 +19,8 @@ namespace Brinell.Bdd.Runner;
 [JsonDerivedType(typeof(BddRunnerDropRecording), "dropRecording")]
 [JsonDerivedType(typeof(BddRunnerRecorded), "recorded")]
 [JsonDerivedType(typeof(BddRunnerSay), "say")]
+[JsonDerivedType(typeof(BddRunnerScreenshot), "screenshot")]
+[JsonDerivedType(typeof(BddRunnerScreenshotTaken), "screenshotTaken")]
 [JsonDerivedType(typeof(BddRunnerClose), "close")]
 [JsonDerivedType(typeof(BddRunnerCancel), "cancel")]
 [JsonDerivedType(typeof(BddRunnerExit), "exit")]
@@ -72,7 +74,17 @@ public sealed record BddRunnerStep(int Index, BddStepResultStatus Status, string
 /// <param name="Text">The step's text, with a call's values filled in.</param>
 /// <param name="Depth">How many calls deep it is: 0 for a step written in the scenario.</param>
 /// <param name="Calls">The calls around it, outermost first.</param>
-public sealed record BddRunnerPosition(string? File, int Line, string Text, int Depth, IReadOnlyList<BddRunnerCall> Calls);
+public sealed record BddRunnerPosition(string? File, int Line, string Text, int Depth, IReadOnlyList<BddRunnerCall> Calls)
+{
+    /// <summary>The step's arguments, as its definition receives them; null when not known.</summary>
+    public IReadOnlyDictionary<string, string>? Arguments { get; init; }
+
+    /// <summary>The app it runs on; null for the fixture's own.</summary>
+    public string? App { get; init; }
+
+    /// <summary>The page the scenario is on when the step is reached; null when not known.</summary>
+    public string? Page { get; init; }
+}
 
 /// <summary>A <c>## Step:</c> call a step runs inside.</summary>
 /// <param name="Text">The call as written.</param>
@@ -125,6 +137,14 @@ public sealed record BddRunnerRecorded(string? Timeline, IReadOnlyList<string> W
 /// <param name="Wav">The line's sound file.</param>
 /// <param name="Seconds">How long it takes.</param>
 public sealed record BddRunnerSay(string Wav, double Seconds) : BddRunnerMessage;
+
+/// <summary>Takes a screenshot of the open scenario's app between steps. Answered by <see cref="BddRunnerScreenshotTaken"/> or <see cref="BddRunnerFailed"/>.</summary>
+/// <param name="Description">Put in the file's name.</param>
+public sealed record BddRunnerScreenshot(string Description) : BddRunnerMessage;
+
+/// <summary>A screenshot was taken.</summary>
+/// <param name="Path">Its file.</param>
+public sealed record BddRunnerScreenshotTaken(string Path) : BddRunnerMessage;
 
 /// <summary>Closes the open scenario: its fixture and app. Answered by <see cref="BddRunnerDone"/>.</summary>
 public sealed record BddRunnerClose : BddRunnerMessage;

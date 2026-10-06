@@ -124,7 +124,6 @@ public sealed class BddServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
 
-    /// <summary><c>brinell/deleteResults</c>: deletes, or counts in a dry run, the old results of a scenario, a file or a suite.</summary>
     /// <summary><c>brinell/step/start</c>: Step through the scenario at a heading's line, in the suite's runner.</summary>
     public async Task<JObject> StepStartAsync(string path, int line, string? suite, CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
@@ -135,6 +134,12 @@ public sealed class BddServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/step/move", new { move }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/step/screenshot</c>: the paused Step-through run's app, now; its <c>path</c> or the <c>reason</c> there is none.</summary>
+    public async Task<JObject> StepScreenshotAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/step/screenshot", new { }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/deleteResults</c>: deletes, or counts in a dry run, the old results of a scenario, a file or a suite.</summary>
     public async Task<JObject> DeleteResultsAsync(string scope, string? uri, int? line, string? suite, bool dryRun, CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/deleteResults", new { scope, uri, line, suite, dryRun }, cancellationToken).ConfigureAwait(false);

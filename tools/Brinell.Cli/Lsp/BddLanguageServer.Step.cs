@@ -142,6 +142,47 @@ public sealed partial class BddLanguageServer
         return new StepMoveResult(true, null);
     }
 
+    /// <summary><c>brinell/step/screenshot</c>: a screenshot of the app, taken by the runner while the run is paused (D5).</summary>
+    [JsonRpcMethod("brinell/step/screenshot")]
+    public async Task<StepScreenshotResult> StepScreenshotAsync()
+    {
+        StepRun? run;
+        lock (_gate)
+        {
+            run = _step;
+        }
+
+        if (run?.Stepper?.Paused is not { } stop || run.Runner is not { } runner)
+        {
+            return new StepScreenshotResult(null, "No Step-through run is paused.");
+        }
+
+        // Holds the run still: a move while the runner takes it is refused.
+        if (Interlocked.Exchange(ref run.Moving, 1) == 1)
+        {
+            return new StepScreenshotResult(null, "The run is not paused.");
+        }
+
+        try
+        {
+            var answer = await runner.RequestAsync(new BddRunnerScreenshot($"paused_line{stop.Line}"), run.Cancel.Token).ConfigureAwait(false);
+            return answer switch
+            {
+                BddRunnerScreenshotTaken taken => new StepScreenshotResult(taken.Path, null),
+                BddRunnerFailed failed => new StepScreenshotResult(null, failed.Message),
+                _ => new StepScreenshotResult(null, $"The runner answered {answer.GetType().Name}."),
+            };
+        }
+        catch (Exception exception) when (exception is BddRunnerException or IOException or OperationCanceledException or ObjectDisposedException)
+        {
+            return new StepScreenshotResult(null, exception.Message);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref run.Moving, 0);
+        }
+    }
+
     private BddRunnerJob RunnerJob
     {
         get
@@ -176,7 +217,10 @@ public sealed partial class BddLanguageServer
             stop.IsCall,
             stop.Calls,
             stop.Failed is not null,
-            stop.Failed?.Message));
+            stop.Failed?.Message,
+            stop.Arguments,
+            stop.App,
+            stop.Page));
     }
 
     // Closes the scenario, so a finished one keeps its result and the app ends, then ends the runner.

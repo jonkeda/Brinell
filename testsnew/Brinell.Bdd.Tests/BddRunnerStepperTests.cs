@@ -14,7 +14,7 @@ public sealed class BddRunnerStepperTests
     private static readonly BddRunnerPosition[] Scenario =
     [
         new(Feature, 10, "Given an empty shelf", 0, []),
-        new(Steps, 5, "When I shelve \"Dune\"", 1, [Call]),
+        new(Steps, 5, "When I shelve \"Dune\"", 1, [Call]) { Arguments = new Dictionary<string, string> { ["title"] = "Dune" }, App = "Library", Page = "ShelfPage" },
         new(Steps, 6, "And I dust the shelf", 1, [Call]),
         new(Feature, 12, "Then the shelf holds 1 book", 0, []),
         new(Feature, 13, "And the shelf is clean", 0, []),
@@ -59,6 +59,22 @@ public sealed class BddRunnerStepperTests
         Assert.Equal((Steps, 6, false), At(await stepper.MoveAsync(BddStepMove.Over)));
         Assert.Equal((Feature, 12, false), At(await stepper.MoveAsync(BddStepMove.Out)));
         Assert.Equal(3, _ran);
+    }
+
+    [Fact]
+    public async Task AStop_HasItsStepsArgumentsAppAndPage_AndACallsStop_ThePageOnly()
+    {
+        var stepper = Stepper();
+
+        var call = await stepper.MoveAsync(BddStepMove.Over);
+        Assert.True(call!.IsCall);
+        Assert.Null(call.Arguments);
+        Assert.Null(call.App);
+        Assert.Equal("ShelfPage", call.Page);
+
+        var inside = await stepper.MoveAsync(BddStepMove.Into);
+        Assert.Equal("Dune", inside!.Arguments!["title"]);
+        Assert.Equal(("Library", "ShelfPage"), (inside.App, inside.Page));
     }
 
     [Fact]

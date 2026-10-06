@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import type { BrinellBddApi, StepEvent } from "../extension";
+import type { StepPaused } from "../stepping";
 
 const workspace = process.env.BRINELL_TODO!;
 const feature = path.join(workspace, "tests", "Brinell.Samples.Todo.Uat", "Features", "TOD.01-see-my-todos.feature.md");
@@ -40,14 +41,16 @@ export async function run(): Promise<void> {
 
     return events.shift()!;
   };
-  const pausedAt = async (line: number, withinMs = nextStopMs): Promise<void> => {
+  const pausedAt = async (line: number, withinMs = nextStopMs): Promise<StepPaused> => {
     const event = await next(withinMs);
     assert.strictEqual(event.kind, "paused", `Expected a stop at line ${line}, got ${JSON.stringify(event)}.`);
     assert.strictEqual(event.kind === "paused" && event.paused.line, line);
     const editor = vscode.window.activeTextEditor;
     assert.strictEqual(editor?.document.uri.fsPath.toLowerCase(), feature.toLowerCase(), "The feature file is not in front.");
     assert.strictEqual(editor.selection.active.line + 1, line, "The caret is not at the stop.");
-    console.log(`paused at line ${line}`);
+    const paused = (event as Extract<StepEvent, { kind: "paused" }>).paused;
+    console.log(`paused at line ${line}` + (paused.app ? ` app ${paused.app}` : "") + (paused.page ? ` page ${paused.page}` : "") + (paused.arguments ? ` ${JSON.stringify(paused.arguments)}` : ""));
+    return paused;
   };
 
   fs.mkdirSync(path.dirname(breakpointsFile), { recursive: true });
@@ -67,7 +70,10 @@ export async function run(): Promise<void> {
 
   // F5: on to the breakpoint.
   await vscode.commands.executeCommand("brinellBdd.continue");
-  await pausedAt(24);
+  // The stop says what the step works with (D5): the page the step before left, the arguments as read.
+  const atBreakpoint = await pausedAt(24);
+  assert.strictEqual(atBreakpoint.page, "Todo List");
+  assert.deepStrictEqual(atBreakpoint.arguments, { control: "Sync" });
 
   for (const line of [25, 26, 27]) {
     await vscode.commands.executeCommand("brinellBdd.stepOver");

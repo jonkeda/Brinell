@@ -114,6 +114,10 @@ export class ScenarioPreview implements vscode.Disposable {
           calls: paused.calls,
           failed: paused.failed,
           message: paused.message,
+          arguments: paused.arguments,
+          app: paused.app,
+          page: paused.page,
+          stepping: paused.stepping === true,
           here: source !== undefined && source.toLowerCase() === this.document?.uri.fsPath.toLowerCase(),
         }
       : { type: "paused" });
@@ -136,9 +140,24 @@ export class ScenarioPreview implements vscode.Disposable {
     }
   }
 
+  // A Step-through run's app as it is now, taken by the runner while paused, opened beside.
+  private async screenshot(): Promise<void> {
+    const shot = await this.client.sendRequest<{ path?: string; reason?: string }>("brinell/step/screenshot", {});
+    if (shot.path) {
+      await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(shot.path), { viewColumn: vscode.ViewColumn.Beside, preview: true });
+    } else {
+      void vscode.window.showWarningMessage(`No screenshot: ${shot.reason}`);
+    }
+  }
+
   private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string; move?: string }): void {
     if (message.type === "debug" && message.move) {
       this.host.move(message.move);
+      return;
+    }
+
+    if (message.type === "screenshot") {
+      void this.screenshot();
       return;
     }
 

@@ -441,7 +441,15 @@ public sealed record StepMoveResult(bool Taken, string? Reason);
 /// <param name="Calls">The calls around it, outermost first.</param>
 /// <param name="Failed">Whether it is paused after the step failed.</param>
 /// <param name="Message">The failure's message.</param>
-public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message);
+/// <param name="Arguments">The step's arguments as read; null at a call or when it has none.</param>
+/// <param name="App">The app the step runs on; null for the fixture's own.</param>
+/// <param name="Page">The page the scenario is on; null when not known.</param>
+public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message, IReadOnlyDictionary<string, string>? Arguments = null, string? App = null, string? Page = null);
+
+/// <summary>The answer to <c>brinell/step/screenshot</c>: a screenshot of the app while the run is paused.</summary>
+/// <param name="Path">The screenshot's file; null when none was taken.</param>
+/// <param name="Reason">Why not; null when it was.</param>
+public sealed record StepScreenshotResult(string? Path, string? Reason);
 
 /// <summary><c>brinell/step/ended</c>: the run is over.</summary>
 /// <param name="Uri">The feature file the run was for.</param>

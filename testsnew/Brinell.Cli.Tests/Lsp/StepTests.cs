@@ -161,6 +161,26 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AStop_SaysTheStepsArguments_AndAScreenshotIsTakenWhilePaused()
+    {
+        Assert.Equal("No Step-through run is paused.", (await ScreenshotAsync()).Reason);
+        await StartAsync(3);
+        var first = await PausedAsync();
+        Assert.Null(first.Arguments);
+        await MoveAsync("over");
+
+        var then = await MoveAsync("over");
+
+        Assert.Equal((Feature, 8, false), At(then));
+        Assert.Equal("3", then.Arguments!["times"]);
+        var shot = await ScreenshotAsync();
+        Assert.True(File.Exists(shot.Path), shot.Reason);
+        Assert.Contains("paused_line8", Path.GetFileName(shot.Path), StringComparison.Ordinal);
+        await MoveOnlyAsync("stop");
+        Assert.Equal("stopped", (await EndedAsync()).Status);
+    }
+
+    [Fact]
     public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
     {
         var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
@@ -185,6 +205,9 @@ public sealed class StepTests : IAsyncLifetime
 
     private Task<StepStartResult> StartAsync(int line)
         => _client.InvokeWithParameterObjectAsync<StepStartResult>("brinell/step/start", new { uri = new Uri(Feature).AbsoluteUri, line });
+
+    private Task<StepScreenshotResult> ScreenshotAsync()
+        => _client.InvokeWithParameterObjectAsync<StepScreenshotResult>("brinell/step/screenshot", new { });
 
     private async Task<StepPausedParams> MoveAsync(string move)
     {
@@ -226,10 +249,31 @@ public sealed class StepCounterFixture
 {
     private int _count;
 
+    /// <summary>Screenshots of the counter: a file with its count, as an app's fixture has its own.</summary>
+    public Brinell.Core.Interfaces.IScreenshotService ScreenshotService => new CounterShots(this);
+
     [BddGiven("the counter counts")]
     [BddWhen("the counter counts")]
     public void Count() => _count++;
 
     [BddThen("the counter has counted {times} times")]
     public void HasCounted(int times) => Assert.True(times == _count, $"The counter counted {_count} times, not {times}.");
+
+    private sealed class CounterShots(StepCounterFixture counter) : Brinell.Core.Interfaces.IScreenshotService
+    {
+        public Brinell.Core.Configuration.ScreenshotSettings Settings => Brinell.Core.Configuration.ScreenshotSettings.Default;
+
+        public string Capture(string? description = null) => Capture("Manual", "Capture", description ?? "screenshot");
+
+        public string Capture(string testClass, string testMethod, string description)
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "Brinell", "StepTests", "Shots");
+            Directory.CreateDirectory(folder);
+            var path = Path.Combine(folder, $"{testClass}_{testMethod}_{description}_{Guid.NewGuid():N}.txt");
+            File.WriteAllText(path, $"counted {counter._count}");
+            return path;
+        }
+
+        public string CaptureOnFailure(string testClass, string testMethod, Exception exception) => Capture(testClass, testMethod, "failure");
+    }
 }

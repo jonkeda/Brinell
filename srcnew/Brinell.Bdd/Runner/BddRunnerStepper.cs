@@ -8,7 +8,21 @@ namespace Brinell.Bdd.Runner;
 /// <param name="IsCall">Whether it is a call: Step into goes inside without running anything.</param>
 /// <param name="Calls">The calls around it, outermost first.</param>
 /// <param name="Failed">For a stop after a failure, the failed step's result; null before a step.</param>
-public sealed record BddRunnerStop(string? File, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<BddRunnerCall> Calls, BddRunnerStep? Failed = null);
+public sealed record BddRunnerStop(string? File, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<BddRunnerCall> Calls, BddRunnerStep? Failed = null)
+{
+    /// <summary>The step's arguments as read; null at a call (its text has its values) or when not known.</summary>
+    public IReadOnlyDictionary<string, string>? Arguments { get; init; }
+
+    /// <summary>The app the step runs on; null at a call, and for the fixture's own.</summary>
+    public string? App { get; init; }
+
+    /// <summary>The page the scenario is on; null when not known.</summary>
+    public string? Page { get; init; }
+
+    // A step's stop, with what the runner said of it.
+    internal static BddRunnerStop At(BddRunnerPosition step, BddRunnerStep? failed = null)
+        => new(step.File, step.Line, step.Text, step.Depth, false, step.Calls, failed) { Arguments = step.Arguments, App = step.App, Page = step.Page };
+}
 
 /// <summary>
 /// Step through on a host (D1-D3 of the debugger plan): the host pauses between the runner's steps
@@ -89,7 +103,7 @@ public sealed class BddRunnerStepper
             Expect(step.Next, step.Ran?.Calls ?? []);
             if (step.Status == BddStepResultStatus.Failed && step.Ran is { } ran)
             {
-                _failed = new BddRunnerStop(ran.File, ran.Line, ran.Text, ran.Depth, false, ran.Calls, step);
+                _failed = BddRunnerStop.At(ran, step);
                 return _failed;
             }
 
@@ -121,10 +135,10 @@ public sealed class BddRunnerStepper
         for (var level = _firstNew ?? calls.Count + 1; level <= calls.Count; level++)
         {
             var call = calls[level - 1];
-            _pending.Add(new BddRunnerStop(call.File, call.Line, call.Text, level - 1, true, calls.Take(level - 1).ToList()));
+            _pending.Add(new BddRunnerStop(call.File, call.Line, call.Text, level - 1, true, calls.Take(level - 1).ToList()) { Page = step.Page });
         }
 
-        _pending.Add(new BddRunnerStop(step.File, step.Line, step.Text, step.Depth, false, calls));
+        _pending.Add(BddRunnerStop.At(step));
         _at = 0;
     }
 }

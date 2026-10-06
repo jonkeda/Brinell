@@ -320,6 +320,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 calls = paused["calls"]?.ToObject<string[]>() ?? [],
                 failed = paused["failed"]?.Value<bool>() == true,
                 message = (string?)paused["message"],
+                arguments = paused["arguments"] as JObject,
+                app = (string?)paused["app"],
+                page = (string?)paused["page"],
+                stepping = paused["stepping"]?.Value<bool>() == true,
                 here = string.Equals(path ?? file, file, StringComparison.OrdinalIgnoreCase),
             });
         }
@@ -412,6 +416,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 ["calls"] = new JArray(calls.Select(call => $"{(string?)call["text"]} at {Path.GetFileName((string?)call["file"] ?? string.Empty)}:{(int?)call["line"]}")),
                 ["failed"] = paused["failed"],
                 ["message"] = paused["message"],
+                ["arguments"] = paused["arguments"],
+                ["app"] = paused["app"],
+                ["page"] = paused["page"],
+                ["stepping"] = true,
             };
             _runs?.StepPaused(paused: true);
             ShowPaused(_stepping);
@@ -425,6 +433,22 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             ShowPaused(null);
             _runs?.StepEnded((string?)ended["status"], (string?)ended["message"]);
         }).FileAndForget("Brinell/StepEnded");
+
+    // D5: the paused Step-through run's app as it is now, taken by the runner and opened in Visual Studio.
+    private void Screenshot()
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            var shot = await _server!.StepScreenshotAsync(_package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if ((string?)shot["path"] is { } path && File.Exists(path))
+            {
+                VsShellUtilities.OpenDocument(_package, path);
+            }
+            else
+            {
+                Log($"No screenshot: {(string?)shot["reason"]}");
+            }
+        }).FileAndForget("Brinell/StepScreenshot");
 
     // The bar goes while the run moves; the server says where it pauses next.
     private void StepMove(string move)
@@ -736,6 +760,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 break;
             case "debug" when (string?)message["move"] is { } move:
                 Move(move);
+                break;
+            case "screenshot":
+                Screenshot();
                 break;
             case "deleteResults" when _path is { } file && (string?)message["scope"] is { } scope:
                 DeleteResults(scope, new Uri(file).AbsoluteUri, (int?)message["line"], _suites.TryGetValue(file, out var picked) ? picked : null);
