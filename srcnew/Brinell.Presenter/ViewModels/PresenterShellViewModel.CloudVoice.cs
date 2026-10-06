@@ -32,6 +32,9 @@ public sealed partial class PresenterShellViewModel
     private bool _removeArmed;
     private VoiceSecretsIgnore? _workspaceIgnore;
 
+    /// <summary>The cloud voices, for the Default voice picker.</summary>
+    public IReadOnlyList<string> CloudVoiceChoices => CloudVoices;
+
     /// <summary>Whether a cloud voice is set up: an endpoint and a key, from a file or the environment.</summary>
     public bool IsCloudVoiceSetUp => _cloud.IsSetUp;
 

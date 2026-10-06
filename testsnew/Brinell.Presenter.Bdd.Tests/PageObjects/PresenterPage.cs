@@ -142,6 +142,44 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Recording Status")]
     public PresenterStatusLabel<PresenterPage> RecordingStatus => new(this, "RecordingStatusLabel");
 
+    /// <summary>The Settings panel's Narrator heading: there while the panel is open.</summary>
+    [UatName("Narrator Settings")]
+    public Label<PresenterPage> NarratorSettings => new(this, "NarratorSettingsLabel");
+
+    /// <summary>Settings, Cloud voice: where its settings come from, or "Not set up.".</summary>
+    [UatName("Cloud Voice State")]
+    public Label<PresenterPage> CloudVoiceState => new(this, "CloudVoiceStateLabel");
+
+    /// <summary>Settings, Cloud voice: the Azure OpenAI resource.</summary>
+    [UatName("Cloud Endpoint")]
+    public Entry<PresenterPage> CloudEndpoint => new(this, "CloudEndpointInput");
+
+    /// <summary>Settings, Cloud voice: the key, a password field.</summary>
+    [UatName("Cloud Key")]
+    public Entry<PresenterPage> CloudKey => new(this, "CloudKeyInput");
+
+    /// <summary>Settings, Cloud voice: the voice when a script names none.</summary>
+    [UatName("Cloud Default Voice")]
+    public Picker<PresenterPage> CloudDefaultVoice => new(this, "CloudDefaultVoicePicker");
+
+    /// <summary>Settings, Cloud voice: whether the workspace may hold the file.</summary>
+    [UatName("Cloud Workspace Note")]
+    public Label<PresenterPage> CloudWorkspaceNote => new(this, "CloudWorkspaceNoteLabel");
+
+    /// <summary>Settings, Cloud voice: where Save writes.</summary>
+    [UatName("Cloud Save Path")]
+    public Label<PresenterPage> CloudSavePath => new(this, "CloudSavePathLabel");
+
+    [UatName("Save Cloud Voice")]
+    public Button<PresenterPage> SaveCloudVoiceButton => new(this, "SaveCloudVoiceButton");
+
+    [UatName("Remove Cloud Voice")]
+    public Button<PresenterPage> RemoveCloudVoiceButton => new(this, "RemoveCloudVoiceButton");
+
+    /// <summary>Settings, Cloud voice: what Try, Save, Remove or Add did.</summary>
+    [UatName("Cloud Voice Status")]
+    public Label<PresenterPage> CloudVoiceStatus => new(this, "CloudVoiceStatusLabel");
+
     /// <summary>Opens and closes the Settings page.</summary>
     [UatName("Settings")]
     public Button<PresenterPage> SettingsButton => new(this, "SettingsButton");

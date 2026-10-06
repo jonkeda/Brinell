@@ -37,6 +37,12 @@ public sealed class PresenterUatScenarioTests(PresenterFixture fixture)
             return;
         }
 
+        // Settings closed: a scenario that failed with it open would cover the run toolbar.
+        if (presenterPage.NarratorSettings.IsExists())
+        {
+            presenterPage.SettingsButton.Click();
+        }
+
         // Back to Present mode: a scenario may have left Narrator mode on.
         presenterPage.PresentModeButton.Click();
         presenterPage.StopButton.Click();
