@@ -238,9 +238,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
     /// <inheritdoc />
     public async Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken)
     {
-        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
-        Directory.CreateDirectory(folder);
-        var clip = await Speech.ClipAsync(new AzureOpenAiSpeech(secrets), text, voice, Path.Combine(folder, "try-cloud.wav"), cancellationToken).ConfigureAwait(false);
+        var clip = await Speech.ClipAsync(new AzureOpenAiSpeech(secrets), text, voice, RehearsalFile("try-cloud"), cancellationToken).ConfigureAwait(false);
         await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
     }
 
@@ -252,9 +250,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
             return false;
         }
 
-        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
-        Directory.CreateDirectory(folder);
-        var clip = await Speech.ClipAsync(speech, text, voice, Path.Combine(folder, "try.wav"), cancellationToken).ConfigureAwait(false);
+        var clip = await Speech.ClipAsync(speech, text, voice, RehearsalFile("try-voice"), cancellationToken).ConfigureAwait(false);
         await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
         return true;
     }
@@ -272,6 +268,26 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var recorded = await session.FinishRecordingAsync(cancellationToken).ConfigureAwait(false);
         var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken).ConfigureAwait(false);
         return new PresenterRecorded(video.Video, _narrated, [.. recorded.Warnings, .. video.Warnings]);
+    }
+
+    // A file of its own for each Try: a clip still playing, or held by the player, is not written over. Older ones go when free.
+    private static string RehearsalFile(string name)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
+        Directory.CreateDirectory(folder);
+        foreach (var old in Directory.EnumerateFiles(folder, name + "-*.wav"))
+        {
+            try
+            {
+                File.Delete(old);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Still playing: the next Try removes it.
+            }
+        }
+
+        return Path.Combine(folder, $"{name}-{Guid.NewGuid():N}.wav");
     }
 
     // The runner waits for a line and says so; the voice's player is Presenter's.
