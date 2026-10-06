@@ -43,6 +43,9 @@ public sealed class BddServerClient : IDisposable
     /// <summary>A Step-through run ended (brinell/step/ended): its status, as sent.</summary>
     public event EventHandler<JObject>? StepEnded;
 
+    /// <summary>A run on the suite's runner ended (brinell/run/ended): its status and each scenario's, as sent.</summary>
+    public event EventHandler<JObject>? RunEnded;
+
     /// <summary>The server's path beside the extension's assembly.</summary>
     public static string DefaultServerPath =>
         Path.Combine(Path.GetDirectoryName(typeof(BddServerClient).Assembly.Location)!, "Server", "brinell.dll");
@@ -134,6 +137,16 @@ public sealed class BddServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/step/move", new { move }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/run/start</c>: runs the scenario at a heading's line, or the file, on the suite's runner (I4 of the debugger plan).</summary>
+    public async Task<JObject> RunStartAsync(string path, int? line, string? suite, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/run/start", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/run/cancel</c>: cancels the run on the runner.</summary>
+    public async Task<JObject> RunCancelAsync(CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/run/cancel", new { }, cancellationToken).ConfigureAwait(false);
+
     /// <summary><c>brinell/step/screenshot</c>: the paused Step-through run's app, now; its <c>path</c> or the <c>reason</c> there is none.</summary>
     public async Task<JObject> StepScreenshotAsync(CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
@@ -222,6 +235,7 @@ public sealed class BddServerClient : IDisposable
             rpc.AddLocalRpcMethod("brinell/scraper/changed", new Action<string?, JToken?, JToken?, string?>(OnScraperChanged));
             AddWhole(rpc, "brinell/step/paused", paused => StepPaused?.Invoke(this, paused));
             AddWhole(rpc, "brinell/step/ended", ended => StepEnded?.Invoke(this, ended));
+            AddWhole(rpc, "brinell/run/ended", ended => RunEnded?.Invoke(this, ended));
             rpc.StartListening();
             await rpc.InvokeWithParameterObjectAsync<JObject>(
                 "initialize",

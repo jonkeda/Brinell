@@ -93,9 +93,12 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
+| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▷ Run as test**. | The suite's project builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
 | R-2 | Wait for the run to end. | The preview shows each step's status (a pass mark per step), and the scenario's result and duration. | ☐ |
-| R-3 | Click **▶ Run file** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
+| R-3 | Click **▷ Run file as test** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
+| R-12 | Click **▶ Run** on TOD.01.3. | No `dotnet test`: the Output pane says "Running 'TOD.01.3 ...' on the runner", the app opens, the scenario runs past any step breakpoint, and the pane lists its result. The preview shows it. | ☐ |
+| R-13 | Change a step's text in TOD.01.3 to another valid phrase (or only add a blank line), save, and click **▶ Run** again. | The Output pane says "Nothing but scenario files changed ... not built again"; the run starts within seconds and runs the text as it is now. Undo the change. | ☐ |
+| R-14 | Click **▶ Run file**, then **Cancel run** while it goes. | The file's scenarios run one after another on the runner; Cancel ends it, the app closes, and the pane says the run ended canceled. | ☐ |
 | R-4 | While a run goes, click **Run** again on another scenario. | The second run is refused, with a message (in the status bar and the Output pane). | ☐ |
 | R-5 | While a run goes, start **Build > Build Solution**. | The build is cancelled, and the Output pane says why. | ☐ |
 | R-6 | While a run goes, click **Cancel run** in the preview's bar. | The test process stops and the Todo app closes. | ☐ |

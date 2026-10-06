@@ -9,7 +9,10 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 
 /** What the preview asks of the rest of the extension. */
 export interface PreviewHost {
+  /** Runs as a test (dotnet test), under the debugger with debug. */
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
+  /** Runs on the suite's runner (I4 of the debugger plan): the preview's Run. */
+  runOnRunner(uri: vscode.Uri, line: number | undefined): void;
   /** Steps through the scenario at a heading's line, in the suite's runner. */
   step(uri: vscode.Uri, line: number): void;
   /** Records a video script, or the scenario at a heading's line, on video. */
@@ -150,7 +153,7 @@ export class ScenarioPreview implements vscode.Disposable {
     }
   }
 
-  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string; move?: string }): void {
+  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; test?: boolean; scope?: string; move?: string }): void {
     if (message.type === "debug" && message.move) {
       this.host.move(message.move);
       return;
@@ -191,7 +194,12 @@ export class ScenarioPreview implements vscode.Disposable {
 
         break;
       case "run":
-        this.host.run(document.uri, message.line, message.debug === true);
+        if (message.test === true || message.debug === true) {
+          this.host.run(document.uri, message.line, message.debug === true);
+        } else {
+          this.host.runOnRunner(document.uri, message.line);
+        }
+
         break;
       case "step":
         if (message.line) {
@@ -200,7 +208,12 @@ export class ScenarioPreview implements vscode.Disposable {
 
         break;
       case "runFile":
-        this.host.run(document.uri, undefined, message.debug === true);
+        if (message.test === true || message.debug === true) {
+          this.host.run(document.uri, undefined, message.debug === true);
+        } else {
+          this.host.runOnRunner(document.uri, undefined);
+        }
+
         break;
       case "record":
         this.host.record(document.uri, message.line, this.suite.get(document.uri.fsPath));

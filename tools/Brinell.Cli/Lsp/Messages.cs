@@ -446,6 +446,36 @@ public sealed record StepMoveResult(bool Taken, string? Reason);
 /// <param name="Page">The page the scenario is on; null when not known.</param>
 public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message, IReadOnlyDictionary<string, string>? Arguments = null, string? App = null, string? Page = null);
 
+/// <summary><c>brinell/run/start</c>: Run on the suite's runner (I4 of the debugger plan), with no stops.</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Line">A scenario heading's line; null for every scenario of the file.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+public sealed record RunStartParams(string Uri, int? Line, string? Suite);
+
+/// <summary>Whether the run started; <c>brinell/run/ended</c> says how it went.</summary>
+/// <param name="Started">Whether it started.</param>
+/// <param name="Reason">Why not; null when it started.</param>
+/// <param name="Scenarios">The scenarios it runs, in order (an outline's rows by their <c>[n]</c> names).</param>
+/// <param name="Suite">The suite it runs in.</param>
+public sealed record RunStartResult(bool Started, string? Reason, IReadOnlyList<string>? Scenarios, string? Suite)
+{
+    /// <summary>It did not start, for <paramref name="reason"/>.</summary>
+    public static RunStartResult Not(string reason) => new(false, reason, null, null);
+}
+
+/// <summary><c>brinell/run/ended</c>: a Run on the runner is over.</summary>
+/// <param name="Uri">The feature file the run was for.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c>, <c>canceled</c> or <c>error</c>.</param>
+/// <param name="Message">What went wrong, for <c>error</c>.</param>
+/// <param name="Results">Each scenario that ran, in order.</param>
+public sealed record RunEndedParams(string Uri, string Status, string? Message, IReadOnlyList<RunScenarioResult> Results);
+
+/// <summary>How a scenario of a Run on the runner went.</summary>
+/// <param name="Scenario">Its name.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c> or <c>error</c>.</param>
+/// <param name="Message">The failure's or the error's message.</param>
+public sealed record RunScenarioResult(string Scenario, string Status, string? Message);
+
 /// <summary>The answer to <c>brinell/step/screenshot</c>: a screenshot of the app while the run is paused.</summary>
 /// <param name="Path">The screenshot's file; null when none was taken.</param>
 /// <param name="Reason">Why not; null when it was.</param>

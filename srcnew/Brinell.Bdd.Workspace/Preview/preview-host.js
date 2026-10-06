@@ -1,7 +1,7 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
 // In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines},
 //      paused {text, line, here, isCall, depth, calls, failed, message, arguments, app, page, stepping} (or {} when the run goes on)
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, step {line}, cancel, toggleBreak {line},
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug, test}, runFile {debug, test}, step {line}, cancel, toggleBreak {line},
 //      screenshot (a Step-through run's app, now),
 //      debug {move: continue | over | into | out | stop}, deleteResults {scope: scenario | file, line?}
 (function () {
@@ -214,8 +214,10 @@
       if (!run.disabled && run.hasAttribute("data-step")) {
         host.post({ type: "step", line: Number(run.getAttribute("data-step")) });
       } else if (!run.disabled) {
+        // Run is the suite's runner's; Run as test (test) and Debug are dotnet test's.
         const debug = run.hasAttribute("data-debug");
-        host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug } : { type: "run", line: Number(run.getAttribute("data-run")), debug });
+        const test = debug || run.hasAttribute("data-test");
+        host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug, test } : { type: "run", line: Number(run.getAttribute("data-run")), debug, test });
       }
       return;
     }

@@ -105,4 +105,12 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand("brinellBdd.stop");
   const stopped = await next(nextStopMs);
   assert.ok(stopped.kind === "ended" && stopped.status === "stopped", `The second run did not stop: ${JSON.stringify(stopped)}.`);
+
+  // I4: the preview's Run is the runner's, with no stops (the breakpoint at 24 is passed), no build.
+  const run = await vscode.commands.executeCommand<string | undefined>("brinellBdd.runScenario", vscode.Uri.file(feature), heading);
+  assert.strictEqual(run, undefined, `The run on the runner did not start: ${run}`);
+  const ran = await next(firstStopMs);
+  assert.ok(ran.kind === "runEnded" && ran.status === "passed", `The run on the runner did not pass: ${JSON.stringify(ran)}.`);
+  assert.deepStrictEqual(builds, [true, false, false], "A run on the runner built though nothing but a feature file changed.");
+  console.log(`run on the runner: ${ran.status}`);
 }

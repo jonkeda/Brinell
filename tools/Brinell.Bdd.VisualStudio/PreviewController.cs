@@ -78,6 +78,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _server.ResultsChanged += OnResultsChanged;
         _server.StepPaused += OnStepPaused;
         _server.StepEnded += OnStepEnded;
+        _server.RunEnded += (_, ended) => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            _runs?.RunEnded(ended);
+        }).FileAndForget("Brinell/RunEnded");
         _runs = new BddRunController(_package, _server, Log, Post);
 
         _selection = await _package.GetServiceAsync(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
@@ -734,10 +739,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 view.ViewScroller.EnsureSpanVisible(new SnapshotSpan(start, 0), EnsureSpanVisibleOptions.AlwaysCenter);
                 break;
             case "run" when _path is { } file && (int?)message["line"] is { } heading:
-                Run(file, heading, (bool?)message["debug"] == true);
+                Run(file, heading, (bool?)message["debug"] == true, (bool?)message["test"] == true);
                 break;
             case "runFile" when _path is { } file:
-                Run(file, null, (bool?)message["debug"] == true);
+                Run(file, null, (bool?)message["debug"] == true, (bool?)message["test"] == true);
                 break;
             case "record" when _path is { } file:
                 Record(file, (int?)message["line"]);
@@ -848,10 +853,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _package.JoinableTaskFactory.RunAsync(() => _runs!.StepAsync(path, line, suite)).FileAndForget("Brinell/PreviewStep");
     }
 
-    private void Run(string path, int? line, bool debug)
+    // Run is the suite's runner's; Run as test and Debug are dotnet test's (I4 of the debugger plan).
+    private void Run(string path, int? line, bool debug, bool test)
     {
         var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
-        _package.JoinableTaskFactory.RunAsync(() => _runs!.RunAsync(path, line, suite, debug)).FileAndForget("Brinell/PreviewRun");
+        _package.JoinableTaskFactory.RunAsync(() => debug || test ? _runs!.RunAsync(path, line, suite, debug) : _runs!.RunOnRunnerAsync(path, line, suite)).FileAndForget("Brinell/PreviewRun");
     }
 
     /// <summary>

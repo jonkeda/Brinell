@@ -21,7 +21,8 @@ let client: LanguageClient | undefined;
 export type StepEvent =
   | { kind: "paused"; paused: StepPaused }
   | { kind: "ended"; status: string; message?: string }
-  | { kind: "build"; project: string; built: boolean };
+  | { kind: "build"; project: string; built: boolean }
+  | { kind: "runEnded"; status: string; results: { scenario: string; status: string; message?: string }[] };
 
 /** The extension's exports: for its own tests in a VS Code window. */
 export interface BrinellBddApi {
@@ -58,6 +59,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
   });
   const preview = new ScenarioPreview(client, {
     run: (uri, line, debug) => void tests.runAt(uri, line, debug),
+    runOnRunner: (uri, line) => void tests.runOnRunnerAt(uri, line),
     step: (uri, line) => void tests.stepAt(uri, line),
     record: (uri, line, suite) => void tests.record(uri, line, suite).then(() => preview.refresh()),
     cancel: () => tests.cancel(),
@@ -78,6 +80,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
     stepEvents.fire({ kind: "ended", ...ended });
   });
   tests.onBuild((build) => stepEvents.fire({ kind: "build", ...build }));
+  client.onNotification("brinell/run/ended", (ended: { status: string; message?: string; results: { scenario: string; status: string; message?: string }[] }) => {
+    tests.runnerEnded(ended);
+    stepEvents.fire({ kind: "runEnded", status: ended.status, results: ended.results });
+  });
   const scraper = new ScraperView(client);
   const gutter = vscode.window.createTextEditorDecorationType({
     gutterIconPath: context.asAbsolutePath(path.join("media", "breakpoint.svg")),
@@ -111,6 +117,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
       }
 
       void vscode.window.showWarningMessage("Put the caret in a scenario of a feature file to step through it.");
+      return "No scenario at the caret.";
+    }),
+    vscode.commands.registerCommand("brinellBdd.runScenario", async (uri?: vscode.Uri, line?: number) => {
+      // On the suite's runner: the scenario at the given heading, or the one the caret is in.
+      const editor = vscode.window.activeTextEditor;
+      const target = uri ?? editor?.document.uri;
+      const heading = line ?? (editor ? headingAbove(editor.document, editor.selection.active.line) : undefined);
+      if (target && heading) {
+        return tests.runOnRunnerAt(target, heading);
+      }
+
+      void vscode.window.showWarningMessage("Put the caret in a scenario of a feature file to run it.");
       return "No scenario at the caret.";
     }),
     vscode.commands.registerCommand("brinellBdd.stop", () => stepping.move("stop")),

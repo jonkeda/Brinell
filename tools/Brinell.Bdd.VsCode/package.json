@@ -72,6 +72,11 @@
         "category": "Brinell BDD"
       },
       {
+        "command": "brinellBdd.runScenario",
+        "title": "Run Scenario on the Runner",
+        "category": "Brinell BDD"
+      },
+      {
         "command": "brinellBdd.continue",
         "title": "Continue BDD Run",
         "category": "Brinell BDD",

@@ -173,6 +173,94 @@ internal sealed class BddRunController : IVsDebuggerEvents
     /// <summary>Whether a Step-through run is going: the server runs it, and says when it pauses and ends.</summary>
     public bool IsStepping { get; private set; }
 
+    /// <summary>Whether a run on the suite's runner is going: the server runs it, and says when it ends.</summary>
+    public bool IsRunningOnRunner { get; private set; }
+
+    /// <summary>
+    /// Runs the scenario at a heading's line, or the file, on the suite's runner (I4 of the debugger
+    /// plan): the preview's Run. The build is skipped when only scenario files changed (I1); the run
+    /// goes on until the server says it ended (<see cref="RunEnded"/>). Run as test is <see cref="RunAsync"/>.
+    /// </summary>
+    /// <param name="path">The feature file.</param>
+    /// <param name="line">The scenario heading's line; null for the whole file.</param>
+    /// <param name="suite">The suite picked for a linked file; null for the first.</param>
+    public async Task RunOnRunnerAsync(string path, int? line, string? suite)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (IsRunning)
+        {
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before starting another.");
+            return;
+        }
+
+        IsRunning = true;
+        _runLine = line;
+        PostRunning(paused: false);
+        var going = false;
+        try
+        {
+            _log(string.Empty);
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            if (toBuild is not null && await UpToDateForRunnerAsync(toBuild))
+            {
+                _log($"Nothing but scenario files changed since {Path.GetFileName(toBuild)} was built: not built again (the runner reads them from the source).");
+            }
+            else
+            {
+                _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to run {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+                if (!await BuildAsync(toBuild))
+                {
+                    await StatusAsync("The build failed, so the run did not start. See the Error List.");
+                    return;
+                }
+            }
+
+            await _server.BuildDoneAsync(_package.DisposalToken);
+            var started = await _server.RunStartAsync(path, line, suite, _package.DisposalToken);
+            if ((bool?)started["started"] != true)
+            {
+                await StatusAsync($"This cannot be run on the runner: {(string?)started["reason"]}");
+                return;
+            }
+
+            _log($"Running {string.Join(", ", (started["scenarios"] as JArray)?.Select(name => $"'{(string?)name}'") ?? [])} on the runner of {(string?)started["suite"]}...");
+            going = true;
+            IsRunningOnRunner = true;
+        }
+        finally
+        {
+            if (!going)
+            {
+                await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+                IsRunning = false;
+                _post(new { type = "running" });
+            }
+        }
+    }
+
+    /// <summary>The run on the runner ended: each scenario's result in the Output pane; the preview shows them from the results.</summary>
+    /// <param name="ended">The server's <c>brinell/run/ended</c>.</param>
+    public void RunEnded(JObject ended)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!IsRunningOnRunner)
+        {
+            return;
+        }
+
+        IsRunningOnRunner = false;
+        IsRunning = false;
+        _post(new { type = "running" });
+        foreach (var result in (ended["results"] as JArray ?? []).OfType<JObject>())
+        {
+            var message = (string?)result["message"];
+            _log($"  {(string?)result["scenario"]}: {(string?)result["status"]}{(message is null ? string.Empty : $": {message}")}");
+        }
+
+        var error = (string?)ended["message"];
+        _log($"The run on the runner ended: {(string?)ended["status"]}{(error is null ? string.Empty : $": {error}")}");
+    }
+
     /// <summary>The Step-through run paused, or went on: the preview says so on its scenario.</summary>
     public void StepPaused(bool paused)
     {
@@ -304,6 +392,13 @@ internal sealed class BddRunController : IVsDebuggerEvents
     /// <summary>Stops the run: the test process and everything it started, the app included; a Step-through run through the server.</summary>
     public void Cancel()
     {
+        if (IsRunningOnRunner)
+        {
+            _log("Cancelling the run on the runner...");
+            _package.JoinableTaskFactory.RunAsync(() => _server.RunCancelAsync(_package.DisposalToken)).FileAndForget("Brinell/RunCancel");
+            return;
+        }
+
         if (IsStepping)
         {
             _log("Stopping the Step-through run...");

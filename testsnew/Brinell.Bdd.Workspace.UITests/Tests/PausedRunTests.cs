@@ -109,6 +109,26 @@ public sealed class PausedRunTests : IAsyncLifetime
     }
 
     [Fact]
+    public void TheFourButtons_RunOnTheRunner_RunAsTest_Debug_AndStep_EachSendWhatItIs()
+    {
+        _ide.Show(Feature, canRun: true);
+
+        _preview.Run(3).Click();
+        _preview.RunAsTest(3).Click();
+        _preview.Debug(3).Click();
+        _preview.StepThrough(3).Click();
+        _preview.RunFile.Click();
+
+        var runs = _ide.Sent().Where(message => Type(message) is "run" or "runFile" or "step")
+            .Select(message => (Type(message), Flag(message, "test"), Flag(message, "debug")))
+            .ToList();
+        Assert.Equal([("run", false, false), ("run", true, false), ("run", true, true), ("step", false, false), ("runFile", false, false)], runs);
+    }
+
+    private static bool Flag(System.Text.Json.JsonElement message, string name)
+        => message.TryGetProperty(name, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.True;
+
+    [Fact]
     public void AStopAfterAFailedStep_SaysSo_WithTheFailure()
     {
         _ide.Send(new { type = "paused", text = "the shelf holds 2 books", line = 8, here = true, isCall = false, depth = 0, calls = Array.Empty<string>(), failed = true, message = "It holds 1." });

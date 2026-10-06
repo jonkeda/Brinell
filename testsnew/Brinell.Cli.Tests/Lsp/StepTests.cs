@@ -202,6 +202,36 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Run_GoesThroughAScenario_PastABreakpoint_AndWritesItsResult_MarkedRun()
+    {
+        File.WriteAllText(_server.BreakpointsPath, $$"""{ "files": { {{System.Text.Json.JsonSerializer.Serialize(Steps)}}: [7] } }""");
+
+        var started = await RunAsync(3);
+
+        Assert.True(started.Started, started.Reason);
+        Assert.Equal(["Counts"], started.Scenarios);
+        var ended = Assert.IsType<RunEndedParams>(await NextNoteAsync());
+        Assert.Equal("passed", ended.Status);
+        Assert.Equal(("Counts", "passed"), (Assert.Single(ended.Results).Scenario, ended.Results[0].Status));
+        var manifest = File.ReadAllText(Assert.Single(Directory.EnumerateFiles(Path.Combine(_solution, "TestResults"), "manifest.json", SearchOption.AllDirectories)));
+        Assert.Matches("\"mode\":\\s*\"run\"", manifest);
+    }
+
+    [Fact]
+    public async Task RunOfTheFile_RunsEachScenario_AndSaysWhichFailed_AndNoStepRunStartsMeanwhile()
+    {
+        var started = await RunAsync(null);
+        var refused = await StartAsync(3);
+
+        Assert.Equal(["Counts", "Fails"], started.Scenarios);
+        Assert.False(refused.Started);
+        var ended = Assert.IsType<RunEndedParams>(await NextNoteAsync());
+        Assert.Equal("failed", ended.Status);
+        Assert.Equal(["passed", "failed"], ended.Results.Select(result => result.Status));
+        Assert.Contains("5", ended.Results[1].Message);
+    }
+
+    [Fact]
     public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
     {
         var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
@@ -226,6 +256,9 @@ public sealed class StepTests : IAsyncLifetime
 
     private Task<StepStartResult> StartAsync(int line)
         => _client.InvokeWithParameterObjectAsync<StepStartResult>("brinell/step/start", new { uri = new Uri(Feature).AbsoluteUri, line });
+
+    private Task<RunStartResult> RunAsync(int? line)
+        => _client.InvokeWithParameterObjectAsync<RunStartResult>("brinell/run/start", new { uri = new Uri(Feature).AbsoluteUri, line });
 
     private Task<StepScreenshotResult> ScreenshotAsync()
         => _client.InvokeWithParameterObjectAsync<StepScreenshotResult>("brinell/step/screenshot", new { });
@@ -262,6 +295,9 @@ public sealed class StepTests : IAsyncLifetime
 
         [JsonRpcMethod("brinell/step/ended")]
         public void Ended(StepEndedParams ended) => writer.TryWrite(ended);
+
+        [JsonRpcMethod("brinell/run/ended")]
+        public void RunEnded(RunEndedParams ended) => writer.TryWrite(ended);
     }
 }
 

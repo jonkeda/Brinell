@@ -377,6 +377,7 @@ public sealed partial class BddLanguageServer : IDisposable
     public void Dispose()
     {
         DisposeScraper();
+        DisposeRun();
         DisposeStep();
         lock (_gate)
         {

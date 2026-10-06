@@ -25,6 +25,7 @@ export class ScenarioTests implements vscode.Disposable {
   private readonly output = vscode.window.createOutputChannel("Brinell BDD");
   private process: ChildProcess | undefined;
   private stepRun: { run: vscode.TestRun; scenario: vscode.TestItem; started: number } | undefined;
+  private runnerRun: { run: vscode.TestRun; scenarios: vscode.TestItem[]; started: number } | undefined;
 
   // A file changed outside build output since, or a project built cleanly when: a Run with nothing
   // changed skips dotnet build, which takes about 10 s even for a project that is up to date. A
@@ -60,6 +61,9 @@ export class ScenarioTests implements vscode.Disposable {
     this.controller.createRunProfile("Debug", vscode.TestRunProfileKind.Debug, (request, token) => this.run(request, token, true), true);
     this.controller.createRunProfile("Step through", vscode.TestRunProfileKind.Run, async (request, token) => {
       await this.step(request, token);
+    }, false);
+    this.controller.createRunProfile("Run on the runner", vscode.TestRunProfileKind.Run, async (request, token) => {
+      await this.runOnRunner(request, token);
     }, false);
   }
 
@@ -100,6 +104,17 @@ export class ScenarioTests implements vscode.Disposable {
     await this.run(request, source.token, debug);
   }
 
+  /**
+   * Runs the scenario at a heading's line, or a whole file, on the suite's runner (I4 of the debugger
+   * plan): from the source, with no build when only scenario files changed. Why it did not start, when it did not.
+   */
+  async runOnRunnerAt(uri: vscode.Uri, line: number | undefined): Promise<string | undefined> {
+    const matches = await this.itemsAt(uri, line);
+    return matches.length === 0
+      ? this.refuse("No suite holds this scenario. Build the suite first.")
+      : await this.runOnRunner(new vscode.TestRunRequest([this.own(matches)]), new vscode.CancellationTokenSource().token);
+  }
+
   /** Steps through the scenario at a heading's line, from the preview; why it did not start, when it did not. */
   async stepAt(uri: vscode.Uri, line: number): Promise<string | undefined> {
     const matches = await this.itemsAt(uri, line);
@@ -127,6 +142,36 @@ export class ScenarioTests implements vscode.Disposable {
     this.output.appendLine(reason);
     void vscode.window.showWarningMessage(reason);
     return reason;
+  }
+
+  /** The server says a run on the runner ended: each scenario's result. */
+  runnerEnded(ended: { status: string; message?: string; results: { scenario: string; status: string; message?: string }[] }): void {
+    const going = this.runnerRun;
+    if (!going) {
+      return;
+    }
+
+    this.runnerRun = undefined;
+    const duration = Date.now() - going.started;
+    for (const scenario of going.scenarios) {
+      // An outline's rows are its name with [n]; the scenario failed when a row did.
+      const name = (this.data.get(scenario) as { name: string }).name;
+      const results = ended.results.filter((result) => result.scenario === name || result.scenario.startsWith(`${name} [`));
+      const failed = results.find((result) => result.status !== "passed");
+      if (results.length === 0) {
+        going.run.skipped(scenario);
+      } else if (failed?.status === "failed") {
+        going.run.failed(scenario, new vscode.TestMessage(failed.message ?? `${failed.scenario} failed.`), duration);
+      } else if (failed) {
+        going.run.errored(scenario, new vscode.TestMessage(failed.message ?? `${failed.scenario} could not run.`), duration);
+      } else {
+        going.run.passed(scenario, duration);
+      }
+    }
+
+    this.output.appendLine(`The run on the runner ended: ${ended.status}${ended.message ? `: ${ended.message}` : ""}`);
+    going.run.end();
+    this.running(undefined, false);
   }
 
   /** The server says the Step-through run paused, or went on. */
@@ -179,6 +224,53 @@ export class ScenarioTests implements vscode.Disposable {
       }
     }));
     return matches;
+  }
+
+  // One scenario, or a file's, on the suite's runner; the test run ends when the server says the run ended.
+  private async runOnRunner(request: vscode.TestRunRequest, token: vscode.CancellationToken): Promise<string | undefined> {
+    if (this.process || this.stepRun || this.runnerRun || this.stepping.isStepping) {
+      return this.refuse("A BDD run is going already. Wait for it, or cancel it, before starting another.");
+    }
+
+    const picked = request.include ?? [];
+    const item = picked.length === 1 ? picked[0] : undefined;
+    const kind = item ? this.data.get(item)?.kind : undefined;
+    if (!item || (kind !== "scenario" && kind !== "file")) {
+      return this.refuse("A run on the runner runs one scenario or one file: pick one.");
+    }
+
+    const fileItem = kind === "scenario" ? item.parent! : item;
+    const suite = fileItem.parent!;
+    const data = this.data.get(suite);
+    const scenarios: vscode.TestItem[] = [];
+    if (kind === "scenario") {
+      scenarios.push(item);
+    } else {
+      item.children.forEach((scenario) => scenarios.push(scenario));
+    }
+
+    const line = kind === "scenario" ? item.range!.start.line + 1 : undefined;
+    const run = this.controller.createTestRun(new vscode.TestRunRequest(scenarios));
+    scenarios.forEach((scenario) => run.started(scenario));
+    this.running(line, line === undefined);
+    const fail = (reason: string): string => {
+      scenarios.forEach((scenario) => run.errored(scenario, new vscode.TestMessage(reason)));
+      run.end();
+      this.running(undefined, false);
+      return this.refuse(reason);
+    };
+    if (data?.kind === "suite" && data.project && !await this.build(run, data.project, true)) {
+      return fail("The build failed, so the run did not start.");
+    }
+
+    const started = await this.client.sendRequest<{ started: boolean; reason?: string }>("brinell/run/start", { uri: fileItem.uri!.toString(), line, suite: suite.label });
+    if (!started.started) {
+      return fail(`This cannot be run on the runner: ${started.reason}`);
+    }
+
+    this.runnerRun = { run, scenarios, started: Date.now() };
+    token.onCancellationRequested(() => this.cancel());
+    return undefined;
   }
 
   // Step through one scenario (D1 of the debugger plan): its suite's project is built, then the
@@ -284,6 +376,12 @@ export class ScenarioTests implements vscode.Disposable {
 
   /** Stops the run: the test process and everything it started, the app included; a Step-through run through the server. */
   cancel(): void {
+    if (this.runnerRun) {
+      this.output.appendLine("Cancelling the run on the runner...");
+      void this.client.sendRequest("brinell/run/cancel", {});
+      return;
+    }
+
     if (this.stepRun) {
       this.output.appendLine("Stopping the Step-through run...");
       void this.client.sendRequest("brinell/step/move", { move: "stop" });
