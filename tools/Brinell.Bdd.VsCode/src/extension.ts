@@ -18,7 +18,10 @@ const previewable = /\.(feature|steps|video)\.md$/i;
 let client: LanguageClient | undefined;
 
 /** What a Step-through run said: where it paused, or how it ended. */
-export type StepEvent = { kind: "paused"; paused: StepPaused } | { kind: "ended"; status: string; message?: string };
+export type StepEvent =
+  | { kind: "paused"; paused: StepPaused }
+  | { kind: "ended"; status: string; message?: string }
+  | { kind: "build"; project: string; built: boolean };
 
 /** The extension's exports: for its own tests in a VS Code window. */
 export interface BrinellBddApi {
@@ -74,6 +77,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Brinel
     await stepping.onStepEnded();
     stepEvents.fire({ kind: "ended", ...ended });
   });
+  tests.onBuild((build) => stepEvents.fire({ kind: "build", ...build }));
   const scraper = new ScraperView(client);
   const gutter = vscode.window.createTextEditorDecorationType({
     gutterIconPath: context.asAbsolutePath(path.join("media", "breakpoint.svg")),

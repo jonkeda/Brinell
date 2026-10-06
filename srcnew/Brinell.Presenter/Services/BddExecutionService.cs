@@ -273,6 +273,9 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
 
         // Results where the IDEs' preview reads them (1.7 of the debugger plan), whichever folder the runner runs in.
         environment.TryAdd(Brinell.Core.Artifacts.TestArtifactOptions.RootDirectoryEnvironmentVariable, Brinell.Core.Artifacts.TestArtifactOptions.RootFor(workspacePath));
+
+        // The scenario files from the workspace, not the build's copies (I1 of the debugger plan).
+        environment.TryAdd(BddScenarioSource.SourceDirectoryEnvironmentVariable, Path.GetDirectoryName(Path.GetFullPath(BddFileFormat.FindConfig(workspacePath)))!);
         return environment;
     }
 

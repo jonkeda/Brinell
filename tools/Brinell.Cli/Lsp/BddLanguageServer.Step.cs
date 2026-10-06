@@ -63,8 +63,13 @@ public sealed partial class BddLanguageServer
 
         try
         {
-            // Results where the preview reads them (P5 of AD-022).
-            var environment = new Dictionary<string, string> { [TestArtifactOptions.RootDirectoryEnvironmentVariable] = BddRunResults.RootFor(suite.ProjectDirectory) };
+            // Results where the preview reads them (P5 of AD-022); the scenario files from the source,
+            // so an edit runs without a build (I1 of the debugger plan).
+            var environment = new Dictionary<string, string>
+            {
+                [TestArtifactOptions.RootDirectoryEnvironmentVariable] = BddRunResults.RootFor(suite.ProjectDirectory),
+                [BddScenarioSource.SourceDirectoryEnvironmentVariable] = suite.ProjectDirectory,
+            };
             run.Runner = await BddRunnerClient.StartAsync(new BddRunnerStart(assemblies.Start, Environment: environment)).ConfigureAwait(false);
             RunnerJob.Add(run.Runner.Process);
             var opened = await run.Runner.RequestAsync(new BddRunnerOpen(suite.ConfigPath, assemblies.Pages, path, name, "step")).ConfigureAwait(false);

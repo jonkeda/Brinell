@@ -43,6 +43,7 @@ public sealed class StepTests : IAsyncLifetime
             | --- | --- |
             | Target | MAUI |
             | Fixture | {nameof(StepCounterFixture)} |
+            | Greeting | hello from the source |
 
             ## Assemblies
 
@@ -181,6 +182,26 @@ public sealed class StepTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AnEditedStepFile_AndTheConfigTheFixtureReads_AreTheSources_WithNoBuild()
+    {
+        // Nothing is built or copied here: the runner reads the suite's folder (I1 of the debugger plan).
+        File.WriteAllText(Steps, File.ReadAllText(Steps).ReplaceLineEndings("\n").Replace("When the counter counts\n", "When the counter counts\nThen the config says hello from the source\n", StringComparison.Ordinal));
+        await StartAsync(3);
+        await PausedAsync();
+        await MoveAsync("over");
+        await MoveAsync("into");
+        await MoveAsync("over");
+
+        var edited = await MoveAsync("over");
+
+        Assert.Equal((Steps, 8, false), At(edited));
+        Assert.Equal("the config says hello from the source", edited.Text);
+        await MoveOnlyAsync("continue");
+        var ended = await EndedAsync();
+        Assert.True(ended.Status == "passed", ended.Message);
+    }
+
+    [Fact]
     public async Task VsCodesUri_WithItsEscapedDriveColon_Starts()
     {
         var uri = new Uri(Feature).AbsoluteUri.Replace(":/", "%3A/", StringComparison.Ordinal).Replace("file%3A/", "file:/", StringComparison.Ordinal);
@@ -258,6 +279,11 @@ public sealed class StepCounterFixture
 
     [BddThen("the counter has counted {times} times")]
     public void HasCounted(int times) => Assert.True(times == _count, $"The counter counted {_count} times, not {times}.");
+
+    // As a suite's fixture reads its config: the source's when a host runs it from there.
+    [BddThen("the config says {greeting}")]
+    public void ConfigSays(string greeting)
+        => Assert.Equal(greeting, BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath()).Runtime["Greeting"]);
 
     private sealed class CounterShots(StepCounterFixture counter) : Brinell.Core.Interfaces.IScreenshotService
     {

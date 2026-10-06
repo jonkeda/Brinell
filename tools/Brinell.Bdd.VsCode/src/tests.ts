@@ -27,8 +27,14 @@ export class ScenarioTests implements vscode.Disposable {
   private stepRun: { run: vscode.TestRun; scenario: vscode.TestItem; started: number } | undefined;
 
   // A file changed outside build output since, or a project built cleanly when: a Run with nothing
-  // changed skips dotnet build, which takes about 10 s even for a project that is up to date.
+  // changed skips dotnet build, which takes about 10 s even for a project that is up to date. A
+  // Step-through run reads the scenario files from the source (I1), so only other files count for it.
   private lastChange = Date.now();
+  private lastCodeChange = Date.now();
+  private readonly buildEvents = new vscode.EventEmitter<{ project: string; built: boolean }>();
+
+  /** Whether a run built its project or found it up to date: for the extension's own tests. */
+  readonly onBuild = this.buildEvents.event;
   private readonly lastBuild = new Map<string, number>();
   private readonly watcher = vscode.workspace.createFileSystemWatcher("**/*");
 
@@ -40,6 +46,9 @@ export class ScenarioTests implements vscode.Disposable {
     const changed = (uri: vscode.Uri) => {
       if (!/[\\/](bin|obj|TestResults|node_modules|\.git|\.vs)[\\/]/i.test(uri.fsPath)) {
         this.lastChange = Date.now();
+        if (!readFromSource.test(uri.fsPath)) {
+          this.lastCodeChange = this.lastChange;
+        }
       }
     };
     this.watcher.onDidChange(changed);
@@ -201,7 +210,7 @@ export class ScenarioTests implements vscode.Disposable {
     run.started(scenario);
     this.running(line, false);
     this.output.show(true);
-    if (data?.kind === "suite" && data.project && !await this.build(run, data.project)) {
+    if (data?.kind === "suite" && data.project && !await this.build(run, data.project, true)) {
       run.errored(scenario, new vscode.TestMessage("The build failed, so the Step-through run did not start."));
       run.end();
       this.running(undefined, false);
@@ -289,6 +298,7 @@ export class ScenarioTests implements vscode.Disposable {
 
   dispose(): void {
     this.watcher.dispose();
+    this.buildEvents.dispose();
     this.controller.dispose();
     this.output.dispose();
   }
@@ -412,11 +422,15 @@ export class ScenarioTests implements vscode.Disposable {
     }, 500);
   }
 
-  // Builds a project, unless nothing outside build output changed since its last clean build.
-  private async build(run: vscode.TestRun | undefined, project: string): Promise<boolean> {
+  // Builds a project, unless nothing outside build output changed since its last clean build; for a
+  // run on the suite's runner, unless nothing but scenario files did.
+  private async build(run: vscode.TestRun | undefined, project: string, runner = false): Promise<boolean> {
     const started = Date.now();
-    if ((this.lastBuild.get(project) ?? -1) > this.lastChange) {
-      this.output.appendLine(`Nothing changed since ${project} was last built: not built again.`);
+    if ((this.lastBuild.get(project) ?? -1) > (runner ? this.lastCodeChange : this.lastChange)) {
+      this.output.appendLine(runner
+        ? `Nothing but scenario files changed since ${project} was last built: not built again (the runner reads them from the source).`
+        : `Nothing changed since ${project} was last built: not built again.`);
+      this.buildEvents.fire({ project, built: false });
       return true;
     }
 
@@ -426,6 +440,7 @@ export class ScenarioTests implements vscode.Disposable {
 
     // From when it started: a file saved during the build makes the next Run build again.
     this.lastBuild.set(project, started);
+    this.buildEvents.fire({ project, built: true });
     return true;
   }
 
@@ -466,3 +481,6 @@ export class ScenarioTests implements vscode.Disposable {
     });
   }
 }
+
+// What a run on the suite's runner reads from the source folder, not the build's copies (I1 of the debugger plan).
+const readFromSource = /(\.feature\.md|\.steps\.md|\.video\.md|[\\/](uat|bdd)\.config\.md)$/i;

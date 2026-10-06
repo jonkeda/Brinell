@@ -32,6 +32,7 @@ internal sealed class BddRunController : IVsDebuggerEvents
 
     // The .NET (CoreCLR) debug engine, which a net10 testhost needs.
     private const string CoreClrEngine = "{2E36F1D4-B23C-435D-AB41-18E608940038}";
+    private readonly BddCodeChanges _changes = new();
     private TaskCompletionSource<bool>? _build;
     private Process? _process;
 
@@ -132,11 +133,18 @@ internal sealed class BddRunController : IVsDebuggerEvents
         {
             _log(string.Empty);
             var toBuild = await SuiteProjectAsync(path, line, suite);
-            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to step through {Path.GetFileName(path)} line {line}...");
-            if (!await BuildAsync(toBuild))
+            if (toBuild is not null && await UpToDateForRunnerAsync(toBuild))
             {
-                await StatusAsync("The build failed, so the Step-through run did not start. See the Error List.");
-                return;
+                _log($"Nothing but scenario files changed since {Path.GetFileName(toBuild)} was built: not built again (the runner reads them from the source).");
+            }
+            else
+            {
+                _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to step through {Path.GetFileName(path)} line {line}...");
+                if (!await BuildAsync(toBuild))
+                {
+                    await StatusAsync("The build failed, so the Step-through run did not start. See the Error List.");
+                    return;
+                }
             }
 
             await _server.BuildDoneAsync(_package.DisposalToken);
@@ -335,6 +343,7 @@ internal sealed class BddRunController : IVsDebuggerEvents
         }
 
         _build = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var startedAt = DateTime.UtcNow;
         var started = project is not null && await FindProjectAsync(project) is { } inSolution
             ? StartProjectBuild(inSolution)
             : builds.StartSimpleUpdateSolutionConfiguration((uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD, 0, 0) == Microsoft.VisualStudio.VSConstants.S_OK;
@@ -346,8 +355,21 @@ internal sealed class BddRunController : IVsDebuggerEvents
 
         // Completed by UpdateSolution_Done on the main thread, which nothing here blocks.
 #pragma warning disable VSTHRD003
-        return await _build.Task;
+        var built = await _build.Task;
 #pragma warning restore VSTHRD003
+        if (built && project is not null)
+        {
+            _changes.Built(project, startedAt);
+        }
+
+        return built;
+    }
+
+    // A run on the suite's runner needs no build when only scenario files changed since the last.
+    private async Task<bool> UpToDateForRunnerAsync(string project)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        return await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is EnvDTE80.DTE2 dte && _changes.UpToDate(dte, project);
     }
 
     private bool StartProjectBuild(EnvDTE.Project project)

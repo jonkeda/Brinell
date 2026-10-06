@@ -14,6 +14,8 @@ const heading = 15;
 // Named waits: the first stop comes after a build, the runner's start and the app's.
 const firstStopMs = 5 * 60_000;
 const nextStopMs = 60_000;
+// How long VS Code's file watcher takes to report a write.
+const watcherSettleMs = 1_000;
 const breakpointsFile = path.join(process.env.LOCALAPPDATA!, "Brinell", "bdd-breakpoints.json");
 
 export async function run(): Promise<void> {
@@ -23,8 +25,14 @@ export async function run(): Promise<void> {
   assert.ok(api, "The extension did not start: is tools/Brinell.Cli built?");
 
   const events: StepEvent[] = [];
+  const builds: boolean[] = [];
   let arrived: (() => void) | undefined;
   api.onStep((event) => {
+    if (event.kind === "build") {
+      builds.push(event.built);
+      return;
+    }
+
     events.push(event);
     arrived?.();
   });
@@ -84,4 +92,17 @@ export async function run(): Promise<void> {
   const ended = await next(nextStopMs);
   assert.ok(ended.kind === "ended" && ended.status === "passed", `The run did not pass: ${JSON.stringify(ended)}.`);
   console.log("ended: passed");
+  assert.deepStrictEqual(builds, [true], "The first Step-through run builds the suite's project.");
+
+  // I1: the runner reads the scenario files from the source, so a change to one alone needs no build.
+  fs.writeFileSync(feature, fs.readFileSync(feature));
+  await new Promise((resolve) => setTimeout(resolve, watcherSettleMs));
+  const again = await vscode.commands.executeCommand<string | undefined>("brinellBdd.stepThrough", vscode.Uri.file(feature), heading);
+  assert.strictEqual(again, undefined, `The second Step-through run did not start: ${again}`);
+  await pausedAt(18, firstStopMs);
+  assert.deepStrictEqual(builds, [true, false], "A feature file's change alone built the project again.");
+  console.log("second run: not built");
+  await vscode.commands.executeCommand("brinellBdd.stop");
+  const stopped = await next(nextStopMs);
+  assert.ok(stopped.kind === "ended" && stopped.status === "stopped", `The second run did not stop: ${JSON.stringify(stopped)}.`);
 }

@@ -132,9 +132,9 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
     private TestComposition ComposeFor(TodoWebDevice device)
         => TestComposition.ForFixture(this, services => services.AddSingleton<IHtmlTestContext>(device.Context));
 
-    // Beside this assembly, wherever the suite runs (AD-025).
+    // Beside this assembly, wherever the suite runs (AD-025); the source's when a host runs it from there.
     private static BddConfig ReadConfig()
-        => BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(TodoWebUatFixture).Assembly)));
+        => BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(BddScenarioSource.SuiteDirectory(Brinell.Core.Composition.AssemblyFile.FolderOf(typeof(TodoWebUatFixture).Assembly))));
 }
 
 /// <summary>Binds every UAT scenario class to the one <see cref="TodoWebUatFixture"/> (one app per run).</summary>

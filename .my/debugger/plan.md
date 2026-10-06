@@ -1,6 +1,6 @@
 # Running and debugging a scenario: the plan
 
-Status: **in progress**: Phases T, 0 and 1 done (2026-10-06). **Next: Phase 2 (2.1)**.
+Status: **in progress**: Phases T, 0 and 1 done, and 2.1 (2026-10-06). **Next: 2.2**.
 Started 2026-10-04.
 The design and its reasons are in [proposal.md](proposal.md); this file is the work, in order, so
 a session can pick it up cold. Every open question of the proposal (Q1-Q11) is **accepted as its
@@ -175,10 +175,16 @@ does; layers 1 and 2 already exist and catch none of them):
 
 | # | Step | Files | Done when | Progress |
 | --- | --- | --- | --- | --- |
-| 2.1 | **Scenario files from source** (I1, Q8): `BddRunnerOpen` gets the source folder; the runner reads feature, step, config, apps and test-data files from there. | runner, `BddRunnerMessages.cs`, the server's run target | Edit a step's text, Run: no build, and the edited text runs. Automated: layer 2 (the runner runs the edited text with no build). | |
+| 2.1 | **Scenario files from source** (I1, Q8): `BddRunnerOpen` gets the source folder; the runner reads feature, step, config, apps and test-data files from there. | runner, `BddRunnerMessages.cs`, the server's run target | Edit a step's text, Run: no build, and the edited text runs. Automated: layer 2 (the runner runs the edited text with no build). | **done** 2026-10-06: the runner already opened the source feature and config, and found step files beside the feature; what read the build's copies was the **fixture** (Todo's reads `uat.config.md` beside its assembly) and an `AppsFile` only the build copies in (the Mixed suite could not be stepped through). Now a host sets `BRINELL_SUITE_SOURCE` for its runner (the server's Step run, the Presenter): `BddScenarioSource.GetConfigFilePath()` defaults to it and `BddScenarioSource.SuiteDirectory(output)` gives it to a fixture (Todo's and Todo Web's use it); `BddConfigParser.ParseFile` reads an `AppsFile` missing beside the config from the output. **Not as the step said:** an environment variable at the runner's start, not a field of `BddRunnerOpen`, since a fixture reads its config in a static initializer, before any open. Test data compiled in (Todo's embedded `TestData/*.json`) still needs a build. The IDEs skip the build before a Step-through run when only scenario files changed since the project last built (`*.feature.md`, `*.steps.md`, `*.video.md`, `uat.config.md`): VS Code from its workspace watcher, Visual Studio from `BddCodeChanges` (watches the folders of the solution's projects; an unsaved code document counts). A `dotnet test` Run still builds. Tests: layer 2 (a step file edited, and a step reading the config, which only the source has); Uat (an `AppsFile` from the output); layer 4 (after the run, the feature file rewritten, Step again: paused at 18 with no build). Layer 5 not run (a Visual Studio was open, and its VSIX install waits for every one). |
 | 2.2 | **Run on the runner** (I4): the preview's Run uses the language server's runner run (1.3 without stops); **Run as test** is today's `dotnet test` path; the four buttons in both IDEs. | server, `BddRunController.cs`, `tests.ts`, `preview-host.js`, `BddPreview` | Owner: Run and Run as test both pass TOD.01.1; results marked with their mode. Automated: layer 3 (the four buttons and what each sends); layer 5 (Run and Run as test both pass TOD.01.1). | |
 | 2.3 | **The warm runner** (I2, Q10, Q11): per open suite, from a shadow copy of the build output; started when a feature file of the suite opens and after each build; replaced after a build; ended on last close + idle, and with the server; settings for both. The Presenter uses the same (replaces its one-runner-per-run). | server; a shared warm-runner class next to `BddRunnerClient`; `BddExecutionService.cs` | A build succeeds while a warm runner waits; a Run reaches the fixture in under a second. Automated: layer 2 (a build succeeds while a warm runner waits; a Run reaches the fixture in under a second). | |
 | 2.4 | **The warm app** (I3, Q9): `IUatScenarioLifecycle` says whether a clean start needs a launch; the warm runner starts the fixture; `BeforeScenario` is the clean start; Todo's fixture first. | `IUatScenarioLifecycle.cs`, `TodoUatFixture.cs`, runner | TOD.01 run twice in a row: the second does not launch the app and passes as under Run as test. Automated: layer 1 (a second scenario does not launch the app). | |
+
+**Notes for 2.3** (found in 2.1): the runner reads the **source** config, whose `Assemblies` rows
+are relative to the source folder (`bin/Debug/...`), so the runner loads those assemblies from the
+build output itself, not from a shadow copy, and holds them. The Pages assembly is loaded by name first
+(`BddRunnerHost.LoadPages`); the others (Controls, Commands, TestData) need the same, or the
+paths mapped into the copy, before a warm runner lets a build through.
 
 ### Phase 3: Debug from here, and the docs
 
