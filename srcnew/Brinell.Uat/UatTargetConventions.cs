@@ -17,7 +17,8 @@ public static class UatTargetConventions
         ["WinFormsTestFixtureBase"] = "WINFORMS",
         ["StrideTestFixtureBase"] = "STRIDE",
         ["BlazorTestFixtureBase"] = "BLAZOR",
-        ["HtmlTestFixtureBase"] = "HTML"
+        ["HtmlTestFixtureBase"] = "HTML",
+        ["NativeAndroidTestFixtureBase"] = "NATIVEANDROID"
     };
 
     /// <summary>The fixture base names that identify a target.</summary>

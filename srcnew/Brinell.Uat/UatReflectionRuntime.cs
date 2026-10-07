@@ -393,12 +393,24 @@ public sealed class UatReflectionRuntime
             return true;
         }
 
-        // A type that declares its own verbs is a control whatever it is called (ContentDialog).
+        // A page is not a control of another page (a page's Self).
+        if (property.PropertyType.IsDefined(typeof(TestPageAttribute), inherit: true))
+        {
+            return false;
+        }
+
+        // A type that declares its own verbs is a control whatever it is called (ContentDialog), and
+        // so is one that has Core's control verbs (a native Android Spinner, RadioGroup, TextView).
         return UatNameInference.HasKnownSuffix(property.Name) ||
                UatNameInference.HasKnownSuffix(property.PropertyType.Name) ||
+               IsElementObject(property.PropertyType) ||
                property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
                    .Any(method => method.IsDefined(typeof(BddStepAttribute), inherit: false));
     }
+
+    private static bool IsElementObject(Type type)
+        => type.GetInterfaces().Any(contract => contract.IsGenericType
+            && contract.GetGenericTypeDefinition() == typeof(Brinell.Core.Interfaces.IElementObject<>));
 
     private static string ResolveRuntimeName(MemberInfo member)
     {
