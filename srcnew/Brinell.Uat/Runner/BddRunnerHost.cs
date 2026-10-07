@@ -17,6 +17,11 @@ public sealed class BddRunnerHost
     private readonly BddRunnerChannel _channel;
     private readonly object _stepLock = new();
     private CancellationTokenSource? _step;
+
+    // Requests are numbered as they are read. A cancel covers every request read before it, so a
+    // step still queued behind the reading loop starts canceled instead of missing the cancel.
+    private long _read;
+    private long _canceledThrough;
     private OpenScenario? _open;
 
     // A fixture kept for the next open of the same suite: a prepared one, or one that starts a
@@ -40,7 +45,7 @@ public sealed class BddRunnerHost
 
         // Requests are answered one at a time, off the reading loop: a cancel has to be read
         // while the step it cancels is running.
-        var requests = Channel.CreateUnbounded<BddRunnerMessage>();
+        var requests = Channel.CreateUnbounded<(BddRunnerMessage Message, long Number)>();
         var worker = Task.Run(() => AnswerAsync(requests.Reader, cancellationToken), cancellationToken);
         try
         {
@@ -52,7 +57,13 @@ public sealed class BddRunnerHost
                 }
                 else
                 {
-                    requests.Writer.TryWrite(message);
+                    long number;
+                    lock (_stepLock)
+                    {
+                        number = ++_read;
+                    }
+
+                    requests.Writer.TryWrite((message, number));
                 }
             }
         }
@@ -66,14 +77,14 @@ public sealed class BddRunnerHost
         }
     }
 
-    private async Task AnswerAsync(ChannelReader<BddRunnerMessage> requests, CancellationToken cancellationToken)
+    private async Task AnswerAsync(ChannelReader<(BddRunnerMessage Message, long Number)> requests, CancellationToken cancellationToken)
     {
-        await foreach (var request in requests.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var (request, number) in requests.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
             BddRunnerMessage answer;
             try
             {
-                answer = await AnswerAsync(request).ConfigureAwait(false);
+                answer = await AnswerAsync(request, number).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -84,7 +95,7 @@ public sealed class BddRunnerHost
         }
     }
 
-    private async Task<BddRunnerMessage> AnswerAsync(BddRunnerMessage request)
+    private async Task<BddRunnerMessage> AnswerAsync(BddRunnerMessage request, long number)
     {
         switch (request)
         {
@@ -95,7 +106,7 @@ public sealed class BddRunnerHost
                 return new BddRunnerOpened(_open.Scenario.Invocations.Count, _open.Discovery, _open.Catalog, Position(_open.Session.Next, _open.Runner.Context));
 
             case BddRunnerNext:
-                return await StepAsync(Opened()).ConfigureAwait(false);
+                return await StepAsync(Opened(), number).ConfigureAwait(false);
 
             case BddRunnerSkip skip:
                 var session = Opened();
@@ -159,12 +170,16 @@ public sealed class BddRunnerHost
     private OpenScenario Opened()
         => _open ?? throw new InvalidOperationException("No scenario is open.");
 
-    private async Task<BddRunnerStep> StepAsync(OpenScenario open)
+    private async Task<BddRunnerStep> StepAsync(OpenScenario open, long number)
     {
         var cancel = new CancellationTokenSource();
         lock (_stepLock)
         {
             _step = cancel;
+            if (_canceledThrough >= number)
+            {
+                cancel.Cancel();
+            }
         }
 
         try
@@ -283,6 +298,7 @@ public sealed class BddRunnerHost
     {
         lock (_stepLock)
         {
+            _canceledThrough = _read;
             _step?.Cancel();
         }
     }
