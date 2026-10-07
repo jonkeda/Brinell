@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using Brinell.Core.Recording;
 using Brinell.Recording;
@@ -35,7 +36,9 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
     private readonly ScreenRecorders _recorders;
     private readonly BddNarrationPacer _pacer;
     private readonly List<string> _warnings = [];
+    private readonly SceneInteractions _interactions = new();
     private IRecording? _recording;
+    private IDisposable? _logging;
     private bool _started;
     private long _startedAt;
 
@@ -75,9 +78,11 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
     {
         await StartAsync(cancellationToken).ConfigureAwait(false);
         await _pacer.FinishAsync(cancellationToken).ConfigureAwait(false);
+        StopLogging();
         var end = Stopwatch.GetTimestamp();
         string? video = null;
         var size = System.Drawing.Size.Empty;
+        BddBox? source = null;
         if (_recording is { } recording)
         {
             _recording = null;
@@ -88,9 +93,18 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
             end = Math.Max(end, RecordingClock.Add(result.StartedAt, result.Duration));
             video = Path.GetFileName(result.Path);
             size = result.Size;
+            source = result.Source is { } area ? BddBox.Of(area) : null;
         }
 
-        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings) with { Width = size.Width, Height = size.Height, Hash = _request.Hash };
+        var interactions = video is null ? null : _interactions.Taken.Select(interaction => BddTimedInteraction.Of(interaction, _startedAt)).ToList();
+        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings) with
+        {
+            Width = size.Width,
+            Height = size.Height,
+            Hash = _request.Hash,
+            Interactions = interactions,
+            Source = source,
+        };
         timeline.Save(_request.TimelinePath);
         return timeline;
     }
@@ -98,6 +112,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        StopLogging();
         if (_recording is { } recording)
         {
             _recording = null;
@@ -130,5 +145,23 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
 
         _recording = await recorder.StartAsync(target, new RecordingOptions(_request.VideoPath), cancellationToken).ConfigureAwait(false);
         _startedAt = _recording.StartedAt;
+
+        // The test's taps and swipes, for the touch marks drawn when the video is composed.
+        _logging = Interactions.Begin(_interactions);
+    }
+
+    private void StopLogging()
+    {
+        _logging?.Dispose();
+        _logging = null;
+    }
+
+    private sealed class SceneInteractions : IInteractionLog
+    {
+        private readonly ConcurrentQueue<Interaction> _taken = new();
+
+        public IReadOnlyCollection<Interaction> Taken => _taken;
+
+        public void Add(Interaction interaction) => _taken.Enqueue(interaction);
     }
 }

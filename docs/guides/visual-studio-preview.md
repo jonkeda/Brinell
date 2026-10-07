@@ -88,8 +88,8 @@ stops the run and the app it started.
 A video script (`*.video.md`) previews as the scenes it will record, and its title has **Record**;
 a scenario heading has **Record** beside **Step**. Record builds the solution, runs the scenes
 with `BRINELL_RECORD`, and offers to watch the video when it is made; the preview lists the
-file's recordings to watch. The folder, the voice and the beat are in **Tools > Options > Brinell
-BDD > General**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
+file's recordings to watch. The folder, the voice, the beat and the touch marks' colour are in
+**Tools > Options > Brinell BDD > General**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
 
 ## Stop At A Step
 

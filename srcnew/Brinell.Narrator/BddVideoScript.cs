@@ -14,6 +14,12 @@ public sealed record BddVideoScript(string FilePath, string Title, string? Voice
     /// <summary>How a cloud voice says the lines, e.g. "calm and friendly"; null for the settings'.</summary>
     public string? Instructions { get; init; }
 
+    /// <summary>Which touch marks the composed video gets (<c>Touches</c>); null for all of them.</summary>
+    public BddTouchMode? Touches { get; init; }
+
+    /// <summary>The touch marks' accent (<c>TouchColor</c>, <c>#RRGGBB</c>); null for the settings'.</summary>
+    public string? TouchColor { get; init; }
+
     /// <summary>The extension of a video script.</summary>
     public const string Extension = ".video.md";
 

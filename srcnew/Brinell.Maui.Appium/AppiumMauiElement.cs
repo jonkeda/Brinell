@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Globalization;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
+using Brinell.Core.Recording;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using OpenQA.Selenium;
@@ -163,13 +164,44 @@ public sealed class AppiumMauiElement : IMauiElement
     
     /// <inheritdoc />
     public Rectangle Rect => new Rectangle(Location, Size);
+
+    // A recorded video's touch mark (AD-024): the target as it is, before the action runs.
+    private Interactions.Scope Report(InteractionKind kind, string? key = null, TimeSpan duration = default)
+        => Interactions.Report(kind, () => Rect, () => AutomationId, duration: duration, key: key);
+
+    private void Marked(InteractionKind kind, Action action) => Marked(kind, null, action);
+
+    private void Marked(InteractionKind kind, string? key, Action action)
+    {
+        using var mark = Report(kind, key);
+        action();
+    }
+
+    private void Marked(InteractionKind kind, TimeSpan duration, Action action)
+    {
+        using var mark = Report(kind, duration: duration);
+        action();
+    }
+
+    private void Marked(MauiGesture gesture, Action action)
+    {
+        using var mark = MauiInteractions.Report(gesture, () => Rect, () => AutomationId);
+        action();
+    }
+
+    // A swipe's own points, in the device's pixels as the element's bounds are.
+    private void Marked(Point from, Point to, TimeSpan duration, Action action)
+    {
+        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => AutomationId, from, to, duration);
+        action();
+    }
     
     #endregion
     
     #region Actions
     
     /// <inheritdoc />
-    public void Click() => Live(() => _element.Click());
+    public void Click() => Marked(InteractionKind.Tap, () => Live(() => _element.Click()));
 
     #region Activation
 
@@ -229,7 +261,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// Tab, which moves focus on to the next control rather than removing it. This platform has
     /// no way to simply drop focus.
     /// </remarks>
-    public void ClearFocus() => SendKeys(Keys.Tab);
+    public void ClearFocus() => Marked(InteractionKind.Key, "Tab", () => SendKeys(Keys.Tab));
 
     /// <inheritdoc />
     /// <remarks>Types the text at the end of what the field holds.</remarks>
@@ -283,7 +315,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// </para>
     /// </remarks>
     /// <exception cref="NotSupportedException">The node does not publish its range in app units, or the platform is not Android.</exception>
-    public void SetRangeValue(double value) => Live(() =>
+    public void SetRangeValue(double value) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (_driver.Platform != MauiPlatform.Android)
         {
@@ -300,7 +332,7 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         _element.SendKeys(value.ToString("R", CultureInfo.InvariantCulture));
-    });
+    }));
 
     /// <summary>The bounds AppSupport published on this node, or null when it published none.</summary>
     private (double Minimum, double Maximum)? ReadAppRange()
@@ -372,7 +404,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// never received.
     /// </para>
     /// </remarks>
-    public void PerformGesture(MauiGesture gesture) => Live(() =>
+    public void PerformGesture(MauiGesture gesture) => Marked(gesture, () => Live(() =>
     {
         switch (gesture)
         {
@@ -401,13 +433,13 @@ public sealed class AppiumMauiElement : IMauiElement
                     $"{nameof(AppiumMauiElement)} cannot perform {gesture}. It needs a W3C pointer "
                     + "action sequence, which this driver does not write yet.");
         }
-    });
+    }));
 
     #endregion
 
     
     /// <inheritdoc />
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Live(() =>
     {
         switch (method)
         {
@@ -422,7 +454,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 SetValueDirectly(text);
                 break;
         }
-    });
+    }));
     
     private void SetClipboardAndPaste(string text)
     {
@@ -471,18 +503,20 @@ public sealed class AppiumMauiElement : IMauiElement
             + "driver serves Android and iOS; MAUI on Windows is driven by Brinell.Maui.FlaUI.");
 
     /// <inheritdoc />
-    public void Clear() => Live(() => _element.Clear());
+    public void Clear() => Marked(InteractionKind.Clear, () => Live(() => _element.Clear()));
     
     /// <inheritdoc />
-    public void DoubleClick() => Live(() =>
+    public void DoubleClick() => Marked(InteractionKind.DoubleTap, () => Live(() =>
     {
         var actions = new Actions(_driver.Driver);
         actions.DoubleClick(_element).Perform();
-    });
+    }));
     
     /// <inheritdoc />
     public void RightClick()
     {
+        using var mark = Report(InteractionKind.RightClick);
+
         var actions = new Actions(_driver.Driver);
         actions.ContextClick(_element).Perform();
     }
@@ -490,12 +524,14 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <inheritdoc />
     public void Hover()
     {
+        using var mark = Report(InteractionKind.Hover);
+
         var actions = new Actions(_driver.Driver);
         actions.MoveToElement(_element).Perform();
     }
     
     /// <inheritdoc />
-    public void LongPress(int durationMs = 1000) => Live(() =>
+    public void LongPress(int durationMs = 1000) => Marked(InteractionKind.LongPress, TimeSpan.FromMilliseconds(durationMs), () => Live(() =>
     {
         switch (_driver.Platform)
         {
@@ -516,7 +552,7 @@ public sealed class AppiumMauiElement : IMauiElement
             default:
                 throw NotAMobilePlatform(nameof(LongPress));
         }
-    });
+    }));
     
     /// <inheritdoc />
     public void ScrollIntoView(int timeoutMs) => Live(() =>
@@ -693,7 +729,7 @@ public sealed class AppiumMauiElement : IMauiElement
 
 
     /// <inheritdoc />
-    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => Live(() =>
+    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => Marked(new Point(startX, startY), new Point(endX, endY), TimeSpan.FromMilliseconds(durationMs), () => Live(() =>
     {
         switch (_driver.Platform)
         {
@@ -722,7 +758,7 @@ public sealed class AppiumMauiElement : IMauiElement
             default:
                 throw NotAMobilePlatform(nameof(Swipe));
         }
-    });
+    }));
     
     private static string GetSwipeDirection(int startX, int startY, int endX, int endY)
     {
@@ -858,7 +894,7 @@ public sealed class AppiumMauiElement : IMauiElement
     public string? GetCssValue(string propertyName) => Live(() => _element.GetCssValue(propertyName));
     
     /// <inheritdoc />
-    public void Submit() => Live(() => _element.Submit());
+    public void Submit() => Marked(InteractionKind.Key, "Enter", () => Live(() => _element.Submit()));
     
     #endregion
 
@@ -912,13 +948,13 @@ public sealed class AppiumMauiElement : IMauiElement
     /// Neither platform has a set-state command, so this reads the state and taps when it
     /// differs. The control verifies the state it asked for.
     /// </remarks>
-    public void SetChecked(bool isChecked) => Live(() =>
+    public void SetChecked(bool isChecked) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (Checked == isChecked)
             return;
 
         Toggle();
-    });
+    }));
 
     /// <summary>
     /// Whether an attribute is present and reads as true.
@@ -1051,18 +1087,18 @@ public sealed class AppiumMauiElement : IMauiElement
     /// takes every later test down with it.
     /// </para>
     /// </remarks>
-    public void SelectByText(string text) => Live(() => WithOpenPicker(nameof(SelectByText), items =>
+    public void SelectByText(string text) => Marked(InteractionKind.Tap, () => Live(() => WithOpenPicker(nameof(SelectByText), items =>
     {
         var item = items.FirstOrDefault(i => i.Text == text)
             ?? throw new InvalidOperationException(
                 $"'{AutomationId}' has no item with text '{text}' among the {items.Count} its dialog shows.");
 
         item.Click();
-    }));
+    })));
 
     /// <inheritdoc />
     /// <remarks>See <see cref="SelectByText"/>: the same route and the same caveats.</remarks>
-    public void SelectIndex(int index) => Live(() => WithOpenPicker(nameof(SelectIndex), items =>
+    public void SelectIndex(int index) => Marked(InteractionKind.Tap, () => Live(() => WithOpenPicker(nameof(SelectIndex), items =>
     {
         if (index < 0 || index >= items.Count)
         {
@@ -1071,7 +1107,7 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         items[index].Click();
-    }));
+    })));
 
     /// <summary>
     /// Taps the picker open, hands its rows to <paramref name="choose"/>, and closes the dialog
@@ -1136,6 +1172,8 @@ public sealed class AppiumMauiElement : IMauiElement
     /// </remarks>
     public void OpenFlyout()
     {
+        using var mark = Report(InteractionKind.Key, "Menu");
+
         RequireApp(nameof(OpenFlyout));
         RequireAndroid("the flyout opener");
 
@@ -1156,6 +1194,8 @@ public sealed class AppiumMauiElement : IMauiElement
     /// </remarks>
     public void CloseFlyout()
     {
+        using var mark = Report(InteractionKind.Key, "Menu");
+
         RequireApp(nameof(CloseFlyout));
         RequireAndroid("dismissing the flyout");
 

@@ -11,7 +11,11 @@ namespace Brinell.Presenter.Services;
 /// <param name="Voice">The voice, by (part of) its name, when the video script names none; null for the default.</param>
 /// <param name="Beat">The wait after a step, when the video script does not say.</param>
 /// <param name="SpeakAloud">Whether each line is also played while the run waits for it.</param>
-public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud);
+public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud)
+{
+    /// <summary>The touch marks' accent setting, <c>#RRGGBB</c>; null for Exact red.</summary>
+    public string? TouchColor { get; init; }
+}
 
 /// <summary>A recording Presenter made.</summary>
 /// <param name="Video">The video file.</param>
@@ -85,8 +89,9 @@ public interface IPresenterRecorder
     /// <param name="scenesFolder">The script's scenes folder.</param>
     /// <param name="video">The video to write.</param>
     /// <param name="sceneCount">The script's scene count.</param>
+    /// <param name="touches">The script's touch marks.</param>
     /// <param name="cancellationToken">Cancels ffmpeg.</param>
-    Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken);
+    Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, BddTouchMarks touches, CancellationToken cancellationToken);
 
     /// <summary>Speaks a line aloud in a voice, to hear it before choosing it. False when this machine has no voice.</summary>
     /// <param name="text">What to say.</param>
@@ -112,6 +117,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
     private string? _sceneFolder;
     private string? _title;
     private bool _narrated;
+    private BddTouchMarks _touches = BddTouchMarks.Default;
 
     /// <inheritdoc />
     public string? Unavailable => Ffmpeg.Find() is null ? Ffmpeg.HowToGet : null;
@@ -135,8 +141,10 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var clips = BddSceneClips.Silent;
         var name = scenarioName;
         var beat = settings.Beat;
+        _touches = BddTouchMarks.For(null, setting: settings.TouchColor);
         if (BddRecordings.FindScene(workspacePath, featureFile, scenarioName) is { } found)
         {
+            _touches = BddTouchMarks.For(found.Script, setting: settings.TouchColor);
             var voice = found.Script.Voice ?? settings.Voice;
             clips = await BddSceneClips.SpeakAsync(found.Scene, Speech.Find(voice, found.Script.Instructions, workspacePath), voice, sceneFolder, cancellationToken).ConfigureAwait(false);
             name = found.Scene.Scene.Name;
@@ -230,9 +238,9 @@ public sealed class PresenterRecorder : IPresenterRecorder
     }
 
     /// <inheritdoc />
-    public async Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
+    public async Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, BddTouchMarks touches, CancellationToken cancellationToken)
     {
-        var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken).ConfigureAwait(false);
+        var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken, touches).ConfigureAwait(false);
         return new PresenterRecorded(stitched.Video, true, stitched.Warnings);
     }
 
@@ -267,7 +275,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
         _recording = null;
         _recordingFolder = null;
         var recorded = await session.FinishRecordingAsync(cancellationToken).ConfigureAwait(false);
-        var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken).ConfigureAwait(false);
+        var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken, _touches).ConfigureAwait(false);
         return new PresenterRecorded(video.Video, _narrated, [.. recorded.Warnings, .. video.Warnings]);
     }
 

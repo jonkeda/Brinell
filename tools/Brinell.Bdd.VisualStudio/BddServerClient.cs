@@ -116,6 +116,7 @@ public sealed class BddServerClient : IDisposable
                 recordingsFolder = Setting(options.RecordingsFolder),
                 voice = Setting(options.Voice),
                 beat = options.Beat > 0 ? options.Beat : (int?)null,
+                touchColor = Setting(options.TouchColor),
             }, cancellationToken).ConfigureAwait(false);
 
     /// <summary><c>brinell/recordings</c>: the videos of a video script, or of a feature file's scenarios, newest first.</summary>

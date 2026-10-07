@@ -327,7 +327,7 @@ export class ScenarioTests implements vscode.Disposable {
   /**
    * Records a video script, or the scenario at a heading's line (the narrator): the gate run with
    * BRINELL_RECORD, then the video it made, to watch. The settings give the Recordings folder, the
-   * voice and the beat.
+   * voice, the beat and the touch marks' colour.
    */
   async record(uri: vscode.Uri, line: number | undefined, suite: string | undefined): Promise<void> {
     if (this.process) {
@@ -339,6 +339,7 @@ export class ScenarioTests implements vscode.Disposable {
     const recordingsFolder = settings.get<string>("recordingsFolder") || undefined;
     const target = await this.client.sendRequest<RecordTarget>("brinell/recordTarget", {
       uri: uri.toString(), line, suite, recordingsFolder, voice: settings.get<string>("voice") || undefined, beat: settings.get<number>("beat") || undefined,
+      touchColor: settings.get<string>("touchColor") || undefined,
     });
     if (!target.canRecord || !target.project || !target.filter) {
       void vscode.window.showWarningMessage(`This cannot be recorded: ${target.reason ?? "no suite runs it."}`);

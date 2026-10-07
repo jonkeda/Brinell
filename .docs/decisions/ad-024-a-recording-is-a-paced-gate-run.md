@@ -9,7 +9,8 @@ the tool that asks for it:
 | **Timing is a seam, not a wait** | `BddExecutionContext.Pacer` (`IBddStepPacer`) is waited on before and after each step; it is null unless something records. The voice is made before the run, so each line's length is known; the run only takes as long as the speech, and the voice is laid in afterwards at its recorded time. |
 | **Narration lives in a video script** | `*.video.md`: scenes, each a scenario address, an intro, `Step | Say` rows and an outro. A feature file stays a test. The script is checked like a feature file (AD-022's one checker, `VID0xx`). |
 | **Capture is not input** (AD-005) | A recorder reads what is already drawn: Windows.Graphics.Capture for a window (it records a covered one), Chromium's screencast for a page, `adb screenrecord` for a device. It never focuses, activates or moves the app. The screen-region recorder, which records whatever covers the area, is only the last resort. |
-| **One clock, separate outputs** | Every time is on the `Stopwatch` clock, so a step's time in `timeline.json` is its time in the video. The video, the `.srt` captions and the timeline are separate files; nothing is burned in. ffmpeg encodes, lays in the voice and joins the scenes; Record checks for it first. |
+| **One clock, separate outputs** | Every time is on the `Stopwatch` clock, so a step's time in `timeline.json` is its time in the video. The video, the `.srt` captions and the timeline are separate files; the captions are never burned in. ffmpeg encodes, lays in the voice and joins the scenes; Record checks for it first. |
+| **Touch marks are logged facts, drawn when the video is made** | While a scene records, each driver action reports itself to `Interactions` (`Brinell.Core.Recording`) just before it runs: its kind and its target's bounds, in the driver's coordinates (on Windows physical pixels, read per-monitor aware whatever the test process's DPI awareness, as the frames are), and a swipe's points. The FlaUI, Appium and Playwright elements report from their own action methods, outside their retries, and an action that runs another is one mark; a target the tree cannot show (a `RefreshView`) has its bounds from the bridge's `GetBounds`. The recorder says which area of those coordinates its frames show (`RecordingResult.Source`). The scene's `timeline.json` keeps them (`interactions`, `source`); the composer draws the marks from them as an ASS track that ffmpeg's `subtitles` filter burns into the made video only. A kept scene's video stays clean, and the script's `Touches` and `TouchColor` are not in its hash: they are composition. |
 | **Scenes can be kept** | A script's scenes can stay in `<Recordings>\<script>.scenes` (`BddKeptScenes`; Presenter's Narrator mode, or `BRINELL_RECORD_KEEP` on the gate). Each scene's `timeline.json` holds a hash of what it was recorded from (its lines, its scenario's steps, the voice, the beat), so a scene is known to be recorded, failed or out of date, one scene is recorded again without the rest, and the video is stitched from the latest recording of each. |
 | **A voice names its synthesizer; a cloud voice's key never enters the repository** | `azure:<voice>` is Azure OpenAI text to speech (`AzureOpenAiSpeech`, in `Brinell.Narrator`: it needs only HTTP), or an audio chat model (a deployment named `*audio*`) told to read the line, whose transcript must hold nearly all the line's words in order or the line is asked again, then fails; any other name is a platform voice. With none named, a configured cloud voice comes first. A named cloud voice without settings fails the recording; it never becomes another voice. Its key comes from `BRINELL_VOICE_KEY` or a `voice.secrets.json` that git ignores (a suite's folder up to the repository root, then `%USERPROFILE%\.brinell`), and goes only into the request's header: never a log, a timeline, a hash or a message. A script's `Instructions` (the tone) is part of a scene's hash. |
 | **Platform recorders are loaded, not referenced** | A recorder or voice that needs a platform's SDK (`Brinell.Narrator.Windows` holds both for Windows) declares itself with an assembly attribute and is found in the run's folder or in `BRINELL_RECORDERS`: a `net10.0-windows` suite cannot reference a Windows 10 SDK package. |
@@ -26,7 +27,11 @@ hand drift from the speech and slow every test run. Evidence (at 9f27d29d):
   does not narrate (they run silently);
 - a pacer, or any narration cost, on a test run that does not record;
 - activating or bringing the app forward to record it; the region recorder as the default;
-- captions burned into the video.
+- captions burned into the video;
+- a real or drawn mouse cursor for touches (MAUI on Windows has no pointer, a phone none at all),
+  Android's "Show taps", or an overlay drawn by the app (app-side automation, AD-008);
+- a decorator around `IMauiElement` for the log: its members with default bodies would run the
+  default, not the element's, and a member added later would silently go unlogged.
 
 **Broken when:**
 - a scenario or step definition waits for a voice, or a plain `dotnet test` run is slower after
@@ -35,6 +40,9 @@ hand drift from the speech and slow every test run. Evidence (at 9f27d29d):
   in Presenter's Narrator mode with Speak aloud on;
 - a kept scene is stitched as current when its lines, steps, voice or beat changed since;
 - a recorder calls `SetForegroundWindow`, focuses an element or moves a window;
-- a recording's step times disagree with its video, or its captions are in the pixels.
+- a recording's step times disagree with its video, or its captions are in the pixels;
+- a run that does not record reads an element's bounds for the log, or a kept scene's
+  `video.mp4` has marks in it;
+- a tap's mark is drawn after the screen has changed, or away from its control;
 - a cloud voice's key is read from a script, written anywhere but its request's header, or a
   `voice.secrets.json` is committed.

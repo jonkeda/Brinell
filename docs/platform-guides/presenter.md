@@ -185,7 +185,9 @@ opens the last one. It needs ffmpeg; without it, Record says how to get it and s
 
 On the Settings page, **Narrator**: the Recordings folder (the suite's `TestResults\recordings`
 when empty), the voice when the script names none, with **Try** to hear it, the beat after a step,
-and **Speak aloud**, which also plays each line while the run waits for it.
+the **Touch colour** of the marks on taps and swipes when the script names none
+([Touch Marks](../guides/narrated-recordings.md#touch-marks)), and **Speak aloud**, which also plays
+each line while the run waits for it.
 
 Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
 ([Cloud Voice](../guides/narrated-recordings.md#cloud-voice)): it says whether one is set up and

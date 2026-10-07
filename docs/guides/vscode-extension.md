@@ -51,7 +51,8 @@ naming how many runs and files, and deletes for good.
 A video script (`*.video.md`) previews as the scenes it will record, with **Record** on its title;
 a scenario heading has **Record** beside **Run**. Record builds the suite, runs the scenes with
 `BRINELL_RECORD`, and offers **Watch** when the video is made; the preview lists the file's
-recordings. Settings: `brinellBdd.recordingsFolder`, `brinellBdd.voice`, `brinellBdd.beat`. It
+recordings. Settings: `brinellBdd.recordingsFolder`, `brinellBdd.voice`, `brinellBdd.beat`,
+`brinellBdd.touchColor`. It
 needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
 
 ## Test Explorer

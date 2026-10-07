@@ -44,7 +44,7 @@ public sealed class PlaywrightRecorder : IScreenRecorder
         var viewport = page.ViewportSize is { } size
             ? new Size(size.Width, size.Height)
             : new Size(await page.EvaluateAsync<int>("() => window.innerWidth").ConfigureAwait(false), await page.EvaluateAsync<int>("() => window.innerHeight").ConfigureAwait(false));
-        var recording = new Recording(session, options, FfmpegSize(viewport), _sink);
+        var recording = new Recording(session, options, FfmpegSize(viewport), _sink) { Viewport = viewport };
         try
         {
             await recording.StartAsync(viewport).ConfigureAwait(false);
@@ -78,6 +78,9 @@ public sealed class PlaywrightRecorder : IScreenRecorder
 
         public Task<long> FirstFrame => _video.FirstFrame;
 
+        // The viewport in CSS pixels, which an element's bounds are in; the frames may be larger.
+        public Size Viewport { get; init; }
+
         public long StartedAt => _video.FirstFrame.IsCompletedSuccessfully ? _video.FirstFrame.Result : 0;
 
         public Task StartAsync(Size viewport) => _session.SendAsync("Page.startScreencast", new Dictionary<string, object>
@@ -93,7 +96,11 @@ public sealed class PlaywrightRecorder : IScreenRecorder
         {
             await StopScreencastAsync().ConfigureAwait(false);
             var result = await _video.StopAsync(_path, cancellationToken).ConfigureAwait(false);
-            return result with { Warnings = [.. result.Warnings, "The start is when the first frame arrived from the browser, not when it was painted: steps may be a frame early."] };
+            return result with
+            {
+                Warnings = [.. result.Warnings, "The start is when the first frame arrived from the browser, not when it was painted: steps may be a frame early."],
+                Source = new Rectangle(Point.Empty, Viewport),
+            };
         }
 
         public async ValueTask DisposeAsync()

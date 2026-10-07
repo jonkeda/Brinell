@@ -114,6 +114,51 @@ public sealed class BddVideoComposerTests : IDisposable
         File.Delete(video.Timeline);
     }
 
+    [Fact]
+    public void A_scene_with_interactions_gets_its_touch_marks_drawn_on_the_joined_video()
+    {
+        var scenes = Scenes();
+        var tapped = scenes[0].Scene with { Interactions = [new BddTimedInteraction(Core.Recording.InteractionKind.Tap, 2, new BddBox(300, 220, 40, 40))] };
+        scenes[0] = (scenes[0].Folder, tapped);
+
+        var plan = BddVideoComposer.Plan("How it works", scenes, Path.Combine(_scenes, "out.mp4"));
+        var off = BddVideoComposer.Plan("How it works", scenes, Path.Combine(_scenes, "out.mp4"), BddTouchMarks.Default with { Mode = BddTouchMode.Off });
+        var graph = plan.Arguments[plan.Arguments.ToList().IndexOf("-filter_complex") + 1];
+
+        Assert.Contains("[v0][v1]concat=n=2:v=1:a=0[joined];[joined]subtitles=filename={touches}[video]", graph, StringComparison.Ordinal);
+        Assert.Contains(@"\pos(320,240)", plan.Touches, StringComparison.Ordinal);
+        Assert.Null(off.Touches);
+        Assert.DoesNotContain("subtitles", off.Arguments[off.Arguments.ToList().IndexOf("-filter_complex") + 1], StringComparison.Ordinal);
+    }
+
+    [FfmpegFact]
+    public async Task A_tap_is_drawn_in_the_accent_on_the_video_and_not_before_its_ring_starts()
+    {
+        var folder = Path.Combine(_scenes, "scene-01");
+        Directory.CreateDirectory(folder);
+        var scene = new BddSceneTimeline(1, "Tap", null, "video.mp4", 3, BddStepResultStatus.Passed, [], [], [], 640, 480,
+            Interactions: [new BddTimedInteraction(Core.Recording.InteractionKind.Tap, 1.5, new BddBox(300, 220, 40, 40))]);
+        scene.Save(Path.Combine(folder, BddSceneTimeline.FileName));
+        await Ffmpeg.RunAsync(["-y", "-f", "lavfi", "-i", "color=c=gray:size=640x480:rate=30", "-t", "3", "-pix_fmt", "yuv420p", Path.Combine(folder, "video.mp4")]);
+
+        var video = await BddVideoComposer.StitchAsync("Tap", _scenes, Path.Combine(_scenes, "tap.mp4"), null);
+
+        Assert.Empty(video.Warnings);
+        var before = await PixelAsync(video.Video, 1.0, 320, 240);
+        var after = await PixelAsync(video.Video, 1.55, 320, 240);
+        Assert.True(Math.Abs(before.R - before.G) < 20, $"Before the ring starts the frame is grey: {before}.");
+        Assert.True(after.R > 150 && after.G < 90 && after.B < 90, $"Just after the tap, its dot is Exact red: {after}.");
+    }
+
+    // One pixel of a frame, as ffmpeg decodes it: a 2x2 crop, as 4:2:0 video needs even sides.
+    private async Task<(int R, int G, int B)> PixelAsync(string video, double seconds, int x, int y)
+    {
+        var raw = Path.Combine(_scenes, $"pixel-{seconds.ToString(CultureInfo.InvariantCulture)}.raw");
+        await Ffmpeg.RunAsync(["-y", "-ss", seconds.ToString(CultureInfo.InvariantCulture), "-i", video, "-frames:v", "1", "-vf", $"crop=2:2:{x}:{y}", "-f", "rawvideo", "-pix_fmt", "rgb24", raw]);
+        var bytes = await File.ReadAllBytesAsync(raw);
+        return (bytes[0], bytes[1], bytes[2]);
+    }
+
     // Two scenes: 5 s at 640x480 with a line at 2 s; 4 s at 800x600 with a line at 1 s and a failed step.
     private List<(string Folder, BddSceneTimeline Scene)> Scenes()
     {

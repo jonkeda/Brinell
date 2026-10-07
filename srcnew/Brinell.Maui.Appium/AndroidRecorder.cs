@@ -170,7 +170,11 @@ public sealed partial class AndroidRecorder : IScreenRecorder
             }
 
             Directory.Delete(folder, recursive: true);
-            return new RecordingResult(outputPath, RecordingClock.Between(StartedAt, stoppedAt), size, StartedAt, warnings);
+            // The screen in device pixels, which an element's bounds are in.
+            return new RecordingResult(outputPath, RecordingClock.Between(StartedAt, stoppedAt), size, StartedAt, warnings)
+            {
+                Source = size.IsEmpty ? null : new Rectangle(Point.Empty, size),
+            };
         }
 
         public ValueTask DisposeAsync()

@@ -3,6 +3,7 @@ using Brinell.Core;
 using Brinell.Core.Calls;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
+using Brinell.Core.Recording;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
 using static Brinell.Html.Playwright.PlaywrightErrors;
@@ -90,9 +91,9 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public Rectangle Rect => EvaluateRect(box => new Rectangle((int)box.X, (int)box.Y, (int)box.Width, (int)box.Height));
 
-    public void Click() => Live(() => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Click() => Marked(InteractionKind.Tap, () => Live(() => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Live(() =>
     {
         switch (method)
         {
@@ -104,31 +105,31 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
                 _locator.PressSequentiallyAsync(text, new() { Timeout = Budget }).GetAwaiter().GetResult();
                 break;
         }
-    });
+    }));
 
-    public void Clear() => Live(() => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Clear() => Marked(InteractionKind.Clear, () => Live(() => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void DoubleClick() => Live(() => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void DoubleClick() => Marked(InteractionKind.DoubleTap, () => Live(() => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void RightClick()
-        => Live(() => _locator.ClickAsync(new() { Button = MouseButton.Right, Timeout = Budget }).GetAwaiter().GetResult());
+        => Marked(InteractionKind.RightClick, () => Live(() => _locator.ClickAsync(new() { Button = MouseButton.Right, Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void Hover() => Live(() => _locator.HoverAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Hover() => Marked(InteractionKind.Hover, () => Live(() => _locator.HoverAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void LongPress(int durationMs = 1000)
-        => Live(() => _locator.ClickAsync(new() { Delay = durationMs, Timeout = Budget + durationMs }).GetAwaiter().GetResult());
+        => Marked(InteractionKind.LongPress, () => Live(() => _locator.ClickAsync(new() { Delay = durationMs, Timeout = Budget + durationMs }).GetAwaiter().GetResult()), TimeSpan.FromMilliseconds(durationMs));
 
     public void ScrollIntoView(int timeoutMs)
         => Live(() => _locator.ScrollIntoViewIfNeededAsync(new() { Timeout = timeoutMs }).GetAwaiter().GetResult());
 
-    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => Live(() =>
+    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => MarkedSwipe(new Point(startX, startY), new Point(endX, endY), durationMs, () => Live(() =>
     {
         var page = _locator.Page;
         page.Mouse.MoveAsync(startX, startY).GetAwaiter().GetResult();
         page.Mouse.DownAsync().GetAwaiter().GetResult();
         page.Mouse.MoveAsync(endX, endY, new MouseMoveOptions { Steps = Math.Max(1, durationMs / 16) }).GetAwaiter().GetResult();
         page.Mouse.UpAsync().GetAwaiter().GetResult();
-    });
+    }));
 
     public string? GetAttribute(string name)
         => Read(timeout => _locator.GetAttributeAsync(name, new() { Timeout = timeout }));
@@ -169,7 +170,7 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         => Read(timeout => _locator.EvaluateAsync<string>("(el, propertyName) => getComputedStyle(el).getPropertyValue(propertyName)", propertyName, new() { Timeout = timeout }));
 
     public void Submit()
-        => Evaluate("el => { const form = el.form || el.closest('form'); if (form) form.submit(); }");
+        => Marked(InteractionKind.Key, () => Evaluate("el => { const form = el.form || el.closest('form'); if (form) form.submit(); }"), key: "Submit");
 
     public string InnerHtml => Read(timeout => _locator.InnerHTMLAsync(new() { Timeout = timeout }));
 
@@ -185,24 +186,49 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     public T Evaluate<T>(string expression)
         => Read(timeout => _locator.EvaluateAsync<T>(expression, null, new() { Timeout = timeout }));
 
-    public void Fill(string value) => Live(() => _locator.FillAsync(value, new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Fill(string value) => Marked(InteractionKind.Type, () => Live(() => _locator.FillAsync(value, new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void SelectOption(string value)
-        => Live(() => _locator.SelectOptionAsync(new SelectOptionValue { Value = value }, new() { Timeout = Budget }).GetAwaiter().GetResult());
+        => Marked(InteractionKind.Tap, () => Live(() => _locator.SelectOptionAsync(new SelectOptionValue { Value = value }, new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void SelectOption(string[] values)
     {
+        using var mark = Report(InteractionKind.Tap);
         var options = values.Select(value => new SelectOptionValue { Value = value }).ToArray();
         Live(() => _locator.SelectOptionAsync(options, new() { Timeout = Budget }).GetAwaiter().GetResult());
     }
 
-    public void Check() => Live(() => _locator.CheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Check() => Marked(InteractionKind.Tap, () => Live(() => _locator.CheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void Uncheck() => Live(() => _locator.UncheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public void Uncheck() => Marked(InteractionKind.Tap, () => Live(() => _locator.UncheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void Focus() => Live(() => _locator.FocusAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void Blur() => Live(() => _locator.BlurAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+
+    // A recorded video's touch mark (AD-024): the target scrolled into view first, as the action
+    // would scroll it, so its bounds are where it is when the action runs.
+    private Interactions.Scope Report(InteractionKind kind, string? key = null, TimeSpan duration = default)
+        => Interactions.Report(kind, InView, () => _locator.ToString(), duration: duration, key: key);
+
+    private void Marked(InteractionKind kind, Action action, TimeSpan duration = default, string? key = null)
+    {
+        using var mark = Report(kind, key, duration);
+        action();
+    }
+
+    // A swipe's own points, in the viewport's pixels as the element's bounds are.
+    private void MarkedSwipe(Point from, Point to, int durationMs, Action action)
+    {
+        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => _locator.ToString(), from, to, TimeSpan.FromMilliseconds(durationMs));
+        action();
+    }
+
+    private Rectangle InView()
+    {
+        _locator.ScrollIntoViewIfNeededAsync(new() { Timeout = Budget }).GetAwaiter().GetResult();
+        return Rect;
+    }
 
     private TResult EvaluateRect<TResult>(Func<LocatorBoundingBoxResult, TResult> selector)
     {

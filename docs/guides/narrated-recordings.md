@@ -3,7 +3,8 @@
 Record a scenario, or a whole video script of scenarios, on video with a voice-over that says
 what is happening. The scenarios run as the gate runs them (AD-024); the app is recorded while
 they run, and each spoken line is waited for before its step, so the voice and the app stay in
-step. Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test`.
+step. Each tap, swipe and key the test makes is marked on the video ([Touch Marks](#touch-marks)).
+Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test`.
 
 ## You Need
 
@@ -47,6 +48,7 @@ That was the list.
 | `# Video:` | the video's title |
 | `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for a cloud voice), and the wait after each step in ms; the settings when left out |
 | `Instructions` | how a cloud voice says the lines (its tone); the settings when left out |
+| `Touches`, `TouchColor` | the touch marks: `on` (the default), `off` or `outline-only`, and their colour as `#RRGGBB`; the settings, then Exact red `#E8111E`, when left out ([Touch Marks](#touch-marks)) |
 | `## Scene:` | a chapter; one scenario, run and recorded |
 | `Scenario:` | the scenario's address: its file relative to the suite's config, `#`, its name with every run of other characters as one `-` (the `BddScenario` trait) |
 | paragraph before the table | said before the first step |
@@ -84,6 +86,7 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRINELL_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
 | `BRINELL_VOICE`, `BRINELL_BEAT` | the voice and the beat (ms), when the script does not say |
 | `BRINELL_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
+| `BRINELL_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
 | `BRINELL_VOICE_KEY`, `BRINELL_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
 | `BRINELL_RECORDERS` | a folder with `Brinell.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
@@ -146,6 +149,33 @@ names a cloud voice fails when none is set up, or when the service refuses (the 
 why); it never falls back to another voice. `BRINELL_VOICE_INSTRUCTIONS` gives the tone when the
 script does not.
 
+## Touch Marks
+
+The video shows what the test pressed, the same way on Windows, Android and in a browser: the
+app is not changed and nothing moves a pointer (AD-005). While a scene records, each action the
+test runs is logged with its target's bounds, taken just before it runs, into the scene's
+`timeline.json` (`interactions`). The marks are drawn from that log when the video is made, so a
+tap's ring can close in a quarter of a second *before* the tap, while the screen still shows
+what is about to be pressed.
+
+| The test | The video |
+| --- | --- |
+| a tap, a toggle, a choice in a list or picker | a ring closes onto the control, then a dot and a ripple; the control is outlined |
+| a double tap, a long press | two ripples; a ring growing while the press is held |
+| a swipe, pull to refresh | a dot travels the swipe's way with a fading trail, then an arrow |
+| text set or cleared | the field is outlined, with a keyboard chip (the text itself shows in the app) |
+| Enter, Back, the flyout menu | a chip in the bottom-right corner: `⏎ Enter`, `← Back`, `☰ Menu` |
+
+Each mark is the colour (`TouchColor`, the settings, `BRINELL_TOUCH_COLOR`, else Exact red
+`#E8111E`) over a white stroke and a dark halo, so it reads on light and dark pages, and is sized
+from the video's height. `Touches | outline-only` draws only the outlines and chips; `off` none.
+
+The marks are drawn into the made video only: a kept scene's `video.mp4` stays clean, and
+`Touches` and `TouchColor` are not part of a scene's hash, so changing them needs no new
+recording, only **Stitch** again. Scrolling to a control is not marked. Drawing needs an ffmpeg
+with libass (`ffmpeg -filters` lists `subtitles`); without it, the video is made unmarked, with
+a warning.
+
 ## What You Get
 
 In the Recordings folder, for a script `how-todo-works.video.md`:
@@ -154,7 +184,7 @@ In the Recordings folder, for a script `how-todo-works.video.md`:
 | --- | --- |
 | `how-todo-works-<yyyyMMdd-HHmmss>.mp4` | the scenes joined, the voice laid in, a chapter per scene |
 | `.srt` | the captions: a cue per spoken line, and one after a failed step |
-| `.timeline.json` | each scene's steps (start, end, result, message) and lines, on the video's clock |
+| `.timeline.json` | each scene's steps (start, end, result, message), lines and interactions, on the video's clock |
 
 The video is made when the last scene of the script has run; a failed scene is recorded as it
 happened and marked in the timeline. A scenario recorded on its own is named after it.
