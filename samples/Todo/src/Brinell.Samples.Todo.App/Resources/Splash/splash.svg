@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
     <rect x="0" y="0" width="456" height="456" fill="#512BD4"/>
-    <text x="228" y="280" font-size="200" font-family="Arial" fill="white" text-anchor="middle">B</text>
+    <path fill="white" fill-rule="evenodd" d="M168 137H236C268 137 286 152 286 175C286 191 277 202 262 207C282 212 294 226 294 246C294 268 275 280 241 280H168ZM188 154V200H232C254 200 265 192 265 177C265 162 254 154 232 154ZM188 217V263H239C261 263 273 255 273 240C273 225 261 217 239 217Z"/>
 </svg>
