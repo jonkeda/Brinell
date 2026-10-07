@@ -1,0 +1,29 @@
+using Brinell.Core.Locators;
+using Brinell.NativeAndroid.Interfaces;
+
+namespace Brinell.NativeAndroid.Controls.Selection;
+
+/// <summary>
+/// Material bottom navigation (<c>BottomNavigationView</c>, <c>NavigationBarView</c>): each item
+/// carries its title as its content description, and the selected one reports itself selected.
+/// </summary>
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public partial class BottomNavigationView<TScope> : ChoiceGroupBase<TScope>
+    where TScope : INativeAndroidScope<TScope>
+{
+    public BottomNavigationView(INativeAndroidScope<TScope> scope, Locator locator)
+        : base(scope, locator)
+    {
+    }
+
+    public BottomNavigationView(INativeAndroidScope<TScope> scope, string resourceIdOrXPath)
+        : base(scope, resourceIdOrXPath)
+    {
+    }
+
+    /// <inheritdoc />
+    protected override Locator ChoicesLocator => Locator.ByXPath(".//android.widget.FrameLayout[@content-desc]");
+
+    /// <inheritdoc />
+    protected override bool IsChosen(INativeAndroidElement choice) => choice.Selected;
+}

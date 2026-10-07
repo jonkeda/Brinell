@@ -1,3 +1,5 @@
+using Brinell.NativeAndroid.Appium;
+
 namespace Brinell.NativeAndroid;
 
 /// <summary>
