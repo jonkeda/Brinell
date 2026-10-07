@@ -1,7 +1,7 @@
-using Brinell.Maui.Appium;
+using Brinell.Appium;
 using OpenQA.Selenium;
 
-namespace Brinell.Maui.Tests;
+namespace Brinell.Appium.Tests;
 
 /// <summary>
 /// How the Appium driver recognizes a replaced element and an ended session.
@@ -37,5 +37,17 @@ public class AppiumErrorsTests
 
         Assert.False(AppiumErrors.IsElementGone(error));
         Assert.False(AppiumErrors.IsSessionGone(error));
+        Assert.False(AppiumErrors.IsUnknownCommand(error));
     }
+
+    [Theory]
+    [InlineData("Unknown mobile command \"scrollGesture\". Only shell, startActivity commands are supported.")]
+    [InlineData("unknown command: The requested resource could not be found")]
+    [InlineData("Method is not implemented")]
+    public void ACommandTheServerLacks_IsUnknownCommand(string message)
+        => Assert.True(AppiumErrors.IsUnknownCommand(message.StartsWith("Method", StringComparison.Ordinal) ? new UnknownMethodException(message) : new WebDriverException(message)));
+
+    [Fact]
+    public void ASessionError_IsNotUnknownCommand()
+        => Assert.False(AppiumErrors.IsUnknownCommand(new WebDriverException("invalid session id")));
 }

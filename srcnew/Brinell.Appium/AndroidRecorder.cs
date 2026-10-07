@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 using Brinell.Core.Recording;
 using Brinell.Recording;
 
-[assembly: ScreenRecorder(typeof(Brinell.Maui.Appium.AndroidRecorder), Order = 20)]
+[assembly: ScreenRecorder(typeof(Brinell.Appium.AndroidRecorder), Order = 20)]
 
-namespace Brinell.Maui.Appium;
+namespace Brinell.Appium;
 
 /// <summary>
 /// Records an Android device or emulator with <c>adb shell screenrecord</c>. screenrecord stops
@@ -139,8 +139,10 @@ public sealed partial class AndroidRecorder : IScreenRecorder
 
             var stoppedAt = RecordingClock.Now;
 
-            // screenrecord finishes its file on SIGINT; killing adb would leave it unreadable.
-            await RunAsync(adb, [.. Device(serial), "shell", "pkill", "-2", "screenrecord"], cancellationToken).ConfigureAwait(false);
+            // screenrecord finishes its file on SIGINT; killing adb would leave it unreadable. Only
+            // this recording's screenrecord, by its file: "pkill screenrecord" also met another
+            // one the shell may not signal and failed (measured on the emulator, 2026-10-07).
+            await RunAsync(adb, [.. Device(serial), "shell", "pkill", "-2", "-f", _prefix], cancellationToken).ConfigureAwait(false);
             if (segment is not null)
             {
                 await segment.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
@@ -150,8 +152,12 @@ public sealed partial class AndroidRecorder : IScreenRecorder
             var local = new List<string>();
             foreach (var remote in _remote)
             {
+                // adb cannot write a path past Windows' 260 characters (a long scenario title in a
+                // deep results folder): it pulls into the short temp folder, and the file moves.
                 var file = Path.Combine(folder, Path.GetFileName(remote));
-                await RunAsync(adb, [.. Device(serial), "pull", remote, file], cancellationToken).ConfigureAwait(false);
+                var pulled = Path.Combine(Path.GetTempPath(), Path.GetFileName(remote));
+                await RunAsync(adb, [.. Device(serial), "pull", remote, pulled], cancellationToken).ConfigureAwait(false);
+                File.Move(pulled, file, overwrite: true);
                 await RunAsync(adb, [.. Device(serial), "shell", "rm", "-f", remote], cancellationToken).ConfigureAwait(false);
                 local.Add(file);
             }

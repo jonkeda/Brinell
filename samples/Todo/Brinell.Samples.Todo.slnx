@@ -20,6 +20,7 @@
     <Project Path="tests/Brinell.Samples.Todo.Web.Uat/Brinell.Samples.Todo.Web.Uat.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.Web.UITests/Brinell.Samples.Todo.Web.UITests.csproj" />
   </Folder>
+  <Project Path="../../srcnew/Brinell.Appium/Brinell.Appium.csproj" />
   <Project Path="../../srcnew/Brinell.Core/Brinell.Core.csproj" />
   <Project Path="../../srcnew/Brinell.Maui.Appium/Brinell.Maui.Appium.csproj" />
   <Project Path="../../srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj" />

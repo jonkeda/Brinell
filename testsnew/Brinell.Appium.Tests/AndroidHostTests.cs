@@ -1,6 +1,6 @@
-using Brinell.Maui.Appium;
+using Brinell.Appium;
 
-namespace Brinell.Maui.Tests;
+namespace Brinell.Appium.Tests;
 
 /// <summary>How a server on the test machine is addressed from inside the Android emulator.</summary>
 public class AndroidHostTests

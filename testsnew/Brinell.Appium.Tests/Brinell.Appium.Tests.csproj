@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Appium.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Appium\Brinell.Appium.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Recording\Brinell.Recording.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -50,7 +50,7 @@ public static class TodoMauiLaunch
         {
             values.Remove(LaunchSettings.DatabasePathVariable);
             values.Remove(LaunchSettings.NetworkStateFileVariable);
-            values[LaunchSettings.ApiBaseUrlVariable] = Brinell.Maui.Appium.AndroidHost.EmulatorUrl(settings.ApiBaseUrl);
+            values[LaunchSettings.ApiBaseUrlVariable] = Brinell.Appium.AndroidHost.EmulatorUrl(settings.ApiBaseUrl);
         }
         else
         {

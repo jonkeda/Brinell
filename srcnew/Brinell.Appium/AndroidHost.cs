@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Brinell.Maui.Appium;
+namespace Brinell.Appium;
 
 /// <summary>
 /// How an Android app reaches a server that runs on the test machine: a WireMock backend, or an
