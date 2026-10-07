@@ -1,9 +1,10 @@
 # Contract: The call model
 
-The MAUI and Html stacks run every public control/page/container/collection/row member
-as one **call**. This is the shape all MAUI and Html code must keep. Evidence:
+The MAUI, Html and native Android stacks run every public control/page/container/collection/row
+member as one **call**. This is the shape all their code must keep. Evidence:
 the [MAUI design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/design.md)
-and the [Html design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/design.md), at 7162ac7. Enforces
+and the [Html design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/design.md), at 7162ac7,
+and the native Android slice (`.my/androidnative/`, 2026-10). Enforces
 [AD-004](../decisions/ad-004-wait-for-state.md) and
 [AD-009](../decisions/ad-009-app-bugs-stay-failures.md).
 
@@ -19,8 +20,8 @@ and the [Html design](https://github.com/exact-mobile-apps/test-tooling/blob/716
 | **R5** | A stale element is a signal (`StaleElementException`) from both drivers. A poll re-resolves on it; a confirmation reports it and does not act again. No catch-alls. |
 | **R6** | One check that a cached root is still alive, used by every scope that caches a root (`InstanceKey` read through the driver's `Live` helper). |
 | **R7** | Non-`Try` members wait; `Try*` members answer about now. |
-| **R8** | The generator does not change: same `Run*` names and signatures on both hierarchies. |
-| **R9** | MAUI and Html own the interfaces and bases they change. The calls layer, its exceptions and `ScopeReadiness` are one copy, in Core (`Brinell.Core.Calls`, `.Exceptions`, `.Scopes`). See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
+| **R8** | The generator does not change: same `Run*` names and signatures on every hierarchy. |
+| **R9** | MAUI, Html and native Android own the interfaces and bases they change. The calls layer, its exceptions and `ScopeReadiness` are one copy, in Core (`Brinell.Core.Calls`, `.Exceptions`, `.Scopes`). See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
 
 ## What a call may absorb, and what it must report (R0)
 
@@ -81,3 +82,30 @@ The rules above hold unchanged. Where Playwright differs from UI Automation and 
 - **A scope shown over a busy page** (a dialog) does not ask its page (`AsksParent => false`).
 - **A frame is a scope** (`FrameScope`), not a new test context: its children resolve inside
   the frame, and it can report not loaded while the frame loads.
+
+## Native Android specifics
+
+The rules above hold unchanged. Where Appium and UiAutomator2 differ:
+
+- **The session's implicit wait is zero**, so a lookup is one attempt (R2), and every read goes
+  through the element's `Live` helper: a recreated view is stale (R5), an ended session is
+  `AppUnavailableException`, a `mobile:` command the server lacks is `RouteUnavailableException`.
+- **The app root is the app in front.** Another app or a system dialog in front is a not-ready
+  reason that names itself; a scope drawn by the system over the app (the permission prompt)
+  does not ask the app (`AsksParent => false`).
+- **A page's busy signal is a view with resource id `brinell_busy`**, shown while the app works.
+  Absent or gone is idle, so it is never a configuration error.
+- **A view below the fold is absent from the tree.** A control on a page scrolls it in
+  (`UiScrollable`) as part of an attempt, throttled like a scroll into view; a control in a row
+  or a dialog does not, since that would move its own scope.
+- **A row stands for its item.** Its key is read from the row (a declared view's text, its
+  description, its first text); a row finds its view again by that key, never by position, so it
+  follows its item when a `RecyclerView` rebinds its views. A keyed item is found by scrolling the
+  list (`UiScrollable` from its start, then by hand), within the budget.
+- **An accessibility action may not reach the app** (a `RatingBar`'s set-progress): such a
+  control acts as a user does, by touch, and confirms what the app shows.
+- **A window closing re-issues the nodes below it.** After a popup closes, the control that opened
+  it reads as stale though its view is the same; the confirmation reads the control found again by
+  its locator. The action is still not repeated (R0).
+- **UiAutomator2's own idle wait is short** (`waitForIdleTimeout` 500 ms, not 10 s): an animating
+  screen is never idle, and the call's poll is what waits (R2).

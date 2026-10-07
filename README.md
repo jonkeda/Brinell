@@ -43,6 +43,7 @@ MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio
 | --- | --- |
 | `Brinell.Core` | Core contracts, locators, waits, artifacts, and shared services |
 | `Brinell.Maui` | MAUI controls and page-object infrastructure |
+| `Brinell.Appium` | What the Appium stacks share: error mapping, emulator host address, Android screen recorder |
 | `Brinell.Maui.Appium` | Appium driver adapter for MAUI/mobile |
 | `Brinell.Maui.FlaUI` | FlaUI driver adapter for Windows MAUI |
 | `Brinell.Maui.CommunityToolkit` | MAUI Community Toolkit control support |
@@ -54,7 +55,7 @@ MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio
 | `Brinell.Stride` | Stride UI testing integration |
 | `Brinell.Stride.Automation` | In-app automation hooks used by Stride-style tests |
 | `Brinell.Mocking` | WireMock and mock sensor helpers |
-| `Brinell.NativeAndroid` | Native Android automation helpers |
+| `Brinell.NativeAndroid` | Native Android apps through Appium: page objects and generated controls in MAUI's and Html's shape |
 | `Brinell.Uat` | Markdown-driven UAT scenario runtime |
 | `Brinell.Presenter` | Desktop presenter for UAT workspaces |
 

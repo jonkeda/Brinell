@@ -23,7 +23,7 @@ The short list that must not be broken. Each links the decision that explains it
 - **App bugs stay failures.** An action runs once and is confirmed, never repeated;
   defects are reported, not absorbed. [AD-009](decisions/ad-009-app-bugs-stay-failures.md),
   [control-object](contracts/control-object.md)
-- **MAUI and Html are ahead of Core on purpose.** No adapters between their interfaces and
+- **MAUI, Html and native Android are ahead of Core on purpose.** No adapters between their interfaces and
   Core's; Core is not changed ahead of the move-down. The calls layer, its exceptions and
   `ScopeReadiness` have moved down: one copy, in Core.
   [AD-010](decisions/ad-010-maui-ahead-of-core.md)
@@ -36,7 +36,7 @@ The short list that must not be broken. Each links the decision that explains it
   and checked by one engine (gate and `brinell data` alike); mock bodies are contract types,
   never anonymous (`BRINELL001`); a UAT file names its own `TestData`.
   [AD-012](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
-- **Html controls have MAUI's shape.** Generated from `.tpl.cs`, MAUI's `Run*` signatures and
+- **Html and native Android controls have MAUI's shape.** Generated from `.tpl.cs`, MAUI's `Run*` signatures and
   Core interfaces, no async members. [AD-013](decisions/ad-013-html-controls-have-mauis-shape.md)
 - **One scenario file serves every head.** Head tags decide where it runs; no per-head copies.
   Apps of several heads meet only in a `mixed` suite, each binding against its own head's catalog.

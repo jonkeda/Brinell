@@ -46,5 +46,8 @@ Controls should not:
 - Web controls: `srcnew/Brinell.Html/Controls` and `srcnew/Brinell.Blazor/Controls`. They are
   generated from `.tpl.cs` templates like MAUI's and implement the same Core interfaces, so a
   member has the same name on both stacks. The Playwright driver is `srcnew/Brinell.Html.Playwright`.
+- Native Android controls: `srcnew/Brinell.NativeAndroid/Controls`, generated the same way, with
+  Android's widget names (`EditText`, `Spinner`, `RecyclerView`) and the same members and UAT
+  verbs. See the [native Android guide](../platform-guides/native-android.md).
 
 See [Core Interfaces](interfaces.md).

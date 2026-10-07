@@ -7,6 +7,13 @@ so one generator serves both. The Html capability bases implement the same `Brin
 control interfaces as MAUI's, so a member a MAUI test or a UAT phrase uses has the same name,
 parameters and meaning on Html. Every member is one synchronous call.
 
+**Native Android too** (2026-10-07): its controls are generated the same way
+(`tools/Scripts/CreateNativeAndroid.Bat`), its `ViewBase` has the same `Run*` helpers and its bases
+the same Core interfaces. Its control *types* carry Android's widget names (`EditText`, `Spinner`),
+not MAUI's: a type names what the app is made of, while the members and UAT verbs stay the same.
+UAT finds a control by Core's `IElementObject<>` as well as by name, so a widget name need not end
+in a known suffix.
+
 **Why:** hand-written Html controls approximated MAUI's surface by hand and drifted
 (`AssertTextContaining` beside `AssertTextContains`, missing `Enter` and `AssertSelectedText`, so
 UAT phrases failed on Html). The async members wrapped the synchronous calls and added nothing.
@@ -17,7 +24,7 @@ Evidence: [review-html-vs-maui.md at 7162ac7](https://github.com/exact-mobile-ap
 members (`*Async` wrappers, async interfaces); a public member whose name differs from MAUI's for
 the same behaviour.
 
-**Broken when:** an Html or Blazor control with `*Core` methods is a plain `.cs`, or its
-`.gen.cs` differs from what `CreateHtml.Bat` writes; the generator needs an Html-specific branch to
-compile Html output; a `Task`-returning public member appears on an Html control, page or
-container; a UAT phrase fails on Html with "available methods" for a method MAUI has.
+**Broken when:** an Html, Blazor or native Android control with `*Core` methods is a plain `.cs`,
+or its `.gen.cs` differs from what its `Create*.Bat` writes; the generator needs a stack-specific
+branch; a `Task`-returning public member appears on a control, page or container; a UAT phrase
+fails on Html or native Android with "available methods" for a method MAUI has.

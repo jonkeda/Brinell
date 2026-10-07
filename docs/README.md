@@ -78,6 +78,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [The `brinell` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
+- [Native Android](run/native-android.md)
 - [Playwright](run/Playwright.md)
 - [HTML](run/Html.md)
 - [WinForms](run/WinForms.md)

@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Brinell.NativeAndroid` in MAUI's and Html's shape (AD-010, AD-013, `docs/platform-guides/native-android.md`):
+  its own `INativeAndroid*` interfaces; the Core calls layer (act once, confirm, one log pair); scope
+  readiness (the app in front, the page's activity and ready view, the `brinell_busy` busy view);
+  generated controls with Android's widget names (`EditText`, `Spinner`, `RecyclerView`, `RatingBar`,
+  `TabLayout`, `AlertDialog`, `PermissionDialog`, ...); collections whose rows follow their item
+  when a `RecyclerView` recycles; scroll-to-find with `UiScrollable`; named, element-relative
+  gestures. `tools/Scripts/CreateNativeAndroid.Bat` generates the controls. The breaking change is
+  total: the old hand-written classes (`NativeAndroidControl`, `NativeAndroidPageObjectBase`, the
+  MAUI-named controls) are gone; nothing in the repository used them.
+- `Brinell.Appium` (AD-026 R4): Appium's error mapping (now public, with `IsUnknownCommand` and
+  `IsNoAnswer`), `AndroidHost` and `AndroidRecorder`, moved out of `Brinell.Maui.Appium` so the
+  MAUI and native Android stacks share them. `Brinell.Appium.Tests` took their tests.
+- `samples/Brinell.Samples.NativeAndroid.App`, a .NET for Android control gallery, and
+  `testsnew/Brinell.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
+  `docs/run/native-android.md`); the `android-control` and `android-ui-test` skills.
+- UAT finds a control by Core's `IElementObject<>` as well as by its name's suffix, and no longer
+  takes a page's `Self` for a control.
 - One command line, `brinell` (AD-028, `docs/run/cli.md`): a dotnet tool (`Brinell.Cli`) with
   `scrape` (`new`, `list`, `status`, `check`, `explore`, `record`, `draft`, `verify`, `config`,
   `install-browser`), `data` (what `brinell-data` did), `scenario` (`preview`, `results delete`),
@@ -578,6 +595,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Html: `CollectionObjectBase`'s "no row matches" failure names what the wait last saw.
 - `Brinell.Maui.UITests`' `NavigationDemoPage` looked up by name through an XPath locator the
   FlaUI driver does not support, so its "unreachable by name" probes never looked.
+- `AndroidRecorder` stopped every `screenrecord` on the device (`pkill screenrecord`) and failed when
+  one belonged to another user; it stops only its own now. It also pulled the video into the
+  results folder directly, which adb cannot do past Windows' 260 characters; it pulls into the
+  temp folder and moves the file.
+- CI: a deterministic build mapped PDB paths to `/_/`, and the language server failed on them
+  ("Invalid URI"); `BddSourceLocator` gives no location for them, and tests and samples keep real
+  paths. A cancel that reached the BDD runner before its step started was lost.
 - N/A (initial release)
 
 ## [0.1.0] - TBD
