@@ -30,6 +30,12 @@
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
     <!-- Appium for MAUI/Mobile -->
     <PackageVersion Include="Appium.WebDriver" Version="8.3.2" />
+
+    <!-- AndroidX and Material for the native Android sample app: the versions MAUI 10 resolves -->
+    <PackageVersion Include="Xamarin.AndroidX.AppCompat" Version="1.7.1.1" />
+    <PackageVersion Include="Xamarin.AndroidX.RecyclerView" Version="1.4.0.3" />
+    <PackageVersion Include="Xamarin.AndroidX.SwipeRefreshLayout" Version="1.1.0.29" />
+    <PackageVersion Include="Xamarin.Google.Android.Material" Version="1.12.0.5" />
     <!-- MAUI -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.110" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.12" />

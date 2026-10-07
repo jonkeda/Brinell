@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fitsSystemWindows="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:orientation="vertical"
+      android:padding="16dp">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="Dialogs" />
+    <Button android:id="@+id/show_alert" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Delete everything" />
+    <Button android:id="@+id/ask_camera" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Use the camera" />
+    <Button android:id="@+id/show_snackbar" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Archive" />
+    <Button android:id="@+id/work" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Work for a while" />
+    <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nothing asked" />
+  </LinearLayout>
+  <include layout="@layout/busy" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
