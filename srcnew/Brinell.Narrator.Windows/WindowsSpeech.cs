@@ -46,7 +46,9 @@ public sealed class WindowsSpeech : ISpeechSynthesizer
             return;
         }
 
-        using var player = new global::Windows.Media.Playback.MediaPlayer { Source = global::Windows.Media.Core.MediaSource.CreateFromUri(new Uri(clip.WavPath)) };
+        // The source is disposed too: it holds the file open, and the next clip may be written to it.
+        using var source = global::Windows.Media.Core.MediaSource.CreateFromUri(new Uri(clip.WavPath));
+        using var player = new global::Windows.Media.Playback.MediaPlayer { Source = source };
         var ended = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         player.MediaEnded += (_, _) => ended.TrySetResult();
         player.MediaFailed += (_, failed) => ended.TrySetException(new InvalidOperationException($"The line could not be played: {failed.ErrorMessage}"));

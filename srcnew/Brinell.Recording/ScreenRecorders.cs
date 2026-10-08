@@ -9,7 +9,7 @@ namespace Brinell.Recording;
 public sealed class ScreenRecorders
 {
     // The platform packages that may bring recorders, loaded when the run has them (RecordingPackages).
-    private static readonly string[] KnownPackages = ["Brinell.Narrator.Windows", "Brinell.Html.Playwright", "Brinell.Maui.Appium"];
+    private static readonly string[] KnownPackages = ["Brinell.Narrator.Windows", "Brinell.Html.Playwright", "Brinell.Appium"];
 
     private readonly List<IScreenRecorder> _recorders;
 

@@ -11,7 +11,11 @@ namespace Brinell.Presenter.Services;
 /// <param name="Voice">The voice, by (part of) its name, when the video script names none; null for the default.</param>
 /// <param name="Beat">The wait after a step, when the video script does not say.</param>
 /// <param name="SpeakAloud">Whether each line is also played while the run waits for it.</param>
-public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud);
+public sealed record PresenterRecordingSettings(string? Folder, string? Voice, TimeSpan Beat, bool SpeakAloud)
+{
+    /// <summary>The touch marks' accent setting, <c>#RRGGBB</c>; null for Exact red.</summary>
+    public string? TouchColor { get; init; }
+}
 
 /// <summary>A recording Presenter made.</summary>
 /// <param name="Video">The video file.</param>
@@ -85,14 +89,23 @@ public interface IPresenterRecorder
     /// <param name="scenesFolder">The script's scenes folder.</param>
     /// <param name="video">The video to write.</param>
     /// <param name="sceneCount">The script's scene count.</param>
+    /// <param name="touches">The script's touch marks.</param>
     /// <param name="cancellationToken">Cancels ffmpeg.</param>
-    Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken);
+    Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, BddTouchMarks touches, CancellationToken cancellationToken);
 
     /// <summary>Speaks a line aloud in a voice, to hear it before choosing it. False when this machine has no voice.</summary>
     /// <param name="text">What to say.</param>
     /// <param name="voice">The voice, by (part of) its name; null for the default.</param>
     /// <param name="cancellationToken">Stops it.</param>
     Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken);
+
+    /// <summary>Speaks a line aloud with a cloud voice's settings as entered, before they are saved.</summary>
+    /// <param name="text">The line.</param>
+    /// <param name="voice">The cloud voice, <c>azure:&lt;name&gt;</c>.</param>
+    /// <param name="secrets">The settings to try.</param>
+    /// <param name="cancellationToken">Cancels the speech.</param>
+    /// <exception cref="VoiceServiceException">The service could not make the line; its message says why.</exception>
+    Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 /// <inheritdoc />
@@ -104,6 +117,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
     private string? _sceneFolder;
     private string? _title;
     private bool _narrated;
+    private BddTouchMarks _touches = BddTouchMarks.Default;
 
     /// <inheritdoc />
     public string? Unavailable => Ffmpeg.Find() is null ? Ffmpeg.HowToGet : null;
@@ -119,15 +133,18 @@ public sealed class PresenterRecorder : IPresenterRecorder
         }
 
         var folder = settings.Folder is { Length: > 0 } named ? named : BddRecordings.DefaultFolder(workspacePath);
-        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-        var sceneFolder = Path.Combine(folder, $"{BddScenarioAddress.Slug(scenarioName)}-{stamp}.scenes", "scene-01");
+        var run = Path.Combine(folder, BddScenarioAddress.Slug(scenarioName) + BddVideoComposer.RunFolderExtension);
+        TryDelete(run);
+        var sceneFolder = Path.Combine(run, "scene-01");
         var address = BddScenarioAddress.Of(Path.GetRelativePath(workspacePath, featureFile), scenarioName);
 
         var clips = BddSceneClips.Silent;
         var name = scenarioName;
         var beat = settings.Beat;
+        _touches = BddTouchMarks.For(null, setting: settings.TouchColor);
         if (BddRecordings.FindScene(workspacePath, featureFile, scenarioName) is { } found)
         {
+            _touches = BddTouchMarks.For(found.Script, setting: settings.TouchColor);
             var voice = found.Script.Voice ?? settings.Voice;
             clips = await BddSceneClips.SpeakAsync(found.Scene, Speech.Find(voice, found.Script.Instructions, workspacePath), voice, sceneFolder, cancellationToken).ConfigureAwait(false);
             name = found.Scene.Scene.Name;
@@ -221,10 +238,17 @@ public sealed class PresenterRecorder : IPresenterRecorder
     }
 
     /// <inheritdoc />
-    public async Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
+    public async Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, BddTouchMarks touches, CancellationToken cancellationToken)
     {
-        var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken).ConfigureAwait(false);
+        var stitched = await BddVideoComposer.StitchAsync(title, scenesFolder, video, sceneCount, cancellationToken, touches).ConfigureAwait(false);
         return new PresenterRecorded(stitched.Video, true, stitched.Warnings);
+    }
+
+    /// <inheritdoc />
+    public async Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken)
+    {
+        var clip = await Speech.ClipAsync(new AzureOpenAiSpeech(secrets), text, voice, RehearsalFile("try-cloud"), cancellationToken).ConfigureAwait(false);
+        await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -235,9 +259,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
             return false;
         }
 
-        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
-        Directory.CreateDirectory(folder);
-        var clip = await Speech.ClipAsync(speech, text, voice, Path.Combine(folder, "try.wav"), cancellationToken).ConfigureAwait(false);
+        var clip = await Speech.ClipAsync(speech, text, voice, RehearsalFile("try-voice"), cancellationToken).ConfigureAwait(false);
         await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
         return true;
     }
@@ -253,8 +275,28 @@ public sealed class PresenterRecorder : IPresenterRecorder
         _recording = null;
         _recordingFolder = null;
         var recorded = await session.FinishRecordingAsync(cancellationToken).ConfigureAwait(false);
-        var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken).ConfigureAwait(false);
+        var video = await BddVideoComposer.ComposeAsync(_title ?? Path.GetFileName(folder), Path.GetDirectoryName(folder)!, cancellationToken, _touches).ConfigureAwait(false);
         return new PresenterRecorded(video.Video, _narrated, [.. recorded.Warnings, .. video.Warnings]);
+    }
+
+    // A file of its own for each Try: a clip still playing, or held by the player, is not written over. Older ones go when free.
+    private static string RehearsalFile(string name)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
+        Directory.CreateDirectory(folder);
+        foreach (var old in Directory.EnumerateFiles(folder, name + "-*.wav"))
+        {
+            try
+            {
+                File.Delete(old);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Still playing: the next Try removes it.
+            }
+        }
+
+        return Path.Combine(folder, $"{name}-{Guid.NewGuid():N}.wav");
     }
 
     // The runner waits for a line and says so; the voice's player is Presenter's.

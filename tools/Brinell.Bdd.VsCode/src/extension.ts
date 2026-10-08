@@ -9,7 +9,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-lan
 import * as breakpoints from "./breakpoints";
 import { deleteResults, ScenarioPreview } from "./preview";
 import { ScraperView } from "./scraper";
-import { BddStepping, Move } from "./stepping";
+import { BddStepping, Move, StepPaused } from "./stepping";
 import { ScenarioTests } from "./tests";
 
 const featureOrSteps = /\.(feature|steps)\.md$/i;
@@ -17,7 +17,19 @@ const featureOrSteps = /\.(feature|steps)\.md$/i;
 const previewable = /\.(feature|steps|video)\.md$/i;
 let client: LanguageClient | undefined;
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+/** What a Step-through run said: where it paused, or how it ended. */
+export type StepEvent =
+  | { kind: "paused"; paused: StepPaused }
+  | { kind: "ended"; status: string; message?: string }
+  | { kind: "build"; project: string; built: boolean }
+  | { kind: "runEnded"; status: string; results: { scenario: string; status: string; message?: string }[] };
+
+/** The extension's exports: for its own tests in a VS Code window. */
+export interface BrinellBddApi {
+  readonly onStep: vscode.Event<StepEvent>;
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<BrinellBddApi | undefined> {
   const server = serverPath(context);
   if (!server) {
     void vscode.window.showErrorMessage("The Brinell BDD language server is not built. Build tools/Brinell.Cli, or set brinellBdd.serverPath.");
@@ -33,20 +45,50 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       { scheme: "file", language: "markdown", pattern: "**/uat.config.md" },
       { scheme: "file", language: "markdown", pattern: "**/bdd.config.md" },
     ],
-    initializationOptions: { solutionDir: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath },
+    initializationOptions: {
+      solutionDir: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+      // AD-025: a suite's runner kept ready, from a copy of its build output.
+      warmRunner: vscode.workspace.getConfiguration("brinellBdd").get<boolean>("warmRunner", true),
+      warmRunnerIdleMinutes: vscode.workspace.getConfiguration("brinellBdd").get<number>("warmRunnerIdleMinutes", 10),
+    },
     outputChannelName: "Brinell BDD Language Server",
   };
   client = new LanguageClient("brinellBdd", "Brinell BDD", serverOptions, clientOptions);
   await client.start();
 
-  const tests = new ScenarioTests(client, (line, file) => preview.running(line, file));
+  const tests = new ScenarioTests(client, (line, file, paused) => preview.running(line, file, paused), {
+    started: () => stepping.started(),
+    get isStepping() {
+      return stepping.isStepping;
+    },
+  });
   const preview = new ScenarioPreview(client, {
     run: (uri, line, debug) => void tests.runAt(uri, line, debug),
+    runOnRunner: (uri, line) => void tests.runOnRunnerAt(uri, line),
+    step: (uri, line) => void tests.stepAt(uri, line),
     record: (uri, line, suite) => void tests.record(uri, line, suite).then(() => preview.refresh()),
     cancel: () => tests.cancel(),
     move: (move) => void stepping.move(move as Move),
   });
-  const stepping = new BddStepping(preview);
+  const stepping = new BddStepping(client, preview, () => tests.stepPaused(false));
+
+  // Step through (brinell/step/*): the pause in the editor and the bar, the run's state in Test Explorer.
+  const stepEvents = new vscode.EventEmitter<StepEvent>();
+  client.onNotification("brinell/step/paused", async (paused: StepPaused) => {
+    tests.stepPaused(true);
+    await stepping.onStepPaused(paused);
+    stepEvents.fire({ kind: "paused", paused });
+  });
+  client.onNotification("brinell/step/ended", async (ended: { status: string; message?: string }) => {
+    tests.stepEnded(ended.status, ended.message);
+    await stepping.onStepEnded();
+    stepEvents.fire({ kind: "ended", ...ended });
+  });
+  tests.onBuild((build) => stepEvents.fire({ kind: "build", ...build }));
+  client.onNotification("brinell/run/ended", (ended: { status: string; message?: string; results: { scenario: string; status: string; message?: string }[] }) => {
+    tests.runnerEnded(ended);
+    stepEvents.fire({ kind: "runEnded", status: ended.status, results: ended.results });
+  });
   const scraper = new ScraperView(client);
   const gutter = vscode.window.createTextEditorDecorationType({
     gutterIconPath: context.asAbsolutePath(path.join("media", "breakpoint.svg")),
@@ -69,6 +111,40 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("brinellBdd.stepOver", () => stepping.move("over")),
     vscode.commands.registerCommand("brinellBdd.stepInto", () => stepping.move("into")),
     vscode.commands.registerCommand("brinellBdd.stepOut", () => stepping.move("out")),
+    vscode.commands.registerCommand("brinellBdd.continue", () => stepping.move("continue")),
+    vscode.commands.registerCommand("brinellBdd.stepThrough", async (uri?: vscode.Uri, line?: number) => {
+      // The scenario at the given heading, or the one the caret is in.
+      const editor = vscode.window.activeTextEditor;
+      const target = uri ?? editor?.document.uri;
+      const heading = line ?? (editor ? headingAbove(editor.document, editor.selection.active.line) : undefined);
+      if (target && heading) {
+        return tests.stepAt(target, heading);
+      }
+
+      void vscode.window.showWarningMessage("Put the caret in a scenario of a feature file to step through it.");
+      return "No scenario at the caret.";
+    }),
+    vscode.commands.registerCommand("brinellBdd.runScenario", async (uri?: vscode.Uri, line?: number) => {
+      // On the suite's runner: the scenario at the given heading, or the one the caret is in.
+      const editor = vscode.window.activeTextEditor;
+      const target = uri ?? editor?.document.uri;
+      const heading = line ?? (editor ? headingAbove(editor.document, editor.selection.active.line) : undefined);
+      if (target && heading) {
+        return tests.runOnRunnerAt(target, heading);
+      }
+
+      void vscode.window.showWarningMessage("Put the caret in a scenario of a feature file to run it.");
+      return "No scenario at the caret.";
+    }),
+    vscode.commands.registerCommand("brinellBdd.stop", () => stepping.move("stop")),
+    vscode.commands.registerCommand("brinellBdd.debugFromHere", async () => {
+      const refused = await stepping.debugFromHere();
+      if (refused) {
+        void vscode.window.showWarningMessage(`Debug from here: ${refused}`);
+      }
+
+      return refused;
+    }),
     vscode.commands.registerCommand("brinellBdd.openPreview", async () => {
       const document = vscode.window.activeTextEditor?.document;
       if (document && previewable.test(document.fileName)) {
@@ -112,6 +188,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   vscode.window.visibleTextEditors.forEach(showBreakpoints);
+  context.subscriptions.push(stepEvents);
+  return { onStep: stepEvents.event };
+}
+
+// The scenario heading at or above a 0-based line, as a 1-based line.
+function headingAbove(document: vscode.TextDocument, line: number): number | undefined {
+  for (let at = line; at >= 0; at--) {
+    if (/^##\s+Scenario( Outline)?:/i.test(document.lineAt(at).text)) {
+      return at + 1;
+    }
+  }
+
+  return undefined;
 }
 
 export function deactivate(): Thenable<void> | undefined {

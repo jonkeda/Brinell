@@ -74,7 +74,7 @@ public sealed class UatReflectionRuntime
                 page.GetType(),
                 page,
                 DiscoverControls(page),
-                navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+                navigation is null ? null : () => BddInvoker.InvokeDefinition(root, navigation))
             {
                 Namespace = BddNamespaces.Normalize(BddNamespaceAttribute.Of(page.GetType())),
             });
@@ -98,7 +98,7 @@ public sealed class UatReflectionRuntime
                     page.PageType,
                     Instance: null,
                     DiscoverControls(page.PageType),
-                    navigation is null ? null : () => BddInvoker.Invoke(root, navigation))
+                    navigation is null ? null : () => BddInvoker.InvokeDefinition(root, navigation))
                 {
                     Namespace = BddNamespaces.Normalize(page.Namespace),
                 };
@@ -300,7 +300,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            BddInvoker.Invoke(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
+            BddInvoker.InvokeDefinition(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
         }
         catch (Exception ex)
         {
@@ -393,12 +393,24 @@ public sealed class UatReflectionRuntime
             return true;
         }
 
-        // A type that declares its own verbs is a control whatever it is called (ContentDialog).
+        // A page is not a control of another page (a page's Self).
+        if (property.PropertyType.IsDefined(typeof(TestPageAttribute), inherit: true))
+        {
+            return false;
+        }
+
+        // A type that declares its own verbs is a control whatever it is called (ContentDialog), and
+        // so is one that has Core's control verbs (a native Android Spinner, RadioGroup, TextView).
         return UatNameInference.HasKnownSuffix(property.Name) ||
                UatNameInference.HasKnownSuffix(property.PropertyType.Name) ||
+               IsElementObject(property.PropertyType) ||
                property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
                    .Any(method => method.IsDefined(typeof(BddStepAttribute), inherit: false));
     }
+
+    private static bool IsElementObject(Type type)
+        => type.GetInterfaces().Any(contract => contract.IsGenericType
+            && contract.GetGenericTypeDefinition() == typeof(Brinell.Core.Interfaces.IElementObject<>));
 
     private static string ResolveRuntimeName(MemberInfo member)
     {
@@ -521,7 +533,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            BddInvoker.Invoke(controlResult.Control!, methodName, arguments);
+            BddInvoker.InvokeDefinition(controlResult.Control!, methodName, arguments);
             context.Diagnostics.Add($"{methodName}:{controlResult.ControlName}");
             return Task.FromResult(FollowPage(context, invocation));
         }

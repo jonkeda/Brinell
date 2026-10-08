@@ -43,7 +43,6 @@ public sealed partial class BddLanguageServer
         }
 
         var folder = RecordingsFolder(request.RecordingsFolder, suite);
-        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         var variables = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [BddRecordingSession.FolderVariable] = folder,
@@ -56,6 +55,11 @@ public sealed partial class BddLanguageServer
         if (request.Beat is { } beat)
         {
             variables[BddRecordingSession.BeatVariable] = beat.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (BddTouchMarks.IsColor(request.TouchColor))
+        {
+            variables[BddTouchMarks.ColorVariable] = request.TouchColor!.Trim();
         }
 
         if (OperatingSystem.IsWindows() && Directory.Exists(RecordersFolder))
@@ -72,11 +76,11 @@ public sealed partial class BddLanguageServer
             }
 
             var name = Path.GetFileName(path)[..^BddVideoScript.Extension.Length];
-            var scenes = Path.Combine(folder, $"{name}-{stamp}.scenes");
+            var scenes = Path.Combine(folder, name + BddVideoComposer.RunFolderExtension);
             variables[BddRecordingSession.Variable] = path;
             variables[BddRecordingSession.OutputVariable] = scenes;
             var filter = string.Join('|', check.Scenes.Select(scene => $"{BddScenarioAddress.Trait}={BddScenarioAddress.Of(suite.RelativeToConfig(scene.FeatureFile), scene.Scenario.Name)}").Distinct(StringComparer.Ordinal));
-            return new RecordTargetResult(true, null, project, filter, variables, $"{name}-{stamp}.mp4", folder, suite.Name);
+            return new RecordTargetResult(true, null, project, filter, variables, $"{name}.mp4", folder, suite.Name);
         }
 
         var run = RunTarget(new RunTargetParams(request.Uri, request.Line, request.Suite));

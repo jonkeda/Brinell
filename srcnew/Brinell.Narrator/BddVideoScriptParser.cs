@@ -8,7 +8,7 @@ namespace Brinell.Narrator;
 public sealed record BddVideoScriptParse(BddVideoScript? Script, IReadOnlyList<BddDiagnostic> Diagnostics);
 
 /// <summary>
-/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Instructions, Beat),
+/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Instructions, Beat, Touches, TouchColor),
 /// then <c>## Scene: name</c> sections, each with a <c>Scenario:</c> line, an intro paragraph, a
 /// <c>Step | Say</c> table and an outro paragraph.
 /// </summary>
@@ -49,6 +49,8 @@ public static class BddVideoScriptParser
         string? voice = null;
         string? instructions = null;
         TimeSpan? beat = null;
+        BddTouchMode? touches = null;
+        string? touchColor = null;
         var scenes = new List<BddVideoScene>();
         SceneBuilder? scene = null;
 
@@ -118,7 +120,7 @@ public static class BddVideoScriptParser
             return new BddVideoScriptParse(null, diagnostics);
         }
 
-        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions }, diagnostics);
+        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions, Touches = touches, TouchColor = touchColor }, diagnostics);
 
         void Finish()
         {
@@ -157,8 +159,20 @@ public static class BddVideoScriptParser
                 case "beat":
                     Report(BddDiagnosticSeverity.Error, BadValueCode, $"Beat is the milliseconds to wait after a step, a whole number: not '{cells[1]}'.", number);
                     break;
+                case "touches" when BddTouchMarks.ParseMode(cells[1]) is { } mode:
+                    touches = mode;
+                    break;
+                case "touches":
+                    Report(BddDiagnosticSeverity.Error, BadValueCode, $"Touches is on, off or outline-only: not '{cells[1]}'.", number);
+                    break;
+                case "touchcolor" when BddTouchMarks.IsColor(cells[1]):
+                    touchColor = cells[1].Trim().ToUpperInvariant();
+                    break;
+                case "touchcolor":
+                    Report(BddDiagnosticSeverity.Error, BadValueCode, $"TouchColor is a colour as #RRGGBB, e.g. {BddTouchMarks.DefaultColor}: not '{cells[1]}'.", number);
+                    break;
                 default:
-                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice, Instructions and Beat are.", number);
+                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice, Instructions, Beat, Touches and TouchColor are.", number);
                     break;
             }
         }

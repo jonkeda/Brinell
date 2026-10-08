@@ -14,7 +14,8 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// <summary>
 /// The Todo app, hermetic, presented to the UAT engine as its root. It starts on the
 /// <c>DefaultTestData</c> of <c>uat.config.md</c>; a scenario file that names another test set
-/// switches to it (<see cref="TodoUatScenarioTests"/>).
+/// switches to it (<see cref="TodoUatScenarioTests"/>), and each scenario starts on the test set as
+/// seeded (<see cref="TodoAppFixtureBase.StartOver"/>).
 /// </summary>
 /// <remarks>
 /// The base fixture launches the app and stands up the WireMock backend; this adds the two things
@@ -56,7 +57,12 @@ public sealed class TodoUatFixture : TodoAppFixture, IUatScenarioLifecycle
             : DefaultTestData);
 
     /// <inheritdoc />
-    public void BeforeScenario(BddBoundScenario scenario) => StartTest();
+    /// <remarks>The app back to the file's test set, its own data too, with no restart (<see cref="TodoAppFixtureBase.StartOver"/>).</remarks>
+    public void BeforeScenario(BddBoundScenario scenario) => StartOver();
+
+    /// <inheritdoc />
+    /// <remarks>On Windows, where <see cref="TodoAppFixtureBase.StartOver"/> resets the app's data in place; a warm runner then keeps the app between runs.</remarks>
+    public bool StartsCleanWithoutLaunch => CanStartOverInPlace;
 
     /// <summary>
     /// Points a running scenario at the restarted app: its own scope still resolves pages against
@@ -86,8 +92,8 @@ public sealed class TodoUatFixture : TodoAppFixture, IUatScenarioLifecycle
 
     private static string ReadDefaultTestData()
     {
-        // Beside this assembly, wherever the suite runs (AD-025).
-        var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(AssemblyFile.FolderOf(typeof(TodoUatFixture).Assembly)));
+        // Beside this assembly, wherever the suite runs (AD-025); the source's when a host runs it from there.
+        var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(BddScenarioSource.SuiteDirectory(AssemblyFile.FolderOf(typeof(TodoUatFixture).Assembly))));
         return config.Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var name) && name.Length > 0
             ? name
             : throw new InvalidOperationException($"uat.config.md has no '{BddConfigFields.DefaultTestData}' in its Runtime table.");

@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:controls="clr-namespace:Brinell.Presenter.Controls"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Presenter.Views.PresenterPage"
              Title="Brinell Presenter"
              Style="{StaticResource PresenterPageStyle}">
@@ -555,6 +556,8 @@
                                                             Command="{Binding RunUntilCommand}" />
                                             <MenuFlyoutItem Text="{Binding RunFromText}"
                                                             Command="{Binding RunFromCommand}" />
+                                            <MenuFlyoutItem Text="Debug from here"
+                                                            Command="{Binding DebugFromCommand}" />
                                             <MenuFlyoutItem Text="Toggle breakpoint"
                                                             Command="{Binding ToggleBreakpointCommand}" />
                                         </MenuFlyout>
@@ -850,10 +853,95 @@
                             <Label Text="ms" VerticalTextAlignment="Center" />
                         </HorizontalStackLayout>
                         <HorizontalStackLayout Spacing="6">
+                            <Label Text="Touch colour" VerticalTextAlignment="Center" />
+                            <Entry AutomationId="TouchColorInput"
+                                   MaxLength="7"
+                                   WidthRequest="100"
+                                   Placeholder="#E8111E"
+                                   Text="{Binding TouchColorText}"
+                                   SemanticProperties.Description="The colour of the touch marks, as #RRGGBB" />
+                            <Label Text="when the script names none; the marks are drawn when the video is made"
+                                   FontSize="11"
+                                   VerticalTextAlignment="Center"
+                                   Style="{StaticResource PresenterMutedLabel}" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
                             <Label Text="Speak aloud while recording, and in a rehearsal" VerticalTextAlignment="Center" />
                             <CheckBox AutomationId="SpeakAloudCheckBox"
                                       IsChecked="{Binding SpeakAloud}" />
                         </HorizontalStackLayout>
+
+                        <!-- The cloud voice: the narrator's voice.secrets.json, read by every recording on this machine. The key is typed, never shown. -->
+                        <Label Text="Cloud voice (Azure OpenAI)" FontAttributes="Bold" AutomationId="CloudVoiceSettingsLabel" />
+                        <Label Text="{Binding CloudVoiceState}"
+                               AutomationId="CloudVoiceStateLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="Endpoint" />
+                        <Entry AutomationId="CloudEndpointInput"
+                               Text="{Binding CloudEndpointText}"
+                               Placeholder="https://&lt;resource&gt;.openai.azure.com" />
+                        <Label Text="Key" />
+                        <!-- SetText: a password box keeps UI Automation's writes from MAUI, so tests set the key through the bridge. -->
+                        <Entry AutomationId="CloudKeyInput"
+                               IsPassword="True"
+                               uia:GestureAutomation.Verbs="GetText,SetText,ClearText"
+                               Text="{Binding CloudKeyText}"
+                               Placeholder="{Binding CloudKeyPlaceholder}"
+                               SemanticProperties.Description="The cloud voice's key" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="4">
+                            <Label Grid.Row="0" Grid.Column="0" Text="Deployment" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="0" Grid.Column="1"
+                                   AutomationId="CloudDeploymentInput"
+                                   Text="{Binding CloudDeploymentText}"
+                                   Placeholder="gpt-4o-mini-tts, or gpt-audio" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="API version" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="1" Grid.Column="1"
+                                   AutomationId="CloudApiVersionInput"
+                                   Text="{Binding CloudApiVersionText}"
+                                   Placeholder="2025-03-01-preview" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="Default voice" VerticalTextAlignment="Center" />
+                            <Picker Grid.Row="2" Grid.Column="1"
+                                    AutomationId="CloudDefaultVoicePicker"
+                                    ItemsSource="{Binding CloudVoiceChoices}"
+                                    SelectedItem="{Binding CloudDefaultVoice, Mode=TwoWay}"
+                                    SemanticProperties.Description="The cloud voice when a script names none" />
+                        </Grid>
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="Save beside this workspace instead of for this machine" VerticalTextAlignment="Center" />
+                            <CheckBox AutomationId="CloudSaveForWorkspaceCheckBox"
+                                      IsEnabled="{Binding CanSaveCloudForWorkspace}"
+                                      IsChecked="{Binding CloudSaveForWorkspace}" />
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding CloudWorkspaceNote}"
+                               AutomationId="CloudWorkspaceNoteLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Button Text="Add the line to .gitignore"
+                                AutomationId="AddCloudIgnoreRuleButton"
+                                Command="{Binding AddCloudIgnoreRuleCommand}"
+                                IsVisible="{Binding CanAddCloudIgnoreRule}"
+                                HorizontalOptions="Start" />
+                        <Label Text="{Binding CloudSavePath, StringFormat='Saves to {0}'}"
+                               AutomationId="CloudSavePathLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <HorizontalStackLayout Spacing="6">
+                            <Button Text="Try"
+                                    AutomationId="TryCloudVoiceButton"
+                                    Command="{Binding TryCloudVoiceCommand}"
+                                    ToolTipProperties.Text="Speak a sample line with these settings, before saving them" />
+                            <Button Text="Save"
+                                    AutomationId="SaveCloudVoiceButton"
+                                    Command="{Binding SaveCloudVoiceCommand}" />
+                            <Button Text="{Binding RemoveCloudVoiceText}"
+                                    AutomationId="RemoveCloudVoiceButton"
+                                    Command="{Binding RemoveCloudVoiceCommand}" />
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding CloudVoiceStatus}"
+                               AutomationId="CloudVoiceStatusLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
 
                         <Label Text="Theme" />
                         <HorizontalStackLayout Spacing="6">

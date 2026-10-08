@@ -177,6 +177,34 @@ public sealed class BddSuite : IDisposable
         }
     }
 
+    /// <summary>
+    /// The assemblies a runner process (AD-025) runs the suite from: <c>Start</c>, a test project's
+    /// build output (it has a <c>runtimeconfig.json</c>), and <c>Pages</c>, the one with the fixture.
+    /// Null before the suite is loaded or built.
+    /// </summary>
+    public (string Start, string Pages)? RunnerAssemblies
+    {
+        get
+        {
+            string? pages;
+            lock (_gate)
+            {
+                pages = _load?.FixtureAssemblyPath;
+            }
+
+            if (pages is null)
+            {
+                return null;
+            }
+
+            // The fixture's own project when it is the test project; otherwise the suite's.
+            var start = File.Exists(Path.ChangeExtension(pages, ".runtimeconfig.json"))
+                ? pages
+                : OwnAssemblies().FirstOrDefault(own => File.Exists(Path.ChangeExtension(own, ".runtimeconfig.json")));
+            return start is null ? null : (start, pages);
+        }
+    }
+
     /// <summary>A type of the loaded suite by its full name (nested types with <c>+</c>); null when not loaded or not found.</summary>
     /// <param name="fullName">The type's full name, as a step's command id starts.</param>
     public Type? FindType(string fullName)
@@ -320,6 +348,7 @@ public sealed class BddSuite : IDisposable
                 if (load.TypesOf(path).FirstOrDefault(type => type.Name == fixtureName || type.FullName == fixtureName) is { } fixture)
                 {
                     load.Catalogs = UatScenarioCheck.CatalogsFor(fixture, config);
+                    load.FixtureAssemblyPath = path;
                     return load;
                 }
             }

@@ -1,6 +1,7 @@
 # Contract: Control objects (`.tpl.cs` / `.gen.cs`)
 
-A MAUI, Html or Blazor control object is split in two files that compile into one partial class:
+A MAUI, Html, Blazor or native Android control object is split in two files that compile into one
+partial class:
 
 - **`X.tpl.cs`** - hand-written. Holds the `protected virtual ...Core` methods (the
   platform action), plus any bespoke members. The element type is `IMauiElement`, or
@@ -40,8 +41,10 @@ element replaced before it can be read - fails the call and returns
 - `X.gen.cs` is edited by hand, or drifts from the generator output (R8).
 - A `Core` method retries its own action instead of confirming its effect (R0).
 - A `Core` method opens its own wait loop instead of relying on the call's poll (R2).
-- The element type in a `.tpl.cs` is a platform driver type rather than `IMauiElement` or
-  `IHtmlElement`.
+- The element type in a `.tpl.cs` is a platform driver type rather than `IMauiElement`,
+  `IHtmlElement` or `INativeAndroidElement`.
+- A `Core` method that has acted throws `ElementNotReadyException`: the call would act again.
+  After acting, a missing effect is a confirmation failure.
 
 ## Html controls
 
@@ -56,3 +59,13 @@ The same rules apply. An action that changes state acts once and confirms its ef
 `ActAndConfirm`, never pressing again. A readiness check before acting goes in
 `EnsureReadyForActionCore` and throws `ElementNotReadyException`. A read below the call gets
 `CallRemainingMs`. There are no async members: every member is a synchronous call, as on MAUI.
+
+## Native Android controls
+
+Generated the same way, from `.tpl.cs` templates under `srcnew/Brinell.NativeAndroid/Controls`
+(`tools\Scripts\CreateNativeAndroid.Bat`), with `INativeAndroidElement` as the element type.
+`ViewBase<TScope>` has MAUI's `Run*` names and signatures (R8), and the capability bases implement
+the same Core interfaces, so the UAT verbs are the same. Controls carry Android's widget names
+(`EditText`, `Spinner`, `RecyclerView`), not MAUI's. Gestures are named and relative to the view;
+no public member takes screen coordinates. An action Android has no route for (`Hover`) throws
+`RouteUnavailableException`.

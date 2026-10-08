@@ -36,6 +36,36 @@ public static class Ffmpeg
     /// <summary>ffmpeg's executable, or <see cref="FfmpegNotFoundException"/> saying how to get it.</summary>
     public static string Require() => Find() ?? throw new FfmpegNotFoundException();
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> Filters = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Whether this ffmpeg has a filter, e.g. <c>subtitles</c>, which needs a build with libass. Asked
+    /// once per filter and process.
+    /// </summary>
+    /// <param name="name">The filter's name.</param>
+    public static bool HasFilter(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        return Filters.GetOrAdd(name, filter =>
+        {
+            var info = new ProcessStartInfo(Require(), "-hide_banner -filters")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using var process = Process.Start(info) ?? throw new FfmpegException("ffmpeg did not start.");
+            var errors = process.StandardError.ReadToEndAsync();
+            var listed = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            _ = errors.GetAwaiter().GetResult();
+
+            // A line per filter: " TSC name   V->V   description".
+            return listed.Split('\n').Any(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries) is [_, var listedName, ..] && listedName == filter);
+        });
+    }
+
     /// <summary>Runs ffmpeg to the end; throws with the end of its output when it fails.</summary>
     /// <param name="arguments">Its arguments, one per item.</param>
     /// <param name="cancellationToken">Stops it.</param>

@@ -8,7 +8,7 @@ namespace Brinell.Bdd.Runner;
 public static class BddRunnerProtocol
 {
     /// <summary>The version this build speaks. Raised when a message changes its meaning.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     /// <summary>The argument that names the pipe the runner connects to.</summary>
     public const string PipeArgument = "--pipe";

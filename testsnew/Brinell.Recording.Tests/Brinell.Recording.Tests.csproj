@@ -11,7 +11,7 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Recording\Brinell.Recording.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Appium\Brinell.Appium.csproj" />
   </ItemGroup>
 
   <ItemGroup>

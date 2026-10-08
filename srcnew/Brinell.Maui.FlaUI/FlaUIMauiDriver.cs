@@ -422,14 +422,25 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// The app publishes no bridge, the element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(string automationId, MauiGesture gesture)
-        => WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture));
+    {
+        using var mark = ReportGesture(automationId, gesture);
+        WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture));
+    }
 
     /// <inheritdoc />
     /// <exception cref="Bridge.GestureUnavailableException">
     /// The app publishes no bridge, the element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
-        => WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2));
+    {
+        using var mark = ReportGesture(automationId, gesture);
+        WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2));
+    }
+
+    // A recorded video's touch mark (AD-024): a control the tree cannot show (a RefreshView, a
+    // SwipeView) has its bounds from the bridge.
+    private Brinell.Core.Recording.Interactions.Scope ReportGesture(string automationId, MauiGesture gesture)
+        => MauiInteractions.Report(gesture, () => BrinellBridgeLookup.TargetBounds(RootElement, Automation, automationId), () => automationId);
 
     /// <summary>
     /// Runs a bridge gesture; a gesture that found no target because the app has exited is
@@ -580,6 +591,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public void NavigateBack()
     {
+        using var mark = Brinell.Core.Recording.Interactions.Report(Brinell.Core.Recording.InteractionKind.Key, () => System.Drawing.Rectangle.Empty, key: "Back");
         const int publishWindowMs = 1_000;
         const int pollMs = 25;
 

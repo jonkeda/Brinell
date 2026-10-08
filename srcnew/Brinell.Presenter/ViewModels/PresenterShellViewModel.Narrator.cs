@@ -189,11 +189,11 @@ public sealed partial class PresenterShellViewModel
             return;
         }
 
-        var video = Path.Combine(recordings, $"{BddKeptScenes.NameOf(script.FilePath)}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture)}.mp4");
+        var video = Path.Combine(recordings, $"{BddKeptScenes.NameOf(script.FilePath)}.mp4");
         RecordingStatus = "Stitching...";
         try
         {
-            var made = await _recorder.StitchAsync(script.Title, folder, video, script.Scenes.Count, CancellationToken.None).ConfigureAwait(true);
+            var made = await _recorder.StitchAsync(script.Title, folder, video, script.Scenes.Count, BddTouchMarks.For(script, setting: _touchColor), CancellationToken.None).ConfigureAwait(true);
             _lastRecording = made.Video;
             OnPropertyChanged(nameof(HasRecording));
             (WatchRecordingCommand as RelayCommand)?.NotifyCanExecuteChanged();

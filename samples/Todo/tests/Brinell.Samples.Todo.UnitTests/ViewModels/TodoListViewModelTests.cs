@@ -72,6 +72,27 @@ public sealed class TodoListViewModelTests
     }
 
     [Fact]
+    public async Task StartOver_IsAFreshLaunchOnTheDatabaseAsItIs_NoError_FilterOnAll_AndTheFirstSyncAgain()
+    {
+        _repository.With(Build.Todo("Kept"));
+        _sync.SyncAsync(Arg.Any<CancellationToken>()).Returns(new SyncResult(SyncError.ServerError, Build.Now));
+        var list = Create(syncOnStart: true);
+        await list.AppearAsync();
+        list.FilterIndex = 1;
+        await list.Reloading;
+
+        // A test reset the database under the app: one todo now, and the server answers.
+        _repository.With(Build.Todo("Seeded"));
+        SyncSucceeds();
+        await list.StartOverAsync();
+
+        Assert.Equal(0, list.FilterIndex);
+        Assert.Equal(ListState.Content, list.State);
+        Assert.Equal(TodoListRules.ErrorMessage(SyncError.None), list.ErrorMessage);
+        await _sync.Received(2).SyncAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     [Trait("Journey", "TOD.08.1")]
     public async Task ServerErrorOnSync_ShowsErrorWithMessage_AndKeepsTheLocalTodos()
     {

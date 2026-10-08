@@ -77,6 +77,9 @@ public sealed class VisualStudioIde : IAsyncLifetime
     /// <summary>Whether the debugger is not debugging.</summary>
     public bool InDesignMode => Com(() => (int)_dte!.Debugger.CurrentMode) == DesignMode;
 
+    /// <summary>The function the debugger is stopped in, or null when it is not in break mode.</summary>
+    public string? CurrentFunction => Com(() => _dte!.Debugger.CurrentStackFrame is { } frame ? (string)frame.FunctionName : null);
+
     /// <summary>The active document's path, or null.</summary>
     public string? ActiveDocument => Com(() => _dte!.ActiveDocument is { } document ? (string)document.FullName : null);
 

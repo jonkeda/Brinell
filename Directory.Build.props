@@ -28,8 +28,9 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     
-    <!-- Deterministic builds -->
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- Deterministic builds, for what ships. Tests and samples keep real PDB paths: the language
+         server tests navigate to their sources, which a deterministic build maps to /_/. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)testsnew')) and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)samples'))">true</ContinuousIntegrationBuild>
   </PropertyGroup>
   
   <ItemGroup>

@@ -20,6 +20,8 @@ public sealed partial class PresenterShellViewModel
     private string? _voice;
     private int _beat;
     private bool _speakAloud;
+    private string? _touchColor;
+    private string _touchColorText = string.Empty;
     private string? _lastRecording;
     private string _recordingStatus = string.Empty;
     private string _voiceStatus = string.Empty;
@@ -73,8 +75,12 @@ public sealed partial class PresenterShellViewModel
         }
     }
 
-    /// <summary>The voices on this machine, the default first.</summary>
-    public IReadOnlyList<string> VoiceChoices { get; } = [DefaultVoiceChoice, .. WindowsSpeech.Voices];
+    private static readonly IReadOnlyList<string> WindowsVoices = WindowsSpeech.Voices;
+
+    /// <summary>The voices on this machine, the default first, then the cloud voices when one is set up.</summary>
+    public IReadOnlyList<string> VoiceChoices => _cloud.IsSetUp
+        ? [DefaultVoiceChoice, .. WindowsVoices, .. CloudVoices.Select(voice => Brinell.Narrator.AzureOpenAiSpeech.Prefix + voice)]
+        : [DefaultVoiceChoice, .. WindowsVoices];
 
     /// <summary>The voice setting, by its name on the Settings page.</summary>
     public string VoiceChoice
@@ -141,6 +147,24 @@ public sealed partial class PresenterShellViewModel
         }
     }
 
+    /// <summary>The touch marks' accent as the Settings page edits it: <c>#RRGGBB</c>, or empty for Exact red. Saved when it is one of those.</summary>
+    public string TouchColorText
+    {
+        get => _touchColorText;
+        set
+        {
+            if (SetProperty(ref _touchColorText, value ?? string.Empty))
+            {
+                var color = _touchColorText.Trim();
+                if (color.Length == 0 || Brinell.Narrator.BddTouchMarks.IsColor(color))
+                {
+                    _touchColor = color.Length == 0 ? null : color.ToUpperInvariant();
+                    SaveRecordingSettings();
+                }
+            }
+        }
+    }
+
     /// <summary>Whether a recording also plays each line aloud while the run waits for it.</summary>
     public bool SpeakAloud
     {
@@ -161,6 +185,8 @@ public sealed partial class PresenterShellViewModel
         _voice = settings.Voice;
         _beat = settings.Beat;
         _speakAloud = settings.SpeakAloud;
+        _touchColor = Brinell.Narrator.BddTouchMarks.IsColor(settings.TouchColor) ? settings.TouchColor : null;
+        _touchColorText = _touchColor ?? string.Empty;
         ToggleRecordCommand = new RelayCommand(ToggleRecord);
         WatchRecordingCommand = new RelayCommand(WatchRecording, () => HasRecording);
         TryVoiceCommand = new AsyncRelayCommand(TryVoiceAsync);
@@ -195,7 +221,7 @@ public sealed partial class PresenterShellViewModel
 
         try
         {
-            var settings = new PresenterRecordingSettings(_recordingsFolder.Length > 0 ? _recordingsFolder : null, _voice, TimeSpan.FromMilliseconds(_beat), _speakAloud);
+            var settings = new PresenterRecordingSettings(_recordingsFolder.Length > 0 ? _recordingsFolder : null, _voice, TimeSpan.FromMilliseconds(_beat), _speakAloud) { TouchColor = _touchColor };
             await _recorder.StartAsync(session, WorkspacePath, scenario.FilePath, scenario.Name, settings, _executionCancellation?.Token ?? CancellationToken.None).ConfigureAwait(true);
             RecordingStatus = $"Recording {scenario.Name}...";
         }
@@ -262,6 +288,7 @@ public sealed partial class PresenterShellViewModel
             settings.Voice = _voice;
             settings.Beat = _beat;
             settings.SpeakAloud = _speakAloud;
+            settings.TouchColor = _touchColor;
             _settingsService.Save(settings);
         }
         catch (Exception ex)

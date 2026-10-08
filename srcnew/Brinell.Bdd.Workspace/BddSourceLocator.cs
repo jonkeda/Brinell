@@ -10,7 +10,7 @@ namespace Brinell.Bdd.Workspace;
 /// <summary>
 /// Where a suite's C# is written, from its assemblies' portable PDBs (beside the assembly or
 /// embedded), and what its XML doc says. Go to definition and hover use it; a build without a PDB or
-/// an XML doc file gives nothing, not an error.
+/// an XML doc file, or a deterministic build whose PDB paths are mapped, gives nothing, not an error.
 /// </summary>
 public static partial class BddSourceLocator
 {
@@ -116,7 +116,9 @@ public static partial class BddSourceLocator
             {
                 if (!point.IsHidden)
                 {
-                    return (reader.GetString(reader.GetDocument(point.Document).Name), point.StartLine);
+                    // A deterministic (CI) build maps its sources to /_/: no file here to open.
+                    var file = reader.GetString(reader.GetDocument(point.Document).Name);
+                    return Path.IsPathFullyQualified(file) ? (file, point.StartLine) : null;
                 }
             }
         }

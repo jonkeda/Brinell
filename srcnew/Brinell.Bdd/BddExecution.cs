@@ -223,7 +223,10 @@ public sealed class BddStepExecutionSession
             return canceled;
         }
 
-        if (invocation.Command.Handler is null)
+        // A local, not the property, on the line that runs it: F11 there goes into the step's code
+        // without Visual Studio's "automatic step-over of a property" notice.
+        var handler = invocation.Command.Handler;
+        if (handler is null)
         {
             var missingHandler = BddStepResult.Failed(
                 invocation,
@@ -251,7 +254,7 @@ public sealed class BddStepExecutionSession
                 await pacer.BeforeAsync(invocation, _context, cancellationToken).ConfigureAwait(false);
             }
 
-            var result = NameTheSession(await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false));
+            var result = NameTheSession(await handler(_context, invocation, cancellationToken).ConfigureAwait(false));
             BreakOnFailure(invocation, result);
             _results.Add(result);
             await PaceAfterAsync(result, cancellationToken).ConfigureAwait(false);

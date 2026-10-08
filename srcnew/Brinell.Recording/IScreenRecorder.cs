@@ -37,4 +37,11 @@ public sealed record RecordingOptions(string OutputPath, int FramesPerSecond = 3
 /// <param name="Size">The video's size in pixels.</param>
 /// <param name="StartedAt">When its first frame was taken, on the <see cref="RecordingClock"/>.</param>
 /// <param name="Warnings">What went less well than asked: frames repeated, a size change, a clock estimate.</param>
-public sealed record RecordingResult(string Path, TimeSpan Duration, Size Size, long StartedAt, IReadOnlyList<string> Warnings);
+public sealed record RecordingResult(string Path, TimeSpan Duration, Size Size, long StartedAt, IReadOnlyList<string> Warnings)
+{
+    /// <summary>
+    /// The area of the driver's coordinates (screen, device or viewport pixels) the frames show, so
+    /// an element's bounds can be found in the video; null when they are the frame's own pixels.
+    /// </summary>
+    public Rectangle? Source { get; init; }
+}

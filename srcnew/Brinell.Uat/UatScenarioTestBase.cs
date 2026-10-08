@@ -343,92 +343,25 @@ public abstract class UatScenarioTestBase<TFixture>
         return scene is null ? null : new BddSceneRecording(scene, () => RecordingTarget, Recorders.Value);
     }
 
-    protected virtual IScreenshotService? GetScreenshotService()
-    {
-        if (Fixture is IScreenshotService screenshotService)
-        {
-            return screenshotService;
-        }
-
-        var property = Fixture.GetType().GetProperty(
-            "ScreenshotService",
-            BindingFlags.Instance | BindingFlags.Public);
-
-        return property is not null &&
-               typeof(IScreenshotService).IsAssignableFrom(property.PropertyType)
-            ? property.GetValue(Fixture) as IScreenshotService
-            : null;
-    }
+    protected virtual IScreenshotService? GetScreenshotService() => UatScenarioResults.ScreenshotServiceOf(Fixture);
 
     protected virtual string FormatEvidenceScenarioName(BddBoundScenario scenario)
-    {
-        ArgumentNullException.ThrowIfNull(scenario);
-
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var sanitized = string.Concat(
-            scenario.Source.Name.Select(ch => invalidChars.Contains(ch) ? '_' : ch));
-
-        return sanitized.Length <= EvidenceScenarioNameMaxLength
-            ? sanitized
-            : sanitized[..EvidenceScenarioNameMaxLength];
-    }
+        => UatScenarioResults.EvidenceName(scenario, EvidenceScenarioNameMaxLength);
 
     private void RecordScenarioResult(
         UatBoundFileContext context,
         BddBoundScenario scenario,
         BddScenarioExecutionResult execution,
         TimeSpan duration)
-    {
-        try
-        {
-            var status = GetScenarioStatus(execution.Result);
-            var directory = context.Runtime.Config.Reporting.OutputDirectory;
-            Directory.CreateDirectory(directory);
-            var file = scenario.Source.Source.FilePath;
-            var reportPath = Path.Combine(directory, UatScenarioReport.FileName(file, FormatEvidenceScenarioName(scenario)));
-            var trace = context.Runtime.Config.Reporting.IncludeRuntimeTrace
-                ? new UatReportTrace(context.Catalog, context.Runtime.DiscoveryReport)
-                : null;
-
-            File.WriteAllText(reportPath, UatScenarioReport.Build(scenario, execution, status, duration, context.Runtime.ConfigDirectory, trace));
-
-            // The suite, file and line let a tool find the newest run of a file's scenarios (P5, AD-007).
-            TestArtifactManifestWriter.RecordArtifact(
-                reportPath,
-                "uat-scenario",
-                scenario.Source.Name,
-                status,
-                new Dictionary<string, string?>
-                {
-                    ["target"] = context.Runtime.Config.Runtime.TryGetValue("Target", out var target) ? target : null,
-                    ["fixture"] = context.Runtime.Config.Runtime.TryGetValue("Fixture", out var fixture) ? fixture : null,
-                    ["evidencePath"] = execution.EvidencePath,
-                    ["suite"] = GetType().Assembly.GetName().Name,
-                    ["file"] = file is null ? null : Path.GetRelativePath(context.Runtime.ConfigDirectory, Path.GetFullPath(file)).Replace('\\', '/'),
-                    ["line"] = scenario.Source.Source.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                });
-        }
-        catch
-        {
-            // Report writing should not change scenario outcome.
-        }
-    }
-    private static string GetScenarioStatus(BddScenarioRunResult result)
-    {
-        if (result.Passed)
-        {
-            return "passed";
-        }
-
-        if (result.Skipped)
-        {
-            return "skipped";
-        }
-
-        return result.Steps.Any(step => step.Status == BddStepResultStatus.Canceled)
-            ? "canceled"
-            : "failed";
-    }
+        => UatScenarioResults.Record(
+            context.Runtime,
+            context.Catalog,
+            scenario,
+            execution,
+            duration,
+            GetType().Assembly.GetName().Name,
+            FormatEvidenceScenarioName(scenario),
+            UatScenarioResults.TestMode);
 
     private static string? GetScenarioId(BddBoundScenario scenario)
     {

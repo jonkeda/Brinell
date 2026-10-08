@@ -63,6 +63,8 @@ jobs:
             'Brinell.Mocking.Tests',
             'Brinell.Uat.Tests',
             'Brinell.TestData.Tests',
+            'Brinell.Appium.Tests',
+            'Brinell.NativeAndroid.Tests',
             'Brinell.Cli.Tests'
           )
           $failed = @()

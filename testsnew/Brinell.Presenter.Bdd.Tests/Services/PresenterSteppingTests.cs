@@ -100,4 +100,28 @@ public sealed class PresenterSteppingTests
             Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
         }
     }
+
+    [Fact]
+    public void Play_StopsAtAnIdesBreakpointInAStepFile_TheRowsCoverTheFeatureFile()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenterUat", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(folder, "bdd-breakpoints.json");
+        var feature = Path.Combine(folder, "shelf.feature.md");
+        var steps = Path.Combine(folder, "shelf.steps.md");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(path, $$"""{ "files": { {{System.Text.Json.JsonSerializer.Serialize(steps)}}: [6], {{System.Text.Json.JsonSerializer.Serialize(feature)}}: [9] } }""");
+        try
+        {
+            Brinell.Bdd.Runner.BddRunnerPosition At(string file, int line) => new(file, line, "a step", 1, []);
+
+            Assert.True(PresenterStepping.BreaksInStepFile(At(steps, 6), feature, path));
+            Assert.False(PresenterStepping.BreaksInStepFile(At(steps, 7), feature, path));
+            Assert.False(PresenterStepping.BreaksInStepFile(At(feature, 9), feature, path));
+            Assert.False(PresenterStepping.BreaksInStepFile(null, feature, path));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
 }

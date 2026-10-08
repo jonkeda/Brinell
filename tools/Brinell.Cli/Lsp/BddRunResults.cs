@@ -22,26 +22,11 @@ internal sealed class BddRunResults
     /// The <c>TestResults</c> folder a suite's runs write: at the nearest folder above its project
     /// with <c>.git</c> or a <c>.sln</c>, the walk the run makes from its output folder
     /// (<c>DefaultTestArtifactPathProvider</c>). Not the open solution's: a solution may list
-    /// projects outside its folder.
+    /// projects outside its folder. A runner a host starts (the server's, the Presenter's) is told
+    /// it, so a run from a copy of the output writes here too.
     /// </summary>
     /// <param name="projectDir">The suite's project folder.</param>
-    public static string RootFor(string projectDir)
-    {
-        if (Environment.GetEnvironmentVariable(TestArtifactOptions.RootDirectoryEnvironmentVariable) is { Length: > 0 } configured)
-        {
-            return configured;
-        }
-
-        for (var folder = new DirectoryInfo(projectDir); folder is not null; folder = folder.Parent)
-        {
-            if (Directory.Exists(Path.Combine(folder.FullName, ".git")) || folder.EnumerateFiles("*.sln").Any())
-            {
-                return Path.Combine(folder.FullName, "TestResults");
-            }
-        }
-
-        return Path.Combine(projectDir, "TestResults");
-    }
+    public static string RootFor(string projectDir) => TestArtifactOptions.RootFor(projectDir);
 
     /// <summary>The newest run of each scenario of a file in a suite, by scenario name.</summary>
     /// <param name="root">The suite's results folder (<see cref="RootFor"/>).</param>

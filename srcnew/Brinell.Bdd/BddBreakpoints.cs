@@ -116,6 +116,20 @@ public sealed class BddBreakpoints : IBddBreakHook
     public static IBddBreakHook? ForDebugger(Func<bool>? attached = null, string? path = null)
         => (attached ?? (() => Debugger.IsAttached))() ? new BddBreakpoints(path ?? DefaultPath) : null;
 
+    /// <summary>
+    /// Whether the breakpoints file lists a line now, matched as a debugged run matches it (a build
+    /// output's copy of a file matches its source): for a host that pauses between steps itself.
+    /// </summary>
+    /// <param name="file">The step's or call's file.</param>
+    /// <param name="line">Its line.</param>
+    /// <param name="path">The breakpoints file; <see cref="DefaultPath"/> by default.</param>
+    public static bool Lists(string? file, int line, string? path = null)
+    {
+        var breakpoints = new BddBreakpoints(path ?? DefaultPath);
+        breakpoints.Refresh();
+        return breakpoints.IsListed(new BddSourceLocation(file, line));
+    }
+
     /// <inheritdoc />
     public BddStepBreak? Before(BddStepInvocation invocation, BddExecutionContext context)
     {
@@ -200,6 +214,9 @@ public sealed class BddBreakpoints : IBddBreakHook
             text = position.Text,
             calls = position.Calls,
             failed = position.Result is not null,
+            arguments = position.IsCall || position.Arguments.Count == 0 ? null : position.Arguments,
+            app = position.App,
+            page = position.Page,
         }));
 
     // A move for this process that the step fits: it stops here, once. "Over" at depth d stops at a

@@ -32,6 +32,7 @@ internal sealed class BddRunController : IVsDebuggerEvents
 
     // The .NET (CoreCLR) debug engine, which a net10 testhost needs.
     private const string CoreClrEngine = "{2E36F1D4-B23C-435D-AB41-18E608940038}";
+    private readonly BddCodeChanges _changes = new();
     private TaskCompletionSource<bool>? _build;
     private Process? _process;
 
@@ -80,8 +81,9 @@ internal sealed class BddRunController : IVsDebuggerEvents
         try
         {
             _log(string.Empty);
-            _log($"Building the solution for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
-            if (!await BuildAsync())
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            if (!await BuildAsync(toBuild))
             {
                 await StatusAsync("The build failed, so the BDD run did not start. See the Error List.");
                 return;
@@ -107,6 +109,185 @@ internal sealed class BddRunController : IVsDebuggerEvents
     }
 
     /// <summary>
+    /// Steps through the scenario at a heading's line (AD-022): the suite's project is
+    /// built, then the language server runs the scenario in the suite's runner, paused before its first
+    /// step. The run goes on until the server says it ended (<see cref="StepEnded"/>).
+    /// </summary>
+    /// <param name="path">The feature file.</param>
+    /// <param name="line">The scenario heading's line.</param>
+    /// <param name="suite">The suite picked for a linked file; null for the first.</param>
+    public async Task StepAsync(string path, int line, string? suite)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (IsRunning)
+        {
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before starting another.");
+            return;
+        }
+
+        IsRunning = true;
+        _runLine = line;
+        PostRunning(paused: false);
+        var stepping = false;
+        try
+        {
+            _log(string.Empty);
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            if (toBuild is not null && await UpToDateForRunnerAsync(toBuild))
+            {
+                _log($"Nothing but scenario files changed since {Path.GetFileName(toBuild)} was built: not built again (the runner reads them from the source).");
+            }
+            else
+            {
+                _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to step through {Path.GetFileName(path)} line {line}...");
+                if (!await BuildAsync(toBuild))
+                {
+                    await StatusAsync("The build failed, so the Step-through run did not start. See the Error List.");
+                    return;
+                }
+            }
+
+            await _server.BuildDoneAsync(_package.DisposalToken);
+            var started = await _server.StepStartAsync(path, line, suite, _package.DisposalToken);
+            if ((bool?)started["started"] != true)
+            {
+                await StatusAsync($"This cannot be stepped through: {(string?)started["reason"]}");
+                return;
+            }
+
+            _log($"Stepping through '{(string?)started["scenario"]}' in {(string?)started["suite"]}: F10 over, F11 into, Shift+F11 out, F5 on to a breakpoint, Shift+F5 stop.");
+            stepping = true;
+            IsStepping = true;
+        }
+        finally
+        {
+            if (!stepping)
+            {
+                await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+                IsRunning = false;
+                _post(new { type = "running" });
+            }
+        }
+    }
+
+    /// <summary>Whether a Step-through run is going: the server runs it, and says when it pauses and ends.</summary>
+    public bool IsStepping { get; private set; }
+
+    /// <summary>Whether a run on the suite's runner is going: the server runs it, and says when it ends.</summary>
+    public bool IsRunningOnRunner { get; private set; }
+
+    /// <summary>
+    /// Runs the scenario at a heading's line, or the file, on the suite's runner (I4 of the debugger
+    /// plan): the preview's Run. The build is skipped when only scenario files changed (I1); the run
+    /// goes on until the server says it ended (<see cref="RunEnded"/>). Run as test is <see cref="RunAsync"/>.
+    /// </summary>
+    /// <param name="path">The feature file.</param>
+    /// <param name="line">The scenario heading's line; null for the whole file.</param>
+    /// <param name="suite">The suite picked for a linked file; null for the first.</param>
+    public async Task RunOnRunnerAsync(string path, int? line, string? suite)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (IsRunning)
+        {
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before starting another.");
+            return;
+        }
+
+        IsRunning = true;
+        _runLine = line;
+        PostRunning(paused: false);
+        var going = false;
+        try
+        {
+            _log(string.Empty);
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            if (toBuild is not null && await UpToDateForRunnerAsync(toBuild))
+            {
+                _log($"Nothing but scenario files changed since {Path.GetFileName(toBuild)} was built: not built again (the runner reads them from the source).");
+            }
+            else
+            {
+                _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to run {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+                if (!await BuildAsync(toBuild))
+                {
+                    await StatusAsync("The build failed, so the run did not start. See the Error List.");
+                    return;
+                }
+            }
+
+            await _server.BuildDoneAsync(_package.DisposalToken);
+            var started = await _server.RunStartAsync(path, line, suite, _package.DisposalToken);
+            if ((bool?)started["started"] != true)
+            {
+                await StatusAsync($"This cannot be run on the runner: {(string?)started["reason"]}");
+                return;
+            }
+
+            _log($"Running {string.Join(", ", (started["scenarios"] as JArray)?.Select(name => $"'{(string?)name}'") ?? [])} on the runner of {(string?)started["suite"]}...");
+            going = true;
+            IsRunningOnRunner = true;
+        }
+        finally
+        {
+            if (!going)
+            {
+                await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+                IsRunning = false;
+                _post(new { type = "running" });
+            }
+        }
+    }
+
+    /// <summary>The run on the runner ended: each scenario's result in the Output pane; the preview shows them from the results.</summary>
+    /// <param name="ended">The server's <c>brinell/run/ended</c>.</param>
+    public void RunEnded(JObject ended)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!IsRunningOnRunner)
+        {
+            return;
+        }
+
+        IsRunningOnRunner = false;
+        IsRunning = false;
+        _post(new { type = "running" });
+        foreach (var result in (ended["results"] as JArray ?? []).OfType<JObject>())
+        {
+            var message = (string?)result["message"];
+            _log($"  {(string?)result["scenario"]}: {(string?)result["status"]}{(message is null ? string.Empty : $": {message}")}");
+        }
+
+        var error = (string?)ended["message"];
+        _log($"The run on the runner ended: {(string?)ended["status"]}{(error is null ? string.Empty : $": {error}")}");
+    }
+
+    /// <summary>The Step-through run paused, or went on: the preview says so on its scenario.</summary>
+    public void StepPaused(bool paused)
+    {
+        if (IsStepping)
+        {
+            PostRunning(paused);
+        }
+    }
+
+    /// <summary>The Step-through run ended: how, in the Output pane.</summary>
+    /// <param name="status"><c>passed</c>, <c>failed</c>, <c>stopped</c> or <c>error</c>.</param>
+    /// <param name="message">A failure's or an error's message.</param>
+    public void StepEnded(string? status, string? message)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!IsStepping)
+        {
+            return;
+        }
+
+        IsStepping = false;
+        IsRunning = false;
+        _post(new { type = "running" });
+        _log($"The Step-through run ended: {status}{(message is null ? string.Empty : $": {message}")}");
+    }
+
+    /// <summary>
     /// Records a video script, or the scenario at a heading's line (the narrator): the build, the
     /// gate run with <c>BRINELL_RECORD</c>, then the video it made, offered to watch.
     /// </summary>
@@ -128,8 +309,9 @@ internal sealed class BddRunController : IVsDebuggerEvents
         try
         {
             _log(string.Empty);
-            _log($"Building the solution to record {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
-            if (!await BuildAsync())
+            var toBuild = await SuiteProjectAsync(path, line, suite);
+            _log($"Building {(toBuild is null ? "the solution" : Path.GetFileName(toBuild))} to record {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            if (!await BuildAsync(toBuild))
             {
                 await StatusAsync("The build failed, so the recording did not start. See the Error List.");
                 return;
@@ -207,9 +389,23 @@ internal sealed class BddRunController : IVsDebuggerEvents
         _debugger = null;
     }
 
-    /// <summary>Stops the run: the test process and everything it started, the app included.</summary>
+    /// <summary>Stops the run: the test process and everything it started, the app included; a Step-through run through the server.</summary>
     public void Cancel()
     {
+        if (IsRunningOnRunner)
+        {
+            _log("Cancelling the run on the runner...");
+            _package.JoinableTaskFactory.RunAsync(() => _server.RunCancelAsync(_package.DisposalToken)).FileAndForget("Brinell/RunCancel");
+            return;
+        }
+
+        if (IsStepping)
+        {
+            _log("Stopping the Step-through run...");
+            _package.JoinableTaskFactory.RunAsync(() => _server.StepMoveAsync("stop", _package.DisposalToken)).FileAndForget("Brinell/StepStop");
+            return;
+        }
+
         if (_process is { HasExited: false } process)
         {
             _log("Cancelling the BDD run...");
@@ -223,7 +419,17 @@ internal sealed class BddRunController : IVsDebuggerEvents
     /// <summary>The build finished; the run waiting for it goes on when it succeeded.</summary>
     public void BuildFinished(bool succeeded) => _build?.TrySetResult(succeeded);
 
-    private async Task<bool> BuildAsync()
+    // The suite's project, which the server names even before its first build; null when no suite
+    // holds the file (the whole solution is built then).
+    private async Task<string?> SuiteProjectAsync(string path, int? line, string? suite)
+    {
+        var target = await _server.RunTargetAsync(path, line, suite, _package.DisposalToken);
+        return (string?)target["project"] is { Length: > 0 } project && File.Exists(project) ? project : null;
+    }
+
+    // The suite's project and what it references, not the whole solution (with Brinell.sln open,
+    // 86 projects): Visual Studio's own up-to-date check then makes a second Run start at once.
+    private async Task<bool> BuildAsync(string? project)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         if (await _package.GetServiceAsync(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager2 builds)
@@ -232,8 +438,11 @@ internal sealed class BddRunController : IVsDebuggerEvents
         }
 
         _build = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var started = builds.StartSimpleUpdateSolutionConfiguration((uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD, 0, 0);
-        if (started != Microsoft.VisualStudio.VSConstants.S_OK)
+        var startedAt = DateTime.UtcNow;
+        var started = project is not null && await FindProjectAsync(project) is { } inSolution
+            ? StartProjectBuild(inSolution)
+            : builds.StartSimpleUpdateSolutionConfiguration((uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD, 0, 0) == Microsoft.VisualStudio.VSConstants.S_OK;
+        if (!started)
         {
             _build = null;
             return false;
@@ -241,8 +450,82 @@ internal sealed class BddRunController : IVsDebuggerEvents
 
         // Completed by UpdateSolution_Done on the main thread, which nothing here blocks.
 #pragma warning disable VSTHRD003
-        return await _build.Task;
+        var built = await _build.Task;
 #pragma warning restore VSTHRD003
+        if (built && project is not null)
+        {
+            _changes.Built(project, startedAt);
+        }
+
+        return built;
+    }
+
+    // A run on the suite's runner needs no build when only scenario files changed since the last.
+    private async Task<bool> UpToDateForRunnerAsync(string project)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        return await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is EnvDTE80.DTE2 dte && _changes.UpToDate(dte, project);
+    }
+
+    private bool StartProjectBuild(EnvDTE.Project project)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        var dte = (EnvDTE80.DTE2)project.DTE;
+        dte.Solution.SolutionBuild.BuildProject(dte.Solution.SolutionBuild.ActiveConfiguration.Name, project.UniqueName, WaitForBuildToFinish: false);
+        return true;
+    }
+
+    // The project in the open solution, inside solution folders too; null when it is not in it.
+    private async Task<EnvDTE.Project?> FindProjectAsync(string path)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
+        {
+            return null;
+        }
+
+        return Find(dte.Solution.Projects.Cast<EnvDTE.Project>());
+
+        EnvDTE.Project? Find(IEnumerable<EnvDTE.Project?> projects)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            foreach (var candidate in projects.OfType<EnvDTE.Project>())
+            {
+                if (candidate.Kind == EnvDTE80.ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    List<EnvDTE.Project?> children = [];
+                    foreach (EnvDTE.ProjectItem item in candidate.ProjectItems)
+                    {
+                        children.Add(item.SubProject);
+                    }
+
+                    if (Find(children) is { } nested)
+                    {
+                        return nested;
+                    }
+                }
+                else if (string.Equals(TryFullName(candidate), path, StringComparison.OrdinalIgnoreCase))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        // A project that failed to load has no file name.
+        static string? TryFullName(EnvDTE.Project project)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                return project.FullName;
+            }
+            catch (NotImplementedException)
+            {
+                return null;
+            }
+        }
     }
 
     private async Task<int> RunTestsAsync(string project, string filter, bool debug, IReadOnlyDictionary<string, string>? variables = null)
@@ -371,6 +654,33 @@ internal sealed class BddRunController : IVsDebuggerEvents
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(500), _package.DisposalToken);
+        }
+    }
+
+    /// <summary>
+    /// Debug from here (AD-022): attaches Visual Studio's debugger to the paused
+    /// Step-through run's runner, which then breaks before the next step that runs.
+    /// </summary>
+    /// <returns>Whether the debugger is attached: the caller makes the move that runs the step.</returns>
+    public async Task<bool> AttachToRunnerAsync()
+    {
+        var debug = await _server.StepDebugAsync(_package.DisposalToken);
+        if ((int?)debug["processId"] is not { } id)
+        {
+            await StatusAsync($"Debug from here did not start: {(string?)debug["reason"]}");
+            return false;
+        }
+
+        try
+        {
+            await AttachToAsync(id);
+            _log($"The debugger is attached to the runner (process {id}): the next step stops in it; F11 there goes into its step definition. The runner ends with this run.");
+            return true;
+        }
+        catch (Exception exception) when (exception is COMException or InvalidOperationException)
+        {
+            await StatusAsync($"The debugger could not attach to the runner: {exception.Message}");
+            return false;
         }
     }
 

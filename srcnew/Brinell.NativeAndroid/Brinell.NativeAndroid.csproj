@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.NativeAndroid</RootNamespace>
-    <Description>Native Android Appium driver, page object, and control primitives for Brinell UI testing.</Description>
+    <Description>Page objects, controls and the Appium driver for native Android apps (UiAutomator2), in the shape of Brinell's MAUI and Html stacks.</Description>
     <PackageId>Brinell.NativeAndroid</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\Brinell.Appium\Brinell.Appium.csproj" />
   </ItemGroup>
 
   <ItemGroup>

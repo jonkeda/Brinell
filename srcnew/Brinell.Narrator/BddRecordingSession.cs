@@ -47,7 +47,6 @@ public sealed class BddRecordingSession
 
     private readonly string _configDirectory;
     private readonly ISpeechSynthesizer? _synthesizer;
-    private readonly string _stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
     private readonly SemaphoreSlim _composing = new(1, 1);
     private bool _composed;
 
@@ -87,6 +86,9 @@ public sealed class BddRecordingSession
 
     /// <summary>The wait after a step.</summary>
     public TimeSpan Beat { get; }
+
+    /// <summary>The composed video's touch marks: the script's, with <see cref="BddTouchMarks.ColorVariable"/>'s accent when it names none.</summary>
+    public BddTouchMarks Touches { get; init; } = BddTouchMarks.Default;
 
     /// <summary>
     /// The run's session from the environment; null when <c>BRINELL_RECORD</c> is not set. Throws
@@ -130,14 +132,19 @@ public sealed class BddRecordingSession
             ? output
             : script is null ? folder
             : keep ? BddKeptScenes.Folder(folder, script.Script!.FilePath)
-            : Path.Combine(folder, $"{name}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.scenes");
+            : Path.Combine(folder, name + BddVideoComposer.RunFolderExtension);
+        if (script is not null && !keep && Directory.Exists(scenes))
+        {
+            Directory.Delete(scenes, recursive: true);
+        }
+
         var beat = int.TryParse(read(BeatVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds)
             ? TimeSpan.FromMilliseconds(milliseconds)
             : DefaultBeat;
         var voice = script?.Script?.Voice ?? read(VoiceVariable);
         var instructions = script?.Script?.Instructions ?? read(InstructionsVariable);
         var synthesizer = Speech.Find(voice, instructions, configDirectory, read);
-        return new BddRecordingSession(configDirectory, script, scenes, synthesizer, voice, beat, instructions) { KeepScenes = keep };
+        return new BddRecordingSession(configDirectory, script, scenes, synthesizer, voice, beat, instructions) { KeepScenes = keep, Touches = BddTouchMarks.For(script?.Script, read) };
     }
 
     /// <summary>
@@ -152,8 +159,13 @@ public sealed class BddRecordingSession
         var address = BddScenarioAddress.Of(Path.GetRelativePath(_configDirectory, featureFile), scenarioName);
         if (Script is null)
         {
-            var own = Path.Combine(ScenesFolder, $"{BddScenarioAddress.Slug(scenarioName)}-{_stamp}.scenes", "scene-01");
-            return new BddSceneRequest(1, scenarioName, address, own, BddSceneClips.Silent, Beat);
+            var run = Path.Combine(ScenesFolder, BddScenarioAddress.Slug(scenarioName) + BddVideoComposer.RunFolderExtension);
+            if (Directory.Exists(run))
+            {
+                Directory.Delete(run, recursive: true);
+            }
+
+            return new BddSceneRequest(1, scenarioName, address, Path.Combine(run, "scene-01"), BddSceneClips.Silent, Beat);
         }
 
         var scenes = Script.Script!.Scenes;
@@ -185,7 +197,7 @@ public sealed class BddRecordingSession
         var scene = await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
         if (Script is null)
         {
-            return await BddVideoComposer.ComposeAsync(scene.Name, Path.GetDirectoryName(recording.Request.Folder)!, cancellationToken).ConfigureAwait(false);
+            return await BddVideoComposer.ComposeAsync(scene.Name, Path.GetDirectoryName(recording.Request.Folder)!, cancellationToken, Touches).ConfigureAwait(false);
         }
 
         await _composing.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -199,11 +211,11 @@ public sealed class BddRecordingSession
             _composed = true;
             if (KeepScenes)
             {
-                var video = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(ScenesFolder))!, $"{BddKeptScenes.NameOf(Script.Script.FilePath)}-{_stamp}.mp4");
-                return await BddVideoComposer.StitchAsync(Script.Script.Title, ScenesFolder, video, Script.Script.Scenes.Count, cancellationToken).ConfigureAwait(false);
+                var video = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(ScenesFolder))!, $"{BddKeptScenes.NameOf(Script.Script.FilePath)}.mp4");
+                return await BddVideoComposer.StitchAsync(Script.Script.Title, ScenesFolder, video, Script.Script.Scenes.Count, cancellationToken, Touches).ConfigureAwait(false);
             }
 
-            return await BddVideoComposer.ComposeAsync(Script.Script.Title, ScenesFolder, cancellationToken).ConfigureAwait(false);
+            return await BddVideoComposer.ComposeAsync(Script.Script.Title, ScenesFolder, cancellationToken, Touches).ConfigureAwait(false);
         }
         finally
         {

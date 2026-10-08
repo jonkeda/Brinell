@@ -82,4 +82,7 @@ public interface ISyncService
 
     /// <summary>Syncs. Never throws for a server or network failure; the result says what happened.</summary>
     Task<SyncResult> SyncAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Forgets the last result, as a fresh start of the app has none: a test's reset without a restart.</summary>
+    void Forget();
 }

@@ -80,6 +80,11 @@ Blazor-specific helpers are the `IHtmlElement` extension.
 
 ## NativeAndroid (plan step 6)
 
+> **2026-10-07:** superseded by [../androidnative/](../androidnative/README.md). NativeAndroid now has
+> its own `INativeAndroid*` interfaces, `ViewBase` and `PageObjectBase` on the Core calls layer, and
+> `Brinell.Appium` for the shared Appium code, so its move to `ICore*` has MAUI's shape (step 4).
+> The sub-steps below describe the stack as it was.
+
 NativeAndroid currently uses `Brinell.Core.Interfaces.IElement<TElement>` and friends directly
 (no per-stack extension interfaces). Its move creates the per-stack interfaces at the same time
 as it switches to `ICore*`.

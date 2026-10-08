@@ -87,6 +87,18 @@ public sealed class BddBreakpointsTests : IDisposable
     }
 
     [Fact]
+    public void AHost_ReadsTheListedLines_AsADebuggedRunMatchesThem()
+    {
+        var source = Path.Combine(_root, "Source", "Features", "shelf.feature.md");
+        File.WriteAllText(BreakpointsFile, BreakAt(source, 9));
+
+        Assert.True(BddBreakpoints.Lists(Feature, 9, BreakpointsFile));
+        Assert.False(BddBreakpoints.Lists(Feature, 8, BreakpointsFile));
+        Assert.False(BddBreakpoints.Lists(Steps, 9, BreakpointsFile));
+        Assert.False(BddBreakpoints.Lists(Feature, 9, Path.Combine(_root, "none.json")));
+    }
+
+    [Fact]
     public async Task BreakOnFailure_StopsAfterAFailedStep_WithItsResult()
     {
         ShelfSteps.FailDusting = true;

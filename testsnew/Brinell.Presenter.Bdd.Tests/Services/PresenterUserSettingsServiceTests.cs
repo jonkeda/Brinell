@@ -363,6 +363,8 @@ public sealed class PresenterUserSettingsServiceTests
             viewModel.BeatText = "450";
             viewModel.BeatText = "slow";
             viewModel.SpeakAloud = true;
+            viewModel.TouchColorText = "#00a0ff";
+            viewModel.TouchColorText = "#00a0f";
             viewModel.ToggleRecordCommand.Execute(null);
 
             var saved = settingsService.Load();
@@ -370,6 +372,7 @@ public sealed class PresenterUserSettingsServiceTests
             Assert.Null(saved.Voice);
             Assert.Equal(450, saved.Beat);
             Assert.True(saved.SpeakAloud);
+            Assert.Equal("#00A0FF", saved.TouchColor);
             Assert.Equal(records, viewModel.IsRecording);
             Assert.Equal(unavailable ?? "Recording is on: the next run is recorded.", viewModel.RecordingStatus);
             Assert.False(viewModel.HasRecording);
@@ -401,7 +404,7 @@ public sealed class PresenterUserSettingsServiceTests
 
         public Task DropSceneAsync() => Task.CompletedTask;
 
-        public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, CancellationToken cancellationToken)
+        public Task<PresenterRecorded> StitchAsync(string title, string scenesFolder, string video, int sceneCount, Brinell.Narrator.BddTouchMarks touches, CancellationToken cancellationToken)
             => Task.FromResult(new PresenterRecorded(video, true, []));
 
         public Task<bool> TryVoiceAsync(string text, string? voice, CancellationToken cancellationToken) => Task.FromResult(false);

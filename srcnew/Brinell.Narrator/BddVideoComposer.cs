@@ -10,7 +10,11 @@ namespace Brinell.Narrator;
 /// <param name="Chapters">ffmpeg's metadata file: the title, and a chapter per scene.</param>
 /// <param name="Arguments">ffmpeg's arguments; the chapters file is <c>{chapters}</c> in them.</param>
 /// <param name="Warnings">Scenes left out, and why.</param>
-public sealed record BddVideoComposition(BddVideoTimeline Timeline, string Captions, string Chapters, IReadOnlyList<string> Arguments, IReadOnlyList<string> Warnings);
+public sealed record BddVideoComposition(BddVideoTimeline Timeline, string Captions, string Chapters, IReadOnlyList<string> Arguments, IReadOnlyList<string> Warnings)
+{
+    /// <summary>The touch marks' ASS file (<see cref="BddTouchOverlay"/>), <c>{touches}</c> in the arguments; null for none.</summary>
+    public string? Touches { get; init; }
+}
 
 /// <summary>What a compose made.</summary>
 /// <param name="Video">The video (<c>.mp4</c>), with the voice and a chapter per scene.</param>
@@ -48,7 +52,8 @@ public static class BddVideoComposer
     /// <param name="title">The video's title.</param>
     /// <param name="scenes">The scenes, in order, with their folders.</param>
     /// <param name="outputVideo">The video to write.</param>
-    public static BddVideoComposition Plan(string title, IReadOnlyList<(string Folder, BddSceneTimeline Scene)> scenes, string outputVideo)
+    /// <param name="touches">The touch marks; every mark in Exact red when null.</param>
+    public static BddVideoComposition Plan(string title, IReadOnlyList<(string Folder, BddSceneTimeline Scene)> scenes, string outputVideo, BddTouchMarks? touches = null)
     {
         ArgumentNullException.ThrowIfNull(scenes);
         var warnings = new List<string>();
@@ -79,24 +84,30 @@ public static class BddVideoComposer
                 Steps = [.. scene.Steps.Select(step => step with { Start = step.Start + offset, End = step.End + offset })],
                 // The scenes' WAVs go with their folder once the voice is in the video.
                 Clips = [.. scene.Clips.Select(clip => clip with { Wav = null, Start = clip.Start + offset, End = clip.End + offset })],
+                Interactions = scene.Interactions?.Select(interaction => interaction with { At = interaction.At + offset }).ToList(),
             });
             offset += scene.Duration;
         }
 
         var combined = new BddVideoTimeline(title, timeline);
-        return new BddVideoComposition(combined, Captions(combined), Chapters(combined, offsets: Offsets(recorded)), Arguments(recorded, outputVideo), warnings);
+        var marks = BddTouchOverlay.Ass(combined, recorded[0].Scene.Width, recorded[0].Scene.Height, touches ?? BddTouchMarks.Default);
+        return new BddVideoComposition(combined, Captions(combined), Chapters(combined, offsets: Offsets(recorded)), Arguments(recorded, outputVideo, marks is not null), warnings) { Touches = marks };
     }
+
+    /// <summary>The extension of a run's scenes folder, removed once its video is made.</summary>
+    public const string RunFolderExtension = ".run";
 
     /// <summary>Composes the video from a run's scenes folder, then removes the folder.</summary>
     /// <param name="title">The video's title.</param>
-    /// <param name="scenesFolder">The run's scenes folder (<c>&lt;name&gt;.scenes</c>).</param>
+    /// <param name="scenesFolder">The run's scenes folder (<c>&lt;name&gt;.run</c>).</param>
     /// <param name="cancellationToken">Stops ffmpeg.</param>
-    /// <returns>The files beside the folder: <c>&lt;name&gt;.mp4</c>, <c>.srt</c> and <c>.timeline.json</c>.</returns>
-    public static async Task<BddComposedVideo> ComposeAsync(string title, string scenesFolder, CancellationToken cancellationToken = default)
+    /// <param name="touches">The touch marks; every mark in Exact red when null.</param>
+    /// <returns>The files beside the folder, replacing an earlier run's: <c>&lt;name&gt;.mp4</c>, <c>.srt</c> and <c>.timeline.json</c>.</returns>
+    public static async Task<BddComposedVideo> ComposeAsync(string title, string scenesFolder, CancellationToken cancellationToken = default, BddTouchMarks? touches = null)
     {
         var folder = Path.GetFullPath(scenesFolder).TrimEnd(Path.DirectorySeparatorChar);
-        var basePath = folder.EndsWith(".scenes", StringComparison.OrdinalIgnoreCase) ? folder[..^".scenes".Length] : folder;
-        var composed = await StitchAsync(title, folder, basePath + ".mp4", null, cancellationToken).ConfigureAwait(false);
+        var basePath = folder.EndsWith(RunFolderExtension, StringComparison.OrdinalIgnoreCase) ? folder[..^RunFolderExtension.Length] : folder;
+        var composed = await StitchAsync(title, folder, basePath + ".mp4", null, cancellationToken, touches).ConfigureAwait(false);
         Directory.Delete(folder, recursive: true);
         return composed;
     }
@@ -110,16 +121,32 @@ public static class BddVideoComposer
     /// <param name="video">The video to write.</param>
     /// <param name="sceneCount">The script's scene count: a folder of a scene the script no longer has is left out. Null for every scene there.</param>
     /// <param name="cancellationToken">Cancels ffmpeg.</param>
-    public static async Task<BddComposedVideo> StitchAsync(string title, string scenesFolder, string video, int? sceneCount, CancellationToken cancellationToken = default)
+    /// <param name="touches">The touch marks; every mark in Exact red when null.</param>
+    public static async Task<BddComposedVideo> StitchAsync(string title, string scenesFolder, string video, int? sceneCount, CancellationToken cancellationToken = default, BddTouchMarks? touches = null)
     {
         var folder = Path.GetFullPath(scenesFolder).TrimEnd(Path.DirectorySeparatorChar);
         var basePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(video))!, Path.GetFileNameWithoutExtension(video));
         var scenes = ReadScenes(folder);
-        var plan = Plan(title, sceneCount is { } count ? [.. scenes.Where(scene => scene.Scene.Number <= count)] : scenes, video);
+        IReadOnlyList<(string Folder, BddSceneTimeline Scene)> chosen = sceneCount is { } count ? [.. scenes.Where(scene => scene.Scene.Number <= count)] : scenes;
+        var plan = Plan(title, chosen, video, touches);
+        if (plan.Touches is not null && !Ffmpeg.HasFilter("subtitles"))
+        {
+            // The video still comes; without its marks, and saying why.
+            plan = Plan(title, chosen, video, BddTouchMarks.Default with { Mode = BddTouchMode.Off });
+            plan = plan with { Warnings = [.. plan.Warnings, "This ffmpeg has no subtitles filter (libass), so the video has no touch marks. A full build has it (Windows: winget install Gyan.FFmpeg)."] };
+        }
 
         var chapters = Path.Combine(folder, "chapters.txt");
         await File.WriteAllTextAsync(chapters, plan.Chapters, cancellationToken).ConfigureAwait(false);
-        await Ffmpeg.RunAsync(plan.Arguments.Select(argument => argument == "{chapters}" ? chapters : argument), cancellationToken).ConfigureAwait(false);
+        var marks = Path.Combine(folder, "touches.ass");
+        if (plan.Touches is { } ass)
+        {
+            await File.WriteAllTextAsync(marks, ass, cancellationToken).ConfigureAwait(false);
+        }
+
+        await Ffmpeg.RunAsync(
+            plan.Arguments.Select(argument => argument == "{chapters}" ? chapters : argument.Replace("{touches}", FilterPath(marks), StringComparison.Ordinal)),
+            cancellationToken).ConfigureAwait(false);
 
         var captions = basePath + ".srt";
         var timeline = basePath + ".timeline.json";
@@ -127,6 +154,11 @@ public static class BddVideoComposer
         plan.Timeline.Save(timeline);
         return new BddComposedVideo(video, captions, timeline, plan.Warnings);
     }
+
+    // A path as a filter's option in a filter graph: forward slashes, and the drive's colon and any
+    // quote escaped, inside quotes.
+    private static string FilterPath(string path)
+        => "'" + path.Replace('\\', '/').Replace(":", "\\:", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'";
 
     /// <summary>The captions: a cue per spoken line, and a failure's message after the step that failed.</summary>
     /// <param name="timeline">The video's timeline.</param>
@@ -177,7 +209,7 @@ public static class BddVideoComposer
 
     // The scenes' videos, scaled and padded to the first one's size, joined; each line's WAV
     // delayed to its time and mixed; the chapters file last.
-    private static List<string> Arguments(List<(string Folder, BddSceneTimeline Scene)> scenes, string outputVideo)
+    private static List<string> Arguments(List<(string Folder, BddSceneTimeline Scene)> scenes, string outputVideo, bool touches)
     {
         var arguments = new List<string> { "-y" };
         foreach (var (folder, scene) in scenes)
@@ -218,7 +250,8 @@ public static class BddVideoComposer
             graph.Append(CultureInfo.InvariantCulture, $"[v{index}]");
         }
 
-        graph.Append(CultureInfo.InvariantCulture, $"concat=n={scenes.Count}:v=1:a=0[video]");
+        // The touch marks are drawn on the joined video: the scenes' own videos stay clean.
+        graph.Append(CultureInfo.InvariantCulture, $"concat=n={scenes.Count}:v=1:a=0{(touches ? "[joined];[joined]subtitles=filename={touches}" : string.Empty)}[video]");
         arguments.Add("-filter_complex");
         if (clips.Count > 0)
         {

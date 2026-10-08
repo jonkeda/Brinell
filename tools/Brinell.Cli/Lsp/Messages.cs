@@ -17,7 +17,24 @@ public sealed record InitializeParams(
 
 /// <summary>What the client tells the server beyond LSP's own fields.</summary>
 /// <param name="SolutionDir">The folder whose suites the server serves.</param>
-public sealed record InitializationOptions(string? SolutionDir);
+public sealed record InitializationOptions(string? SolutionDir)
+{
+    /// <summary>Whether a suite's runner is started when one of its feature files opens, and kept between runs (AD-025); on by default.</summary>
+    public bool? WarmRunner { get; init; }
+
+    /// <summary>How long a suite's runner waits after its last feature file closes before it ends; 10 by default.</summary>
+    public double? WarmRunnerIdleMinutes { get; init; }
+}
+
+/// <summary><c>brinell/runner/warm</c>: the runner of the suite that holds a feature file, ready now.</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+public sealed record RunnerWarmParams(string Uri, string? Suite);
+
+/// <summary>Whether the suite's runner is ready.</summary>
+/// <param name="Warm">Whether it is.</param>
+/// <param name="Reason">Why not; null when it is.</param>
+public sealed record RunnerWarmResult(bool Warm, string? Reason);
 
 /// <summary>The server's answer to <c>initialize</c>: LSP capabilities, and the suites it found.</summary>
 public sealed record InitializeResult(ServerCapabilities Capabilities, ServerInfo ServerInfo, IReadOnlyList<SuiteInfo> Suites);
@@ -377,7 +394,8 @@ internal static class Json
 /// <param name="RecordingsFolder">The Recordings folder setting; null for the suite's results.</param>
 /// <param name="Voice">The voice setting; null for the default voice.</param>
 /// <param name="Beat">The beat setting, in milliseconds; null for the default.</param>
-public sealed record RecordTargetParams(string Uri, int? Line, string? Suite, string? RecordingsFolder, string? Voice, int? Beat);
+/// <param name="TouchColor">The touch marks' accent setting, <c>#RRGGBB</c>; null for Exact red.</param>
+public sealed record RecordTargetParams(string Uri, int? Line, string? Suite, string? RecordingsFolder, string? Voice, int? Beat, string? TouchColor = null);
 
 /// <summary>How to record it: <c>dotnet test &lt;Project&gt; --no-build --filter &lt;Filter&gt;</c> with <paramref name="Environment"/> set.</summary>
 /// <param name="CanRecord">Whether it can be recorded here.</param>
@@ -403,3 +421,95 @@ public sealed record RecordingsParams(string Uri, string? Suite, string? Recordi
 /// <param name="Written">When it was made.</param>
 /// <param name="Captions">Its <c>.srt</c>; null when it has none.</param>
 public sealed record RecordingEntry(string Path, string Name, DateTime Written, string? Captions);
+
+/// <summary><c>brinell/step/start</c>: Step through a scenario in the suite's runner process (AD-022).</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Line">The scenario heading's line.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+/// <param name="Scenario">An outline's row by name; null for the first scenario under the heading.</param>
+public sealed record StepStartParams(string Uri, int Line, string? Suite, string? Scenario);
+
+/// <summary>Whether the run started; it then pauses before its first step (<c>brinell/step/paused</c>).</summary>
+/// <param name="Started">Whether it started.</param>
+/// <param name="Reason">Why not; null when it started.</param>
+/// <param name="Scenario">The scenario it runs.</param>
+/// <param name="Suite">The suite it runs in.</param>
+public sealed record StepStartResult(bool Started, string? Reason, string? Scenario, string? Suite)
+{
+    /// <summary>It did not start, for <paramref name="reason"/>.</summary>
+    public static StepStartResult Not(string reason) => new(false, reason, null, null);
+}
+
+/// <summary><c>brinell/step/move</c>: <c>over</c>, <c>into</c>, <c>out</c>, <c>continue</c> or <c>stop</c>.</summary>
+public sealed record StepMoveParams(string Move);
+
+/// <summary>Whether the move was taken: a run is paused (or, for <c>stop</c>, going).</summary>
+/// <param name="Taken">Whether it was taken.</param>
+/// <param name="Reason">Why not; null when it was.</param>
+public sealed record StepMoveResult(bool Taken, string? Reason);
+
+/// <summary><c>brinell/step/paused</c>: where a Step-through run is paused.</summary>
+/// <param name="Uri">The feature file the run is for.</param>
+/// <param name="Scenario">The scenario.</param>
+/// <param name="At">The file paused in: the feature file, or a step file inside a call.</param>
+/// <param name="Line">The paused line.</param>
+/// <param name="Text">The step or call there.</param>
+/// <param name="Depth">How many calls deep: 0 in the scenario.</param>
+/// <param name="IsCall">Whether it is paused at a call, so Step into goes inside.</param>
+/// <param name="Calls">The calls around it, outermost first.</param>
+/// <param name="Failed">Whether it is paused after the step failed.</param>
+/// <param name="Message">The failure's message.</param>
+/// <param name="Arguments">The step's arguments as read; null at a call or when it has none.</param>
+/// <param name="App">The app the step runs on; null for the fixture's own.</param>
+/// <param name="Page">The page the scenario is on; null when not known.</param>
+public sealed record StepPausedParams(string Uri, string Scenario, string? At, int Line, string Text, int Depth, bool IsCall, IReadOnlyList<Brinell.Bdd.Runner.BddRunnerCall> Calls, bool Failed, string? Message, IReadOnlyDictionary<string, string>? Arguments = null, string? App = null, string? Page = null);
+
+/// <summary><c>brinell/run/start</c>: Run on the suite's runner (AD-022), with no stops.</summary>
+/// <param name="Uri">The feature file.</param>
+/// <param name="Line">A scenario heading's line; null for every scenario of the file.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+public sealed record RunStartParams(string Uri, int? Line, string? Suite);
+
+/// <summary>Whether the run started; <c>brinell/run/ended</c> says how it went.</summary>
+/// <param name="Started">Whether it started.</param>
+/// <param name="Reason">Why not; null when it started.</param>
+/// <param name="Scenarios">The scenarios it runs, in order (an outline's rows by their <c>[n]</c> names).</param>
+/// <param name="Suite">The suite it runs in.</param>
+public sealed record RunStartResult(bool Started, string? Reason, IReadOnlyList<string>? Scenarios, string? Suite)
+{
+    /// <summary>It did not start, for <paramref name="reason"/>.</summary>
+    public static RunStartResult Not(string reason) => new(false, reason, null, null);
+}
+
+/// <summary><c>brinell/run/ended</c>: a Run on the runner is over.</summary>
+/// <param name="Uri">The feature file the run was for.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c>, <c>canceled</c> or <c>error</c>.</param>
+/// <param name="Message">What went wrong, for <c>error</c>.</param>
+/// <param name="Results">Each scenario that ran, in order.</param>
+public sealed record RunEndedParams(string Uri, string Status, string? Message, IReadOnlyList<RunScenarioResult> Results);
+
+/// <summary>How a scenario of a Run on the runner went.</summary>
+/// <param name="Scenario">Its name.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c> or <c>error</c>.</param>
+/// <param name="Message">The failure's or the error's message.</param>
+public sealed record RunScenarioResult(string Scenario, string Status, string? Message);
+
+/// <summary>
+/// The answer to <c>brinell/step/debug</c> (Debug from here, AD-022): the runner
+/// process to attach the debugger to. Once attached, a move runs the next step, which breaks in it.
+/// </summary>
+/// <param name="ProcessId">The runner's process; null when the run is not paused.</param>
+/// <param name="Reason">Why not; null when it is.</param>
+public sealed record StepDebugResult(int? ProcessId, string? Reason);
+
+/// <summary>The answer to <c>brinell/step/screenshot</c>: a screenshot of the app while the run is paused.</summary>
+/// <param name="Path">The screenshot's file; null when none was taken.</param>
+/// <param name="Reason">Why not; null when it was.</param>
+public sealed record StepScreenshotResult(string? Path, string? Reason);
+
+/// <summary><c>brinell/step/ended</c>: the run is over.</summary>
+/// <param name="Uri">The feature file the run was for.</param>
+/// <param name="Scenario">The scenario.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c>, <c>stopped</c> or <c>error</c>.</param>
+/// <param name="Message">A failure's or an error's message.</param>
+public sealed record StepEndedParams(string Uri, string Scenario, string Status, string? Message);

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
@@ -47,7 +48,7 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
             RecordingTarget.Monitor monitor => Direct3D.ForMonitor(monitor.Handle),
             _ => throw new NotSupportedException(target.ToString()),
         };
-        var recording = new Recording(item, options, _sink);
+        var recording = new Recording(item, options, _sink, target is RecordingTarget.Window shown ? TryWindowArea(shown.Handle) : null);
         try
         {
             await recording.FirstFrame.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
@@ -65,6 +66,27 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
         }
     }
 
+    // What a window's frames show: its visible frame (DWM's extended frame bounds), in physical
+    // pixels whatever this process's DPI awareness, as the Windows driver reports its interactions.
+    private static Rectangle? TryWindowArea(nint window)
+        => DwmGetWindowAttribute(window, ExtendedFrameBounds, out var frame, Marshal.SizeOf<Rect>()) == 0
+            ? Rectangle.FromLTRB(frame.Left, frame.Top, frame.Right, frame.Bottom)
+            : null;
+
+    private const int ExtendedFrameBounds = 9;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(nint window, int attribute, out Rect value, int size);
+
     private sealed class Recording : IRecording
     {
         private const DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
@@ -74,13 +96,15 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
         private readonly GraphicsCaptureSession _session;
         private readonly FrameVideo _video;
         private readonly string _path;
+        private readonly Rectangle? _source;
         private SizeInt32 _poolSize;
         private byte[] _pixels = [];
         private bool _stopped;
 
-        public Recording(GraphicsCaptureItem item, RecordingOptions options, Func<string, Size, int, IFrameSink> sink)
+        public Recording(GraphicsCaptureItem item, RecordingOptions options, Func<string, Size, int, IFrameSink> sink, Rectangle? source)
         {
             _path = options.OutputPath;
+            _source = source;
             _device = Direct3D.CreateDevice();
             _poolSize = item.Size;
             var size = FfmpegProcess.Even(new Size(item.Size.Width, item.Size.Height));
@@ -103,7 +127,7 @@ public sealed class WindowsCaptureRecorder : IScreenRecorder
         public async Task<RecordingResult> StopAsync(CancellationToken cancellationToken = default)
         {
             StopCapture();
-            return await _video.StopAsync(_path, cancellationToken).ConfigureAwait(false);
+            return await _video.StopAsync(_path, cancellationToken).ConfigureAwait(false) with { Source = _source };
         }
 
         public async ValueTask DisposeAsync()

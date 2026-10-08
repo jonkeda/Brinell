@@ -1,5 +1,6 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Recording;
 using Brinell.Core.Utilities;
 using FlaUI.Core.Definitions;
 using System.Drawing;
@@ -360,6 +361,19 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #region Actions
 
+    // A recorded video's touch mark (AD-024): the target as it is, before the action runs, in
+    // physical pixels as the video's frames are.
+    private Interactions.Scope Report(InteractionKind kind, string? key = null)
+        => Interactions.Report(kind, PhysicalRect, () => AutomationId, key: key);
+
+    private Rectangle PhysicalRect() => Windowing.PhysicalPixels.Read(() => Rect);
+
+    private void Marked(InteractionKind kind, Action action)
+    {
+        using var mark = Report(kind);
+        action();
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// <para>
@@ -374,6 +388,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void Click()
     {
+        using var mark = Report(InteractionKind.Tap);
+
         if (DeclaresGesture(MauiGesture.Tap))
         {
             PerformGesture(MauiGesture.Tap);
@@ -394,16 +410,16 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// MAUI <c>ToolbarItem</c> is the known case - the control names its own operation,
     /// <see cref="InvokeToolbarItem"/>; it is not this method's job to guess a substitute.
     /// </remarks>
-    public void Invoke() => Perform(
-        nameof(Invoke), HasInvokePattern, RunInvokePattern, "InvokePattern");
+    public void Invoke() => Marked(InteractionKind.Tap, () => Perform(
+        nameof(Invoke), HasInvokePattern, RunInvokePattern, "InvokePattern"));
 
     /// <inheritdoc />
-    public void Toggle() => Perform(
-        nameof(Toggle), HasTogglePattern, RunTogglePattern, "TogglePattern");
+    public void Toggle() => Marked(InteractionKind.Tap, () => Perform(
+        nameof(Toggle), HasTogglePattern, RunTogglePattern, "TogglePattern"));
 
     /// <inheritdoc />
-    public void Select() => Perform(
-        nameof(Select), HasSelectionItemPattern, RunSelectionItemPattern, "SelectionItemPattern");
+    public void Select() => Marked(InteractionKind.Tap, () => Perform(
+        nameof(Select), HasSelectionItemPattern, RunSelectionItemPattern, "SelectionItemPattern"));
 
     // The three pattern checks Perform chooses on. All private: they were SupportsInvoke and
     // SupportsSelect on IMauiElement until no control asked them, and HasTogglePattern never
@@ -420,7 +436,15 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// screen must declare. Never the Invoke pattern: a toolbar item's peer accepts it and does
     /// nothing.
     /// </remarks>
-    public void InvokeToolbarItem(string automationId) => _driver.InvokeToolbarItem(automationId);
+    public void InvokeToolbarItem(string automationId)
+    {
+        // Marked on the item itself; asked of the app element, the item's place is unknown.
+        using var mark = Interactions.Report(
+            InteractionKind.Tap,
+            () => AutomationId == automationId ? PhysicalRect() : throw new InvalidOperationException("Not the item itself."),
+            () => automationId);
+        _driver.InvokeToolbarItem(automationId);
+    }
 
     /// <summary>
     /// Runs one automation pattern, or explains which half of it was missing.
@@ -462,7 +486,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <see cref="TextInputMethod.SetValue"/>.
     /// </para>
     /// </remarks>
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Live(() =>
     {
         switch (method)
         {
@@ -481,6 +505,20 @@ public sealed class FlaUIMauiElement : IMauiElement
                     "Declare the SetText verb on the element in the app under test.");
 
             case TextInputMethod.SetValue:
+                // A password field takes a Value write and keeps it from MAUI: its Entry.Text stays
+                // as it was, so the write would pass and the app would have nothing. Only the
+                // app's SetText reaches the Entry.
+                if (IsPasswordField)
+                {
+                    if (TryBridge(BrinellVerb.SetText, text, out _))
+                        return;
+
+                    throw NoQuietRoute(
+                        "have its text set",
+                        "It is a password field: MAUI on Windows keeps its text apart from what UI "
+                        + "Automation writes, so the app under test needs to declare SetText on it.");
+                }
+
                 // The Value pattern first, and the bridge second. Both are semantic, so the
                 // ordering is not about avoiding physical input at all - it is that the pattern
                 // is two cross-process calls against an element already in hand, where the
@@ -499,10 +537,10 @@ public sealed class FlaUIMauiElement : IMauiElement
                     + "SetText verb - either it is read-only, or the app under test needs to "
                     + "declare SetText on it.");
         }
-    });
+    }));
 
     /// <inheritdoc />
-    public void Clear() => Live(() =>
+    public void Clear() => Marked(InteractionKind.Clear, () => Live(() =>
     {
         if (TrySetTextValue(string.Empty))
             return;
@@ -514,7 +552,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             "be cleared",
             "It exposes no writable UI Automation Value pattern and does not answer the ClearText "
             + "verb - either it is read-only, or the app under test needs to declare ClearText on it.");
-    });
+    }));
 
     /// <inheritdoc />
     /// <remarks>The app's <c>DoubleTap</c> verb; throws where the app does not declare it.</remarks>
@@ -863,6 +901,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void Submit()
     {
+        using var mark = Report(InteractionKind.Key, "Enter");
+
         // Exchange, not Invoke, even though it carries no strings. Submit lives in the text
         // range and the provider answers the whole range on one path; splitting a range across
         // both methods is how a verb ends up reaching the app down a route that has never heard
@@ -961,13 +1001,13 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// hand is as close as the platform comes, and the read makes it idempotent. The control
     /// verifies the outcome. Without the Toggle pattern, <see cref="Toggle"/> throws naming it.
     /// </remarks>
-    public void SetChecked(bool isChecked) => Live(() =>
+    public void SetChecked(bool isChecked) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (Checked == isChecked)
             return;
 
         Toggle();
-    });
+    }));
 
     private bool RunTogglePattern()
     {
@@ -1051,7 +1091,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>Clamped to the published bounds, as the platform would clamp a drag.</remarks>
-    public void SetRangeValue(double value) => Live(() =>
+    public void SetRangeValue(double value) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (!HasPattern(() => _element.Patterns.RangeValue.IsSupported))
         {
@@ -1063,7 +1103,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         var pattern = _element.Patterns.RangeValue.Pattern;
         var clamped = Math.Clamp(value, pattern.Minimum.Value, pattern.Maximum.Value);
         pattern.SetValue(clamped);
-    });
+    }));
 
     private double? ReadRange(Func<IRangeValuePattern, double> read) => Live<double?>(() =>
     {
@@ -1097,7 +1137,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             : null);
 
     /// <inheritdoc />
-    public void OpenDropdown() => Live(() =>
+    public void OpenDropdown() => Marked(InteractionKind.Tap, () => Live(() =>
     {
         RequireDropdown(nameof(OpenDropdown));
 
@@ -1109,7 +1149,7 @@ public sealed class FlaUIMauiElement : IMauiElement
                 $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
                 + "not report itself open.");
         }
-    });
+    }));
 
     /// <inheritdoc />
     /// <remarks>Lenient: an element with no dropdown is already in the asked-for state.</remarks>
@@ -1269,6 +1309,11 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Writes a value through the UIA Value pattern, reaching into a wrapper if it has to.
     /// </summary>
+    // The field itself, or the TextBox a MAUI Entry renders inside it.
+    private bool IsPasswordField => Live(() =>
+        _element.Properties.IsPassword.ValueOrDefault
+        || FindNestedTextBoxElement()?.Properties.IsPassword.ValueOrDefault == true);
+
     private bool TrySetTextValue(string text)
     {
         if (TryWriteValue(_element, text))
@@ -1322,8 +1367,11 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// The app publishes no bridge, this element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(MauiGesture gesture)
-        => GestureRunner.Perform(
+    {
+        using var mark = MauiInteractions.Report(gesture, PhysicalRect, () => AutomationId);
+        GestureRunner.Perform(
             _driver.RootElement, _driver.Automation, AutomationId, gesture, near: BridgeNear);
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -1335,6 +1383,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void AppendText(string text)
     {
+        using var mark = Report(InteractionKind.Type);
+
         if (!TryBridge(BrinellVerb.AppendText, text, out _))
         {
             throw new BrinellException(
@@ -1579,7 +1629,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// These were <c>SupportsSelectIndex</c> and <c>SupportsDropdown</c> questions in the control.
     /// </para>
     /// </remarks>
-    public void SelectIndex(int index) => Live(() =>
+    public void SelectIndex(int index) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (BridgeDeclares(BrinellVerb.SelectIndex))
         {
@@ -1599,11 +1649,11 @@ public sealed class FlaUIMauiElement : IMauiElement
         }
 
         throw NoSelectionRoute(BrinellVerb.SelectIndex);
-    });
+    }));
 
     /// <inheritdoc />
     /// <remarks>Routes as <see cref="SelectIndex"/> does, with the <c>SelectByText</c> verb.</remarks>
-    public void SelectByText(string text) => Live(() =>
+    public void SelectByText(string text) => Marked(InteractionKind.Tap, () => Live(() =>
     {
         if (BridgeDeclares(BrinellVerb.SelectByText))
         {
@@ -1622,7 +1672,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         }
 
         throw NoSelectionRoute(BrinellVerb.SelectByText);
-    });
+    }));
 
     private NotSupportedException NoSelectionRoute(BrinellVerb verb)
         => new(
@@ -1700,6 +1750,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void SetDate(DateTime date)
     {
+        using var mark = Report(InteractionKind.Type);
+
         var wanted = date.ToString(BridgeDateFormat, CultureInfo.InvariantCulture);
 
         if (!TryBridge(BrinellVerb.SetDate, wanted, out var landed))
@@ -1721,6 +1773,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <remarks>See <see cref="SetDate"/>; the same reporting applies.</remarks>
     public void SetTime(TimeSpan time)
     {
+        using var mark = Report(InteractionKind.Type);
+
         var wanted = time.ToString(BridgeTimeFormat, CultureInfo.InvariantCulture);
 
         if (!TryBridge(BrinellVerb.SetTime, wanted, out var landed))
@@ -1766,6 +1820,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void OpenFlyout()
     {
+        using var mark = Report(InteractionKind.Key, "Menu");
+
         RequireApp(nameof(OpenFlyout));
 
         if (_driver.SupportsFlyoutVerbs)
@@ -1786,6 +1842,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void CloseFlyout()
     {
+        using var mark = Report(InteractionKind.Key, "Menu");
+
         RequireApp(nameof(CloseFlyout));
 
         if (_driver.SupportsFlyoutVerbs)

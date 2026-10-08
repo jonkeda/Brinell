@@ -22,6 +22,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 `srcnew/` contains package-producing projects:
 
+- `Brinell.Appium` - what the Appium stacks share: Appium's error mapping, `AndroidHost`, `AndroidRecorder`
 - `Brinell.Stride.Automation`
 - `Brinell.Bdd` - feature files without a UI: parse, bind, values, tables, callable steps, namespaces, run
 - `Brinell.Blazor`
@@ -33,7 +34,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 - `Brinell.Maui.CommunityToolkit`
 - `Brinell.Maui.FlaUI`
 - `Brinell.Mocking`
-- `Brinell.NativeAndroid`
+- `Brinell.NativeAndroid` - native Android apps (Views, AndroidX, Material) through Appium, in MAUI's and Html's shape
 - `Brinell.Presenter`
 - `Brinell.Stride`
 - `Brinell.Uat` - UAT on top of `Brinell.Bdd`: pages, controls, page scope, apps, the UAT test base
@@ -55,6 +56,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 - Blazor;
 - MAUI;
+- native Android (`Brinell.Samples.NativeAndroid.App`, a .NET for Android control gallery);
 - Stride;
 - WinForms;
 - WPF;

@@ -53,13 +53,15 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
   xUnit runners take the fixture as a type argument and only check the name, so a suite can pass
   in xUnit and still name a fixture Presenter cannot find.
 - **AppPath** is an optional override. The fixture finds its own app.
-- **The suite runs in a process of its own**, started in the suite's output folder as a test host
-  is: a scenario runs from Presenter as it does under `dotnet test`. The Pages assembly has to
+- **The suite runs in a process of its own**, started from a copy of the suite's output as a test
+  host is: a scenario runs from Presenter as it does under `dotnet test`. The Pages assembly has to
   be the suite's test project (its `runtimeconfig.json` is used) and the suite has to reference
-  `Brinell.Uat`, which is the runner. The process ends with the run, so the suite can be rebuilt
-  while Presenter is open, and a long session does not grow Presenter. A fixture still finds its
-  files from its own assembly, with `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)`
-  (`Brinell.Core.Composition`).
+  `Brinell.Uat`, which is the runner. The runner is started when a built workspace loads and waits
+  between runs, from its copy, so the suite can be rebuilt while Presenter is open, and a long
+  session does not grow Presenter. It reads the feature and step files from the workspace, and
+  writes its results where the IDEs' preview reads them. A fixture still finds its files from its
+  own assembly, with `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)`
+  (`Brinell.Core.Composition`), which answers with the output the copy was made from.
 - **A suite built with an older Brinell** than Presenter says so when it is run ("Rebuild the
   suite"): the two talk in versioned messages.
 - **A fixture that implements `IUatScenarioLifecycle`** has its `BeforeFile` and `BeforeScenario`
@@ -76,8 +78,8 @@ tree's expansion and selection. If the file changed on disk, Save offers **Keep 
 The run toolbar carries the session choices, stored per workspace: **Debug/Release** (for the
 tests; the fixture picks the app's configuration), the **platform** (sets `APPIUM_PLATFORM`, and
 offers only what the fixture declares with `[UatPlatforms]`), and **Build**, which shows
-MSBuild's output verbatim. A run loads the Pages assembly into a context that is released when
-the session ends, so you can rebuild without restarting Presenter.
+MSBuild's output verbatim. A build ends the session's app first; the runner then starts again
+from the new output.
 
 To build the app with the tests, give the UAT project a reference that builds it without
 referencing it:
@@ -150,12 +152,15 @@ moves are those of the IDEs' stepping (AD-022), on keys a presentation clicker s
 The keys work anywhere in the Presenter window except in a text box. A click on a step sets or
 clears its breakpoint. A right-click offers **Run until here** (runs on and pauses before it), **Run from here** (only while a
 run is paused before it: skips the steps in between, marked skipped, and runs on; the app must
-already be where they lead) and **Toggle breakpoint**. The preview's paused bar has the same moves.
+already be where they lead), **Debug from here** (only while paused before it: Windows asks which
+debugger to attach to the runner, and the step then stops just before its step definition, so
+Step into goes into it) and **Toggle breakpoint**. The preview's paused bar has the same moves.
 
 Breakpoints are the IDEs' own file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`: a red dot in the
 list marks one, a breakpoint set in Visual Studio or VS Code stops Run in Presenter, and one set in
-Presenter stops a debugged run in the IDEs. A breakpoint can be on a step or a call of the feature
-file, not on a step inside a step file.
+Presenter stops a debugged run in the IDEs. Presenter's own dots are on the feature file's steps
+and calls; a breakpoint an IDE set on a step inside a step file stops Run too, before that step.
+The paused bar shows the step's page, app and arguments as the runner read them.
 
 | Selected | Runs |
 | --- | --- |
@@ -180,7 +185,20 @@ opens the last one. It needs ffmpeg; without it, Record says how to get it and s
 
 On the Settings page, **Narrator**: the Recordings folder (the suite's `TestResults\recordings`
 when empty), the voice when the script names none, with **Try** to hear it, the beat after a step,
-and **Speak aloud**, which also plays each line while the run waits for it.
+the **Touch colour** of the marks on taps and swipes when the script names none
+([Touch Marks](../guides/narrated-recordings.md#touch-marks)), and **Speak aloud**, which also plays
+each line while the run waits for it.
+
+Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
+([Cloud Voice](../guides/narrated-recordings.md#cloud-voice)): it says whether one is set up and
+from where (a file, or the environment), and takes the endpoint, the key, the deployment, the API
+version and the default voice. **Try** speaks a sample line with the fields as they are, before
+anything is saved; **Save** writes `voice.secrets.json` for this machine
+(`%USERPROFILE%\.brinell`), or beside the open workspace when its repository's `.gitignore`
+ignores the file (**Add the line to .gitignore** adds it); **Remove** deletes the file, after a
+second click. The key is typed into a password field and never shown again: after Save the part
+says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
+lists the `azure:` voices.
 
 ### Narrator mode
 

@@ -115,7 +115,7 @@ public sealed class BddStepDefinitionRuntime
             : parameter.ParameterType == typeof(CancellationToken) ? (object?)cancellationToken
             : throw new InvalidOperationException($"The hook {type.Name}.{method.Name} takes '{parameter.Name}', which no hook gets: it may take a BddExecutionContext, a BddStepResult and a CancellationToken.")).ToArray();
 
-        if (BddInvoker.Invoke(instance!, method, arguments) is Task task)
+        if (BddInvoker.InvokeDefinition(instance!, method, arguments) is Task task)
         {
             await task.ConfigureAwait(false);
         }
@@ -214,7 +214,7 @@ public sealed class BddStepDefinitionRuntime
 
         try
         {
-            var result = BddInvoker.Invoke(_root, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
+            var result = BddInvoker.InvokeDefinition(_root, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
             if (result is Task<BddStepResult> resultTask)
             {
                 return await resultTask.ConfigureAwait(false);
@@ -266,7 +266,7 @@ public sealed class BddStepDefinitionRuntime
         {
             var instance = serviceProvider.GetService(phraseClassType) ??
                            ActivatorUtilities.CreateInstance(serviceProvider, phraseClassType);
-            var result = BddInvoker.Invoke(instance, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
+            var result = BddInvoker.InvokeDefinition(instance, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
             if (result is Task<BddStepResult> resultTask)
             {
                 return await resultTask.ConfigureAwait(false);

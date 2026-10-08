@@ -118,6 +118,9 @@ public sealed class ScenarioPreviewWindowService : IScenarioPreviewService
                 isCall = paused.IsCall,
                 depth = paused.InCall ? 1 : 0,
                 calls = Array.Empty<string>(),
+                app = paused.IsCall ? null : paused.Details?.App,
+                page = paused.Details?.Page,
+                arguments = paused.IsCall ? null : paused.Details?.Arguments,
             });
         }
         else

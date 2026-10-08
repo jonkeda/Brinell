@@ -113,10 +113,14 @@ public sealed class BddPreviewTests
     {
         var result = BddPreview.Render(Scenario, "shelf.feature.md", new BddPreviewOptions { Run = new BddPreviewRunState(true) });
 
-        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run-file title=\"Run every scenario of the file\">", result.Html);
-        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run=\"3\" title=\"Run this scenario\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run-file title=\"Run every scenario of the file in the suite's runner, from the source: no build when only scenario files changed\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run=\"3\" title=\"Run this scenario in the suite's runner, from the source: no build when only scenario files changed\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-test data-run=\"3\" title=\"Run this scenario as a test (dotnet test), as CI runs it\">▷ Run as test</button>", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-test data-run-file title=\"Run every scenario of the file as a test (dotnet test), as CI runs it\">▷ Run file as test</button>", result.Html);
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run=\"3\" title=\"Debug this scenario, stopping at step breakpoints\">", result.Html);
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run-file title=\"Debug every scenario of the file, stopping at step breakpoints\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-step=\"3\" title=\"Step through this scenario, paused before each step\">", result.Html);
+        Assert.DoesNotContain("data-step-file", result.Html);
     }
 
     [Fact]

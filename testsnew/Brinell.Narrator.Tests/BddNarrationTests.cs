@@ -70,8 +70,38 @@ public sealed class BddSceneRecordingTests : IDisposable
         Assert.Equal(1, recorder.Started);
         Assert.Equal("video.mp4", timeline.Video);
         Assert.Equal(2, timeline.Number);
-        Assert.Equal(timeline, BddSceneTimeline.Load(request.TimelinePath) with { Steps = timeline.Steps, Clips = timeline.Clips, Warnings = timeline.Warnings });
+        Assert.Equal(timeline, BddSceneTimeline.Load(request.TimelinePath) with { Steps = timeline.Steps, Clips = timeline.Clips, Warnings = timeline.Warnings, Interactions = timeline.Interactions });
         Assert.Equal(2, BddSceneTimeline.Load(request.TimelinePath).Steps.Count);
+    }
+
+    [Fact]
+    public async Task The_tests_taps_while_the_scene_records_are_in_its_timeline_with_the_area_the_video_shows()
+    {
+        var request = new BddSceneRequest(1, "Opening", "Features/A.feature.md#A.1", Path.Combine(_folder, "scene-01"), BddSceneClips.Silent, TimeSpan.Zero);
+        await using var recording = new BddSceneRecording(request, () => new RecordingTarget.Window(42), new ScreenRecorders([new FakeRecorder()]));
+        using (Interactions.Report(InteractionKind.Tap, () => new System.Drawing.Rectangle(1, 1, 1, 1)))
+        {
+            // Before the scene: the fixture's, not the scene's.
+        }
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = recording }).RunAsync(Scenarios.Bind());
+        using (Interactions.Report(InteractionKind.Tap, () => new System.Drawing.Rectangle(110, 220, 40, 30), () => "SyncButton"))
+        {
+        }
+
+        var timeline = await recording.FinishAsync();
+        using (Interactions.Report(InteractionKind.Tap, () => new System.Drawing.Rectangle(1, 1, 1, 1)))
+        {
+        }
+
+        var saved = BddSceneTimeline.Load(request.TimelinePath);
+        var tap = Assert.Single(saved.Interactions!);
+        Assert.Equal(InteractionKind.Tap, tap.Kind);
+        Assert.Equal(new BddBox(110, 220, 40, 30), tap.Bounds);
+        Assert.Equal("SyncButton", tap.Label);
+        Assert.InRange(tap.At, timeline.Steps[^1].Start, timeline.Duration);
+        Assert.Equal(new BddBox(100, 200, 800, 600), saved.Source);
+        Assert.Null(Interactions.Log);
     }
 
     [Fact]
@@ -106,7 +136,7 @@ public sealed class BddSceneRecordingTests : IDisposable
         public long StartedAt { get; } = Stopwatch.GetTimestamp();
 
         public Task<RecordingResult> StopAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new RecordingResult(path, Stopwatch.GetElapsedTime(StartedAt), new System.Drawing.Size(2, 2), StartedAt, []));
+            => Task.FromResult(new RecordingResult(path, Stopwatch.GetElapsedTime(StartedAt), new System.Drawing.Size(2, 2), StartedAt, []) { Source = new System.Drawing.Rectangle(100, 200, 800, 600) });
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
@@ -166,8 +196,7 @@ public sealed class BddRecordingSessionTests : IDisposable
 
         var session = BddRecordingSession.FromEnvironment(_suite, variables.GetValueOrDefault)!;
 
-        Assert.StartsWith(Path.Combine(_suite, "Recordings", "a-"), session.ScenesFolder, StringComparison.OrdinalIgnoreCase);
-        Assert.EndsWith(".scenes", session.ScenesFolder, StringComparison.Ordinal);
+        Assert.Equal(Path.Combine(_suite, "Recordings", "a.run"), session.ScenesFolder, ignoreCase: true);
         Assert.Equal(TimeSpan.FromMilliseconds(250), session.Beat);
     }
 
@@ -198,8 +227,8 @@ public sealed class BddRecordingSessionTests : IDisposable
 
         Assert.Equal((1, "Features/A.feature.md#A.1-Opens"), (first!.Number, first.Scenario));
         Assert.Equal((1, "scene-01"), (second!.Number, Path.GetFileName(second.Folder)));
-        Assert.StartsWith("A.1-Opens-", Path.GetFileName(Path.GetDirectoryName(first.Folder)), StringComparison.Ordinal);
-        Assert.StartsWith("A.2-Closes-", Path.GetFileName(Path.GetDirectoryName(second.Folder)), StringComparison.Ordinal);
+        Assert.Equal("A.1-Opens.run", Path.GetFileName(Path.GetDirectoryName(first.Folder)));
+        Assert.Equal("A.2-Closes.run", Path.GetFileName(Path.GetDirectoryName(second.Folder)));
         Assert.Same(BddSceneClips.Silent, first.Clips);
     }
 }

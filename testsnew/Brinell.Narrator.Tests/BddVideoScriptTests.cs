@@ -58,6 +58,32 @@ public sealed class BddVideoScriptParserTests
     }
 
     [Fact]
+    public void Touches_and_their_colour_are_read_and_a_value_that_is_neither_is_an_error()
+    {
+        var parse = BddVideoScriptParser.Parse("""
+            # Video: V
+            | Field | Value |
+            | --- | --- |
+            | Touches | outline-only |
+            | TouchColor | #00a0ff |
+            """, "x.video.md");
+        var wrong = BddVideoScriptParser.Parse("""
+            # Video: V
+            | Field | Value |
+            | --- | --- |
+            | Touches | sometimes |
+            | TouchColor | red |
+            """, "x.video.md");
+
+        Assert.Empty(parse.Diagnostics);
+        Assert.Equal(BddTouchMode.OutlineOnly, parse.Script!.Touches);
+        Assert.Equal("#00A0FF", parse.Script.TouchColor);
+        Assert.Equal([(BddVideoScriptParser.BadValueCode, 4), (BddVideoScriptParser.BadValueCode, 5)], wrong.Diagnostics.Select(diagnostic => (diagnostic.Code, diagnostic.Location.LineNumber)));
+        Assert.Null(wrong.Script!.Touches);
+        Assert.Null(wrong.Script.TouchColor);
+    }
+
+    [Fact]
     public void Form_problems_are_at_their_lines()
     {
         var parse = BddVideoScriptParser.Parse("""

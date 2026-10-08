@@ -7,6 +7,7 @@ using Xunit;
 namespace Brinell.Bdd.LanguageServer.Tests;
 
 /// <summary>The server over JSON-RPC with LSP framing, on an in-memory stream, as a client talks to it.</summary>
+[Collection(FfmpegVariable.Name)]
 public sealed class LanguageServerTests : IAsyncLifetime
 {
     private readonly string _solution = Path.Combine(Path.GetTempPath(), "Brinell", "LanguageServerTests", Guid.NewGuid().ToString("N"));
@@ -271,7 +272,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         File.WriteAllText(script, "# Video: The shelf\n\n## Scene: Shelving\n\nScenario: Features/shelf.feature.md#One\n");
         await InitializeAsync(_client);
 
-        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = Path.Combine(_solution, "Videos"), beat = 250 }));
+        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = Path.Combine(_solution, "Videos"), beat = 250, touchColor = "#00A0FF" }));
 
         Assert.True(target.CanRecord, target.Reason);
         Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
@@ -279,8 +280,9 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Equal(script, target.Environment["BRINELL_RECORD"]);
         Assert.Equal(Path.Combine(_solution, "Videos"), target.Environment["BRINELL_RECORD_DIR"]);
         Assert.Equal("250", target.Environment["BRINELL_BEAT"]);
-        Assert.Equal(Path.Combine(_solution, "Videos", Path.GetFileNameWithoutExtension(target.Video!) + ".scenes"), target.Environment["BRINELL_RECORD_OUT"]);
-        Assert.StartsWith("shelf-", target.Video, StringComparison.Ordinal);
+        Assert.Equal("#00A0FF", target.Environment["BRINELL_TOUCH_COLOR"]);
+        Assert.Equal(Path.Combine(_solution, "Videos", "shelf.run"), target.Environment["BRINELL_RECORD_OUT"]);
+        Assert.Equal("shelf.mp4", target.Video);
     }
 
     [Fact]
@@ -354,14 +356,17 @@ public sealed class LanguageServerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RunTarget_BeforeABuild_SaysWhy()
+    public async Task RunTarget_BeforeABuild_SaysWhy_AndNamesTheProjectToBuild()
     {
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
         await InitializeAsync(_client);
 
         var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
 
         Assert.False(target.CanRun);
         Assert.Contains("Build the UAT project first", target.Reason);
+        Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
+        Assert.Null(target.Filter);
     }
 
     [Fact]

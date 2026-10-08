@@ -45,7 +45,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   runs without a screen, its suite and step definitions
 - [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
-  files as readable, bound steps beside the editor
+  files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario
 - [Brinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
   preview, Test Explorer on the scenarios' addresses
 - [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
@@ -78,6 +78,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [The `brinell` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
+- [Native Android](run/native-android.md)
 - [Playwright](run/Playwright.md)
 - [HTML](run/Html.md)
 - [WinForms](run/WinForms.md)

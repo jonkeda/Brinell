@@ -1,6 +1,6 @@
 using System.Drawing;
 using Brinell.Core.Recording;
-using Brinell.Maui.Appium;
+using Brinell.Appium;
 using Xunit;
 
 namespace Brinell.Recording.Tests;
