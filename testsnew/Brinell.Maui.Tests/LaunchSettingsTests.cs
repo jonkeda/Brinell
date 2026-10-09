@@ -4,7 +4,8 @@ using Brinell.Maui.Enums;
 namespace Brinell.Maui.Tests;
 
 /// <summary>
-/// How <see cref="MauiDriverOptions.LaunchSettings"/> reach an Android app: as launch-intent extras.
+/// How <see cref="MauiDriverOptions.LaunchSettings"/> reach an Android app (launch-intent extras)
+/// and an iOS app (process environment).
 /// </summary>
 public class LaunchSettingsTests
 {
@@ -42,11 +43,30 @@ public class LaunchSettingsTests
     }
 
     [Fact]
-    public void LaunchSettings_OnIos_ThrowRatherThanBeingDropped()
+    public void LaunchSettings_OnIos_AreNotIntentExtras()
     {
         var options = new MauiDriverOptions { Platform = MauiPlatform.iOS };
         options.LaunchSettings["TODO_NOW"] = "2026-03-10";
 
         Assert.Throws<NotSupportedException>(() => MauiDriverFactory.LaunchIntentArguments(options));
     }
+
+    [Fact]
+    public void LaunchSettings_OnIos_BecomeProcessEnvironment()
+    {
+        var options = new MauiDriverOptions { Platform = MauiPlatform.iOS };
+        options.LaunchSettings["TODO_DB_PATH"] = "/tmp/two words.db";
+        options.LaunchSettings["TODO_NOW"] = "2026-03-10";
+
+        var processArguments = MauiDriverFactory.LaunchProcessArguments(options);
+
+        Assert.NotNull(processArguments);
+        var environment = Assert.IsType<Dictionary<string, string>>(processArguments["env"]);
+        Assert.Equal("/tmp/two words.db", environment["TODO_DB_PATH"]);
+        Assert.Equal("2026-03-10", environment["TODO_NOW"]);
+    }
+
+    [Fact]
+    public void LaunchSettings_OnIosWhenEmpty_AddNothing()
+        => Assert.Null(MauiDriverFactory.LaunchProcessArguments(new MauiDriverOptions { Platform = MauiPlatform.iOS }));
 }

@@ -440,7 +440,11 @@ public class MauiFixture : MauiTestFixtureBase
                 "net10.0-android", "com.brinell.samples.maui-Signed.apk"),
             MauiPlatform.iOS => Path.Combine(solutionDir,
                 "samples", "Brinell.Samples.Maui.App", "bin", "Debug",
-                "net10.0-ios", "iossimulator-x64", "Brinell.Samples.Maui.App.app"),
+                "net10.0-ios",
+                System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
+                    ? "iossimulator-arm64"
+                    : "iossimulator-x64",
+                "Brinell.Samples.Maui.App.app"),
             _ => ""
         };
     }

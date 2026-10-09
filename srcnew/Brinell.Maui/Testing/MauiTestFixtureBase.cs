@@ -163,7 +163,9 @@ public abstract class MauiTestFixtureBase : IDisposable
             Animation = 300,
             PollingInterval = 100
         };
-        driverOptions.AppPath = GetDefaultAppPath(Configuration.Maui.Platform);
+        driverOptions.AppPath = string.IsNullOrWhiteSpace(Configuration.Maui.AppPath)
+            ? GetDefaultAppPath(Configuration.Maui.Platform)
+            : Configuration.Maui.AppPath;
         
         switch (Configuration.Maui.Platform)
         {
@@ -195,6 +197,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         
         options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
+        AddUdid(options);
     }
     
     /// <summary>
@@ -210,6 +213,15 @@ public abstract class MauiTestFixtureBase : IDisposable
         options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
         options.PlatformVersion = platformVersion;
+        AddUdid(options);
+    }
+
+    private void AddUdid(MauiDriverOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(Configuration?.Maui?.Udid))
+        {
+            options.AdditionalCapabilities["udid"] = Configuration.Maui.Udid;
+        }
     }
 
     #endregion

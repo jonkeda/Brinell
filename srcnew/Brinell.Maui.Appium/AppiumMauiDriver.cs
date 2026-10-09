@@ -254,8 +254,28 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     public void NavigateBack()
     {
         using var mark = Brinell.Core.Recording.Interactions.Report(Brinell.Core.Recording.InteractionKind.Key, () => System.Drawing.Rectangle.Empty, key: "Back");
+
+        // iOS: XCUITest's back taps the navigation bar's back button and silently does nothing
+        // when the app hides that bar behind its own title bar. The system's left-edge swipe is
+        // the platform's other way back and does not depend on the bar.
+        if (_platform == MauiPlatform.iOS && _driver.FindElements(IosNavigationBar).Count == 0)
+        {
+            var size = _driver.Manage().Window.Size;
+            _driver.ExecuteScript("mobile: dragFromToForDuration", new Dictionary<string, object>
+            {
+                { "duration", 0.1 },
+                { "fromX", 1 },
+                { "fromY", size.Height / 2 },
+                { "toX", size.Width * 3 / 4 },
+                { "toY", size.Height / 2 },
+            });
+            return;
+        }
+
         _driver.Navigate().Back();
     }
+
+    private static readonly By IosNavigationBar = MobileBy.ClassName("XCUIElementTypeNavigationBar");
 
     /// <summary>
     /// The toolbar's up button, which a <c>NavigationPage</c> shows on every page above its root.

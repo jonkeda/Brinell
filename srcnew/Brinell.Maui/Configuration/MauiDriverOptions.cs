@@ -70,7 +70,9 @@ public class MauiDriverOptions
     /// <c>am start</c> command line; such a value throws when the session is created.
     /// </para>
     /// <para>
-    /// <b>iOS:</b> not supported yet; a non-empty dictionary throws rather than being dropped.
+    /// <b>iOS:</b> environment variables of the launched app, through XCUITest's
+    /// <c>processArguments</c> (<c>{ env: { ... } }</c>). The app reads them with
+    /// <c>Environment.GetEnvironmentVariable</c>.
     /// </para>
     /// </remarks>
     public Dictionary<string, string> LaunchSettings { get; } = new(StringComparer.Ordinal);

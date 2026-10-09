@@ -48,7 +48,11 @@ internal static class LocatorExtensions
             LocatorStrategy.Name => platform == MauiPlatform.Android
                 ? AndroidNameBy(locator.Value)
                 : By.Name(locator.Value),
-            LocatorStrategy.ClassName => By.ClassName(locator.Value),
+            LocatorStrategy.Text => platform == MauiPlatform.Android
+                ? By.XPath(AndroidTextPath(locator.Value))
+                : MobileBy.IosNSPredicate(IosTextPredicate(locator.Value)),
+            // Selenium's By.ClassName becomes a CSS selector, which XCUITest rejects.
+            LocatorStrategy.ClassName => MobileBy.ClassName(locator.Value),
             LocatorStrategy.XPath => By.XPath(locator.Value),
             LocatorStrategy.Css => By.CssSelector(locator.Value),
             LocatorStrategy.TagName => By.TagName(locator.Value),
@@ -77,9 +81,14 @@ internal static class LocatorExtensions
     {
         ArgumentNullException.ThrowIfNull(locator);
 
-        return platform == MauiPlatform.Android && locator.Strategy == LocatorStrategy.Name
-            ? By.XPath("." + AndroidNamePath(locator.Value))
-            : locator.ToBy(platform);
+        if (platform != MauiPlatform.Android) return locator.ToBy(platform);
+
+        return locator.Strategy switch
+        {
+            LocatorStrategy.Name => By.XPath("." + AndroidNamePath(locator.Value)),
+            LocatorStrategy.Text => By.XPath("." + AndroidTextPath(locator.Value)),
+            _ => locator.ToBy(platform)
+        };
     }
 
     /// <summary>
@@ -100,6 +109,18 @@ internal static class LocatorExtensions
     {
         var literal = XPathLiteral(name, name);
         return $"//*[@content-desc={literal} or @text={literal}]";
+    }
+
+    private static string AndroidTextPath(string text)
+        => $"//*[@text={XPathLiteral(text, text)}]";
+
+    /// <summary>
+    /// Displayed text on iOS: a label's text is its <c>label</c>, an input's is its <c>value</c>.
+    /// </summary>
+    private static string IosTextPredicate(string text)
+    {
+        var literal = "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'";
+        return $"label == {literal} OR value == {literal}";
     }
 
     /// <exception cref="ArgumentException">The value holds both quote characters, which no XPath 1.0 literal can.</exception>
