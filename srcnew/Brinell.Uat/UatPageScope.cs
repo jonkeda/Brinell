@@ -57,12 +57,18 @@ internal static class UatPageScope
     }
 
     /// <summary>
-    /// The page after a control verb: the page its method returns; for a verb that navigates, where
-    /// the control says it goes; otherwise the page it ran on. Null when it may have left the page
-    /// for one it does not say.
+    /// The page after a control verb: for a verb that navigates, where the control says it goes;
+    /// else the page its method returns; otherwise the page it ran on. Null when it may have left
+    /// the page for one it does not say. A declared destination wins because a control's verb
+    /// returns its own scope (a link's Click returns the page the link is on).
     /// </summary>
     public static string? PageAfter(UatPageModel page, UatControlModel control, BddControlVerb verb, IReadOnlyDictionary<string, UatPageModel> pages)
     {
+        if (verb.Navigates && control.NavigatesTo is { } declared)
+        {
+            return declared;
+        }
+
         if (Method(control.ControlType, verb)?.ReturnType is { } returned &&
             pages.Values.FirstOrDefault(candidate => candidate.PageType == returned) is { } returnedPage)
         {

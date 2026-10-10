@@ -364,6 +364,23 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
+    public async Task AControlThatSaysWhereItGoes_WinsOverTheVerbReturningItsOwnPage()
+    {
+        // A link on a page: its Click returns the page it is on, but the link says where it goes.
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I follow Exit
+            And I ring Bell
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.True(fixture.PlainPage.Bell.Rung);
+    }
+
+    [Fact]
     public async Task AControlVerbThatReturnsAPage_MakesThatPageCurrent()
     {
         var fixture = new GadgetFixture();
@@ -573,6 +590,9 @@ public sealed class UatCatalogParityTests
         [UatNavigatesTo(typeof(PlainPage))]
         public GadgetControl Door { get; } = new();
 
+        [UatNavigatesTo(typeof(PlainPage))]
+        public PageLink Exit => new(this);
+
         [BddThen("the gadget should hum")]
         public void Hums()
         {
@@ -628,6 +648,13 @@ public sealed class UatCatalogParityTests
 
         [BddWhen("I choose {value} in {control}")]
         public void Choose(string text) => Chosen = text;
+    }
+
+    // A link whose verb returns the page it is on, as a Brinell control's Click returns its scope.
+    private sealed class PageLink(GadgetPage page)
+    {
+        [BddWhen("I follow {control}", Navigates = true)]
+        public GadgetPage Follow() => page;
     }
 
     private sealed class GadgetControl
