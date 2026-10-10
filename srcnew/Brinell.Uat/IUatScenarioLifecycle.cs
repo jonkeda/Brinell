@@ -16,6 +16,15 @@ public interface IUatScenarioLifecycle
     void BeforeScenario(BddBoundScenario scenario);
 
     /// <summary>
+    /// After each scenario, whether it passed or failed, once its recording is finished: put back
+    /// what the scenario changed that the next one, or a test sharing the fixture, must not see.
+    /// </summary>
+    /// <param name="scenario">The scenario that ran.</param>
+    void AfterScenario(BddBoundScenario scenario)
+    {
+    }
+
+    /// <summary>
     /// Whether <see cref="BeforeScenario"/> starts a scenario clean on the app as it is, with no new
     /// launch, as a test class's scenarios share the fixture: a host's runner may then keep the
     /// fixture and its app between runs (AD-025). False unless the fixture says so.

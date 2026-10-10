@@ -62,6 +62,16 @@ public abstract class UatScenarioTestBase<TFixture>
         (Fixture as IUatScenarioLifecycle)?.BeforeScenario(scenario);
     }
 
+    /// <summary>
+    /// Called after each scenario, passed or failed, once its recording is finished, so nothing it
+    /// does is in a video; by default the fixture's <see cref="IUatScenarioLifecycle"/>, when it has one.
+    /// </summary>
+    /// <param name="scenario">The scenario that ran.</param>
+    protected virtual void AfterScenario(BddBoundScenario scenario)
+    {
+        (Fixture as IUatScenarioLifecycle)?.AfterScenario(scenario);
+    }
+
     protected virtual string EvidenceTestClassName => GetType().Name;
 
     protected virtual string EvidenceDescription => "failure";
@@ -300,35 +310,52 @@ public abstract class UatScenarioTestBase<TFixture>
     {
         using (scope)
         {
-            var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
-            await using var recording = session is null ? null : await RecordingFor(session, scenario, cancellationToken).ConfigureAwait(false);
-            var execution = await BddScenarioExecutor.RunAsync(
-                scenario,
-                GetRunConfig(runtime),
-                BeforeScenario,
-                context =>
-                {
-                    runtime.ConfigureContext(context);
-                    ConfigureScenarioContext(context, scenario, runtime);
-                    if (scope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
-                    {
-                        UatRuntime.ConfigureScope(context, serviceScope.ServiceProvider);
-                    }
-
-                    if (recording is not null)
-                    {
-                        context.Pacer = recording;
-                    }
-                },
-                CaptureEvidenceOnFailure,
-                cancellationToken).ConfigureAwait(false);
-            if (recording is not null)
+            try
             {
-                await session!.FinishAsync(recording, cancellationToken).ConfigureAwait(false);
+                return await RecordScenarioAsync(scenario, runtime, scope, cancellationToken).ConfigureAwait(false);
             }
-
-            return execution;
+            finally
+            {
+                AfterScenario(scenario);
+            }
         }
+    }
+
+    // Runs the scenario, recorded when BRINELL_RECORD asks; the recording ends before AfterScenario.
+    private async Task<BddScenarioExecutionResult> RecordScenarioAsync(
+        BddBoundScenario scenario,
+        UatRuntime runtime,
+        IDisposable? scope,
+        CancellationToken cancellationToken)
+    {
+        var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
+        await using var recording = session is null ? null : await RecordingFor(session, scenario, cancellationToken).ConfigureAwait(false);
+        var execution = await BddScenarioExecutor.RunAsync(
+            scenario,
+            GetRunConfig(runtime),
+            BeforeScenario,
+            context =>
+            {
+                runtime.ConfigureContext(context);
+                ConfigureScenarioContext(context, scenario, runtime);
+                if (scope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
+                {
+                    UatRuntime.ConfigureScope(context, serviceScope.ServiceProvider);
+                }
+
+                if (recording is not null)
+                {
+                    context.Pacer = recording;
+                }
+            },
+            CaptureEvidenceOnFailure,
+            cancellationToken).ConfigureAwait(false);
+        if (recording is not null)
+        {
+            await session!.FinishAsync(recording, cancellationToken).ConfigureAwait(false);
+        }
+
+        return execution;
     }
 
     // The scene this scenario records under BRINELL_RECORD; null when the run does not record it.

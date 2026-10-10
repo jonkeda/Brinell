@@ -557,10 +557,18 @@ public sealed class BddRunnerHost
             (Fixture as IDisposable)?.Dispose();
         }
 
-        // The scenario's scope ends; its fixture is the caller's to keep or end.
+        // The scenario is over (AfterScenario) and its scope ends; its fixture is the caller's to keep or end.
         public object Release()
         {
-            _scope?.Dispose();
+            try
+            {
+                (Fixture as IUatScenarioLifecycle)?.AfterScenario(Scenario);
+            }
+            finally
+            {
+                _scope?.Dispose();
+            }
+
             return Fixture;
         }
 

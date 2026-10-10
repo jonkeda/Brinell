@@ -45,6 +45,7 @@ public sealed class UatTestBaseTests
 
             Assert.Equal(1, fixture.ActionCount);
             Assert.Equal("Passing flow", harness.BeforeScenarioName);
+            Assert.Equal("Passing flow", harness.AfterScenarioName);
         }
         finally
         {
@@ -85,6 +86,7 @@ public sealed class UatTestBaseTests
                 "Intentional failure from harness");
 
             Assert.Equal("Expected failure flow", harness.BeforeScenarioName);
+            Assert.Equal("Expected failure flow", harness.AfterScenarioName);
             Assert.Equal("ScenarioHarness", fixture.ScreenshotService.TestClass);
             Assert.Equal("Expected failure flow", fixture.ScreenshotService.TestMethod);
             Assert.Equal("failure", fixture.ScreenshotService.Description);
@@ -458,6 +460,8 @@ public sealed class UatTestBaseTests
     {
         public string? BeforeScenarioName { get; private set; }
 
+        public string? AfterScenarioName { get; private set; }
+
         protected override string ConfigFilePath => configFilePath;
 
         protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
@@ -479,6 +483,11 @@ public sealed class UatTestBaseTests
         protected override void BeforeScenario(BddBoundScenario scenario)
         {
             BeforeScenarioName = scenario.Source.Name;
+        }
+
+        protected override void AfterScenario(BddBoundScenario scenario)
+        {
+            AfterScenarioName = scenario.Source.Name;
         }
     }
 

@@ -104,7 +104,10 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 `RuntimeValidation` asserts the config at load time: a config whose `Target` or
 `Fixture` disagrees, or that registers no assemblies, throws rather than running
 scenarios against the wrong head. Override `BeforeScenario` to give each scenario
-a clean start - scenarios share one app process. Override `BeforeFile` to load
+a clean start - scenarios share one app process. Override `AfterScenario` to put
+back what a scenario changed that the next test sharing the fixture must not see (sign
+out, close a dialog); it runs whether the scenario passed or failed, after its recording,
+so it is never in a video. Override `BeforeFile` to load
 what a file's metadata asks for; it runs before the file is bound, once per file.
 
 `GetScenarioTheoryData` orders cases by the files' `TestData`, then file, then

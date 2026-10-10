@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `AfterScenario` on `UatScenarioTestBase` and `IUatScenarioLifecycle` (a no-op by default): runs after
+  each scenario, passed or failed, once its recording is finished, so a suite whose scenarios share
+  a fixture with other tests can put back what a scenario changed (sign out) without it showing in
+  the video. The IDE runner host calls it when it closes a scenario.
 - `Brinell.NativeAndroid` in MAUI's and Html's shape (AD-010, AD-013, `docs/platform-guides/native-android.md`):
   its own `INativeAndroid*` interfaces; the Core calls layer (act once, confirm, one log pair); scope
   readiness (the app in front, the page's activity and ready view, the `brinell_busy` busy view);
