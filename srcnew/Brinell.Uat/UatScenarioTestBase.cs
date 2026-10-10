@@ -310,14 +310,41 @@ public abstract class UatScenarioTestBase<TFixture>
     {
         using (scope)
         {
+            BddScenarioExecutionResult execution;
             try
             {
-                return await RecordScenarioAsync(scenario, runtime, scope, cancellationToken).ConfigureAwait(false);
+                execution = await RecordScenarioAsync(scenario, runtime, scope, cancellationToken).ConfigureAwait(false);
             }
-            finally
+            catch
+            {
+                AfterFailedScenario(scenario);
+                throw;
+            }
+
+            if (execution.Result.Passed)
             {
                 AfterScenario(scenario);
             }
+            else
+            {
+                AfterFailedScenario(scenario);
+            }
+
+            return execution;
+        }
+    }
+
+    // A failed or canceled scenario's own failure is the one to report: an AfterScenario that fails
+    // too, likely on the same stuck app, is only traced.
+    private void AfterFailedScenario(BddBoundScenario scenario)
+    {
+        try
+        {
+            AfterScenario(scenario);
+        }
+        catch (Exception after)
+        {
+            Trace.TraceWarning($"AfterScenario failed after '{scenario.Source.Name}' failed: {after}");
         }
     }
 

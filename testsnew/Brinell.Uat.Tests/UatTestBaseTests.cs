@@ -54,6 +54,63 @@ public sealed class UatTestBaseTests
     }
 
     [Fact]
+    public async Task ScenarioTestBase_AfterScenarioThatFails_DoesNotHideTheScenariosOwnFailure()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # Feature: Base Harness
+
+                ## Scenario: Failing flow
+
+                ```gherkin
+                Then the custom action should have run
+                ```
+                """);
+            var fixture = new HarnessFixture();
+            var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture)) { ThrowAfterScenario = true };
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.RunScenarioAsync(scenarioFilePath, "Failing flow"));
+            Assert.Contains("Action did not run.", error.Message, StringComparison.Ordinal);
+            Assert.Equal("Failing flow", harness.AfterScenarioName);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ScenarioTestBase_AfterScenarioThatFails_FailsAPassingScenario()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # Feature: Base Harness
+
+                ## Scenario: Passing flow
+
+                ```gherkin
+                When I run the custom action
+                ```
+                """);
+            var fixture = new HarnessFixture();
+            var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture)) { ThrowAfterScenario = true };
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.RunScenarioAsync(scenarioFilePath, "Passing flow"));
+            Assert.Equal("AfterScenario failed", error.Message);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ScenarioTestBase_RunExpectedFailureUatFileAsync_AssertsFormattedFailureDetails()
     {
         var directory = CreateTempDirectory();
@@ -485,9 +542,15 @@ public sealed class UatTestBaseTests
             BeforeScenarioName = scenario.Source.Name;
         }
 
+        public bool ThrowAfterScenario { get; init; }
+
         protected override void AfterScenario(BddBoundScenario scenario)
         {
             AfterScenarioName = scenario.Source.Name;
+            if (ThrowAfterScenario)
+            {
+                throw new InvalidOperationException("AfterScenario failed");
+            }
         }
     }
 

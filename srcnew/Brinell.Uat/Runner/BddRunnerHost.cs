@@ -352,7 +352,19 @@ public sealed class BddRunnerHost
         if (_open is { } open)
         {
             _open = null;
-            var fixture = open.Release();
+            object fixture;
+            try
+            {
+                fixture = open.Release();
+            }
+            catch
+            {
+                // AfterScenario failed: the fixture's app is in an unknown state, so it is not kept.
+                (open.Fixture as IDisposable)?.Dispose();
+                DisposeKept();
+                throw;
+            }
+
             if (keep && fixture is IUatScenarioLifecycle { StartsCleanWithoutLaunch: true })
             {
                 DisposeKept();
