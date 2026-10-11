@@ -78,8 +78,9 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
     public byte[] TakeScreenshot() => Live(() => _page.ScreenshotAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
+    /// <remarks>The whole page, not only the viewport, so a saved screen shows everything on it.</remarks>
     public void SaveScreenshot(string path)
-        => Live(() => _page.ScreenshotAsync(new PageScreenshotOptions { Path = path }).GetAwaiter().GetResult());
+        => Live(() => _page.ScreenshotAsync(new PageScreenshotOptions { Path = path, FullPage = true }).GetAwaiter().GetResult());
 
     /// <inheritdoc />
     public string GetPageSource()
