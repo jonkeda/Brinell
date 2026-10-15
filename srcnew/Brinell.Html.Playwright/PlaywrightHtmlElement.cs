@@ -107,6 +107,8 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         }
     }));
 
+    public void PressKey(string key) => Marked(InteractionKind.Type, () => Live(() => _locator.PressAsync(key, new() { Timeout = Budget }).GetAwaiter().GetResult()));
+
     public void Clear() => Marked(InteractionKind.Clear, () => Live(() => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void DoubleClick() => Marked(InteractionKind.DoubleTap, () => Live(() => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));

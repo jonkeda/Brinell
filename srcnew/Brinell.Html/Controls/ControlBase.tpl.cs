@@ -489,6 +489,15 @@ public abstract partial class ControlBase<TScope> : ObjectBase, IControlObject<T
         element.SendKeys(keys);
     }
 
+    /// <summary>Presses one key by its name ("ArrowRight", "Enter", "Escape"), as a keyboard does: <see cref="SendKeysCore"/> types its text instead.</summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="key">The key's name.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void PressKeyCore(IHtmlElement element, string key, int? timeoutMs = null)
+    {
+        element.PressKey(key);
+    }
+
     #endregion
 
     #region Visible

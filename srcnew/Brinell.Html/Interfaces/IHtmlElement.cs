@@ -83,6 +83,9 @@ public interface IHtmlElement
     /// <summary>Types or sets text.</summary>
     void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys);
 
+    /// <summary>Presses one key by its name ("ArrowRight", "Enter", "Escape", "Control+A") with the element focused, as a keyboard does.</summary>
+    void PressKey(string key);
+
     /// <summary>Clears an input.</summary>
     void Clear();
 

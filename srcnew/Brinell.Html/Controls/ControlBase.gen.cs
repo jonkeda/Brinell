@@ -31,6 +31,14 @@ public abstract partial class ControlBase<TScope> : ObjectBase, IControlObject<T
     }
 
     #endregion
+    #region PressKey
+
+    public TScope PressKey(string key, int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { PressKeyCore(element, key, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
     #region Visible (IsVisible / WaitVisible / AssertVisible)
 
     public bool? IsVisible()
