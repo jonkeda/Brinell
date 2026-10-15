@@ -63,18 +63,15 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem> : ContainerBas
     }
 
     /// <summary>The row whose <c>data-item-key</c> is <paramref name="key"/> now, or <c>null</c>.</summary>
+    /// <remarks>
+    /// One lookup by the key's selector, as every later read of the row is: reading each row's key
+    /// in turn costs a driver call per row, and a long list then outlasts the call's budget.
+    /// The row's <see cref="ItemObjectBase{TSelf}.Position"/> is not looked up, so it is <c>-1</c>.
+    /// </remarks>
     public TItem? TryItem(string key)
     {
-        var rows = TryGetItemRoots();
-        for (var position = 0; position < rows.Count; position++)
-        {
-            if (rows[position].GetAttribute(ItemKey.Attribute) == key)
-            {
-                return CreateItem(new ItemKey(ItemKeyKind.Logical, key), position);
-            }
-        }
-
-        return null;
+        var itemKey = new ItemKey(ItemKeyKind.Logical, key);
+        return TryGetItemRoot(itemKey) is null ? null : CreateItem(itemKey, -1);
     }
 
     /// <summary>The row at <paramref name="index"/>, waiting for it.</summary>

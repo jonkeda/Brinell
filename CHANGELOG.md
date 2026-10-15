@@ -593,6 +593,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed
+- Html: `CollectionObjectBase.Item(key)` and `TryItem(key)` read every row's `data-item-key` in
+  turn, a driver call per row, so on a long list one attempt outlasted the call's budget and the
+  item was never found. They look the row up once by its key's selector now; such a row's
+  `Position` is `-1`.
 - Html: a read of an element that a re-render removed waited out the rest of the call, so one
   read ended the poll (R2). Playwright reads now wait for their element at most
   `PlaywrightHtmlElement.ReadAttachMs` and report a node that is gone as stale.

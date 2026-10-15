@@ -90,6 +90,32 @@ public class CollectionTests
         _list.Verify(l => l.TryFindElement(It.Is<Locator>(selector => selector.Value == KeySelectorOf("a"))), Times.AtLeastOnce);
     }
 
+    /// <summary>
+    /// An item asked for by its key is one lookup by the key's selector, not a read of every row's
+    /// key: a driver call per row outlasts the call's budget on a long list.
+    /// </summary>
+    [Fact]
+    public void AnItemAskedForByItsKey_IsOneLookup_NotARowByRowScan()
+    {
+        _rows.AddRange([RowFor("a").Row.Object, RowFor("b").Row.Object]);
+
+        var row = new Page(_context.Object).List.Item("b");
+
+        Assert.Equal("b", row.Key.Value);
+        _list.Verify(l => l.TryFindElement(It.Is<Locator>(selector => selector.Value == KeySelectorOf("b"))), Times.AtLeastOnce);
+        _list.Verify(l => l.FindElements(It.IsAny<Locator>()), Times.Never);
+    }
+
+    [Fact]
+    public void AnItemThatIsNotThere_IsNull_AndItemFails()
+    {
+        _rows.Add(RowFor("a").Row.Object);
+        var list = new Page(_context.Object).List;
+
+        Assert.Null(list.TryItem("b"));
+        Assert.Throws<ElementNotFoundException>(() => list.Item("b", timeoutMs: 100));
+    }
+
     [Fact]
     public void ARowWhoseItemIsGone_FailsAsItemChanged_AndActsOnNothing()
     {

@@ -28,7 +28,7 @@ public abstract class ItemObjectBase<TSelf> : ObjectBase, IHtmlScope<TSelf>
     /// <summary>The item this row stands for.</summary>
     public ItemKey Key { get; }
 
-    /// <summary>Where the row was when it was made. It may have moved since.</summary>
+    /// <summary>Where the row was when it was made, or <c>-1</c> for a row found by its key. It may have moved since.</summary>
     public int Position { get; }
 
     public override IHtmlTestContext Context => _collection.Context;
