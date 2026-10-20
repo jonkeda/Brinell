@@ -50,7 +50,20 @@ public static class ElementMatch
         if (string.IsNullOrEmpty(tagName)) return false;
 
         var lastSegment = tagName[(tagName.LastIndexOf('.') + 1)..];
-        return string.Equals(lastSegment, controlType.Trim(), StringComparison.OrdinalIgnoreCase);
+        if (string.Equals(lastSegment, controlType.Trim(), StringComparison.OrdinalIgnoreCase)) return true;
+
+        // XCUITest reports iOS types, e.g. XCUIElementTypeCell for a list item.
+        var iosType = lastSegment.StartsWith("XCUIElementType", StringComparison.Ordinal)
+            ? lastSegment["XCUIElementType".Length..]
+            : null;
+        return iosType != null && controlType.Trim().ToLowerInvariant() switch
+        {
+            "listitem" => iosType == "Cell",
+            "list" => iosType is "Table" or "CollectionView",
+            "entry" => iosType == "TextField",
+            "text" => iosType == "StaticText",
+            _ => string.Equals(iosType, controlType.Trim(), StringComparison.OrdinalIgnoreCase)
+        };
     }
 
     private static bool Exactly(string? actual, string expected)

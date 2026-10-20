@@ -127,13 +127,27 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if read-only, false if editable, null if element not found.</returns>
+    [SkipGeneration("Hand-written below: IsReadOnly keeps the null of a platform that publishes no editability.")]
     protected virtual bool? IsReadOnlyCore(IMauiElement? element)
     {
         if (element == null) return null;
 
-        // Windows answers from the Value pattern; Android publishes no editability and answers null.
+        // Windows answers from the Value pattern; Android and iOS publish no editability and answer null.
         return element?.IsReadOnly;
     }
+
+    /// <summary>Whether the entry is read-only; null when the platform cannot tell.</summary>
+    public bool? IsReadOnly() => IsReadOnlyCore(TryFindElement());
+
+    public bool WaitReadOnly(bool? expected = true, int? timeoutMs = null)
+        => RunWaitWithElement(expected,
+            element => IsReadOnlyCore(element) == expected!.Value,
+            timeoutMs);
+
+    public TScope AssertReadOnly(bool? expected = true, string? message = null, int? timeoutMs = null)
+        => RunAssertWithElement(expected,
+            IsReadOnlyCore, (actual, expected1) => actual == expected1,
+            message ?? $"Expected ReadOnly to be '{expected}'. Locator: {Locator}", timeoutMs);
 
     #endregion
 

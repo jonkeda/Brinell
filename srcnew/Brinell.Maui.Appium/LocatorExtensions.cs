@@ -131,6 +131,12 @@ internal static class LocatorExtensions
 
     private static By ToControlTypeBy(string controlType, MauiPlatform platform)
     {
+        // A MAUI ListView renders as a table and a CollectionView as a collection view; both hold cells.
+        if (platform == MauiPlatform.iOS && controlType.Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            return MobileBy.IosNSPredicate("type == 'XCUIElementTypeTable' OR type == 'XCUIElementTypeCollectionView'");
+        }
+
         var className = (platform, controlType.ToLowerInvariant()) switch
         {
             (MauiPlatform.Android, "entry") => "android.widget.EditText",
@@ -145,6 +151,7 @@ internal static class LocatorExtensions
             (MauiPlatform.iOS, "text") => "XCUIElementTypeStaticText",
             (MauiPlatform.Android, "image") => "android.widget.ImageView",
             (MauiPlatform.iOS, "image") => "XCUIElementTypeImage",
+            (MauiPlatform.iOS, "listitem") => "XCUIElementTypeCell",
             _ => throw new ArgumentOutOfRangeException(
                 nameof(controlType), controlType,
                 $"Control type '{controlType}' is not supported on {platform}.")

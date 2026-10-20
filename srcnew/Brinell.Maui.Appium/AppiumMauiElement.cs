@@ -646,17 +646,19 @@ public sealed class AppiumMauiElement : IMauiElement
     {
         try
         {
-            var scrollParams = new Dictionary<string, object>
-            {
-                { "element", _element.Id },
-                { "toVisible", true }
-            };
-            
-            _driver.Driver.ExecuteScript("mobile: scroll", scrollParams);
+            _driver.Driver.ExecuteScript("mobile: scrollToElement",
+                new Dictionary<string, object> { { "elementId", _element.Id } });
+            return;
+        }
+        catch (Exception error) when (!AppiumErrors.IsGone(error)) { }
+
+        try
+        {
+            _driver.Driver.ExecuteScript("mobile: scroll",
+                new Dictionary<string, object> { { "elementId", _element.Id }, { "toVisible", true } });
         }
         catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
-            // Fallback
             try
             {
                 _driver.Driver.ExecuteScript("mobile: scroll", 
@@ -830,9 +832,25 @@ public sealed class AppiumMauiElement : IMauiElement
     public bool Focused => _driver.Platform switch
     {
         MauiPlatform.Android => IsTrue(GetAttribute("focused")),
-        MauiPlatform.iOS => IsTrue(GetAttribute("hasFocus")),
+        // WDA's 'focused' is focus-engine focus; keyboard focus is only visible as the active element.
+        MauiPlatform.iOS => IsActiveElement(),
         _ => false
     };
+
+    private bool IsActiveElement() => Live(() =>
+    {
+        IWebElement active;
+        try
+        {
+            active = _driver.Driver.SwitchTo().ActiveElement();
+        }
+        catch (WebDriverException)
+        {
+            return false;
+        }
+
+        return _element.Equals(active);
+    });
 
     private static bool IsTrue(string? value)
         => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);

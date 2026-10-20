@@ -148,27 +148,5 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     }
 
     #endregion
-    #region ReadOnly (IsReadOnly / WaitReadOnly / AssertReadOnly)
-
-    public bool? IsReadOnly()
-    {
-        return IsReadOnlyCore(TryFindElement()) == true;
-    }
-
-    public bool WaitReadOnly(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => IsReadOnlyCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TScope AssertReadOnly(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           IsReadOnlyCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected ReadOnly to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
 
 }
