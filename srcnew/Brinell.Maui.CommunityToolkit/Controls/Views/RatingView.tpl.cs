@@ -119,7 +119,22 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
         }
 
         EnsureSettableCore(element);
-        element.SelectIndex(star.Value - 1);
+
+        if (Context.Driver.Platform == Enums.MauiPlatform.Android)
+        {
+            TapStarOnScreen(element, star.Value);
+
+            // Android draws the stars and publishes no rating, so there is nothing to confirm
+            // against; the page's own text is what a test reads there.
+            if (GetValueCore(element) is null)
+            {
+                return;
+            }
+        }
+        else
+        {
+            element.SelectIndex(star.Value - 1);
+        }
 
         var confirmation = Confirm(() => GetValueCore(element),
                 actual => actual.HasValue && Math.Abs(actual.Value - star.Value) < 0.001,
@@ -132,6 +147,25 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
     }
 
     #endregion
+
+    /// <summary>Taps the star itself, as a person does.</summary>
+    /// <remarks>
+    /// <c>SelectIndex</c> is a picker's route on Appium - it taps the control and looks for a
+    /// dropdown - and failed here as "shows 0 item(s)". On Android the stars are the rating view's
+    /// grandchildren, behind one layout node; UiAutomator2 roots an element's XPath at the element,
+    /// so they are "./*/*/*" (measured on the sample: five star nodes, 53 px wide).
+    /// </remarks>
+    private void TapStarOnScreen(IMauiElement element, int star)
+    {
+        var stars = element.FindElements(Locator.ByXPath("./*/*/*"));
+        if (star < 1 || star > stars.Count)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(star), star, $"RatingView '{Locator.Value}' shows {stars.Count} star(s); there is no star {star}.");
+        }
+
+        stars[star - 1].Click();
+    }
 
     #region Guards
 
