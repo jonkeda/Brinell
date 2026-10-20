@@ -52,7 +52,7 @@ public class GestureBridgeTests
     /// has nothing to do with gestures - the app was built without the automation sources, or
     /// the two sides disagree about the contract GUID.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Bridge_PublishesTheDeclaredElements()
     {
         var driver = _fixture.Context.Driver;
@@ -125,7 +125,7 @@ public class GestureBridgeTests
     }
 
     /// <summary>A disabled RefreshView is one a user cannot pull, so the bridge declines it.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task SwipeDown_OnDisabledRefresh_IsDeclined()
     {
         // Declared on the bridge, so the throw below is the app declining, not a missing route.
@@ -200,7 +200,7 @@ public class GestureBridgeTests
     /// what to change, because the usual cause is a missing declaration in the app's markup
     /// rather than anything wrong with the test.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task UndeclaredGesture_IsRefusedWithAUsefulMessage()
     {
         var driver = _fixture.Context.Driver;
@@ -221,7 +221,7 @@ public class GestureBridgeTests
     }
 
     /// <summary>An element that was never declared is distinguished from a missing bridge.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task UndeclaredElement_SaysWhatToAdd()
     {
         var failure = Assert.ThrowsAny<NotSupportedException>(
@@ -251,7 +251,7 @@ public class GestureBridgeTests
     /// fail here first.
     /// </para>
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Bridge_DoesNotDisturbTheExistingTree()
     {
         Page.PageTitle.AssertExists();

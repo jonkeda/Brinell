@@ -103,7 +103,7 @@ public class GestureVerbTests
     /// not holding - so the table binds this to nothing and the app answers it itself. This test
     /// is what says the sink route works at all.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task LongPress_ReachesTheSinkThatNamedIt()
     {
         Driver.PerformGesture(GesturesTestPage.Targets.LongPress, MauiGesture.LongPress);
@@ -120,7 +120,7 @@ public class GestureVerbTests
     /// carries meaning, so a route that delivered the verb and dropped them would pass any test
     /// that only asked whether something happened.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Pan_CarriesItsArgumentsToTheSink()
     {
         Driver.PerformGesture(GesturesTestPage.Targets.Sink, MauiGesture.Pan, 30, -12);
@@ -136,7 +136,7 @@ public class GestureVerbTests
     /// It carries a working one-tap recognizer, so an inferring bridge would publish it. The
     /// claim being tested is <c>GestureAutomation</c>'s own: declared, never inferred.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task UndeclaredRow_IsNotOnTheBridgeAtAll()
     {
         Assert.False(
@@ -157,7 +157,7 @@ public class GestureVerbTests
     /// not in the element's capabilities, and the app named the mismatch on its debug output when
     /// it published the element.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task MisdeclaredRow_DoesNotAdvertiseTheVerbItCannotDo()
     {
         Assert.False(
@@ -178,7 +178,7 @@ public class GestureVerbTests
     /// anything were still searching. Nothing is: the row declared <c>DoubleTap</c> and that is
     /// the only verb bound to it.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task UndeclaredVerb_OnADeclaredRow_IsRefused()
     {
         Assert.True(

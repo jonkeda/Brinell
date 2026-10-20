@@ -40,7 +40,7 @@ public class GestureAddressabilityTests
     /// <c>ContentPanel</c> with no peer. This is what makes a control object possible for them
     /// and impossible for <c>SwipeView</c>.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task GestureRows_AreAddressable()
     {
         _fixture.OpenGestures();
@@ -73,7 +73,7 @@ public class GestureAddressabilityTests
     /// an element. <c>SwipeView</c> maps to a WinUI <c>SwipeControl</c> whose peer must not be
     /// overridden, so nothing will ever find it - and the bridge reaches it anyway.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task SwipeView_IsUnfindableAndStillAnswersItsVerb()
     {
         _fixture.NavigateToContainerModule();
