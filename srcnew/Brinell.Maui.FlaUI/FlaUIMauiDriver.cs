@@ -223,6 +223,23 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Stops at the first match rather than collecting the whole tree.</remarks>
+    public IMauiElement? TryFindElement(Locator locator)
+    {
+        var condition = locator.ToCondition(_conditionFactory);
+
+        try
+        {
+            var found = RootElement.FindFirstDescendant(condition);
+            return found == null ? null : new FlaUIMauiElement(found, this);
+        }
+        catch (Exception error) when (FlaUIErrors.IsElementGone(error) && AppHasExited)
+        {
+            throw new AppUnavailableException("the application process has exited.", error);
+        }
+    }
+
     /// <summary>
     /// Finds a piece of window chrome the driver acts on itself, waiting for it to appear.
     /// </summary>

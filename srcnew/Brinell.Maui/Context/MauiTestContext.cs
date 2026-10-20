@@ -118,8 +118,7 @@ public class MauiTestContext : IMauiTestContext, Brinell.Core.Recording.IRecorda
     {
         ArgumentNullException.ThrowIfNull(locator);
 
-        var elements = _driver.FindElements(locator);
-        return elements.Count > 0 ? elements[0] : null;
+        return _driver.TryFindElement(locator);
     }
     
     /// <inheritdoc />

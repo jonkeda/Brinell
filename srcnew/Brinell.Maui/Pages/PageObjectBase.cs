@@ -39,9 +39,15 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
 
     public override IMauiPage? Page => this;
 
+    /// <remarks>
+    /// The first match is nearly always the usable one, and finding it stops early; collecting
+    /// every match walks the whole app, so it is kept for when the first has no bounds.
+    /// </remarks>
     protected override IMauiElement FindContainerRootElement()
-        => Context.FindElements(Locator).FirstOrDefault(element => element.HasUsableBounds())
-            ?? throw RootNotFound();
+        => Context.TryFindElement(Locator) is { } first && first.HasUsableBounds()
+            ? first
+            : Context.FindElements(Locator).FirstOrDefault(element => element.HasUsableBounds())
+              ?? throw RootNotFound();
 
     /// <inheritdoc />
     protected override ElementNotFoundException RootNotFound()

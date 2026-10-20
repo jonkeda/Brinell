@@ -18,6 +18,22 @@ public interface IMauiDriver : IDiagnosticDriver, IDisposable
     /// <returns>The matches; empty when none match now.</returns>
     IReadOnlyList<IMauiElement> FindElements(Locator locator);
 
+    /// <summary>
+    /// Finds the first element in the app matching <paramref name="locator"/>, in one attempt:
+    /// the same element as the first of <see cref="FindElements"/>.
+    /// </summary>
+    /// <remarks>
+    /// A driver whose platform can stop at the first match overrides this. On Windows a page root
+    /// costs 40 ms to collect app-wide and 7 ms to find first, and every navigation looks one up.
+    /// </remarks>
+    /// <param name="locator">The locator strategy and value.</param>
+    /// <returns>The first match, or null when none match now.</returns>
+    IMauiElement? TryFindElement(Locator locator)
+    {
+        var elements = FindElements(locator);
+        return elements.Count > 0 ? elements[0] : null;
+    }
+
     #endregion
 
     #region Session

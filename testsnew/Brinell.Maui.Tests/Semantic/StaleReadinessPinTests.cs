@@ -321,6 +321,7 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
     {
         var driver = new Mock<IMauiDriver>();
         driver.Setup(d => d.FindElements(It.IsAny<Locator>())).Returns([]);
+        driver.Setup(d => d.TryFindElement(It.IsAny<Locator>())).Returns((IMauiElement?)null);
         driver.Setup(d => d.AppElement).Returns(_app.Object);
         using var context = new MauiTestContext(new MauiTestContextOptions
         {
@@ -345,6 +346,7 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
     {
         var driver = new Mock<IMauiDriver>();
         driver.Setup(d => d.FindElements(It.IsAny<Locator>())).Throws(new InvalidOperationException("driver broke"));
+        driver.Setup(d => d.TryFindElement(It.IsAny<Locator>())).Throws(new InvalidOperationException("driver broke"));
         driver.Setup(d => d.AppElement).Returns(_app.Object);
         using var context = new MauiTestContext(new MauiTestContextOptions
         {
