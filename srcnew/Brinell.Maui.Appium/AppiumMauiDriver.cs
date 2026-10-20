@@ -360,6 +360,62 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
         return root == null ? null : new AppiumMauiElement(root, this);
     }
 
+    /// <inheritdoc />
+    /// <remarks>Every gesture is touch input on Android and iOS; see <c>AppiumMauiElement.PerformGesture</c>.</remarks>
+    public bool SupportsGesture(string automationId, MauiGesture gesture)
+        => _platform is MauiPlatform.Android or MauiPlatform.iOS;
+
+    /// <inheritdoc />
+    public void PerformGesture(string automationId, MauiGesture gesture)
+        => PerformGesture(automationId, gesture, 0, 0);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The element as <c>AppElement.TryFindDeclared</c> finds it - by resource id, then accessibility
+    /// id, which is what MAUI maps an <c>AutomationId</c> to - and the gesture as real touch input on
+    /// it. A gesture's target is often a container with no text of its own: a RefreshView, a SwipeView.
+    /// </remarks>
+    /// <exception cref="ElementNotFoundException">No element carries the id now.</exception>
+    public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
+    {
+        // Below the fold it is not in the tree at all - UiAutomator2 leaves out what the user
+        // cannot see - so the page is scrolled to it, as a user would before swiping it.
+        var target = (AppElement.TryFindDeclared(automationId)
+                      ?? TryFindByScrollingWithin(null, Locator.ByAutomationId(automationId))) as AppiumMauiElement
+            ?? throw new ElementNotFoundException(Locator.ByAutomationId(automationId));
+
+        target.PerformGesture(gesture, arg1, arg2);
+    }
+
+    /// <summary>Screen pixels per device-independent unit, read once per session.</summary>
+    internal double PixelsPerUnit()
+    {
+        if (_pixelsPerUnit is { } known)
+        {
+            return known;
+        }
+
+        var scale = 1.0;
+        if (_platform == MauiPlatform.Android
+            && _driver.ExecuteScript("mobile: deviceInfo", new Dictionary<string, object>())
+                is IDictionary<string, object> info
+            && info.TryGetValue("displayDensity", out var dpi)
+            && double.TryParse(
+                Convert.ToString(dpi, System.Globalization.CultureInfo.InvariantCulture),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var density)
+            && density > 0)
+        {
+            scale = density / 160.0;
+        }
+
+        _pixelsPerUnit = scale;
+        return scale;
+    }
+
+    private double? _pixelsPerUnit;
+
     /// <summary>The alert on screen as MAUI was asked for it, or null. Answers <c>AppElement.ReadAlert</c>.</summary>
     /// <remarks>
     /// Android only. AppCompat's alert keeps its title, message and both buttons inside

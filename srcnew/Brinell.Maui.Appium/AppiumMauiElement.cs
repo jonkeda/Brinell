@@ -392,11 +392,11 @@ public sealed class AppiumMauiElement : IMauiElement
     /// knows how.
     /// </para>
     /// <para>
-    /// <b>The switch below is the honest list, and the only one.</b> A touch platform could in
-    /// principle synthesise all nine gestures; these five are what is implemented, and the rest
-    /// need W3C pointer action sequences that nothing here writes yet. There used to be a
-    /// <c>SupportsGesture</c> naming the same five separately - a second list to keep in step
-    /// with this one - and it went when no control was left asking it.
+    /// <b>The switch below is the honest list, and the only one.</b> Every <see cref="MauiGesture"/>
+    /// is real touch input here: tap, double tap and long press on the element, swipes across its
+    /// bounds, a pan as a drag from its centre by the offset given, a pinch as UiAutomator2's or
+    /// XCUITest's own pinch. There used to be a <c>SupportsGesture</c> naming a subset separately -
+    /// a second list to keep in step with this one - and it went when no control was left asking.
     /// </para>
     /// <para>
     /// A gesture the switch does not handle throws rather than doing something near enough.
@@ -404,12 +404,38 @@ public sealed class AppiumMauiElement : IMauiElement
     /// never received.
     /// </para>
     /// </remarks>
-    public void PerformGesture(MauiGesture gesture) => Marked(gesture, () => Live(() =>
+    public void PerformGesture(MauiGesture gesture) => PerformGesture(gesture, 0, 0);
+
+    /// <summary>Performs a gesture that may carry a magnitude, as touch input.</summary>
+    /// <param name="gesture">The gesture.</param>
+    /// <param name="arg1">
+    /// A pan's horizontal offset, or a pinch's size in percent (positive opens, negative closes);
+    /// in device-independent units, as the app declares them on Windows.
+    /// </param>
+    /// <param name="arg2">A pan's vertical offset, in device-independent units.</param>
+    internal void PerformGesture(MauiGesture gesture, int arg1, int arg2) => Marked(gesture, () => Live(() =>
     {
         switch (gesture)
         {
             case MauiGesture.Tap:
                 Click();
+                return;
+
+            case MauiGesture.DoubleTap:
+                Mobile(_driver.Platform == MauiPlatform.Android ? "mobile: doubleClickGesture" : "mobile: doubleTap",
+                    new Dictionary<string, object> { { "elementId", _element.Id } });
+                return;
+
+            case MauiGesture.LongPress:
+                LongPress();
+                return;
+
+            case MauiGesture.Pan:
+                Pan(arg1, arg2);
+                return;
+
+            case MauiGesture.Pinch:
+                Pinch(arg1);
                 return;
 
             case MauiGesture.SwipeLeft:
@@ -429,11 +455,63 @@ public sealed class AppiumMauiElement : IMauiElement
                 return;
 
             default:
-                throw new NotSupportedException(
-                    $"{nameof(AppiumMauiElement)} cannot perform {gesture}. It needs a W3C pointer "
-                    + "action sequence, which this driver does not write yet.");
+                throw new NotSupportedException($"{nameof(AppiumMauiElement)} does not know the gesture {gesture}.");
         }
     }));
+
+    /// <summary>A drag from the element's centre by an offset in device-independent units.</summary>
+    private void Pan(int deltaX, int deltaY)
+    {
+        var rect = Rect;
+        var scale = _driver.PixelsPerUnit();
+        var (fromX, fromY) = (rect.Left + (rect.Width / 2), rect.Top + (rect.Height / 2));
+        var (toX, toY) = (fromX + (int)Math.Round(deltaX * scale), fromY + (int)Math.Round(deltaY * scale));
+
+        switch (_driver.Platform)
+        {
+            case MauiPlatform.Android:
+                Mobile("mobile: dragGesture", new Dictionary<string, object>
+                {
+                    { "startX", fromX }, { "startY", fromY }, { "endX", toX }, { "endY", toY },
+                });
+                return;
+            case MauiPlatform.iOS:
+                Mobile("mobile: dragFromToForDuration", new Dictionary<string, object>
+                {
+                    { "fromX", fromX }, { "fromY", fromY }, { "toX", toX }, { "toY", toY }, { "duration", 0.5 },
+                });
+                return;
+            default:
+                throw NotAMobilePlatform(nameof(Pan));
+        }
+    }
+
+    /// <summary>A pinch on the element: positive opens, negative closes, by that many percent (50 when 0).</summary>
+    private void Pinch(int percent)
+    {
+        var size = Math.Clamp(percent == 0 ? 50 : Math.Abs(percent), 1, 100) / 100.0;
+
+        switch (_driver.Platform)
+        {
+            case MauiPlatform.Android:
+                Mobile(percent < 0 ? "mobile: pinchCloseGesture" : "mobile: pinchOpenGesture",
+                    new Dictionary<string, object> { { "elementId", _element.Id }, { "percent", size } });
+                return;
+            case MauiPlatform.iOS:
+                Mobile("mobile: pinch", new Dictionary<string, object>
+                {
+                    { "elementId", _element.Id },
+                    { "scale", percent < 0 ? 1 - size : 1 + size },
+                    { "velocity", percent < 0 ? -1.0 : 1.0 },
+                });
+                return;
+            default:
+                throw NotAMobilePlatform(nameof(Pinch));
+        }
+    }
+
+    private void Mobile(string command, Dictionary<string, object> arguments)
+        => _driver.Driver.ExecuteScript(command, arguments);
 
     #endregion
 
