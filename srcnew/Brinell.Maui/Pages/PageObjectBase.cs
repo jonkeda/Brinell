@@ -68,8 +68,14 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     protected override string ScopeName => Name;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The root is only ever handed back with usable bounds - a cached one is re-checked by
+    /// <see cref="IsCachedRootValid"/>, a fresh one is chosen by them - so asking again here
+    /// repeated the same two reads. On Android a visibility read is 57 ms and this runs on every
+    /// readiness probe.
+    /// </remarks>
     public virtual bool IsLoaded()
-        => TryGetContainerRoot() is { } root && root.HasUsableBounds();
+        => TryGetContainerRoot() is not null;
 
     /// <inheritdoc />
     protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)

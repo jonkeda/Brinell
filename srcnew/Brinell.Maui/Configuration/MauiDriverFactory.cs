@@ -178,6 +178,10 @@ public static class MauiDriverFactory
         }
     }
     
+    private const string AndroidWaitForIdle = "settings[waitForIdleTimeout]";
+
+    private const int AndroidIdleWaitMs = 500;
+
     private static object BuildAppiumOptionsReflection(MauiDriverOptions options, Type appiumOptionsType)
     {
         var appiumOptions = Activator.CreateInstance(appiumOptionsType)!;
@@ -209,6 +213,16 @@ public static class MauiDriverFactory
         var addCapMethod = appiumOptionsType.GetMethod("AddAdditionalAppiumOption");
         if (addCapMethod != null)
         {
+            // UiAutomator2 waits up to 10 s for the app to be idle before every command, and a page
+            // with anything moving - a playing MediaElement, an ActivityIndicator - never is: each
+            // lookup there took 11 s. The native Android driver bounds it the same way; Brinell
+            // waits for state itself.
+            if (options.Platform == MauiPlatform.Android
+                && !options.AdditionalCapabilities.ContainsKey(AndroidWaitForIdle))
+            {
+                addCapMethod.Invoke(appiumOptions, [AndroidWaitForIdle, AndroidIdleWaitMs]);
+            }
+
             foreach (var cap in options.AdditionalCapabilities)
             {
                 addCapMethod.Invoke(appiumOptions, [cap.Key, cap.Value]);

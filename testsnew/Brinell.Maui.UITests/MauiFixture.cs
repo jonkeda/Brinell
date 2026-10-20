@@ -135,8 +135,19 @@ public class MauiFixture : MauiTestFixtureBase
                 continue;
             }
 
-            if (!string.IsNullOrEmpty(top)
-                && top != hub
+            if (string.IsNullOrEmpty(top))
+            {
+                // A driver with no way to name the top page: Appium on Android and iOS has no
+                // bridge, and answers an empty route. Waiting for a name that never comes cost
+                // the whole timeout, 10 s, on every page a mobile test opened. What can be seen
+                // there is the hub leaving - a covered page drops out of the accessibility tree -
+                // so that is the wait, and the test's first lookup polls for its own page.
+                if (Context.TryFindElement(Locator.ByAutomationId(hub)) is null)
+                {
+                    break;
+                }
+            }
+            else if (top != hub
                 && Context.TryFindElement(Locator.ByAutomationId(top)) is not null)
             {
                 break;
