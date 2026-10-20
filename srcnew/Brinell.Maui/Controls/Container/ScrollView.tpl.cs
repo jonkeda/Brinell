@@ -66,8 +66,24 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <c>FindElement</c> first if absence should be an
     /// error.
     /// </remarks>
+    /// <remarks>
+    /// On Android and iOS a descendant below the fold is not in the tree, so the plain lookup
+    /// misses it and the call used to do nothing; there the scroll view scrolls itself until the
+    /// descendant shows (its root's <c>TryFindByScrolling</c>).
+    /// </remarks>
     public TSelf ScrollTo(Locator locator)
-        => RunDo(() => ScrollHelper.ScrollIntoView(TryFindElement(locator), CallRemainingMs));
+        => RunDo(() =>
+        {
+            var element = TryFindElement(locator);
+            if (element is null
+                && Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS)
+            {
+                ContainerRoot.TryFindByScrolling(locator);
+                return;
+            }
+
+            ScrollHelper.ScrollIntoView(element, CallRemainingMs);
+        });
 
     /// <summary>
     /// Brings a descendant into view by automation id.
