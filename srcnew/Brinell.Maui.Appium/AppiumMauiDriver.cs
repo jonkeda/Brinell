@@ -387,6 +387,36 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
         target.PerformGesture(gesture, arg1, arg2);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The device's locale as <c>mobile: deviceInfo</c> reports it (<c>en_US</c>), as the culture's
+    /// standard data: a device knows nothing of this machine's custom formats. Null when the
+    /// device does not say.
+    /// </remarks>
+    public System.Globalization.CultureInfo? DeviceCulture
+    {
+        get
+        {
+            try
+            {
+                if (_driver.ExecuteScript("mobile: deviceInfo", new Dictionary<string, object>())
+                        is IDictionary<string, object> info
+                    && info.TryGetValue("locale", out var locale)
+                    && locale is string name
+                    && name.Length > 0)
+                {
+                    return System.Globalization.CultureInfo.GetCultureInfo(name.Replace('_', '-'));
+                }
+            }
+            catch (System.Globalization.CultureNotFoundException)
+            {
+                // A locale .NET does not know: the machine's culture it is, as before.
+            }
+
+            return null;
+        }
+    }
+
     /// <summary>Screen pixels per device-independent unit, read once per session.</summary>
     internal double PixelsPerUnit()
     {

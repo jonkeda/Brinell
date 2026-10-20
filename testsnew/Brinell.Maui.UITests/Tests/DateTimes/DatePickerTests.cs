@@ -178,7 +178,7 @@ public class DatePickerTests
     /// call did not compile. Focusing goes through the platform's own focus rather than a click,
     /// which matters here more than elsewhere: clicking this control opens its calendar.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("on Android focusing a DatePicker is a tap, which opens its dialog over the page", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Focus")]
     public Task DatePicker_Focus_IsReported()
     {

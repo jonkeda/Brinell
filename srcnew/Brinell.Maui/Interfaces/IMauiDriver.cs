@@ -66,6 +66,17 @@ public interface IMauiDriver : IDiagnosticDriver, IDisposable
     /// </summary>
     IMauiElement AppElement { get; }
 
+    /// <summary>
+    /// The culture the app formats dates and times in, where it is not this process's; null where
+    /// the app runs in this process's culture, as a Windows app on this machine does.
+    /// </summary>
+    /// <remarks>
+    /// A device formats with its own locale, untouched by this machine's settings: the emulator
+    /// shows "10/25/2026" while a Windows account with a custom short date reads "dd-MMM-yy", and a
+    /// picker read with the machine's format found no date at all.
+    /// </remarks>
+    System.Globalization.CultureInfo? DeviceCulture => null;
+
     /// <summary>Where this platform draws MAUI Shell's tabs and flyout.</summary>
     /// <exception cref="PlatformNotSupportedException">Shell has not been mapped on this platform.</exception>
     ShellChromeLocators ShellChrome

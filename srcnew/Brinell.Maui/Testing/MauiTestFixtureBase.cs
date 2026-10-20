@@ -42,10 +42,31 @@ public abstract class MauiTestFixtureBase : IDisposable
         _options = CreateTestContextOptions();
 
         _context = new MauiTestContext(_options);
+        UseTheAppsCulture();
         
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATED - Driver session started");
         
         _screenshotService = CreateScreenshotService(_context);
+    }
+
+    /// <summary>
+    /// Reads dates and times in the culture the app writes them in, where that is the device's.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Controls.DateTimes.DateTimeFormats"/> defaults to this process's culture, which is
+    /// the Windows app's too. A device formats with its own locale instead, and a DatePicker read
+    /// with this machine's custom short date ("dd-MMM-yy") found no date in "10/25/2026".
+    /// </remarks>
+    private void UseTheAppsCulture()
+    {
+        if (_context.Driver.DeviceCulture is not { } culture)
+        {
+            return;
+        }
+
+        Controls.DateTimes.DateTimeFormats.Culture = culture;
+        Controls.DateTimes.DateTimeFormats.Date = culture.DateTimeFormat.ShortDatePattern;
+        Controls.DateTimes.DateTimeFormats.Time = culture.DateTimeFormat.ShortTimePattern;
     }
 
     /// <summary>
@@ -71,6 +92,7 @@ public abstract class MauiTestFixtureBase : IDisposable
 
         _context.Dispose();
         _context = new MauiTestContext(_options);
+        UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
 
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} RESTARTED - Driver session started");

@@ -36,7 +36,7 @@ namespace Brinell.Maui.Appium;
 /// stops here, at the element: no control object above this layer branches on platform.
 /// </para>
 /// </remarks>
-public sealed class AppiumMauiElement : IMauiElement
+public sealed partial class AppiumMauiElement : IMauiElement
 {
     private readonly AppiumElement? _wrapped;
     private readonly AppiumMauiDriver _driver;
