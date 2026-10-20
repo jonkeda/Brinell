@@ -242,7 +242,28 @@ public sealed partial class AppiumMauiElement : IMauiElement
             throw new BrinellException("Could not invoke a toolbar item: no AutomationId was given.");
         }
 
-        _driver.FindChrome(Locator.ByAccessibilityId(automationId), ChromeFindTimeoutMs).Click();
+        // Refused the way Windows refuses, so a test reads the same on both: an id no item carries
+        // is a BrinellException with the reason, a disabled item is not ready and is not pressed.
+        IMauiElement item;
+        try
+        {
+            item = _driver.FindChrome(Locator.ByAccessibilityId(automationId), ChromeFindTimeoutMs);
+        }
+        catch (ElementNotFoundException)
+        {
+            throw new BrinellException(
+                $"Could not invoke toolbar item '{automationId}': no toolbar item on the page on screen "
+                + "carries that AutomationId. Toolbar items are matched by the id in the app's markup, "
+                + "not by their text.");
+        }
+
+        if (!item.Enabled)
+        {
+            throw new ElementNotReadyException(
+                Locator.ByAccessibilityId(automationId), NotReadyReason.Disabled, "the toolbar item is disabled");
+        }
+
+        item.Click();
     }
 
     #endregion

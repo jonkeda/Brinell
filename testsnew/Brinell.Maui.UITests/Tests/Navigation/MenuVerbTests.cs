@@ -67,7 +67,7 @@ public class MenuVerbTests
     /// <summary>
     /// A page-menu item runs, without the pointer.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("MAUI shows menu bars and context menus on Windows and Mac Catalyst only", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_RunsAPageMenuItem_WithoutThePointer()
     {
         _fixture.Context.Driver.InvokeMenuItem("PageMenuFileNew");
@@ -85,7 +85,7 @@ public class MenuVerbTests
     /// click even in principle. <c>IMenuItemController.Activate</c> is MAUI's own entry point for
     /// "the user picked this", so the app cannot tell this apart from the real thing.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("MAUI shows menu bars and context menus on Windows and Mac Catalyst only", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_RunsAContextMenuItem_WithoutOpeningTheFlyout()
     {
         _fixture.Context.Driver.InvokeMenuItem("ContextMenuCopy");
@@ -113,7 +113,7 @@ public class MenuVerbTests
     /// the message rather than on an HRESULT.
     /// </para>
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("MAUI shows menu bars and context menus on Windows and Mac Catalyst only", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_WhenTheItemIsDisabled_IsRefusedAndDoesNothing()
     {
         var refusal = Assert.Throws<ElementNotReadyException>(
@@ -132,7 +132,7 @@ public class MenuVerbTests
     /// <summary>
     /// An unknown id is refused with a reason, rather than quietly doing nothing.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("MAUI shows menu bars and context menus on Windows and Mac Catalyst only", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_WithNoSuchItem_IsRefusedWithTheReason()
     {
         var refusal = Assert.Throws<BrinellException>(
