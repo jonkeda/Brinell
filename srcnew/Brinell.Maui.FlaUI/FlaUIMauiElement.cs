@@ -907,7 +907,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         // range and the provider answers the whole range on one path; splitting a range across
         // both methods is how a verb ends up reaching the app down a route that has never heard
         // of it, and being refused for a reason that has nothing to do with the element.
-        if (TryBridge(BrinellVerb.Submit))
+        if (TryBridge(BrinellVerb.Submit, string.Empty, out _, onlyRoute: true))
             return;
 
         throw NoQuietRoute(
@@ -1385,7 +1385,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     {
         using var mark = Report(InteractionKind.Type);
 
-        if (!TryBridge(BrinellVerb.AppendText, text, out _))
+        if (!TryBridge(BrinellVerb.AppendText, text, out _, onlyRoute: true))
         {
             throw new BrinellException(
                 $"'{AutomationId}' did not append the text. Either it does not declare AppendText, "
@@ -1403,7 +1403,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void ClearFocus()
     {
-        if (!TryBridge(BrinellVerb.Unfocus))
+        if (!TryBridge(BrinellVerb.Unfocus, string.Empty, out _, onlyRoute: true))
         {
             throw new BrinellException(
                 $"'{AutomationId}' did not give up focus. Either it does not declare Unfocus, or "
@@ -1466,7 +1466,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void ScrollTo(string automationId)
     {
-        if (!TryBridge(BrinellVerb.ScrollTo, automationId, out _))
+        if (!TryBridge(BrinellVerb.ScrollTo, automationId, out _, onlyRoute: true))
         {
             throw new BrinellException(
                 $"'{AutomationId}' could not scroll to '{automationId}'. Either the scroller does "
@@ -1564,7 +1564,8 @@ public sealed class FlaUIMauiElement : IMauiElement
             BrinellVerb.ScrollToIndex,
             index,
             0,
-            BridgeNear);
+            BridgeNear,
+            onlyRoute: true);
 
         if (!answer.Delivered)
         {
@@ -1588,7 +1589,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <inheritdoc />
     public ScrollPosition ReadScrollPosition()
     {
-        if (!TryBridge(BrinellVerb.ScrollPosition, string.Empty, out var reported))
+        if (!TryBridge(BrinellVerb.ScrollPosition, string.Empty, out var reported, onlyRoute: true))
         {
             throw new NotSupportedException(
                 $"'{AutomationId}' does not answer ScrollPosition. Declare it with "
@@ -1684,7 +1685,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     {
         var outcome = BridgeVerbRunner.Invoke(
             _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.SelectIndex, index,
-            near: BridgeNear);
+            near: BridgeNear, onlyRoute: true);
 
         if (outcome.Delivered)
         {
@@ -1715,7 +1716,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>Selects by text through the app's verb.</summary>
     private void SelectByTextThroughTheApp(string text)
     {
-        if (!TryBridge(BrinellVerb.SelectByText, text, out var landed))
+        if (!TryBridge(BrinellVerb.SelectByText, text, out var landed, onlyRoute: true))
         {
             throw new BrinellException(
                 $"'{AutomationId}' could not select '{text}'. Either it does not declare the "
@@ -1754,7 +1755,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         var wanted = date.ToString(BridgeDateFormat, CultureInfo.InvariantCulture);
 
-        if (!TryBridge(BrinellVerb.SetDate, wanted, out var landed))
+        if (!TryBridge(BrinellVerb.SetDate, wanted, out var landed, onlyRoute: true))
         {
             throw new NotSupportedException(
                 $"'{AutomationId}' did not answer SetDate, and it is the only route. Declare it with "
@@ -1777,7 +1778,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         var wanted = time.ToString(BridgeTimeFormat, CultureInfo.InvariantCulture);
 
-        if (!TryBridge(BrinellVerb.SetTime, wanted, out var landed))
+        if (!TryBridge(BrinellVerb.SetTime, wanted, out var landed, onlyRoute: true))
         {
             throw new NotSupportedException(
                 $"'{AutomationId}' did not answer SetTime, and it is the only route. Declare it with "
@@ -1934,10 +1935,11 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <param name="argument">Its argument.</param>
     /// <param name="result">What the app returned.</param>
     /// <returns>Whether the app performed it.</returns>
-    private bool TryBridge(BrinellVerb verb, string argument, out string result)
+    /// <param name="onlyRoute">Whether nothing else can do this; see <see cref="BridgeVerbRunner.Send"/>.</param>
+    private bool TryBridge(BrinellVerb verb, string argument, out string result, bool onlyRoute = false)
     {
         var outcome = BridgeVerbRunner.Send(
-            _driver.RootElement, _driver.Automation, AutomationId, verb, argument, BridgeNear);
+            _driver.RootElement, _driver.Automation, AutomationId, verb, argument, BridgeNear, onlyRoute);
 
         result = outcome.Value;
         return outcome.Delivered;

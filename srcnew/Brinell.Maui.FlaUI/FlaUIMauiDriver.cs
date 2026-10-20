@@ -477,37 +477,14 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     /// <summary>Reads app-published state for a bridge target, which may have no node in the tree.</summary>
     /// <remarks>
-    /// <b>A target that is not there yet is waited for, briefly.</b> A page pushed in place of
-    /// another publishes its targets as it loads and the outgoing page withdraws its own as it
-    /// unloads, so for a few milliseconds after a navigation the id can be on neither, or only on
-    /// a target that is going. A Stepper's <c>SetValue</c> read its <c>Minimum</c> in that moment
-    /// and failed as "not on the bridge", once a full run. A read changes nothing, so asking again
-    /// is safe; the window is the one <see cref="NavigateBack"/> gives a page to publish, and an id
-    /// that is never declared pays it once before the message that names the fix.
+    /// The bridge is the only route, so a target a page has not published yet is waited for
+    /// briefly (<see cref="BridgeVerbRunner.Send"/>): a Stepper's <c>SetValue</c> read its
+    /// <c>Minimum</c> in the moment after a navigation and failed as "not on the bridge".
     /// </remarks>
     internal string ReadState(string automationId, string property)
     {
-        const int publishWindowMs = 1_000;
-        const int pollMs = 25;
-
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        Bridge.BridgeVerbResult answer;
-
-        while (true)
-        {
-            answer = BridgeVerbRunner.Send(
-                RootElement, Automation, automationId, BrinellVerb.GetState, property);
-
-            if (answer.Delivered
-                || answer.HResult != HResults.UIA_E_ELEMENTNOTAVAILABLE
-                || clock.ElapsedMilliseconds >= publishWindowMs
-                || AppHasExited)
-            {
-                break;
-            }
-
-            Thread.Sleep(pollMs);
-        }
+        var answer = BridgeVerbRunner.Send(
+            RootElement, Automation, automationId, BrinellVerb.GetState, property, onlyRoute: true);
 
         if (!answer.Delivered && AppHasExited)
         {

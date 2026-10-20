@@ -55,7 +55,7 @@ internal static class BridgeVerbRunner
     /// <param name="argument">Its argument, for a verb that takes one.</param>
     /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened, and what the app returned.</returns>
-    internal static BridgeVerbResult Send(
+    private static BridgeVerbResult SendOnce(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
@@ -63,8 +63,8 @@ internal static class BridgeVerbRunner
         string argument = "",
         Func<Rectangle>? near = null)
         => BrinellVerbs.TransportFor(verb) == BrinellVerbTransport.Exchange
-            ? Exchange(root, automation, automationId, verb, argument, near)
-            : Invoke(root, automation, automationId, verb, near: near);
+            ? ExchangeOnce(root, automation, automationId, verb, argument, near)
+            : InvokeOnce(root, automation, automationId, verb, near: near);
 
     /// <summary>
     /// Sends a verb that carries no strings.
@@ -77,7 +77,7 @@ internal static class BridgeVerbRunner
     /// <param name="arg2">The verb's second argument, where it takes one.</param>
     /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened.</returns>
-    internal static BridgeVerbResult Invoke(
+    private static BridgeVerbResult InvokeOnce(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
@@ -110,7 +110,7 @@ internal static class BridgeVerbRunner
     /// <param name="argument">The verb's argument, or empty where it takes none.</param>
     /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <returns>What happened, and what the app returned.</returns>
-    internal static BridgeVerbResult Exchange(
+    private static BridgeVerbResult ExchangeOnce(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
@@ -145,7 +145,7 @@ internal static class BridgeVerbRunner
     /// <param name="near">The real element's bounds, to pick among targets sharing the id.</param>
     /// <param name="declared">Whether the target declared the verb at all.</param>
     /// <returns>What happened.</returns>
-    internal static BridgeVerbResult InvokeIfDeclared(
+    private static BridgeVerbResult InvokeIfDeclaredOnce(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
@@ -196,7 +196,7 @@ internal static class BridgeVerbRunner
     /// <param name="declared">Whether the target declared the verb at all.</param>
     /// <returns>What happened. Not delivered, with <paramref name="declared"/> false, when the
     /// target does not declare the verb or could not be resolved.</returns>
-    internal static BridgeVerbResult SendIfDeclared(
+    private static BridgeVerbResult SendIfDeclaredOnce(
         AutomationElement root,
         UIA3Automation automation,
         string? automationId,
@@ -234,6 +234,116 @@ internal static class BridgeVerbRunner
             hr,
             value,
             BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>Sends a verb on whichever of the two contract methods it travels on.</summary>
+    /// <remarks>
+    /// <c>onlyRoute</c>: whether the bridge is the caller's only way to do this, so a target not
+    /// published yet is waited for (<see cref="UntilPublished"/>). A caller that falls back to UI
+    /// Automation passes false, or an element the app never instrumented would cost the window on
+    /// every call.
+    /// </remarks>
+    internal static BridgeVerbResult Send(
+        AutomationElement root, UIA3Automation automation, string? automationId, BrinellVerb verb,
+        string argument = "", Func<Rectangle>? near = null, bool onlyRoute = false)
+        => onlyRoute
+            ? UntilPublished(() => SendOnce(root, automation, automationId, verb, argument, near))
+            : SendOnce(root, automation, automationId, verb, argument, near);
+
+    /// <summary>Sends a verb that carries no strings.</summary>
+    /// <remarks><c>onlyRoute</c> as for <see cref="Send"/>.</remarks>
+    internal static BridgeVerbResult Invoke(
+        AutomationElement root, UIA3Automation automation, string? automationId, BrinellVerb verb,
+        int arg1 = 0, int arg2 = 0, Func<Rectangle>? near = null, bool onlyRoute = false)
+        => onlyRoute
+            ? UntilPublished(() => InvokeOnce(root, automation, automationId, verb, arg1, arg2, near))
+            : InvokeOnce(root, automation, automationId, verb, arg1, arg2, near);
+
+    /// <summary>Sends a verb that carries a string in, a string out, or both.</summary>
+    /// <remarks><c>onlyRoute</c> as for <see cref="Send"/>.</remarks>
+    internal static BridgeVerbResult Exchange(
+        AutomationElement root, UIA3Automation automation, string? automationId, BrinellVerb verb,
+        string argument = "", Func<Rectangle>? near = null, bool onlyRoute = false)
+        => onlyRoute
+            ? UntilPublished(() => ExchangeOnce(root, automation, automationId, verb, argument, near))
+            : ExchangeOnce(root, automation, automationId, verb, argument, near);
+
+    /// <summary>Invokes a verb only where the target declares it.</summary>
+    /// <remarks>See <see cref="UntilPublished"/>.</remarks>
+    internal static BridgeVerbResult InvokeIfDeclared(
+        AutomationElement root, UIA3Automation automation, string? automationId, BrinellVerb verb,
+        int arg1, int arg2, Func<Rectangle>? near, out bool declared)
+    {
+        var said = false;
+        var result = UntilPublished(
+            () => InvokeIfDeclaredOnce(root, automation, automationId, verb, arg1, arg2, near, out said),
+            () => said || BrinellBridgeLookup.HasPublished(root, automationId));
+        declared = said;
+        return result;
+    }
+
+    /// <summary>Exchanges a verb only where the target declares it.</summary>
+    /// <remarks>See <see cref="UntilPublished"/>.</remarks>
+    internal static BridgeVerbResult SendIfDeclared(
+        AutomationElement root, UIA3Automation automation, string? automationId, BrinellVerb verb,
+        string argument, Func<Rectangle>? near, out bool declared)
+    {
+        var said = false;
+        var result = UntilPublished(
+            () => SendIfDeclaredOnce(root, automation, automationId, verb, argument, near, out said),
+            () => said || BrinellBridgeLookup.HasPublished(root, automationId));
+        declared = said;
+        return result;
+    }
+
+    /// <summary>
+    /// Sends again, for up to a second, while the answer is that the target is not available.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A page pushed in place of another is not on the bridge at once.</b> It publishes its
+    /// targets as it loads and the outgoing page withdraws its own as it unloads, so for a few
+    /// milliseconds after a navigation an id can be on neither, or only on a target whose element
+    /// has gone. Both answer <c>UIA_E_ELEMENTNOTAVAILABLE</c>, and a verb sent then failed once a
+    /// full run: a DatePicker's <c>SetDate</c> "did not answer", a Stepper's state read was "not on
+    /// the bridge".
+    /// </para>
+    /// <para>
+    /// Asking again is safe because that answer means nothing was done. Every other answer -
+    /// performed, refused, not declared, bad argument - is returned at once. The window is the one
+    /// <c>NavigateBack</c> gives a page to publish, and an id that is never published pays it once
+    /// before the message that names the fix.
+    /// </para>
+    /// </remarks>
+    /// <param name="send">One attempt.</param>
+    /// <param name="declared">
+    /// For the <c>IfDeclared</c> forms: retry only a target that declares the verb, or an id the
+    /// bridge has carried before and is between publications. Their callers fall back to UI
+    /// Automation for an element the app never instrumented, and that answer must not cost the
+    /// window. An Expander's state read found its own target gone for a moment between Expand and
+    /// Collapse on one page, and failed as "does not report IsExpanded".
+    /// </param>
+    private static BridgeVerbResult UntilPublished(Func<BridgeVerbResult> send, Func<bool>? declared = null)
+    {
+        const int publishWindowMs = 1_000;
+        const int pollMs = 25;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        while (true)
+        {
+            var result = send();
+
+            if (result.Delivered
+                || result.HResult != HResults.UIA_E_ELEMENTNOTAVAILABLE
+                || declared?.Invoke() == false
+                || clock.ElapsedMilliseconds >= publishWindowMs)
+            {
+                return result;
+            }
+
+            Thread.Sleep(pollMs);
+        }
     }
 
     /// <summary>

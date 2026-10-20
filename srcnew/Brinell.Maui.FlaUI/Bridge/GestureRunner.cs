@@ -57,7 +57,7 @@ internal static class GestureRunner
         Func<Rectangle>? near = null)
     {
         var result = BridgeVerbRunner.Invoke(
-            root, automation, automationId, gesture.ToVerb(), arg1, arg2, near);
+            root, automation, automationId, gesture.ToVerb(), arg1, arg2, near, onlyRoute: true);
 
         if (!result.Delivered)
         {

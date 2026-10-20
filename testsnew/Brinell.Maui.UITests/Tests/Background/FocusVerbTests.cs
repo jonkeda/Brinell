@@ -134,7 +134,7 @@ public class FocusVerbTests
         page.TestSearchBar.Focus();
 
         Assert.True(page.TestSearchBar.IsFocused(), "The search bar did not take focus.");
-        Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus.");
+        page.TestEntry.AssertFocused(false, "The entry still reports focus.");
 
         return Task.CompletedTask;
     }
@@ -157,7 +157,7 @@ public class FocusVerbTests
 
         page.TestEntry.Blur();
 
-        Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus after Blur.");
+        page.TestEntry.AssertFocused(false, "The entry still reports focus after Blur.");
 
         return Task.CompletedTask;
     }

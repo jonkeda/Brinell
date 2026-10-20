@@ -47,6 +47,11 @@ internal static class BrinellBridgeLookup
             return false;
         });
 
+        if (matches.Count > 0)
+        {
+            PublishedIds.GetOrCreateValue(root).TryAdd(automationId, 0);
+        }
+
         return matches.Count switch
         {
             0 => null,
@@ -284,6 +289,20 @@ internal static class BrinellBridgeLookup
     /// <returns>Whether a bridge window was found.</returns>
     internal static bool HasBridge(AutomationElement root, UIA3Automation automation)
         => FindBridgeRoot(automation.TreeWalkerFactory.GetRawViewWalker(), root) is not null;
+
+    /// <summary>The ids each window's bridge has carried at some point in this session.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<
+        AutomationElement, System.Collections.Concurrent.ConcurrentDictionary<string, byte>> PublishedIds = new();
+
+    /// <summary>Whether this window's bridge has carried a target for the id before.</summary>
+    /// <remarks>
+    /// Tells an id that is between publications - a page arriving, a control re-laid out - from
+    /// one the app never instrumented: only the first is worth waiting for.
+    /// </remarks>
+    internal static bool HasPublished(AutomationElement root, string? automationId)
+        => automationId is not null
+           && PublishedIds.TryGetValue(root, out var ids)
+           && ids.ContainsKey(automationId);
 
     /// <summary>The bridge root found under each window, until the window element is dropped.</summary>
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<AutomationElement, KnownBridge>
