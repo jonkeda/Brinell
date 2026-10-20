@@ -38,9 +38,14 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
     /// <returns>The expanded state, or null where the app does not report it.</returns>
     protected virtual bool? IsExpandedCore(IMauiElement? element)
     {
-        if (element?.ReadState("IsExpanded") is not { } reported)
+        if (element == null)
         {
             return null;
+        }
+
+        if (element.ReadState("IsExpanded") is not { } reported)
+        {
+            return IsExpandedByWhatIsShown(element);
         }
 
         return bool.TryParse(reported, out var expanded)
@@ -51,12 +56,79 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
     }
 
     /// <summary>
+    /// Whether the expander is open, read from what is on screen: taller than its header.
+    /// </summary>
+    /// <remarks>
+    /// For a platform with no app-side state read. On Android the expander's node grows from its
+    /// header's height to header plus content when it opens (measured: 49 to 98 px, the header
+    /// [53,557][1028,606] throughout).
+    /// </remarks>
+    private bool? IsExpandedByWhatIsShown(IMauiElement element)
+        => OnATouchPlatform && FindHeader(element) is { } header
+            ? element.Rect.Height > header.Rect.Height + 1
+            : null;
+
+    /// <summary>
+    /// The expander's header: the first descendant shorter than the expander, or the first leaf.
+    /// </summary>
+    /// <remarks>
+    /// The expander holds one layout node that grows with the content too, so wrappers as tall as
+    /// the expander are stepped through. UiAutomator2 evaluates an element's XPath against a
+    /// document rooted at that element, so "./*" is the element itself and its children are
+    /// "./*/*" (measured: "./*" walked TestExpander > TestExpander > ...); XCUITest's "./*" is the
+    /// children. Null where the expander has no children to read.
+    /// </remarks>
+    private IMauiElement? FindHeader(IMauiElement element)
+    {
+        var height = element.Rect.Height;
+        var children = Locator.ByXPath(
+            Context.Driver.Platform == Enums.MauiPlatform.Android ? "./*/*" : "./*");
+        IMauiElement? header = null;
+        var node = element;
+
+        for (var depth = 0; depth < MaxWrapperDepth; depth++)
+        {
+            var first = node.FindElements(children).FirstOrDefault();
+            if (first == null)
+            {
+                break;
+            }
+
+            header = node = first;
+            if (header.Rect.Height < height - 1)
+            {
+                break;
+            }
+        }
+
+        return header;
+    }
+
+    private bool OnATouchPlatform
+        => Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS;
+
+    /// <summary>How deep the header may sit below the expander's own node.</summary>
+    private const int MaxWrapperDepth = 4;
+
+    /// <summary>
     /// Taps the header once, flipping the expanded state.
     /// </summary>
+    /// <remarks>
+    /// On a touch platform the tap goes to the header itself: an open expander's centre is the line
+    /// between header and content, and a tap there missed the header and left it open.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void ToggleCore(IMauiElement element, int? timeoutMs = null)
-        => element.PerformGesture(MauiGesture.Tap);
+    {
+        if (OnATouchPlatform && FindHeader(element) is { } header)
+        {
+            header.Click();
+            return;
+        }
+
+        element.PerformGesture(MauiGesture.Tap);
+    }
 
     /// <summary>
     /// Shows the content. No-op when already expanded.
