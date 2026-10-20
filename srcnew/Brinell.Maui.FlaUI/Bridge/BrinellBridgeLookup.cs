@@ -17,7 +17,7 @@ internal static class BrinellBridgeLookup
     /// <param name="automationId">The <c>AutomationId</c> of the element being acted on.</param>
     /// <param name="near">
     /// The real element's screen rectangle, read only when several targets share the
-    /// <c>AutomationId</c>. Without it the first published target is used.
+    /// <c>AutomationId</c>. Without it the newest published target on screen is used.
     /// </param>
     /// <returns>The bridge element, or null.</returns>
     internal static AutomationElement? Find(
@@ -56,6 +56,39 @@ internal static class BrinellBridgeLookup
     }
 
     /// <summary>
+    /// Among targets sharing an <c>AutomationId</c> with nothing to place them by, the newest
+    /// that has bounds on screen, else the newest.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The first used to be taken, and the first is the oldest.</b> A page pushed in place of
+    /// one with the same ids publishes its targets while the outgoing page's are still there:
+    /// they go when that page unloads, a moment later. A verb sent by id in that moment reached
+    /// the old page - the Gestures tests saw two <c>GestureTapTarget</c>s and a tap that changed
+    /// nothing on screen, in about one run in five, more often the faster the fixture navigates.
+    /// </para>
+    /// <para>
+    /// The old page's element is off screen, so it answers no bounds or empty ones; that settles
+    /// it. When neither or both have bounds, the app appends each registration, so the newest is
+    /// the last.
+    /// </para>
+    /// </remarks>
+    private static AutomationElement NewestOnScreen(List<AutomationElement> matches)
+    {
+        for (var i = matches.Count - 1; i >= 0; i--)
+        {
+            if (TryReadBounds(matches[i], out _, out _, out var width, out var height)
+                && width > 0
+                && height > 0)
+            {
+                return matches[i];
+            }
+        }
+
+        return matches[^1];
+    }
+
+    /// <summary>
     /// Picks, among targets sharing an <c>AutomationId</c>, the one over the real element.
     /// </summary>
     private static AutomationElement Nearest(
@@ -73,7 +106,7 @@ internal static class BrinellBridgeLookup
 
         if (wanted.IsEmpty)
         {
-            return matches[0];
+            return NewestOnScreen(matches);
         }
 
         // UI Automation gives this process logical pixels when it is not per-monitor DPI aware;
@@ -102,7 +135,7 @@ internal static class BrinellBridgeLookup
             }
         }
 
-        return best ?? matches[0];
+        return best ?? matches[^1];
     }
 
     /// <summary>
@@ -247,10 +280,74 @@ internal static class BrinellBridgeLookup
     internal static bool HasBridge(AutomationElement root, UIA3Automation automation)
         => FindBridgeRoot(automation.TreeWalkerFactory.GetRawViewWalker(), root) is not null;
 
+    /// <summary>The bridge root found under each window, until the window element is dropped.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<AutomationElement, KnownBridge>
+        BridgeRoots = new();
+
+    /// <summary>A bridge root and the bridge's own window, which it lives exactly as long as.</summary>
+    private sealed record KnownBridge(AutomationElement Root, IntPtr Handle);
+
+    /// <summary>
+    /// The fragment root among the window's immediate children, remembered per window.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Walking the window's children to find it was three quarters of every bridge call</b>:
+    /// 7 ms of 9.4 for a <c>CurrentRoute</c>, whose own exchange is 0.5 ms, and the fixture asks
+    /// several per navigation.
+    /// </para>
+    /// <para>
+    /// The app publishes one fragment root per bridge window and swaps only its children, so a
+    /// root found once stays right while that window exists. Each use checks the window with
+    /// <c>IsWindow</c>, a local call, rather than by reading the element: a read can be answered
+    /// from UI Automation's side and pass for a provider that has gone. A bridge attached again
+    /// is a new window, so it is found again; a new app window element is a new key.
+    /// </para>
+    /// </remarks>
+    private static AutomationElement? FindBridgeRoot(ITreeWalker walker, AutomationElement window)
+    {
+        if (BridgeRoots.TryGetValue(window, out var known) && IsWindow(known.Handle))
+        {
+            return known.Root;
+        }
+
+        var found = WalkToBridgeRoot(walker, window);
+        var handle = found is null ? IntPtr.Zero : ReadHandle(found);
+
+        if (handle == IntPtr.Zero)
+        {
+            // Not published yet - a starting app - or a root without a window to check it by:
+            // nothing to remember, so the next call walks again.
+            BridgeRoots.Remove(window);
+        }
+        else
+        {
+            BridgeRoots.AddOrUpdate(window, new KnownBridge(found!, handle));
+        }
+
+        return found;
+    }
+
+    private static IntPtr ReadHandle(AutomationElement element)
+    {
+        try
+        {
+            return element.Properties.NativeWindowHandle.ValueOrDefault;
+        }
+        catch (Exception)
+        {
+            return IntPtr.Zero;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool IsWindow(IntPtr hwnd);
+
     /// <summary>
     /// Finds the fragment root among the window's immediate children.
     /// </summary>
-    private static AutomationElement? FindBridgeRoot(ITreeWalker walker, AutomationElement window)
+    private static AutomationElement? WalkToBridgeRoot(ITreeWalker walker, AutomationElement window)
         => FirstChildWhere(
             walker,
             window,
