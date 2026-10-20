@@ -14,12 +14,6 @@ public class ButtonsTestPage : PageObjectBase<ButtonsTestPage>
     /// <inheritdoc />
     public override string Name => "ButtonsTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded()
-    {
-        // Page is loaded when the status label exists
-        return StatusLabel.IsExists();
-    }
 
     #region Buttons
 

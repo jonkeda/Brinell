@@ -16,12 +16,6 @@ public class DateTimeTestPage : PageObjectBase<DateTimeTestPage>
     /// <inheritdoc />
     public override string Name => "DateTimeTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded()
-    {
-        // Page is loaded when the status label exists
-        return StatusLabel.IsExists();
-    }
 
     #region DatePicker
 

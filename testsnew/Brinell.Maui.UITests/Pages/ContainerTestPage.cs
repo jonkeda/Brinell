@@ -35,8 +35,6 @@ public class ContainerTestPage : PageObjectBase<ContainerTestPage>
     /// <inheritdoc />
     public override string Name => "ContainerPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded() => PageTitle.IsExists();
 
     #region Observed state
 

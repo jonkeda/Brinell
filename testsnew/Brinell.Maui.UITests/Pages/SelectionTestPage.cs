@@ -16,12 +16,6 @@ public class SelectionTestPage : PageObjectBase<SelectionTestPage>
     /// <inheritdoc />
     public override string Name => "SelectionTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded()
-    {
-        // Page is loaded when the status label exists
-        return StatusLabel.IsExists();
-    }
 
     #region Picker
 

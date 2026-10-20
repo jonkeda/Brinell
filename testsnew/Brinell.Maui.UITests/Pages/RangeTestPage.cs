@@ -14,12 +14,6 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     /// <inheritdoc />
     public override string Name => "RangeTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded()
-    {
-        // Page is loaded when the status label exists
-        return StatusLabel.IsExists();
-    }
 
     #region Slider
 

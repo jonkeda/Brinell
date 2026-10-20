@@ -19,8 +19,6 @@ public class AutomationProbePage : PageObjectBase<AutomationProbePage>
     /// <inheritdoc />
     public override string Name => "AutomationProbePage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded() => PageTitle.IsExists();
 
     /// <summary>The page title label.</summary>
     public Label<AutomationProbePage> PageTitle => new(this, "PageTitle");

@@ -486,6 +486,19 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// Finds an element by scrolling a container until it enters the tree. Answers
     /// <c>IMauiElement.TryFindByScrolling</c>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A lookup, a swipe, a lookup</b>: down from where the scroller is, then up, each swipe one
+    /// <c>mobile: scrollGesture</c>, which also says whether the scroller can move further. It
+    /// replaced <c>UiScrollable.scrollIntoView</c>, which flings to the top before every search -
+    /// even when the page is there already - and cost 3.6 s a hit and 11 s a miss per matcher, two
+    /// matchers a miss (measured over a night's runs; 60 % of the scroll-heavy classes' time).
+    /// </para>
+    /// <para>
+    /// An <c>AutomationId</c> is looked for as MAUI maps it: the resource id, then the content
+    /// description.
+    /// </para>
+    /// </remarks>
     /// <param name="container">The container to scroll, or null for the first scrollable on screen.</param>
     /// <param name="locator">The locator for the element.</param>
     internal IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
@@ -495,34 +508,70 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
             return null;
         }
 
-        var scrollable = ScrollableSelector(container);
-
-        // resource-id first, then content-desc: MAUI maps AutomationId to one or the other
-        // depending on the control.
-        string[] matchers =
-        [
-            $"new UiSelector().resourceIdMatches(\".*{locator.Value}\")",
-            $"new UiSelector().description(\"{locator.Value}\")"
-        ];
-
-        foreach (var matcher in matchers)
+        if (FindOnScreen(locator) is { } already)
         {
-            try
+            return already;
+        }
+
+        var scroller = _driver.FindElements(MobileBy.AndroidUIAutomator(ScrollableSelector(container))).FirstOrDefault();
+        if (scroller is null)
+        {
+            return null;
+        }
+
+        foreach (var direction in ScrollDirections)
+        {
+            for (var swipe = 0; swipe < MaxScrollSwipes; swipe++)
             {
-                var elements = FindByUiAutomator(
-                    $"new UiScrollable({scrollable}).scrollIntoView({matcher})");
-                if (elements.Count > 0)
+                bool more;
+                try
                 {
-                    return ReResolveAfterScrolling(locator) ?? elements[0];
+                    more = _driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
+                    {
+                        { "elementId", ((AppiumElement)scroller).Id },
+                        { "direction", direction },
+                        { "percent", ScrollPercent },
+                    }) is true;
                 }
-            }
-            catch
-            {
-                // Try the next matcher.
+                catch (WebDriverException)
+                {
+                    return null;
+                }
+
+                if (FindOnScreen(locator) is not null)
+                {
+                    return ReResolveAfterScrolling(locator) ?? FindOnScreen(locator);
+                }
+
+                if (!more)
+                {
+                    break;
+                }
             }
         }
 
         return null;
+    }
+
+    /// <summary>Down first: a page opens at its top, and most lookups are for what follows.</summary>
+    private static readonly string[] ScrollDirections = ["down", "up"];
+
+    /// <summary>Swipes each way before giving up; the sample's longest page is a few screens.</summary>
+    private const int MaxScrollSwipes = 12;
+
+    /// <summary>How much of the scroller one swipe moves.</summary>
+    private const double ScrollPercent = 0.7;
+
+    /// <summary>The element if it is in the tree now, by the locator, or an AutomationId's description.</summary>
+    private IMauiElement? FindOnScreen(Locator locator)
+    {
+        var found = FindElements(locator).FirstOrDefault();
+        if (found is null && locator.Strategy == LocatorStrategy.AutomationId)
+        {
+            found = FindElements(Locator.ByAccessibilityId(locator.Value)).FirstOrDefault();
+        }
+
+        return found;
     }
 
     /// <summary>
@@ -583,23 +632,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
         catch
         {
             return null;
-        }
-    }
-
-    /// <summary>
-    /// Runs a raw UIAutomator query. Android-only, and private: a caller that wants this has
-    /// already chosen to be Android-specific, and none exists outside the scroll path.
-    /// </summary>
-    private IReadOnlyList<IMauiElement> FindByUiAutomator(string uiAutomatorQuery)
-    {
-        try
-        {
-            var elements = _driver.FindElements(MobileBy.AndroidUIAutomator(uiAutomatorQuery));
-            return elements.Select(e => new AppiumMauiElement(e, this)).ToList();
-        }
-        catch
-        {
-            return Array.Empty<IMauiElement>();
         }
     }
 

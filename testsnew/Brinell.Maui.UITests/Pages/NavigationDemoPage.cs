@@ -26,8 +26,6 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     /// <inheritdoc />
     public override string Name => "NavigationDemoPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded() => PageTitle.IsExists();
 
     #region Observed state
 
