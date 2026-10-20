@@ -83,7 +83,7 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The selected index, or null where the platform does not publish it.</returns>
     protected virtual int? GetPositionCore(IMauiElement? element)
-        => ReadInt(element, "Position");
+        => ReadInt(element, "Position") ?? ReadDots(element)?.Position;
 
     /// <summary>
     /// Gets the number of indicators shown.
@@ -91,11 +91,51 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The indicator count, or null where the platform does not publish it.</returns>
     protected virtual int? GetCountCore(IMauiElement? element)
-        => ReadInt(element, "Count");
+        => ReadInt(element, "Count") ?? ReadDots(element)?.Count;
 
     #endregion
 
     #region Helpers
+
+    /// <summary>
+    /// The count and position as Android's own dots describe them, or null elsewhere.
+    /// </summary>
+    /// <remarks>
+    /// Android publishes each dot with a description such as "Item 2 of 5", and ", selected" on the
+    /// current one (measured on the sample's IndicatorView). That text is the platform's and
+    /// follows the device's language; the emulator runs in English. Children are "./*/*": an
+    /// element's XPath is rooted at the element on UiAutomator2.
+    /// </remarks>
+    private (int Count, int? Position)? ReadDots(IMauiElement? element)
+    {
+        if (element == null || Context.Driver.Platform != Enums.MauiPlatform.Android)
+        {
+            return null;
+        }
+
+        var count = 0;
+        int? position = null;
+
+        foreach (var dot in element.FindElements(Locator.ByXPath("./*/*")))
+        {
+            var match = DotDescription.Match(dot.Name ?? string.Empty);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            count = int.Parse(match.Groups["count"].Value, CultureInfo.InvariantCulture);
+            if (match.Groups["selected"].Success)
+            {
+                position = int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture) - 1;
+            }
+        }
+
+        return count == 0 ? null : (count, position);
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex DotDescription =
+        new(@"^Item (?<index>\d+) of (?<count>\d+)(?<selected>, selected)?$");
 
     private bool? ReadBool(IMauiElement? element, string property)
         => element?.ReadState(property) is { } reported && bool.TryParse(reported, out var value)
