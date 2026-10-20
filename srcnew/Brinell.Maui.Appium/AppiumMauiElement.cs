@@ -480,11 +480,12 @@ public sealed class AppiumMauiElement : IMauiElement
                 break;
 
             case MauiPlatform.iOS:
-                _driver.Driver.ExecuteScript("mobile: setValue", new Dictionary<string, object>
+                // XCUITest has no "mobile: setValue" extension; its element value endpoint is the
+                // direct route. An empty value has nothing to type: callers clear first.
+                if (text.Length > 0)
                 {
-                    { "elementId", _element.Id },
-                    { "text", text }
-                });
+                    _element.SendKeys(text);
+                }
                 break;
 
             default:
@@ -844,7 +845,8 @@ public sealed class AppiumMauiElement : IMauiElement
     public string? Name => Live<string?>(() => _driver.Platform switch
     {
         MauiPlatform.Android => Present(GetAttribute("content-desc")) ?? Present(_element.Text),
-        MauiPlatform.iOS => Present(GetAttribute("name")) ?? Present(GetAttribute("label")),
+        // iOS reports the AutomationId as name when one is set; the accessible name is the label.
+        MauiPlatform.iOS => Present(GetAttribute("label")) ?? Present(GetAttribute("name")),
         _ => null
     });
 
@@ -880,6 +882,11 @@ public sealed class AppiumMauiElement : IMauiElement
         }
         catch (NotImplementedException)
         {
+            return null;
+        }
+        catch (WebDriverException error) when (error.Message.Contains("is unknown", StringComparison.Ordinal))
+        {
+            // XCUITest rejects attributes outside its list, such as Windows' HelpText.
             return null;
         }
     });

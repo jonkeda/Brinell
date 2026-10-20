@@ -47,6 +47,12 @@ public class MauiOptions
     public string? PlatformVersion { get; set; }
 
     /// <summary>
+    /// Unique device identifier (iOS simulator UDID or Android serial). Picks one device
+    /// when several share a name or several simulators are booted.
+    /// </summary>
+    public string? Udid { get; set; }
+
+    /// <summary>
     /// Attach to already-running application instead of launching new one.
     /// Default: false
     /// </summary>

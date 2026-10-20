@@ -214,7 +214,14 @@ public static class MauiDriverFactory
                 addCapMethod.Invoke(appiumOptions, [cap.Key, cap.Value]);
             }
 
-            if (LaunchIntentArguments(options) is { } intentArguments)
+            if (options.Platform == MauiPlatform.iOS)
+            {
+                if (LaunchProcessArguments(options) is { } processArguments)
+                {
+                    addCapMethod.Invoke(appiumOptions, ["processArguments", processArguments]);
+                }
+            }
+            else if (LaunchIntentArguments(options) is { } intentArguments)
             {
                 addCapMethod.Invoke(appiumOptions, ["optionalIntentArguments", intentArguments]);
             }
@@ -239,7 +246,7 @@ public static class MauiDriverFactory
         if (options.Platform != MauiPlatform.Android)
         {
             throw new NotSupportedException(
-                $"Launch settings reach the app on Windows (environment) and Android (intent extras), not on {options.Platform} yet.");
+                $"Launch settings travel as intent extras on Android only, not on {options.Platform}.");
         }
 
         var parts = new List<string>();
@@ -260,6 +267,23 @@ public static class MauiDriverFactory
 
         static bool IsCommandLineSafe(string text)
             => text.Length > 0 && !text.Any(c => char.IsWhiteSpace(c) || c is '"' or '\'' or '`' or '\\');
+    }
+
+    /// <summary>
+    /// <see cref="MauiDriverOptions.LaunchSettings"/> as XCUITest <c>processArguments</c>
+    /// (<c>{ env: { name: value } }</c>), or null when there are none.
+    /// </summary>
+    internal static Dictionary<string, object>? LaunchProcessArguments(MauiDriverOptions options)
+    {
+        if (options.LaunchSettings.Count == 0)
+        {
+            return null;
+        }
+
+        return new Dictionary<string, object>
+        {
+            ["env"] = new Dictionary<string, string>(options.LaunchSettings, StringComparer.Ordinal)
+        };
     }
 
     private static object CreatePlatformDriverReflection(Uri serverUri, object appiumOptions, MauiPlatform platform)
