@@ -346,6 +346,23 @@ internal static class BridgeVerbRunner
         }
     }
 
+    /// <summary>The bridge's targets, the most recently published first.</summary>
+    /// <remarks>
+    /// A page pushed in place of another publishes its targets after the outgoing page's, which
+    /// stay until it unloads. Asked oldest first, an app-wide verb such as <c>InvokeMenuItem</c>
+    /// reached the old page: its command ran there and the page on screen never changed (the
+    /// context-menu test, two Windows runs in three). The app appends each registration, so the
+    /// newest is the page on screen. A question about the app itself - the route, idleness - has
+    /// the same answer from any page.
+    /// </remarks>
+    private static IEnumerable<AutomationElement> NewestFirst(IReadOnlyList<AutomationElement> targets)
+    {
+        for (var i = targets.Count - 1; i >= 0; i--)
+        {
+            yield return targets[i];
+        }
+    }
+
     /// <summary>
     /// Sends a verb to whichever published element answers it, without naming one.
     /// </summary>
@@ -359,7 +376,7 @@ internal static class BridgeVerbRunner
         var declined = 0;
         var lastReason = string.Empty;
 
-        foreach (var target in BrinellBridgeLookup.Targets(root, automation))
+        foreach (var target in NewestFirst(BrinellBridgeLookup.Targets(root, automation)))
         {
             if (!target.SupportedVerbs().Contains(verb)
                 || !target.TryGetBrinellPattern(out var pattern))
@@ -410,7 +427,7 @@ internal static class BridgeVerbRunner
         var declinedHr = HResults.UIA_E_NOTSUPPORTED;
         var declined = 0;
 
-        foreach (var target in BrinellBridgeLookup.Targets(root, automation))
+        foreach (var target in NewestFirst(BrinellBridgeLookup.Targets(root, automation)))
         {
             if (!target.SupportedVerbs().Contains(verb)
                 || !target.TryGetBrinellPattern(out var pattern))
