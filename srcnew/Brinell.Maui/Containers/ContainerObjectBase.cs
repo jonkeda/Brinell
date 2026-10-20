@@ -834,8 +834,12 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// </remarks>
     protected override IMauiElement FindContainerRootElement()
         => _parentScope.TryFindElement(Locator)
-           ?? (OnATouchPlatform && _parentScope.AllowsScrollLookup
-               ? (_parentScope.ScrollingRoot ?? Context.AppElement).TryFindByScrolling(Locator)
+           ?? (OnATouchPlatform
+               && _parentScope.AllowsScrollLookup
+               && (_parentScope.ScrollingRoot ?? Context.AppElement).TryFindByScrolling(Locator) is not null
+               // The sweep brings it into view; the parent's own lookup says whether it is the
+               // parent's (the scroller's search is page-wide).
+               ? _parentScope.TryFindElement(Locator)
                : null)
            ?? throw RootNotFound();
 

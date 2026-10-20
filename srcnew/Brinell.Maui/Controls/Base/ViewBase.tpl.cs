@@ -547,7 +547,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
             return element;
         }
 
-        return ScrollingElement()?.TryFindByScrolling(Locator);
+        return SweepThenFindInScope();
     }
 
     /// <summary>
@@ -555,6 +555,33 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// which lets the platform pick the scrolling container on screen.
     /// </summary>
     private IMauiElement? ScrollingElement() => _mauiScope.ScrollingRoot ?? Context.AppElement;
+
+    /// <summary>
+    /// Sweeps the scroller for the locator, then looks again in this control's own scope.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// On Android and iOS the sweep only brings the element into view; whether it belongs to the
+    /// scope is the scoped lookup's to say. The scroller is the page's, so its search runs
+    /// page-wide, and handing its result back found a page's title "inside" a form that has none:
+    /// there the plain lookup misses whatever is below the fold, and every miss sweeps.
+    /// </para>
+    /// <para>
+    /// Windows keeps the sweep's own result. Off-screen elements are in its tree, so a sweep there
+    /// is rare, and some parts are reached only through it: a MediaElement's transport controls are
+    /// not in the element's own subtree, and confining the sweep failed six of its tests.
+    /// </para>
+    /// </remarks>
+    private IMauiElement? SweepThenFindInScope()
+    {
+        var swept = ScrollingElement()?.TryFindByScrolling(Locator);
+        if (swept is null || Context.Driver.Platform is not (Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS))
+        {
+            return swept;
+        }
+
+        return TryFindElement();
+    }
 
     /// <summary>
     /// A resolver for a polling helper, applying <paramref name="lookup"/>.
@@ -589,7 +616,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
     protected IMauiElement FindElement()
         => TryFindElement()
-           ?? (_mauiScope.AllowsScrollLookup ? ScrollingElement()?.TryFindByScrolling(Locator) : null)
+           ?? (_mauiScope.AllowsScrollLookup ? SweepThenFindInScope() : null)
            ?? throw NotFound();
 
     /// <summary>
@@ -610,7 +637,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
             return element;
         }
 
-        return ScrollingElement()?.TryFindByScrolling(Locator);
+        return SweepThenFindInScope();
     }
 
     #endregion
