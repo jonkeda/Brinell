@@ -112,13 +112,40 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// The text on every button the dialog is offering.
     /// </summary>
     /// <param name="element">The dialog root.</param>
-    /// <returns>The button texts, in tree order.</returns>
+    /// <returns>
+    /// The button texts in the order MAUI was given them - accept, then cancel - which is tree
+    /// order on Windows. Android lays an alert's buttons out the other way round, so there they
+    /// are read by role: positive (<c>button1</c>), negative (<c>button2</c>), neutral
+    /// (<c>button3</c>).
+    /// </returns>
     [GenerateComparisons(Comparison.SequenceEquals | Comparison.HasItem | Comparison.Count)]
     protected virtual IReadOnlyList<string>? GetButtonTextsCore(IMauiElement? element)
-        => element == null
-            ? null
+    {
+        if (element == null)
+        {
+            return null;
+        }
+
+        var byRole = Context.Driver.Platform == Enums.MauiPlatform.Android
+            ? AndroidAlertButtons
+                .Select(role => element.TryFindElement(role)?.Text)
+                .OfType<string>()
+                .ToList()
+            : [];
+
+        return byRole.Count > 0
+            ? byRole
             : [.. element.FindElements(Locator.ByControlType("button"))
                 .Select(button => button.Name ?? string.Empty)];
+    }
+
+    /// <summary>An Android alert's buttons by role, whichever package their ids carry.</summary>
+    private static readonly Locator[] AndroidAlertButtons =
+    [
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button1')]"),
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button2')]"),
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button3')]"),
+    ];
 
     /// <summary>
     /// The question the dialog is asking, as the app phrased it.

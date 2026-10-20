@@ -272,8 +272,20 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
             return;
         }
 
+        // Android: with the soft keyboard up, the system's back only hides the keyboard. A prompt
+        // left open by a failed test showed it - one back hid the keyboard, the dialog stayed, and
+        // every later test in the class failed "could not get back to the hub". Hiding it first
+        // makes this one back mean what the caller asked for.
+        if (_platform == MauiPlatform.Android && IsKeyboardShown())
+        {
+            _driver.ExecuteScript("mobile: hideKeyboard", new Dictionary<string, object>());
+        }
+
         _driver.Navigate().Back();
     }
+
+    private bool IsKeyboardShown()
+        => _driver.ExecuteScript("mobile: isKeyboardShown", new Dictionary<string, object>()) is true;
 
     private static readonly By IosNavigationBar = MobileBy.ClassName("XCUIElementTypeNavigationBar");
 
@@ -347,6 +359,38 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
         var root = _driver.FindElements(by).LastOrDefault();
         return root == null ? null : new AppiumMauiElement(root, this);
     }
+
+    /// <summary>The alert on screen as MAUI was asked for it, or null. Answers <c>AppElement.ReadAlert</c>.</summary>
+    /// <remarks>
+    /// Android only. AppCompat's alert keeps its title, message and both buttons inside
+    /// <c>parentPanel</c>, by ids that carry the app's package (see <see cref="TryFindActiveDialogRoot"/>).
+    /// MAUI sets the accept as the positive button (<c>button1</c>) and the cancel as the negative one
+    /// (<c>button2</c>), so an alert with one button has only <c>button2</c> and reads with an empty
+    /// accept, as on Windows.
+    /// </remarks>
+    internal AlertContents? ReadActiveAlert()
+    {
+        if (_platform != MauiPlatform.Android)
+        {
+            return null;
+        }
+
+        var root = _driver.FindElements(AndroidDialogRoot).LastOrDefault();
+        if (root == null)
+        {
+            return null;
+        }
+
+        string Part(string id)
+            => root.FindElements(MobileBy.AndroidUIAutomator(
+                    $"new UiSelector().resourceIdMatches(\".*:id/{id}\")"))
+                .FirstOrDefault()?.Text ?? string.Empty;
+
+        return new AlertContents(Part("alertTitle"), Part("message"), Part("button1"), Part("button2"));
+    }
+
+    private static readonly By AndroidDialogRoot =
+        MobileBy.AndroidUIAutomator("new UiSelector().resourceIdMatches(\".*:id/parentPanel\")");
 
     #endregion
     

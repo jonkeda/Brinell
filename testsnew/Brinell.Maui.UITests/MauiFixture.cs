@@ -176,6 +176,12 @@ public class MauiFixture : MauiTestFixtureBase
     /// failures, all of them reported as one <c>false</c>. The fixture then waited out a grace
     /// period on every single reset to be told what the first call had already established.
     /// </remarks>
+    /// <summary>How many backs past the first a covered hub gets: a dialog, its page, one spare.</summary>
+    private const int MaxExtraBacks = 3;
+
+    /// <summary>How long the hub gets to show after one of those backs.</summary>
+    private const int AfterExtraBackMs = 3_000;
+
     private void ReturnToHub()
     {
         var attempts = new List<string>();
@@ -223,7 +229,15 @@ public class MauiFixture : MauiTestFixtureBase
         // with no toolbar, so nothing reports a way back while it covers the hub. When the hub is
         // not here after all, one more back dismisses that - and cannot leave the hub, because a
         // hub that was showing would have satisfied the wait above.
-        if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
+        //
+        // More than once, because a dialog can cover a pushed page: on Android a prompt a failed
+        // test left open hides the toolbar, so the page under it read as "at the root". One back
+        // closed the dialog, the page stayed, and every later test in the class failed here. Each
+        // further back still only happens while the hub is not showing.
+        for (var extra = 0;
+             extra < MaxExtraBacks
+             && !_hub.WaitLoaded(true, extra == 0 ? TestConstants.ShortTestTimeoutMs : AfterExtraBackMs);
+             extra++)
         {
             try
             {

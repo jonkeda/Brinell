@@ -1268,11 +1268,11 @@ public sealed class AppiumMauiElement : IMauiElement
     private const int FlyoutPollIntervalMs = 100;
 
     /// <inheritdoc />
-    /// <remarks>Null: there is no app-side alert report on this platform yet.</remarks>
+    /// <remarks>Android reads the alert's own parts; iOS answers null so far.</remarks>
     public AlertContents? ReadAlert()
     {
         RequireApp(nameof(ReadAlert));
-        return null;
+        return _driver.ReadActiveAlert();
     }
 
     /// <inheritdoc />
