@@ -267,7 +267,7 @@ public class ProductCollectionTests
     }
 
     /// <summary>13. ScrollToItem materializes an off-screen row without a fixed delay.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [WindowsOnlyFact("Android and iOS publish no logical row index (PositionInSet), so a row is found by position among the realised ones", Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Pattern", "Virtualization")]
     public Task ScrollToItem_MaterializesOffscreenRow()
     {

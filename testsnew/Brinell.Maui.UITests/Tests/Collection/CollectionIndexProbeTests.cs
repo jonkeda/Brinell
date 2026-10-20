@@ -32,7 +32,7 @@ public class CollectionIndexProbeTests
         _fixture.NavigateToGridCollectionDemo();
     }
 
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [WindowsOnlyFact("Android and iOS publish no logical row index (PositionInSet), so a row is found by position among the realised ones", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task RealizedRows_ReportLogicalPosition()
     {
         var products = _fixture.GridCollectionDemoPage.Products;
