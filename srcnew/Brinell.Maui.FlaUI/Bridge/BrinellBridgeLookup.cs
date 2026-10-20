@@ -128,7 +128,12 @@ internal static class BrinellBridgeLookup
             var dy = top + (height / 2.0) - centreY;
             var distance = (dx * dx) + (dy * dy);
 
-            if (distance < bestDistance)
+            // A tie goes to the later, newer target. The outgoing page has the same layout as the
+            // one pushed in its place and still answers bounds while it unloads, so the two sit at
+            // distance 0 together: a full run logged it for every TimePicker, DatePicker and
+            // Expander that had two, and keeping the first set the old page's control, which the
+            // app confirmed and the screen never showed.
+            if (distance <= bestDistance)
             {
                 bestDistance = distance;
                 best = candidate;
