@@ -826,8 +826,21 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// <remarks>A container inside a row is confined as the row is.</remarks>
     public override bool AllowsScrollLookup => _parentScope.AllowsScrollLookup;
 
+    /// <remarks>
+    /// On Android and iOS a container below the fold is not in the tree at all - UiAutomator2 leaves
+    /// out what the user cannot see - so a miss there scrolls to it, as a control's lookup does. The
+    /// DockLayout at the foot of the CommunityToolkit page was "not found" otherwise. Windows keeps an
+    /// off-screen element in the tree, so a miss there is an answer and costs no sweep.
+    /// </remarks>
     protected override IMauiElement FindContainerRootElement()
-        => _parentScope.TryFindElement(Locator) ?? throw RootNotFound();
+        => _parentScope.TryFindElement(Locator)
+           ?? (OnATouchPlatform && _parentScope.AllowsScrollLookup
+               ? (_parentScope.ScrollingRoot ?? Context.AppElement).TryFindByScrolling(Locator)
+               : null)
+           ?? throw RootNotFound();
+
+    private bool OnATouchPlatform
+        => Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS;
 
     /// <inheritdoc />
     protected override ElementNotFoundException RootNotFound()
