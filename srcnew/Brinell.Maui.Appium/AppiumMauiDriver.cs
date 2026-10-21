@@ -417,6 +417,20 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
         }
     }
 
+    /// <summary>
+    /// Whether an element this session finds is necessarily on screen: Android, where UiAutomator2
+    /// leaves invisible elements out of its tree unless <c>allowInvisibleElements</c> is set.
+    /// </summary>
+    internal bool FindsOnlyVisibleElements => _findsOnlyVisible ??=
+        _platform == MauiPlatform.Android
+        && !string.Equals(
+            Convert.ToString(_driver.Capabilities.GetCapability("settings[allowInvisibleElements]"),
+                System.Globalization.CultureInfo.InvariantCulture),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+    private bool? _findsOnlyVisible;
+
     /// <summary>Screen pixels per device-independent unit, read once per session.</summary>
     internal double PixelsPerUnit()
     {

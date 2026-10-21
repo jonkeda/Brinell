@@ -36,7 +36,7 @@ namespace Brinell.Maui.Appium;
 /// stops here, at the element: no control object above this layer branches on platform.
 /// </para>
 /// </remarks>
-public sealed partial class AppiumMauiElement : IMauiElement
+public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
 {
     private readonly AppiumElement? _wrapped;
     private readonly AppiumMauiDriver _driver;
@@ -156,6 +156,13 @@ public sealed partial class AppiumMauiElement : IMauiElement
         ? GetAttribute("class")
         : _element.TagName);
     
+    /// <inheritdoc />
+    /// <remarks>
+    /// Android, unless the session asked UiAutomator2 for invisible elements: its tree holds only
+    /// what the user can see. Not the app element, which stands for the whole screen.
+    /// </remarks>
+    public bool IsShownWhenFound => !IsApp && _driver.FindsOnlyVisibleElements;
+
     /// <inheritdoc />
     public Point Location => Live(() => _element.Location);
     

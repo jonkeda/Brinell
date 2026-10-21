@@ -31,8 +31,15 @@ public static class MauiElementExtensions
     {
         try
         {
-            return element?.Visible == true
-                && element.Rect is { Width: > 0, Height: > 0 };
+            if (element is null)
+            {
+                return false;
+            }
+
+            // A driver that only finds what is on screen has answered "visible" already.
+            var shown = element is IShownWhenFound { IsShownWhenFound: true } || element.Visible;
+
+            return shown && element.Rect is { Width: > 0, Height: > 0 };
         }
         catch (StaleElementException)
         {
