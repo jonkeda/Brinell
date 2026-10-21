@@ -497,7 +497,7 @@ public class MauiFixture : MauiTestFixtureBase
 
         // Reinstall even when the installed APK reports the same version: MAUI does not bump
         // versionCode between builds, so without this a run can silently test the previous one.
-        options.AdditionalCapabilities["enforceAppInstall"] = true;
+        options.AdditionalCapabilities["enforceAppInstall"] = !TestConstants.AppPreinstalled;
     }
 
     /// <inheritdoc />

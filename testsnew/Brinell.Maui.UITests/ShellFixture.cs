@@ -132,6 +132,6 @@ public class ShellFixture : MauiTestFixtureBase
         // a MAUI app that animates may never report idle, and MAUI does not bump versionCode
         // between builds, so without the reinstall a run can silently test the previous one.
         options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
-        options.AdditionalCapabilities["enforceAppInstall"] = true;
+        options.AdditionalCapabilities["enforceAppInstall"] = !TestConstants.AppPreinstalled;
     }
 }

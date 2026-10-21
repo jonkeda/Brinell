@@ -16,7 +16,10 @@ avdmanager create avd -n Brinell_Android -k "system-images;android-36;google_api
 ```
 
 In `%USERPROFILE%\.android\avd\Brinell_Android.avd\config.ini`: `hw.ramSize=8192`,
-`disk.dataPartition.size=16G`, `vm.heapSize=512`, `hw.gpu.mode=host`. Boot it cold the first time
+`disk.dataPartition.size=16G`, `vm.heapSize=512`, `hw.gpu.mode=host`, `hw.cpu.ncore=8` (the
+emulator gives 6). With the default 4 cores the Debug sample app sometimes did not finish starting
+within Android's limit: "Application Not Responding ... failed to complete startup", after which
+every test of the session failed. With 6 it starts in 1.6 s. Boot it cold the first time
 (`emulator -avd Brinell_Android -no-snapshot-load`); if a later boot hangs on "Loading snapshot", do
 the same again.
 
@@ -25,6 +28,15 @@ covers the first prompt dialog and takes the taps meant for it.
 
 ```powershell
 adb shell settings put secure stylus_handwriting_enabled 0
+```
+
+And turn animations off: transitions are waited out otherwise (the scroll-heavy classes took
+12 m 05 s with them off against 12 m 58 s on, 2026-10-21).
+
+```powershell
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global animator_duration_scale 0
 ```
 
 ## Build the apps
@@ -55,6 +67,16 @@ $env:APPIUM_DEVICE_NAME = "emulator-5554"
 
 Leave `APPIUM_APP_PATH` unset: it overrides the app of every fixture, and the Shell fixture then
 starts the hub app's package and fails.
+
+Each fixture reinstalls its app when its session starts, because MAUI does not bump versionCode
+between builds and a run could otherwise test the previous build. That is about 13 s of a 32-43 s
+start. A run that has just installed both fresh builds can skip it:
+
+```powershell
+adb install -r samples\Brinell.Samples.Maui.App\bin\Debug\net10.0-android\com.brinell.samples.maui-Signed.apk
+adb install -r samples\Brinell.Samples.Maui.ShellApp\bin\Debug\net10.0-android\com.brinell.samples.shell-Signed.apk
+$env:BRINELL_APP_PREINSTALLED = "1"
+```
 
 ## Run
 
