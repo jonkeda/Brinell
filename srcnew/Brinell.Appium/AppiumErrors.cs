@@ -14,7 +14,10 @@ public static class AppiumErrors
     public static bool IsSessionGone(Exception error)
         => error is WebDriverException
            && (error.Message.Contains("invalid session id", StringComparison.OrdinalIgnoreCase)
-               || error.Message.Contains("session is either terminated or not started", StringComparison.OrdinalIgnoreCase));
+               || error.Message.Contains("session is either terminated or not started", StringComparison.OrdinalIgnoreCase)
+               // The UiAutomator2 server on the device crashed or was killed: the Appium session
+               // still exists, but nothing it is asked can be answered again.
+               || error.Message.Contains("instrumentation process is not running", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Whether <paramref name="error"/> says the server did not answer within the client's command

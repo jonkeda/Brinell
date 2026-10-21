@@ -19,7 +19,7 @@ public class ShellFixture : MauiTestFixtureBase
     /// <summary>How many pushed pages the reset will pop before giving up.</summary>
     private const int MaxPops = 3;
 
-    private readonly ShellSamplePage _page;
+    private ShellSamplePage _page;
 
     public ShellFixture()
     {
@@ -56,11 +56,28 @@ public class ShellFixture : MauiTestFixtureBase
     /// <returns>The page object.</returns>
     public ShellSamplePage OpenTab(string title)
     {
+        try
+        {
+            return OpenTabOnce(title);
+        }
+        catch (Exception error) when (IsSessionLost(error))
+        {
+            // As MauiFixture.Open: a lost session is replaced once rather than failing every test after it.
+            RestartApp();
+            return OpenTabOnce(title);
+        }
+    }
+
+    private ShellSamplePage OpenTabOnce(string title)
+    {
         ReturnToShellRoot();
 
         _page.Shell.Tabs[title].Click();
         return _page;
     }
+
+    /// <inheritdoc />
+    protected override void OnRestarted() => _page = new ShellSamplePage(Context);
 
     /// <summary>
     /// Puts the shell back to a known state: no flyout open, no pushed page.

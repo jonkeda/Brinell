@@ -15,8 +15,8 @@ namespace Brinell.Maui.UITests;
 [TestModuleScan(typeof(HubPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
 public class MauiFixture : MauiTestFixtureBase
 {
-    private readonly HubPage _hub;
-    private readonly AppRoot _appRoot;
+    private HubPage _hub;
+    private AppRoot _appRoot;
 
     public MauiFixture()
     {
@@ -87,12 +87,37 @@ public class MauiFixture : MauiTestFixtureBase
     /// first, a test cannot inherit the previous test's page or its position in a navigation
     /// stack — the absence of state to recover from, rather than a recovery routine.
     /// </para>
+    /// <para>
+    /// A session the platform has lost - on Android the UiAutomator2 server crashing - is replaced
+    /// once, here, before the page is opened: otherwise one crash failed every later test of the
+    /// run in a millisecond each.
+    /// </para>
     /// </remarks>
     public void Open(SamplePage page)
+    {
+        try
+        {
+            OpenOnce(page);
+        }
+        catch (Exception error) when (IsSessionLost(error))
+        {
+            RestartApp();
+            OpenOnce(page);
+        }
+    }
+
+    private void OpenOnce(SamplePage page)
     {
         ReturnToHub();
         _hub.OpenButton(page).Click();
         WaitForThePageToArrive();
+    }
+
+    /// <inheritdoc />
+    protected override void OnRestarted()
+    {
+        _hub = new HubPage(Context);
+        _appRoot = new AppRoot(Context);
     }
 
     /// <summary>

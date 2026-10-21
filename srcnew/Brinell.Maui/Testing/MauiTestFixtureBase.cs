@@ -90,13 +90,49 @@ public abstract class MauiTestFixtureBase : IDisposable
 
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} RESTARTING at {DateTime.Now:HH:mm:ss.fff}");
 
-        _context.Dispose();
+        try
+        {
+            _context.Dispose();
+        }
+        catch (Exception error)
+        {
+            // A session being replaced because it is lost may not close cleanly; the new one is
+            // what matters.
+            Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} old session did not close: {error.Message}");
+        }
+
         _context = new MauiTestContext(_options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
+        OnRestarted();
 
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} RESTARTED - Driver session started");
     }
+
+    /// <summary>
+    /// Called after <see cref="RestartApp"/> has started the new session: rebuild here whatever page
+    /// or control objects the fixture keeps, since those built on the old context are stale.
+    /// </summary>
+    protected virtual void OnRestarted()
+    {
+    }
+
+    /// <summary>
+    /// Whether <paramref name="error"/> says the driver session can no longer answer anything.
+    /// </summary>
+    /// <remarks>
+    /// The app or its driver is gone (<see cref="AppUnavailableException"/>), or the platform says the
+    /// session is: on Android the UiAutomator2 server on the device crashes now and then, and every
+    /// call after it fails at once. One crash took more than 200 tests of a run with it before
+    /// fixtures restarted on this. Matched by message so it holds on every head.
+    /// </remarks>
+    /// <param name="error">The error a navigation or lookup raised.</param>
+    /// <returns>Whether a new session is the only way on.</returns>
+    public static bool IsSessionLost(Exception error)
+        => error is Brinell.Core.Exceptions.AppUnavailableException
+           || error.Message.Contains("instrumentation process is not running", StringComparison.OrdinalIgnoreCase)
+           || error.Message.Contains("invalid session id", StringComparison.OrdinalIgnoreCase)
+           || error.Message.Contains("session is either terminated or not started", StringComparison.OrdinalIgnoreCase);
 
     private IScreenshotService CreateScreenshotService(MauiTestContext context)
     {
