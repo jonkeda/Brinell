@@ -128,6 +128,13 @@ public class ShellFixture : MauiTestFixtureBase
             MauiPlatform.Android => Path.Combine(solutionDir,
                 "samples", "Brinell.Samples.Maui.ShellApp", "bin", "Debug",
                 "net10.0-android", "com.brinell.samples.shell-Signed.apk"),
+            MauiPlatform.iOS => Path.Combine(solutionDir,
+                "samples", "Brinell.Samples.Maui.ShellApp", "bin", "Debug",
+                "net10.0-ios",
+                System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
+                    ? "iossimulator-arm64"
+                    : "iossimulator-x64",
+                "Brinell.Samples.Maui.ShellApp.app"),
             _ => ""
         };
     }

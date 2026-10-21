@@ -15,6 +15,12 @@ dotnet build samples/Brinell.Samples.Maui.App/Brinell.Samples.Maui.App.csproj -f
   -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableWindowsTargeting=true -v:minimal /nr:false
 ```
 
+Build the Shell app the same way: the Shell fixture installs its own app.
+
+```bash
+dotnet build samples/Brinell.Samples.Maui.ShellApp/Brinell.Samples.Maui.ShellApp.csproj -f net10.0-ios -c Debug   -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableWindowsTargeting=true -v:minimal /nr:false
+```
+
 - `EnableWindowsTargeting=true` lets restore pass for the project's Windows TFM on macOS.
 - Add `-p:ValidateXcodeVersion=false` when the installed Xcode is newer than the iOS workload expects.
 - On an Intel Mac use `iossimulator-x64`. The fixture picks the folder from the host architecture.

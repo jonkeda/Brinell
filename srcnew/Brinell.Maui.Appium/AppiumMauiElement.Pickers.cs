@@ -25,7 +25,7 @@ namespace Brinell.Maui.Appium;
 /// </list>
 /// <para>
 /// The day's description is the platform's own text and follows the device's language; the
-/// emulator runs in English. iOS answers neither yet.
+/// emulator runs in English. iOS shows wheels instead (<c>AppiumMauiElement.Wheels.cs</c>).
 /// </para>
 /// </remarks>
 public sealed partial class AppiumMauiElement
@@ -43,8 +43,13 @@ public sealed partial class AppiumMauiElement
     /// </exception>
     public void SetDate(DateTime date)
     {
-        RequireAndroidPicker(nameof(SetDate));
+        RequireMappedPicker(nameof(SetDate));
         using var mark = Report(InteractionKind.Type);
+        if (_driver.Platform == MauiPlatform.iOS)
+        {
+            SetDateOnWheels(date);
+            return;
+        }
 
         // Read before the dialog opens: the page under it, this field included, goes stale.
         var name = AutomationId;
@@ -143,8 +148,13 @@ public sealed partial class AppiumMauiElement
     /// <inheritdoc />
     public void SetTime(TimeSpan time)
     {
-        RequireAndroidPicker(nameof(SetTime));
+        RequireMappedPicker(nameof(SetTime));
         using var mark = Report(InteractionKind.Type);
+        if (_driver.Platform == MauiPlatform.iOS)
+        {
+            SetTimeOnWheels(time);
+            return;
+        }
 
         var name = AutomationId;
         Live(() => _element.Click());
@@ -171,12 +181,12 @@ public sealed partial class AppiumMauiElement
         DialogPart(AndroidId("button1"))!.Click();
     }
 
-    private void RequireAndroidPicker(string operation)
+    private void RequireMappedPicker(string operation)
     {
-        if (_driver.Platform != MauiPlatform.Android)
+        if (_driver.Platform is not (MauiPlatform.Android or MauiPlatform.iOS))
         {
             throw new RouteUnavailableException(
-                $"{nameof(AppiumMauiElement)} sets a picker through its dialog on Android only; "
+                $"{nameof(AppiumMauiElement)} sets a picker through its dialog on Android and its wheels on iOS only; "
                 + $"{operation} on {_driver.Platform} has no route yet.");
         }
     }

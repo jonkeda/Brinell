@@ -1210,35 +1210,53 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// <para>
     /// Taps the picker open and taps the row showing the text. The rows are the ones the dialog has
     /// realized, so an item far down a long list is not found until something scrolls to it: long
-    /// pickers and pickers with repeated texts have no Android route yet. iOS draws a picker wheel
-    /// instead and has no route yet.
+    /// pickers and pickers with repeated texts have no Android route yet. iOS turns the field's
+    /// picker wheel instead and presses Done (not yet run on a simulator).
     /// </para>
     /// <para>
     /// Any failure after the dialog opened closes it again: a dialog left open covers the page and
     /// takes every later test down with it.
     /// </para>
     /// </remarks>
-    public void SelectByText(string text) => Marked(InteractionKind.Tap, () => Live(() => WithOpenPicker(nameof(SelectByText), items =>
+    public void SelectByText(string text) => Marked(InteractionKind.Tap, () => Live(() =>
     {
-        var item = items.FirstOrDefault(i => i.Text == text)
-            ?? throw new InvalidOperationException(
-                $"'{AutomationId}' has no item with text '{text}' among the {items.Count} its dialog shows.");
+        if (_driver.Platform == MauiPlatform.iOS)
+        {
+            OnTheWheel(nameof(SelectByText), wheel => TurnTo(wheel, text));
+            return;
+        }
 
-        item.Click();
-    })));
+        WithOpenPicker(nameof(SelectByText), items =>
+        {
+            var item = items.FirstOrDefault(i => i.Text == text)
+                ?? throw new InvalidOperationException(
+                    $"'{AutomationId}' has no item with text '{text}' among the {items.Count} its dialog shows.");
+
+            item.Click();
+        });
+    }));
 
     /// <inheritdoc />
     /// <remarks>See <see cref="SelectByText"/>: the same route and the same caveats.</remarks>
-    public void SelectIndex(int index) => Marked(InteractionKind.Tap, () => Live(() => WithOpenPicker(nameof(SelectIndex), items =>
+    public void SelectIndex(int index) => Marked(InteractionKind.Tap, () => Live(() =>
     {
-        if (index < 0 || index >= items.Count)
+        if (_driver.Platform == MauiPlatform.iOS)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(index), index, $"'{AutomationId}' shows {items.Count} item(s); there is no index {index}.");
+            OnTheWheel(nameof(SelectIndex), wheel => TurnToIndex(wheel, index));
+            return;
         }
 
-        items[index].Click();
-    })));
+        WithOpenPicker(nameof(SelectIndex), items =>
+        {
+            if (index < 0 || index >= items.Count)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(index), index, $"'{AutomationId}' shows {items.Count} item(s); there is no index {index}.");
+            }
+
+            items[index].Click();
+        });
+    }));
 
     /// <summary>
     /// Taps the picker open, hands its rows to <paramref name="choose"/>, and closes the dialog
@@ -1292,6 +1310,13 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
 
     #region The app
 
+    /// <summary>
+    /// The flyout button MAUI puts left in the navigation bar; its name is not measured yet, so the
+    /// names it has carried are all tried.
+    /// </summary>
+    private const string IosFlyoutOpener =
+        "//XCUIElementTypeNavigationBar/XCUIElementTypeButton[@name='OK' or @name='Menu' or @label='Menu' or @name='FlyoutIcon']";
+
     /// <summary>How long Shell's chrome gets to appear.</summary>
     private const int ChromeFindTimeoutMs = 5000;
 
@@ -1299,21 +1324,25 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// <remarks>
     /// Taps the drawer's opener, which Android names by its content description, and waits for the
     /// drawer's items. A no-op when the drawer is already open - which matters, because the opener
-    /// renames itself while the drawer is open, so a second tap has nothing to find.
+    /// renames itself while the drawer is open, so a second tap has nothing to find. iOS taps the
+    /// navigation bar's flyout button (not yet run on a simulator).
     /// </remarks>
     public void OpenFlyout()
     {
         using var mark = Report(InteractionKind.Key, "Menu");
 
         RequireApp(nameof(OpenFlyout));
-        RequireAndroid("the flyout opener");
+        RequireMappedShell("the flyout opener");
 
         if (IsFlyoutOpen == true)
         {
             return;
         }
 
-        _driver.FindChrome(Locator.ByAccessibilityId("Open navigation drawer"), ChromeFindTimeoutMs).Click();
+        var opener = _driver.Platform == MauiPlatform.iOS
+            ? Locator.ByXPath(IosFlyoutOpener)
+            : Locator.ByAccessibilityId("Open navigation drawer");
+        _driver.FindChrome(opener, ChromeFindTimeoutMs).Click();
         WaitForFlyout(open: true);
     }
 
@@ -1321,28 +1350,41 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// <remarks>
     /// Back, which is how Android's drawer is dismissed. Its opener changes its content description
     /// once open, so it is not a handle for closing. A no-op when the drawer is shut: back there
-    /// would leave the page instead.
+    /// would leave the page instead. iOS has no back for it and taps the dimmed page right of the
+    /// flyout.
     /// </remarks>
     public void CloseFlyout()
     {
         using var mark = Report(InteractionKind.Key, "Menu");
 
         RequireApp(nameof(CloseFlyout));
-        RequireAndroid("dismissing the flyout");
+        RequireMappedShell("dismissing the flyout");
 
         if (IsFlyoutOpen != true)
         {
             return;
         }
 
-        _driver.Driver.Navigate().Back();
+        if (_driver.Platform == MauiPlatform.iOS)
+        {
+            var size = _driver.Driver.Manage().Window.Size;
+            _driver.Driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
+            {
+                ["x"] = size.Width - 10,
+                ["y"] = size.Height / 2,
+            });
+        }
+        else
+        {
+            _driver.Driver.Navigate().Back();
+        }
         WaitForFlyout(open: false);
     }
 
     /// <inheritdoc />
     /// <remarks>
-    /// Android: whether the drawer's items are in the tree. They leave it entirely while the drawer
-    /// is shut, so their presence is the drawer's state. Other platforms: null.
+    /// Android and iOS: whether the drawer's items are in the tree. They leave it entirely while the
+    /// drawer is shut, so their presence is the drawer's state. Other platforms: null.
     /// </remarks>
     public bool? IsFlyoutOpen
     {
@@ -1350,7 +1392,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
         {
             RequireApp(nameof(IsFlyoutOpen));
 
-            return _driver.Platform == MauiPlatform.Android
+            return _driver.Platform is MauiPlatform.Android or MauiPlatform.iOS
                 ? _driver.FindElements(_driver.ShellChrome.FlyoutHost).Count > 0
                 : null;
         }
@@ -1374,7 +1416,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     private const int FlyoutPollIntervalMs = 100;
 
     /// <inheritdoc />
-    /// <remarks>Android reads the alert's own parts; iOS answers null so far.</remarks>
+    /// <remarks>Android and iOS read the alert's own parts.</remarks>
     public AlertContents? ReadAlert()
     {
         RequireApp(nameof(ReadAlert));
@@ -1417,9 +1459,9 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// <summary>
     /// Refuses rather than guesses on a platform whose Shell chrome nobody has mapped.
     /// </summary>
-    private void RequireAndroid(string what)
+    private void RequireMappedShell(string what)
     {
-        if (_driver.Platform != MauiPlatform.Android)
+        if (_driver.Platform is not (MauiPlatform.Android or MauiPlatform.iOS))
         {
             throw new PlatformNotSupportedException(
                 $"Shell chrome on {_driver.Platform} has not been mapped: nothing is known about {what}. "

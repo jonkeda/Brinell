@@ -104,10 +104,16 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// Android publishes each dot with a description such as "Item 2 of 5", and ", selected" on the
     /// current one (measured on the sample's IndicatorView). That text is the platform's and
     /// follows the device's language; the emulator runs in English. Children are "./*/*": an
-    /// element's XPath is rooted at the element on UiAutomator2.
+    /// element's XPath is rooted at the element on UiAutomator2. iOS draws a <c>UIPageControl</c>,
+    /// whose value reads "page 2 of 5" (UIKit's text, not yet run on a simulator).
     /// </remarks>
     private (int Count, int? Position)? ReadDots(IMauiElement? element)
     {
+        if (element != null && Context.Driver.Platform == Enums.MauiPlatform.iOS)
+        {
+            return ReadPageControl(element);
+        }
+
         if (element == null || Context.Driver.Platform != Enums.MauiPlatform.Android)
         {
             return null;
@@ -133,6 +139,23 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
 
         return count == 0 ? null : (count, position);
     }
+
+    /// <summary>The page control itself, or the one inside the view.</summary>
+    private static (int Count, int? Position)? ReadPageControl(IMauiElement element)
+    {
+        var control = element.GetAttribute("type") == "XCUIElementTypePageIndicator"
+            ? element
+            : element.FindElements(Locator.ByXPath(".//XCUIElementTypePageIndicator")).FirstOrDefault();
+
+        var match = PageDescription.Match(control?.GetAttribute("value") ?? string.Empty);
+        return match.Success
+            ? (int.Parse(match.Groups["count"].Value, CultureInfo.InvariantCulture),
+                int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture) - 1)
+            : null;
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex PageDescription =
+        new(@"^page (?<index>\d+) of (?<count>\d+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private static readonly System.Text.RegularExpressions.Regex DotDescription =
         new(@"^Item (?<index>\d+) of (?<count>\d+)(?<selected>, selected)?$");

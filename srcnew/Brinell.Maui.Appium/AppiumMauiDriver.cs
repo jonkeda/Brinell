@@ -152,11 +152,24 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// has not been mapped and throws.
     /// </para>
     /// </remarks>
-    public ShellChromeLocators ShellChrome => _platform == MauiPlatform.Android
-        ? AndroidShellChrome
-        : throw new PlatformNotSupportedException(
+    public ShellChromeLocators ShellChrome => _platform switch
+    {
+        MauiPlatform.Android => AndroidShellChrome,
+        MauiPlatform.iOS => IosShellChrome,
+        _ => throw new PlatformNotSupportedException(
             $"Shell chrome on {_platform} has not been mapped. Dump the tree and add it to "
-            + $"{nameof(AppiumMauiDriver)}.");
+            + $"{nameof(AppiumMauiDriver)}."),
+    };
+
+    /// <summary>
+    /// UIKit's tab bar and the table MAUI draws its flyout with. Not yet run on a simulator; a page
+    /// of its own with a table may pass for the flyout.
+    /// </summary>
+    private static readonly ShellChromeLocators IosShellChrome = new(
+        TabHost: Locator.ByXPath("//XCUIElementTypeTabBar"),
+        Tab: Locator.ByXPath("//XCUIElementTypeTabBar/XCUIElementTypeButton"),
+        FlyoutHost: Locator.ByXPath("//XCUIElementTypeTable[XCUIElementTypeCell]"),
+        FlyoutItem: Locator.ByXPath("//XCUIElementTypeCell"));
 
     private static readonly ShellChromeLocators AndroidShellChrome = new(
         TabHost: Locator.ByXPath("//android.view.ViewGroup[android.widget.FrameLayout[@content-desc!='']]"),
@@ -303,11 +316,24 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// test after the first failed to reach the hub.
     /// </para>
     /// <para>
-    /// iOS keeps the default: its navigation bar has not been mapped.
+    /// iOS: true when no back button is shown. It answered true on every page before, so every
+    /// test paid a 10 s recovery in <c>MauiFixture.ReturnToHub</c>.
     /// </para>
     /// </remarks>
     public bool IsAtNavigationRoot()
-        => _platform != MauiPlatform.Android || _driver.FindElements(AndroidNavigateUp).Count == 0;
+        => _platform switch
+        {
+            MauiPlatform.Android => _driver.FindElements(AndroidNavigateUp).Count == 0,
+            MauiPlatform.iOS => _driver.FindElements(IosBackButton).Count == 0,
+            _ => true,
+        };
+
+    /// <summary>
+    /// UIKit's back button, which a navigation bar shows on every pushed page. Not yet run on a
+    /// simulator.
+    /// </summary>
+    private static readonly By IosBackButton =
+        MobileBy.IosNSPredicate("type == 'XCUIElementTypeButton' AND name == 'BackButton'");
 
     /// <inheritdoc />
     /// <remarks>
@@ -462,7 +488,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
 
     /// <summary>The alert on screen as MAUI was asked for it, or null. Answers <c>AppElement.ReadAlert</c>.</summary>
     /// <remarks>
-    /// Android only. AppCompat's alert keeps its title, message and both buttons inside
+    /// Android and iOS. AppCompat's alert keeps its title, message and both buttons inside
     /// <c>parentPanel</c>, by ids that carry the app's package (see <see cref="TryFindActiveDialogRoot"/>).
     /// MAUI sets the accept as the positive button (<c>button1</c>) and the cancel as the negative one
     /// (<c>button2</c>), so an alert with one button has only <c>button2</c> and reads with an empty
@@ -470,6 +496,11 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// </remarks>
     internal AlertContents? ReadActiveAlert()
     {
+        if (_platform == MauiPlatform.iOS)
+        {
+            return ReadIosAlert();
+        }
+
         if (_platform != MauiPlatform.Android)
         {
             return null;
@@ -487,6 +518,31 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
                 .FirstOrDefault()?.Text ?? string.Empty;
 
         return new AlertContents(Part("alertTitle"), Part("message"), Part("button1"), Part("button2"));
+    }
+
+    /// <summary>iOS: a <c>UIAlertController</c>, its title and message as static texts.</summary>
+    /// <remarks>
+    /// MAUI gives the cancel the cancel style, which UIKit puts first (left of two), so one button
+    /// reads as the cancel with an empty accept, as on Android. Not yet run on a simulator.
+    /// </remarks>
+    private AlertContents? ReadIosAlert()
+    {
+        var alert = _driver.FindElements(By.XPath("//XCUIElementTypeAlert")).LastOrDefault();
+        if (alert == null)
+        {
+            return null;
+        }
+
+        var texts = alert.FindElements(By.XPath(".//XCUIElementTypeStaticText"))
+            .Select(t => t.GetAttribute("label") ?? t.Text ?? string.Empty).ToList();
+        var buttons = alert.FindElements(By.XPath(".//XCUIElementTypeButton"))
+            .Select(b => b.GetAttribute("label") ?? b.Text ?? string.Empty).ToList();
+
+        return new AlertContents(
+            texts.ElementAtOrDefault(0) ?? string.Empty,
+            texts.ElementAtOrDefault(1) ?? string.Empty,
+            buttons.Count > 1 ? buttons[1] : string.Empty,
+            buttons.ElementAtOrDefault(0) ?? string.Empty);
     }
 
     private static readonly By AndroidDialogRoot =
