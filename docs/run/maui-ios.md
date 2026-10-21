@@ -43,3 +43,11 @@ The first session builds WebDriverAgent and takes longer.
 `MauiDriverOptions.LaunchSettings` reach an iOS app as environment variables, through the
 XCUITest `processArguments: { env: {...} }` capability. The test process's own environment does
 not reach the app.
+
+## Tree Differences
+
+- A view with `SemanticProperties.Description` becomes one accessibility element on iOS.
+  XCUITest hides its children and reports the description as the element's label. A
+  ControlObject that reads a child of such a view must fall back to the element's `Name`,
+  which Brinell reads from the iOS `label`.
+- Zero-size elements are missing from the tree. An empty `Label` measures 0 high on iOS.
