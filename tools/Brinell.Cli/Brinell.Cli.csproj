@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <PackageReference Include="StreamJsonRpc" />
+    <!-- Pinned past GHSA-qhrr-8q5h-9q3h: StreamJsonRpc brings 2.5.302 (Directory.Packages.props). -->
+    <PackageReference Include="MessagePack" />
     <PackageReference Include="System.CommandLine" />
     <!-- controls generate -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />

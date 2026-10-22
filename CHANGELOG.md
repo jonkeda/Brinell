@@ -687,6 +687,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed
+- Two transitive packages pinned past their security advisories, so the solution restores again:
+  `System.Security.Cryptography.Pkcs` 9.0.21 in the Stride sample (from Stride's toolkit,
+  GHSA-2fmv-rv2c-59x7) and `MessagePack` 2.5.303 in `Brinell.Cli` (from StreamJsonRpc,
+  GHSA-qhrr-8q5h-9q3h). With warnings as errors the advisories failed the whole solution's restore,
+  so a solution build compiled nothing.
 - UAT: `BeforeFile` runs once per file per fixture. The file last entered was one value per closed
   test base, so collections sharing a base (one fixture each) entered their file again on every
   switch between them.
