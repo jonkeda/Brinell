@@ -419,6 +419,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- **Breaking for the WPF, WinForms and Stride stacks' users** (AD-029): the first model's
+  interfaces and waits moved to a new package, `Brinell.Core.Legacy`, in the same namespaces:
+  `IDriver`, `IElement`, `IElementScope`, `IPageObject`, `IContainerControl`, `IContainerObject`,
+  `IPagedScope`, `IRangePatternElement`, `ITestContext<T>`, `PageReadinessSnapshot`,
+  `Brinell.Core.Abstractions.Controls.ControlObjectBase`, the `IElement` geometry helpers
+  (`LegacyElementGeometryExtensions`) and `WaitHelper.WaitFor*` (now `LegacyWaitHelper.WaitFor*`).
+  Core keeps the non-generic `ITestContext`, `BusySignalPolicy`, `WaitHelper.Pause` and
+  `ElementGeometryExtensions.CenterOf`, and adds `Settle.Until` for a wait below a call.
 - The recorded interactions are kept per recording target (`Interactions.Begin(target, log)`),
   where they were one log for the process: two collections recording at once no longer write each
   other's taps into their scenes. A report names its target where its element knows it (a

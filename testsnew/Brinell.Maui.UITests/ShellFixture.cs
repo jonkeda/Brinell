@@ -96,7 +96,7 @@ public class ShellFixture : MauiTestFixtureBase
         for (var pop = 0; pop < MaxPops && _page.IsSubPagePushed(); pop++)
         {
             _page.SubPageBackButton.Click();
-            WaitHelper.WaitFor(
+            Brinell.Core.Calls.Settle.Until(
                 () => !_page.IsSubPagePushed(),
                 TestConstants.ShortTestTimeoutMs,
                 Context.Timeouts.PollingInterval);

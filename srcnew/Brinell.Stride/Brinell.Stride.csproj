@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\Brinell.Core.Legacy\Brinell.Core.Legacy.csproj" />
   </ItemGroup>
 
 </Project>

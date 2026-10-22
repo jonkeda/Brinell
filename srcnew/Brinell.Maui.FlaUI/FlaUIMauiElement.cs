@@ -1143,7 +1143,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
 
-        if (!WaitHelper.WaitFor(() => IsDropdownOpen == true, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50))
+        if (!Brinell.Core.Calls.Settle.Until(() => IsDropdownOpen == true, windowMs: 2000, pollingIntervalMs: 50))
         {
             throw new InvalidOperationException(
                 $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
@@ -1170,14 +1170,14 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         AutomationElement[] items = [];
 
-        WaitHelper.WaitFor(() =>
+        Brinell.Core.Calls.Settle.Until(() =>
         {
             items = _element.FindAllDescendants(cf => cf.ByControlType(ControlType.ListItem));
             if (items.Length > 0) return true;
 
             items = _element.FindAllChildren(cf => cf.ByControlType(ControlType.ListItem));
             return items.Length > 0;
-        }, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50);
+        }, windowMs: 2000, pollingIntervalMs: 50);
 
         return items.Select(item => (IMauiElement)new FlaUIMauiElement(item, _driver)).ToList();
     }
@@ -1268,7 +1268,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         item.Select();
 
         // Choosing an item closes a combo box by itself; close it if this one did not.
-        WaitHelper.WaitFor(() => IsDropdownOpen != true, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50);
+        Brinell.Core.Calls.Settle.Until(() => IsDropdownOpen != true, windowMs: 2000, pollingIntervalMs: 50);
         CloseDropdown();
         return true;
     }

@@ -47,6 +47,7 @@ How this differs from the other trees:
 - [AD-026: A project earns its place](decisions/ad-026-a-project-earns-its-place.md)
 - [AD-027: The Scraper records into the project and calls no model](decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md)
 - [AD-028: One command line](decisions/ad-028-one-command-line.md)
+- [AD-029: The first model is a project of its own](decisions/ad-029-the-first-model-is-a-project-of-its-own.md)
 
 ## Contracts
 

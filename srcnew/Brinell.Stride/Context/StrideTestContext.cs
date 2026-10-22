@@ -215,7 +215,7 @@ public class StrideTestContext : IStrideTestContext
 
     public bool WaitFor(Func<bool> condition, int? timeoutMs = null, string description = "condition")
     {
-        return WaitHelper.WaitFor(
+        return LegacyWaitHelper.WaitFor(
             condition,
             timeoutMs ?? Timeouts.DefaultWait,
             Timeouts.PollingInterval);

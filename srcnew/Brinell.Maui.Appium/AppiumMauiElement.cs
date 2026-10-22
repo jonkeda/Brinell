@@ -1401,10 +1401,9 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// <summary>Waits for the drawer to finish opening or closing, bounded by the chrome timeout.</summary>
     private void WaitForFlyout(bool open)
     {
-        if (!WaitHelper.WaitFor(
-                () => IsFlyoutOpen,
-                state => state == open,
-                timeoutMs: ChromeFindTimeoutMs,
+        if (!Brinell.Core.Calls.Settle.Until(
+                () => IsFlyoutOpen == open,
+                windowMs: ChromeFindTimeoutMs,
                 pollingIntervalMs: FlyoutPollIntervalMs))
         {
             throw new BrinellException(

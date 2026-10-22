@@ -4,7 +4,6 @@ global using System.Linq;
 global using System.Text;
 global using System.Threading.Tasks;
 global using Xunit;
-global using Brinell.Core.Abstractions;
 global using Brinell.Core.Composition;
 global using Brinell.Core.Exceptions;
 global using Brinell.Core.Interfaces;

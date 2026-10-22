@@ -526,7 +526,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
 
-        WaitHelper.WaitFor(
+        LegacyWaitHelper.WaitFor(
             () => _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value ==
                   global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded,
             timeoutMs: 2000,
@@ -563,7 +563,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
         {
             AutomationElement[] items = [];
 
-            WaitHelper.WaitFor(() =>
+            LegacyWaitHelper.WaitFor(() =>
             {
                 items = _element.FindAllDescendants(cf =>
                     cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -590,10 +590,10 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
             return false;
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
+        LegacyWaitHelper.WaitFor(() =>
         {
             items = _element.FindAllDescendants(cf =>
                 cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -612,7 +612,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
         else
             target.Click();
 
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         if (IsExpanded)
             Collapse();
@@ -627,10 +627,10 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
             return false;
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
+        LegacyWaitHelper.WaitFor(() =>
         {
             items = _element.FindAllDescendants(cf =>
                 cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -650,7 +650,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
         else
             item.Click();
 
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         if (IsExpanded)
             Collapse();

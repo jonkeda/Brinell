@@ -378,7 +378,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         try
         {
             AutomationElement[] items = [];
-            WaitHelper.WaitFor(() =>
+            LegacyWaitHelper.WaitFor(() =>
             {
                 items = _element.FindAllDescendants(cf =>
                     cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -401,10 +401,10 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         if (!_element.Patterns.ExpandCollapse.IsSupported) return;
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
+        LegacyWaitHelper.WaitFor(() =>
         {
             items = _element.FindAllDescendants(cf =>
                 cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -419,7 +419,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         else
             target.Click();
 
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
         if (IsExpanded) Collapse();
     }
 
@@ -428,10 +428,10 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         if (!_element.Patterns.ExpandCollapse.IsSupported) return;
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
 
         AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
+        LegacyWaitHelper.WaitFor(() =>
         {
             items = _element.FindAllDescendants(cf =>
                 cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
@@ -446,7 +446,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         else
             item.Click();
 
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        LegacyWaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
         if (IsExpanded) Collapse();
     }
 

@@ -67,7 +67,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     protected bool Poll(Func<bool> condition, int timeoutMs)
     {
-        return WaitHelper.WaitFor(condition, timeoutMs, Context.Timeouts.PollingInterval);
+        return LegacyWaitHelper.WaitFor(condition, timeoutMs, Context.Timeouts.PollingInterval);
     }
 
     #endregion

@@ -21,6 +21,30 @@ public sealed class SolutionTests
         Assert.True(missing.Count == 0, $"Add these projects to Brinell.sln, in their area's folder: {string.Join(", ", missing)}");
     }
 
+    /// <summary>
+    /// The call-model stacks stand on Core alone: the first model's interfaces and waits are
+    /// <c>Brinell.Core.Legacy</c>, for WPF, WinForms and Stride (AD-029).
+    /// </summary>
+    [Fact]
+    public void NoCallModelStack_ReferencesTheFirstModel()
+    {
+        var root = FindRepositoryRoot();
+        Assert.NotNull(root);
+        string[] callModel = ["Brinell.Html", "Brinell.Html.Playwright", "Brinell.Blazor", "Brinell.Maui", "Brinell.Maui.Appium",
+            "Brinell.Maui.FlaUI", "Brinell.Maui.CommunityToolkit", "Brinell.NativeAndroid", "Brinell.Appium", "Brinell.Uat", "Brinell.Bdd"];
+
+        var offenders = callModel
+            .Select(name => Path.Combine(root, "srcnew", name, $"{name}.csproj"))
+            .Where(File.Exists)
+            .Where(project => File.ReadAllText(project).Contains("Brinell.Core.Legacy", StringComparison.OrdinalIgnoreCase))
+            .Select(Path.GetFileName)
+            .ToList();
+
+        Assert.True(offenders.Count == 0, $"These call-model projects reference Brinell.Core.Legacy: {string.Join(", ", offenders)}");
+        Assert.True(callModel.Count(name => File.Exists(Path.Combine(root, "srcnew", name, $"{name}.csproj"))) >= 8,
+            "The list of call-model projects no longer matches srcnew.");
+    }
+
     private static IEnumerable<string> Projects(string directory)
     {
         foreach (var project in Directory.EnumerateFiles(directory, "*.csproj"))

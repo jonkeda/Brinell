@@ -1,4 +1,5 @@
 using System.Reflection;
+using Brinell.Core.Composition;
 using Brinell.Core.Interfaces;
 
 namespace Brinell.Uat;
@@ -133,7 +134,7 @@ public static class UatDiscovery
             return true;
         }
 
-        if (typeof(IPageObject).IsAssignableFrom(type))
+        if (TestPages.IsFirstModelPage(type))
         {
             return true;
         }

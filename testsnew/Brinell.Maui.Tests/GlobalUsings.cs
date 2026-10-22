@@ -1,7 +1,6 @@
 global using Xunit;
 global using Moq;
 global using Brinell.Core;
-global using Brinell.Core.Abstractions;
 global using Brinell.Core.Configuration;
 global using Brinell.Core.Exceptions;
 global using Brinell.Core.Interfaces;
