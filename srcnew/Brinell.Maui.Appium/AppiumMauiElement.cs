@@ -76,21 +76,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// Runs a WebDriver read or action, reporting a replaced element as
     /// <see cref="StaleElementException"/> and an ended session as <see cref="AppUnavailableException"/>.
     /// </summary>
-    private T Live<T>(Func<T> touch)
-    {
-        try
-        {
-            return touch();
-        }
-        catch (Exception error) when (AppiumErrors.IsSessionGone(error))
-        {
-            throw new AppUnavailableException("the driver session has ended.", error);
-        }
-        catch (Exception error) when (AppiumErrors.IsElementGone(error))
-        {
-            throw new StaleElementException(platformError: error);
-        }
-    }
+    private static T Live<T>(Func<T> touch) => AppiumErrors.Live(touch);
 
     /// <inheritdoc cref="Live{T}(Func{T})"/>
     private void Live(Action touch) => Live(() =>

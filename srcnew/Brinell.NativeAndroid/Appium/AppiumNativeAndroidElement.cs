@@ -36,19 +36,7 @@ public sealed class AppiumNativeAndroidElement : INativeAndroidElement
     {
         try
         {
-            return touch();
-        }
-        catch (Exception error) when (AppiumErrors.IsSessionGone(error))
-        {
-            throw new AppUnavailableException("the Appium session has ended.", error);
-        }
-        catch (Exception error) when (AppiumErrors.IsNoAnswer(error))
-        {
-            throw new AppUnavailableException("the Appium server did not answer a command in time: it or the device is stuck.", error);
-        }
-        catch (Exception error) when (AppiumErrors.IsElementGone(error))
-        {
-            throw new StaleElementException(platformError: error);
+            return AppiumErrors.Live(touch);
         }
         catch (Exception error) when (AppiumErrors.IsUnknownCommand(error))
         {

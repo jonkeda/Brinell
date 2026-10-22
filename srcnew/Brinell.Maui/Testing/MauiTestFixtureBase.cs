@@ -121,18 +121,26 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// Whether <paramref name="error"/> says the driver session can no longer answer anything.
     /// </summary>
     /// <remarks>
-    /// The app or its driver is gone (<see cref="AppUnavailableException"/>), or the platform says the
-    /// session is: on Android the UiAutomator2 server on the device crashes now and then, and every
-    /// call after it fails at once. One crash took more than 200 tests of a run with it before
-    /// fixtures restarted on this. Matched by message so it holds on every head.
+    /// The app or its driver is gone: <see cref="AppUnavailableException"/>, which every driver
+    /// raises for it (on Appium, <c>AppiumErrors.Live</c> reads the server's messages: the
+    /// UiAutomator2 server on the device crashing, a session ended, a command not answered). One
+    /// crash took more than 200 tests of a run with it before fixtures restarted on this. Looked for
+    /// through wrapped errors too, as a call or a step may report it inside its own.
     /// </remarks>
     /// <param name="error">The error a navigation or lookup raised.</param>
     /// <returns>Whether a new session is the only way on.</returns>
     public static bool IsSessionLost(Exception error)
-        => error is Brinell.Core.Exceptions.AppUnavailableException
-           || error.Message.Contains("instrumentation process is not running", StringComparison.OrdinalIgnoreCase)
-           || error.Message.Contains("invalid session id", StringComparison.OrdinalIgnoreCase)
-           || error.Message.Contains("session is either terminated or not started", StringComparison.OrdinalIgnoreCase);
+    {
+        for (var current = error; current is not null; current = current.InnerException)
+        {
+            if (current is Brinell.Core.Exceptions.AppUnavailableException)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private IScreenshotService CreateScreenshotService(MauiTestContext context)
     {

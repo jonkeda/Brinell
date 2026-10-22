@@ -29,7 +29,45 @@ public static class AppiumErrors
            && error.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Whether <paramref name="error"/> is either: a catch that means "absent" must let it through.</summary>
-    public static bool IsGone(Exception error) => IsElementGone(error) || IsSessionGone(error);
+    public static bool IsGone(Exception error) => IsElementGone(error) || IsSessionGone(error) || IsNoAnswer(error);
+
+    /// <summary>
+    /// Runs a WebDriver command, reporting an ended or stuck session as
+    /// <see cref="Brinell.Core.Exceptions.AppUnavailableException"/> and a replaced element as
+    /// <see cref="Brinell.Core.Exceptions.StaleElementException"/>: the one place Appium's messages
+    /// are read, so a fixture tells a lost session by its type alone.
+    /// </summary>
+    public static T Live<T>(Func<T> touch)
+    {
+        ArgumentNullException.ThrowIfNull(touch);
+        try
+        {
+            return touch();
+        }
+        catch (Exception error) when (IsSessionGone(error))
+        {
+            throw new Brinell.Core.Exceptions.AppUnavailableException("the Appium session has ended.", error);
+        }
+        catch (Exception error) when (IsNoAnswer(error))
+        {
+            throw new Brinell.Core.Exceptions.AppUnavailableException("the Appium server did not answer a command in time: it or the device is stuck.", error);
+        }
+        catch (Exception error) when (IsElementGone(error))
+        {
+            throw new Brinell.Core.Exceptions.StaleElementException(platformError: error);
+        }
+    }
+
+    /// <inheritdoc cref="Live{T}(Func{T})"/>
+    public static void Live(Action touch)
+    {
+        ArgumentNullException.ThrowIfNull(touch);
+        Live(() =>
+        {
+            touch();
+            return true;
+        });
+    }
 
     /// <summary>
     /// Whether <paramref name="error"/> says the server has no such command, as a <c>mobile:</c>

@@ -419,6 +419,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- A lost Appium session is told by its type: `AppiumErrors.Live` (in `Brinell.Appium`) reads the
+  server's messages once and raises `AppUnavailableException` for an ended or stuck session
+  (a command not answered in time, which MAUI did not map before) and `StaleElementException` for
+  a replaced element. MAUI's Appium element and driver (find, back, the root check, scripts,
+  screenshots, page source, navigation, reset) and native Android's element use it;
+  `MauiTestFixtureBase.IsSessionLost` tests the type, through wrapped errors.
 - MAUI's session settings are the factory's (`MauiDriverFactory.SessionDefaults`): Android's
   idle wait 100 ms (from 500) and window animations off; iOS quiescence off and its idle wait
   bounded to 1 s (not yet run on a simulator). A suite's own `AdditionalCapabilities` override

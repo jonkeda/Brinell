@@ -50,4 +50,30 @@ public class AppiumErrorsTests
     [Fact]
     public void ASessionError_IsNotUnknownCommand()
         => Assert.False(AppiumErrors.IsUnknownCommand(new WebDriverException("invalid session id")));
+
+    [Theory]
+    [InlineData("invalid session id")]
+    [InlineData("A session is either terminated or not started")]
+    [InlineData("'POST /elements' cannot be proxied to UiAutomator2 server because the instrumentation process is not running (probably crashed)")]
+    public void Live_ReportsAnEndedSession_AsAppUnavailable(string message)
+        => Assert.IsType<Brinell.Core.Exceptions.AppUnavailableException>(
+            Record.Exception(() => AppiumErrors.Live(() => throw new WebDriverException(message))));
+
+    [Fact]
+    public void Live_ReportsAStuckServer_AsAppUnavailable()
+        => Assert.IsType<Brinell.Core.Exceptions.AppUnavailableException>(Record.Exception(() => AppiumErrors.Live(
+            () => throw new WebDriverException("The HTTP request to the remote WebDriver server for URL http://127.0.0.1:4723/session/x/elements timed out after 60 seconds."))));
+
+    [Fact]
+    public void Live_ReportsAReplacedElement_AsStale()
+        => Assert.IsType<Brinell.Core.Exceptions.StaleElementException>(
+            Record.Exception(() => AppiumErrors.Live(() => throw new StaleElementReferenceException("stale element reference"))));
+
+    [Fact]
+    public void Live_LetsAnOrdinaryErrorThrough_AsItIs()
+    {
+        var error = new WebDriverException("An unknown server-side error occurred while processing the command.");
+
+        Assert.Same(error, Record.Exception(() => AppiumErrors.Live(() => throw error)));
+    }
 }

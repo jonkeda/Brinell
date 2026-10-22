@@ -64,14 +64,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     {
         var by = locator.ToBy(_platform);
 
-        try
-        {
-            return _driver.FindElements(by).Select(e => new AppiumMauiElement(e, this)).ToList();
-        }
-        catch (Exception error) when (AppiumErrors.IsSessionGone(error))
-        {
-            throw new AppUnavailableException("the driver session has ended.", error);
-        }
+        return AppiumErrors.Live(() => _driver.FindElements(by).Select(e => new AppiumMauiElement(e, this)).ToList());
     }
 
     /// <summary>
@@ -213,7 +206,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     #region Screenshots
     
     /// <inheritdoc />
-    public byte[] GetScreenshot() => _driver.GetScreenshot().AsByteArray;
+    public byte[] GetScreenshot() => AppiumErrors.Live(() => _driver.GetScreenshot().AsByteArray);
     
     #endregion
     
@@ -236,7 +229,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// <inheritdoc />
     public object? ExecuteScript(string script, params object[] args)
     {
-        return _driver.ExecuteScript(script, args);
+        return AppiumErrors.Live(() => _driver.ExecuteScript(script, args));
     }
     
     #endregion
@@ -244,17 +237,17 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     #region IDiagnosticDriver
     
     /// <inheritdoc />
-    public string GetPageSource() => _driver.PageSource;
+    public string GetPageSource() => AppiumErrors.Live(() => _driver.PageSource);
     
     /// <inheritdoc />
-    public string GetAutomationTree() => _driver.PageSource;
+    public string GetAutomationTree() => AppiumErrors.Live(() => _driver.PageSource);
     
     #endregion
     
     #region Navigation
     
     /// <inheritdoc />
-    public void NavigateTo(string destination) => _driver.Navigate().GoToUrl(destination);
+    public void NavigateTo(string destination) => AppiumErrors.Live(() => _driver.Navigate().GoToUrl(destination));
     
     /// <inheritdoc />
     /// <remarks>
@@ -267,6 +260,11 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     public void NavigateBack()
     {
         using var mark = Brinell.Core.Recording.Interactions.Report(Brinell.Core.Recording.InteractionKind.Key, () => System.Drawing.Rectangle.Empty, key: "Back");
+        AppiumErrors.Live(GoBack);
+    }
+
+    private void GoBack()
+    {
 
         // iOS: XCUITest's back taps the navigation bar's back button and silently does nothing
         // when the app hides that bar behind its own title bar. The system's left-edge swipe is
@@ -321,12 +319,12 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// </para>
     /// </remarks>
     public bool IsAtNavigationRoot()
-        => _platform switch
+        => AppiumErrors.Live(() => _platform switch
         {
             MauiPlatform.Android => _driver.FindElements(AndroidNavigateUp).Count == 0,
             MauiPlatform.iOS => _driver.FindElements(IosBackButton).Count == 0,
             _ => true,
-        };
+        });
 
     /// <summary>
     /// UIKit's back button, which a navigation bar shows on every pushed page. Not yet run on a
@@ -343,13 +341,15 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     public int NavigationDepth() => IsAtNavigationRoot() ? 1 : 2;
     
     /// <inheritdoc />
-    public void Refresh() => _driver.Navigate().Refresh();
+    public void Refresh() => AppiumErrors.Live(() => _driver.Navigate().Refresh());
     
     /// <inheritdoc />
     public byte[] TakeScreenshot() => GetScreenshot();
     
     /// <inheritdoc />
-    public void ResetAppState()
+    public void ResetAppState() => AppiumErrors.Live(ResetApp);
+
+    private void ResetApp()
     {
         var bundleId = _driver.Capabilities.GetCapability("appPackage")?.ToString()
                     ?? _driver.Capabilities.GetCapability("bundleId")?.ToString();
