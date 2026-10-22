@@ -103,7 +103,7 @@ public class NavigationRecovery
     // A page being left can still answer during its exit transition, so it does not count until it is gone.
     private (bool AtRoot, INavigablePage? Page) WaitForKnownState(INavigablePage? departed, int budgetMs)
     {
-        var deadline = Environment.TickCount64 + budgetMs;
+        var deadline = Environment.TickCount64 + Brinell.Core.Calls.CallBudget.Within(budgetMs);
         while (true)
         {
             if (departed == null || !departed.IsLoaded(0))

@@ -250,6 +250,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     internal IMauiElement FindChrome(Locator locator, int timeoutMs)
     {
         var condition = locator.ToCondition(_conditionFactory);
+        timeoutMs = Brinell.Core.Calls.CallBudget.Within(timeoutMs);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         do
@@ -547,7 +548,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public int NavigationDepth()
     {
-        const int transitionBudgetMs = 2_000;
+        var transitionBudgetMs = Brinell.Core.Calls.CallBudget.Within(2_000);
         const int pollMs = 25;
 
         var clock = System.Diagnostics.Stopwatch.StartNew();
@@ -614,7 +615,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void NavigateBack()
     {
         using var mark = Brinell.Core.Recording.Interactions.Report(Brinell.Core.Recording.InteractionKind.Key, () => System.Drawing.Rectangle.Empty, key: "Back");
-        const int publishWindowMs = 1_000;
+        var publishWindowMs = Brinell.Core.Calls.CallBudget.Within(1_000);
         const int pollMs = 25;
 
         var clock = System.Diagnostics.Stopwatch.StartNew();

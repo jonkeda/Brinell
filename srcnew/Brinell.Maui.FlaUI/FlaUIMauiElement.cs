@@ -673,7 +673,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <returns>True if it moved; false if it stayed put for the whole window.</returns>
     private static bool WaitForScrollChange(IScrollPattern scroll, (double Vertical, double Horizontal) before)
     {
-        const int budgetMs = 500;
+        var budgetMs = Brinell.Core.Calls.CallBudget.Within(500);
         const int intervalMs = 25;
 
         for (var waited = 0; waited < budgetMs; waited += intervalMs)
@@ -1143,7 +1143,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
 
-        if (!WaitHelper.WaitFor(() => IsDropdownOpen == true, timeoutMs: 2000, pollingIntervalMs: 50))
+        if (!WaitHelper.WaitFor(() => IsDropdownOpen == true, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50))
         {
             throw new InvalidOperationException(
                 $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
@@ -1177,7 +1177,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
             items = _element.FindAllChildren(cf => cf.ByControlType(ControlType.ListItem));
             return items.Length > 0;
-        }, timeoutMs: 2000, pollingIntervalMs: 50);
+        }, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50);
 
         return items.Select(item => (IMauiElement)new FlaUIMauiElement(item, _driver)).ToList();
     }
@@ -1268,7 +1268,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         item.Select();
 
         // Choosing an item closes a combo box by itself; close it if this one did not.
-        WaitHelper.WaitFor(() => IsDropdownOpen != true, timeoutMs: 2000, pollingIntervalMs: 50);
+        WaitHelper.WaitFor(() => IsDropdownOpen != true, timeoutMs: Brinell.Core.Calls.CallBudget.Within(2000), pollingIntervalMs: 50);
         CloseDropdown();
         return true;
     }
@@ -1488,7 +1488,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return;
         }
 
-        const int budgetMs = 2_000;
+        var budgetMs = Brinell.Core.Calls.CallBudget.Within(2_000);
         const int pollMs = 25;
 
         var clock = System.Diagnostics.Stopwatch.StartNew();

@@ -81,13 +81,15 @@ public static class UatControlAssertions
     {
         ArgumentNullException.ThrowIfNull(condition);
 
+        // Inside a running call the caller's budget bounds it (R2).
+        timeoutMs = Brinell.Core.Calls.CallBudget.Within(timeoutMs);
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < timeoutMs)
         {
             if (condition())
                 return true;
 
-            Thread.Sleep(100);
+            Brinell.Core.Utilities.WaitHelper.Pause(100);
         }
 
         return condition();

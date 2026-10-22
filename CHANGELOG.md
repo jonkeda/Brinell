@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `CallBudget.Within(windowMs)`: a driver's own wait, cut to what the running call has left. The
+  waits below a call that had a window of their own (FlaUI's navigate back, navigation depth,
+  bridge resend, dropdown open and close, scroll settle and scroll change, `FindChrome`, MAUI's
+  `NavigationRecovery`, UAT's `WaitUntil`) no longer outlast the caller's `timeoutMs`.
 - `BRINELL_TIMEOUT_SCALE`: a factor (0.1 to 20) on the waits a call takes from `TimeoutSettings`
   (`DefaultWait`, `PageLoad`, `ElementFind`, `ElementState`), for a slow or shared machine; a
   `timeoutMs` a test passes is not scaled.

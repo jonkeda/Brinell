@@ -12,4 +12,11 @@ public static class CallBudget
     /// </summary>
     public static int RemainingOr(int outsideACallMs)
         => AttemptContext.Current is { } call ? Math.Max(1, call.Deadline.RemainingMs) : outsideACallMs;
+
+    /// <summary>
+    /// A wait's own window, cut to what is left of the running call's budget: a driver's wait for
+    /// a page to publish or a dropdown to open never outlasts the caller's timeout, and keeps its
+    /// window outside a call.
+    /// </summary>
+    public static int Within(int windowMs) => Math.Min(windowMs, RemainingOr(windowMs));
 }

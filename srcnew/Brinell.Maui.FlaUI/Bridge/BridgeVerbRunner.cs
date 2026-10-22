@@ -325,7 +325,7 @@ internal static class BridgeVerbRunner
     /// </param>
     private static BridgeVerbResult UntilPublished(Func<BridgeVerbResult> send, Func<bool>? declared = null)
     {
-        const int publishWindowMs = 1_000;
+        var publishWindowMs = Brinell.Core.Calls.CallBudget.Within(1_000);
         const int pollMs = 25;
 
         var clock = System.Diagnostics.Stopwatch.StartNew();
