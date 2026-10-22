@@ -169,6 +169,26 @@ SRV.05.7 and SRV.08.1, a value and a page late), the three green alone twice; th
 `System.Security.Cryptography.Pkcs`, `Brinell.Cli.Tests`' `MessagePack`), so it compiles
 nothing: build with `-p:NuGetAudit=false` to check every project until the packages are updated.
 
-## B3
+## B3: MAUI on Android, and M1 on a device
 
-Not run yet.
+2026-10-22, `move` 140c69fb (everything through M1), `Brinell_Android` (8 cores), Appium 3.1.2,
+both apps installed fresh, `BRINELL_APP_PREINSTALLED=1`, the call log on.
+
+**M1 on the device.** The emulator's window animation scale was set to 1 before a run of the
+button and ActivityIndicator tests (10 of 10, 59 s). It read 0.0 from the session's start and 1.0
+again after it: the factory's `disableWindowAnimation` reached the device, so the runbook's three
+`adb` commands are no longer needed. On the page with a running ActivityIndicator every call took
+0.1 to 0.7 s, so the 100 ms idle bound comes from the factory now that the fixtures do not set it
+(about 11 s per lookup without it).
+
+**The full mobile suite:** 259 passed, 24 failed, 20 skipped in 23 m 03 s (wall 23 m 15 s).
+The 24 are the known gaps (`.my/brinell/maui-android.md` in Tomorrow): MediaElement 11, CarouselView
+5, RatingView 4, DrawingView 3, ProductCollection `ItemWhere_ScrollsToFindOffscreenRow` 1. The
+last full run before today's changes: 258 passed, the same 24, 20 skipped in 23 m 17 s. 1,942
+calls, 1,067 s in all, mean 549 ms; `WaitLoaded` 625 times, mean 293 ms.
+
+`near-misses.md` lists 55 calls. The worst are the scroll page's, passed at 130 to 165% of their
+5 s budget in one attempt (`ScrollStatusLabel.AssertTextContains` 8.2 s): scroll-to-find runs past
+the call's budget, the review's M3, now measured. `TestTimePicker.SetTime` passes at 117 to 125%
+with its lookup done in tens of milliseconds, so the time is in the action and its confirmation.
+
