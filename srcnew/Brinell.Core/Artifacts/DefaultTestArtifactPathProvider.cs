@@ -147,9 +147,30 @@ public sealed class DefaultTestArtifactPathProvider : ITestArtifactPathProvider
 
     private static string InferSuiteName()
     {
-        return Assembly.GetEntryAssembly()?.GetName().Name ??
-               Assembly.GetCallingAssembly().GetName().Name ??
-               "default";
+        var entry = Assembly.GetEntryAssembly()?.GetName().Name;
+        if (entry != null && !entry.StartsWith("testhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return entry;
+        }
+
+        // Under `dotnet test` the entry is the test host; the suite is the test assembly beside it.
+        return TestAssemblyName() ?? entry ?? Assembly.GetCallingAssembly().GetName().Name ?? "default";
+    }
+
+    /// <summary>The loaded assembly from the output folder that references xUnit: the suite under a test host.</summary>
+    private static string? TestAssemblyName()
+    {
+        var folder = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .Where(assembly => !assembly.IsDynamic
+                && !string.IsNullOrEmpty(assembly.Location)
+                && string.Equals(Path.GetDirectoryName(assembly.Location), folder, StringComparison.OrdinalIgnoreCase)
+                && assembly.GetReferencedAssemblies().Any(reference => reference.Name?.StartsWith("xunit", StringComparison.OrdinalIgnoreCase) == true))
+            .Select(assembly => assembly.GetName().Name)
+            .FirstOrDefault(name => name != null
+                && !name.StartsWith("Brinell.", StringComparison.Ordinal)
+                && !name.StartsWith("xunit", StringComparison.OrdinalIgnoreCase)
+                && !name.StartsWith("Microsoft.", StringComparison.Ordinal));
     }
 
     private static string CreateLocalRunId()

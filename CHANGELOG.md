@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A failing Html UAT scenario leaves a screenshot: `PlaywrightTestContext` is an
+  `IScreenshotSource` (PNGs in the run's `suites/<suite>/screenshots`), and
+  `UatScenarioResults.ScreenshotServiceOf` finds one on the fixture or on its public properties
+  (a fixture's `Context`), so a suite gets it without code of its own. `ScreenshotService` takes
+  any way of saving one (`Action<string>`). Under `dotnet test` the suite folder is named after the
+  test assembly, not `testhost`.
 - Predicate waits: `WaitAttribute(name, until)` on every Html, MAUI and native Android control, and
   `WaitText(until)` on Html's and native Android's (a MAUI control's text is its own). One call
   within the budget, polled as `WaitText(expected)` is; when the predicate never held, the call

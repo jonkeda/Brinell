@@ -11,7 +11,7 @@ using Microsoft.Playwright;
 
 namespace Brinell.Html.Playwright;
 
-public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncDisposable, Brinell.Core.Recording.IRecordable
+public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell.Core.Interfaces.IScreenshotSource, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly IPage _page;
     private readonly IFrame? _frame;
@@ -193,6 +193,23 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, IA
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _driver.SaveScreenshot(path);
     }
+
+    private Brinell.Core.Services.ScreenshotService? _screenshots;
+
+    /// <summary>
+    /// This page's screenshots, PNGs in the run's screenshots folder; what a failing UAT scenario
+    /// leaves as its evidence when its fixture holds this context.
+    /// </summary>
+    public Brinell.Core.Interfaces.IScreenshotService Screenshots => _screenshots ??= new(
+        SaveScreenshot,
+        _logger,
+        new ScreenshotSettings
+        {
+            OutputDirectory = Brinell.Core.Artifacts.DefaultTestArtifactPathProvider.Create().ScreenshotsDirectory,
+            CaptureOnFailure = true,
+            IncludeTimestamp = true,
+            Format = ScreenshotFormat.Png,
+        });
 
     public void ResetAppState()
     {

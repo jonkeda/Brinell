@@ -110,7 +110,11 @@ public static class UatScenarioResults
         return sanitized.Length <= maxLength ? sanitized : sanitized[..maxLength];
     }
 
-    /// <summary>The fixture's screenshots, for a failure's evidence: the fixture itself, or its public <c>ScreenshotService</c>.</summary>
+    /// <summary>
+    /// The fixture's screenshots, for a failure's evidence: the fixture itself, its public
+    /// <c>ScreenshotService</c>, or the <see cref="IScreenshotSource"/> it is or holds in a public
+    /// property (its test context, as Html's Playwright context is).
+    /// </summary>
     /// <param name="fixture">The suite's fixture.</param>
     public static IScreenshotService? ScreenshotServiceOf(object fixture)
     {
@@ -121,8 +125,35 @@ public static class UatScenarioResults
         }
 
         var property = fixture.GetType().GetProperty("ScreenshotService", BindingFlags.Instance | BindingFlags.Public);
-        return property is not null && typeof(IScreenshotService).IsAssignableFrom(property.PropertyType)
-            ? property.GetValue(fixture) as IScreenshotService
-            : null;
+        if (property is not null && typeof(IScreenshotService).IsAssignableFrom(property.PropertyType))
+        {
+            return property.GetValue(fixture) as IScreenshotService;
+        }
+
+        if (fixture is IScreenshotSource source)
+        {
+            return source.Screenshots;
+        }
+
+        return fixture.GetType()
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(candidate => candidate.GetIndexParameters().Length == 0)
+            .Select(candidate => ValueOrNull(candidate, fixture))
+            .OfType<IScreenshotSource>()
+            .Select(holder => holder.Screenshots)
+            .FirstOrDefault();
+    }
+
+    // A property that throws (a fixture not started) holds no screenshots.
+    private static object? ValueOrNull(PropertyInfo property, object owner)
+    {
+        try
+        {
+            return property.GetValue(owner);
+        }
+        catch (TargetInvocationException)
+        {
+            return null;
+        }
     }
 }

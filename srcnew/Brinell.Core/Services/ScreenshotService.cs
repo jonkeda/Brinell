@@ -12,7 +12,7 @@ namespace Brinell.Core.Services;
 /// </summary>
 public class ScreenshotService : IScreenshotService
 {
-    private readonly ITestContext _context;
+    private readonly Action<string> _save;
     private readonly ITestLogger _logger;
     private readonly ScreenshotSettings _settings;
     
@@ -26,8 +26,23 @@ public class ScreenshotService : IScreenshotService
         ITestContext context,
         ITestLogger logger,
         ScreenshotSettings? settings = null)
+        : this((context ?? throw new ArgumentNullException(nameof(context))).SaveScreenshot, logger, settings)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
+
+    /// <summary>
+    /// Creates a screenshot service over any way of saving one, for a context that is not an
+    /// <see cref="ITestContext"/> (Html's, MAUI's own interfaces).
+    /// </summary>
+    /// <param name="saveScreenshot">Saves a screenshot of what the app shows to the path given.</param>
+    /// <param name="logger">Logger for screenshot events.</param>
+    /// <param name="settings">Screenshot configuration settings.</param>
+    public ScreenshotService(
+        Action<string> saveScreenshot,
+        ITestLogger logger,
+        ScreenshotSettings? settings = null)
+    {
+        _save = saveScreenshot ?? throw new ArgumentNullException(nameof(saveScreenshot));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings ?? ScreenshotSettings.Default;
     }
@@ -81,7 +96,7 @@ public class ScreenshotService : IScreenshotService
         {
             EnsureDirectoryExists();
             var path = Path.Combine(_settings.OutputDirectory, filename);
-            _context.SaveScreenshot(path);
+            _save(path);
             _logger.LogScreenshot(testMethod, testClass, path, reason);
             TestArtifactManifestWriter.RecordArtifact(
                 path,
