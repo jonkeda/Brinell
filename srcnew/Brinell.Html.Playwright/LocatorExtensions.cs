@@ -49,7 +49,8 @@ internal static class LocatorExtensions
             LocatorStrategy.Text => baseLocator.GetByText(locator.Value),
             LocatorStrategy.LinkText => baseLocator.Locator($"a:has-text('{EscapeForSelectorText(locator.Value)}')"),
             LocatorStrategy.PartialLinkText => baseLocator.Locator($"a:has-text('{EscapeForSelectorText(locator.Value)}')"),
-            LocatorStrategy.AccessibilityId => baseLocator.GetByRole(AriaRole.Generic, new LocatorGetByRoleOptions { Name = locator.Value }),
+            // The accessible name: aria-label, aria-labelledby or a <label>, as a screen reader names it.
+            LocatorStrategy.AccessibilityId => baseLocator.GetByLabel(locator.Value, new LocatorGetByLabelOptions { Exact = true }),
             LocatorStrategy.ControlType => baseLocator.Locator(locator.Value),
             _ => baseLocator.Locator(locator.Value)
         };
@@ -60,9 +61,10 @@ internal static class LocatorExtensions
         return frame != null ? frame.Locator(selector) : page.Locator(selector);
     }
 
-    private static string EscapeForAttribute(string value) => value.Replace("'", "\\'");
+    // A CSS string in single quotes: a backslash, then a quote, each escaped.
+    internal static string EscapeForAttribute(string value) => value.Replace("\\", "\\\\").Replace("'", "\\'");
 
-    private static string EscapeForSelectorText(string value) => value.Replace("'", "\\'");
+    internal static string EscapeForSelectorText(string value) => EscapeForAttribute(value);
 
     private static string EscapeCss(string value)
     {
