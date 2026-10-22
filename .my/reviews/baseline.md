@@ -10,23 +10,28 @@ after a build, `BRINELL_CALL_LOG` set to a folder; CPU by `Get-Counter` every 5 
 the counter itself takes about 2 s), as a share of the machine's 32 logical cores. The app runs
 in the test host (`TomorrowApp`), so its CPU is the test host's.
 
-| Measure | Before (2026-10-22) | After F1-F3 (2026-10-22) |
-| --- | --- | --- |
-| Commits | `move` 5a69338e, `game` 20a87afb | `move` 40b70088, the six sleeps gone |
-| Machine | not quiet: about 70 `dotnet` processes, machine CPU 39% average, 61% peak | the same: 40% average, 68% peak |
-| Tests | 87: 82 passed, 4 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped |
-| Wall time | 199 s (`dotnet test` 3 m 15 s) | 142 s (2 m 19 s) |
-| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak | 4.7% average (about 1.5 cores), 16.8% peak |
-| SQL Server CPU | 0.7% average, 4.1% peak | 1.0% average, 5.7% peak |
-| Calls logged | 2,349, 487 s in all, median 76 ms | 2,394, 371 s in all, median 50 ms |
-| Near-misses | 0 (see below) | 0 |
-| Calls over 2 s | `Route_Note.AssertText` 8.2 s; `login-submit.Click` 2.0 to 2.8 s, seven times; `App_ErrorBanner.AssertVisible` 2.4 s; `Here_Board.AssertAttribute` 2.3 s | `Route_Note.AssertText` 4.6 s; `login-submit.Click` 2.9 s, twice |
+| Measure | Before (2026-10-22) | After F1-F3 (2026-10-22) | After H1 |
+| --- | --- | --- | --- |
+| Commits | `move` 5a69338e, `game` 20a87afb | `move` 40b70088, the six sleeps gone | `move` 840c7712, one-trip probe |
+| Machine | not quiet: about 70 `dotnet` processes, machine CPU 39% average, 61% peak | the same: 40% average, 68% peak | 32% average, 58% peak |
+| Tests | 87: 82 passed, 4 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped |
+| Wall time | 199 s (`dotnet test` 3 m 15 s) | 142 s (2 m 19 s) | 128 s (2 m 6 s) |
+| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak | 4.7% average (about 1.5 cores), 16.8% peak | 6.3% average, 20.6% peak |
+| SQL Server CPU | 0.7% average, 4.1% peak | 1.0% average, 5.7% peak | 1.0% average, 4.1% peak |
+| Calls logged | 2,349, 487 s in all, median 76 ms | 2,394, 371 s in all, median 50 ms | 2,387, 236 s in all, median 48 ms |
+| Near-misses | 0 (see below) | 0 | 0 |
+| Calls over 2 s | `Route_Note.AssertText` 8.2 s; `login-submit.Click` 2.0 to 2.8 s, seven times; `App_ErrorBanner.AssertVisible` 2.4 s; `Here_Board.AssertAttribute` 2.3 s | `Route_Note.AssertText` 4.6 s; `login-submit.Click` 2.9 s, twice | `Route_Note.AssertText` 5.5 s; `login-submit.Click` 4.7 s twice and 2.7 s; `registerSubmit.Click` 3.8 s |
 
 The after column is one run on the same busy machine. The wall time (minus 29%) and the median
 call (minus 34%) moved more than the test host's CPU did. The likely cause is the pause: a spinning
 pause starved the app's own threads in the same process, rather than showing up as CPU of its
 own. One run does not separate F1 from F3 (F3 removed about 10 s of fixed sleeping at most) or
 either from load; a second run of each would.
+
+After H1, total call time fell by another 36% (371 s to 236 s) and the wall time by 10%. The
+sign-in clicks still come close to their 5 s budget under the start-up rush (4.7 s twice). The
+probe does not touch that: the time is spent in Playwright's wait for the POST's navigation,
+which is H2's and H6's.
 
 **The four failures pass alone** (14 tests in their groups, 44 s, all green), so they are load:
 
@@ -70,6 +75,11 @@ on a machine this busy it includes other work.
 | `Brinell.Blazor.UITests` | 44 s | 41 s | 38 ms |
 | `Brinell.Samples.Todo.Web.UITests` | 26 s | 25 s | 64 ms |
 | `Brinell.Samples.Todo.Web.Uat` | 105 s | 106 s | 54 ms |
+
+After H1 (`move` 840c7712): Html 32 s, Blazor 39 s, Todo web UI tests 18 s, Todo web
+scenarios 82 s, all green; calls in all 41 s, 8 s, 12 s, 41 s (from 57, 7, 16, 61). The Todo
+suites gained most (a quarter of their wall time), since every scenario opens pages. Html's
+slowest calls are still each collection's first, about 2.8 s while the browsers start together.
 
 These suites barely poll (their calls pass on the first attempt), so the pause had little to cost them; within noise.
 
