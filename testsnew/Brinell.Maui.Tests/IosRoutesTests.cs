@@ -68,6 +68,34 @@ public class IosRoutesTests
         Assert.Equal(10, wheel.Steps);
     }
 
+    [Fact]
+    public void ScrollIntoView_OnASpentBudget_TriesOnlyTheFirstWay()
+    {
+        var tried = new List<int>();
+
+        var scrolled = AppiumMauiElement.TryInOrder(
+            [() => { tried.Add(1); return false; }, () => { tried.Add(2); return true; }],
+            budgetMs: 0,
+            () => 0);
+
+        Assert.False(scrolled);
+        Assert.Equal([1], tried);
+    }
+
+    [Fact]
+    public void ScrollIntoView_StopsAtTheFirstWayThatWorks()
+    {
+        var tried = new List<int>();
+
+        var scrolled = AppiumMauiElement.TryInOrder(
+            [() => { tried.Add(1); return false; }, () => { tried.Add(2); return true; }, () => { tried.Add(3); return true; }],
+            budgetMs: 1_000,
+            () => 0);
+
+        Assert.True(scrolled);
+        Assert.Equal([1, 2], tried);
+    }
+
     /// <summary>A wheel of <c>rows</c> rows standing at <c>at</c>.</summary>
     private sealed class FakeWheel(int rows, int at)
     {

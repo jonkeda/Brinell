@@ -668,7 +668,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
                 ScrollIntoViewAndroid(startTime, timeout);
                 break;
             case MauiPlatform.iOS:
-                ScrollIntoViewiOS();
+                ScrollIntoViewiOS((int)Math.Max(0, (timeout - (DateTime.UtcNow - startTime)).TotalMilliseconds));
                 break;
             default:
                 throw NotAMobilePlatform(nameof(ScrollIntoView));
@@ -712,32 +712,63 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
         }
     }
 
-    private void ScrollIntoViewiOS()
+    /// <summary>
+    /// XCUITest's own scroll to the element, then its scroll to visible, then one swipe down; each
+    /// after the first only while <paramref name="budgetMs"/> lasts. Not yet run on a simulator.
+    /// </summary>
+    private void ScrollIntoViewiOS(int budgetMs)
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        TryInOrder(
+            [
+                () => TryScript("mobile: scrollToElement", new() { ["elementId"] = _element.Id }),
+                () => TryScript("mobile: scroll", new() { ["elementId"] = _element.Id, ["toVisible"] = true }),
+                () => TryScript("mobile: scroll", new() { ["direction"] = "down" }),
+            ],
+            budgetMs,
+            () => clock.ElapsedMilliseconds);
+    }
+
+    /// <summary>
+    /// Runs <paramref name="strategies"/> in order until one succeeds. The first always runs, so a
+    /// spent budget does not mean "never tries"; the rest only while <paramref name="elapsedMs"/> is
+    /// under <paramref name="budgetMs"/>.
+    /// </summary>
+    /// <returns>Whether one succeeded.</returns>
+    internal static bool TryInOrder(IReadOnlyList<Func<bool>> strategies, int budgetMs, Func<long> elapsedMs)
+    {
+        for (var i = 0; i < strategies.Count; i++)
+        {
+            if (i > 0 && elapsedMs() >= budgetMs)
+            {
+                return false;
+            }
+
+            if (strategies[i]())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Runs one <c>mobile:</c> script; false when the driver refused it.</summary>
+    private bool TryScript(string script, Dictionary<string, object> arguments)
     {
         try
         {
-            _driver.Driver.ExecuteScript("mobile: scrollToElement",
-                new Dictionary<string, object> { { "elementId", _element.Id } });
-            return;
-        }
-        catch (Exception error) when (!AppiumErrors.IsGone(error)) { }
-
-        try
-        {
-            _driver.Driver.ExecuteScript("mobile: scroll",
-                new Dictionary<string, object> { { "elementId", _element.Id }, { "toVisible", true } });
+            _driver.Driver.ExecuteScript(script, arguments);
+            return true;
         }
         catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
-            try
-            {
-                _driver.Driver.ExecuteScript("mobile: scroll", 
-                    new Dictionary<string, object> { { "direction", "down" } });
-            }
-            catch (Exception fallbackError) when (!AppiumErrors.IsGone(fallbackError)) { }
+            // This way does not apply here; the next is tried, and the caller's poll sees whether
+            // the element came into view.
+            return false;
         }
     }
-    
+
     /// <summary>
     /// Waits until the element stops moving, so a caller acts on where it is rather than where it
     /// was.
@@ -1350,8 +1381,10 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
 
     /// <inheritdoc />
     /// <remarks>
-    /// Android and iOS: whether the drawer's items are in the tree. They leave it entirely while the
-    /// drawer is shut, so their presence is the drawer's state. Other platforms: null.
+    /// Android: whether the drawer's items are in the tree. They leave it entirely while the drawer
+    /// is shut, so their presence is the drawer's state. iOS: XCUITest keeps an off-screen view in
+    /// the tree with <c>visible="false"</c>, so the drawer is open when its table is found and
+    /// visible (not yet run on a simulator). Other platforms: null.
     /// </remarks>
     public bool? IsFlyoutOpen
     {
