@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Predicate waits: `WaitAttribute(name, until)` on every Html, MAUI and native Android control, and
+  `WaitText(until)` on Html's and native Android's (a MAUI control's text is its own). One call
+  within the budget, polled as `WaitText(expected)` is; when the predicate never held, the call
+  answers false and its log exit names the last value read. For a state a page object waited for
+  in a loop of its own (a count above zero, a value that changed).
 - `AfterScenario` on `UatScenarioTestBase` and `IUatScenarioLifecycle` (a no-op by default): runs after
   each scenario, passed or failed, once its recording is finished, so a suite whose scenarios share
   a fixture with other tests can put back what a scenario changed (sign out) without it showing in
@@ -397,6 +402,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- The poll's pause between attempts (`WaitHelper.Pause`) blocks with `Thread.Sleep` instead of
+  spinning, so parallel collections no longer keep a core busy each between attempts.
 - Gesture bridge targets may share an `AutomationId` (`.docs/contracts/bridge.md`).
   `BrinellUiaBridge.Register` adds instead of replacing; the host withdraws an element's own
   target before re-publishing it. A new meta verb `GetBounds` (4) is answered for every target,

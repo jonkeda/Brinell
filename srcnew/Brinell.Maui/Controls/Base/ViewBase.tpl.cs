@@ -210,12 +210,32 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
             return true;
         }
 
+        return RunWaitObserving(element => coreOperation(element) ? Observation.Done() : Observation.Pending(),
+            timeoutMs, caller ?? nameof(RunWaitWithElement));
+    }
+
+    /// <summary>
+    /// Polls <paramref name="until"/> on the value <paramref name="read"/> gives, until it holds.
+    /// The last value read is in the call's log when it never did.
+    /// </summary>
+    protected bool RunWaitForValue(Func<IMauiElement, string?> read, Func<string?, bool> until,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        ArgumentNullException.ThrowIfNull(until);
+        return RunWaitObserving(element =>
+            {
+                var value = read(element);
+                return until(value) ? Observation.Done() : Observation.Pending($"value '{value}'");
+            },
+            timeoutMs, caller ?? nameof(RunWaitForValue));
+    }
+
+    private bool RunWaitObserving(Func<IMauiElement, Observation> observe, int? timeoutMs, string caller)
+    {
         var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWaitWithElement);
         return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            if (Poller.Until(a => Attempt(a, ensureVisible: true,
-                    element => coreOperation(element) ? Observation.Done() : Observation.Pending()),
+            if (Poller.Until(a => Attempt(a, ensureVisible: true, observe),
                     attempt, PollingIntervalMs))
             {
                 return true;
@@ -790,6 +810,10 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
             return null;
         return element.GetAttribute(name);
     }
+
+    /// <summary>Waits until the attribute <paramref name="name"/> satisfies <paramref name="until"/>.</summary>
+    public bool WaitAttribute(string name, Func<string?, bool> until, int? timeoutMs = null)
+        => RunWaitForValue(element => GetAttributeCore(element, name), until, timeoutMs);
 
     #endregion
 
