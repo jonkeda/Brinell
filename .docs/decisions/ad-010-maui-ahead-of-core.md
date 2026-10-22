@@ -23,12 +23,27 @@ It names no element, driver or scope type, so it needed none of the interfaces:
   `RouteUnavailableException`;
 - `Brinell.Core.Scopes`: `ScopeReadiness`, `ScopeReadinessState`.
 
-MAUI, Html and native Android have no copies of these. What is still per stack: the interfaces, the
-control and scope bases, pages, collections and item keys, and Html's `BusySignal`.
+MAUI, Html and native Android have no copies of these.
+
+**The control layer's calls have moved down** (2026-10-22, the
+[review of 2026-10-21](../../.my/reviews/2026-10-21-review.md), C1). The three control bases
+(Html's `ControlBase`, MAUI's and native Android's `ViewBase`) had the same `Run*` family three
+times, and the copies had started to differ. Now `Brinell.Core.Calls.ControlCalls<TElement>` runs
+every call once for all of them: the attempt, the visibility check, the action once, the waits,
+reads and asserts. Each base is its `IControlHost<TElement>` (internal, like the leaf layer): its
+element lookup, scope probe, settings, and the few places a platform differs (MAUI's sweep and
+native Android's scroll to find, Playwright's own actionability, the scroll throttle's key). The
+bases keep the `Run*` names and signatures (R8) as one-line delegations, so the generator's
+output is unchanged. It still names no element interface: `TElement` is the stack's own.
+
+What is still per stack: the interfaces, the container, collection and item bases (MAUI's
+`ContainerObjectBase` with `ActOnceOnRoot`, Html's and native Android's containers), pages,
+collections and item keys, and Html's `BusySignal`.
 Expect those to differ from their Core counterparts, and from each other where the
 platform differs. Do not add adapters between them and Core: a bridge now would have to
 be undone in the move down.
 
 **Broken when:** an adapter is added between the MAUI, Html or native Android interfaces and Core's;
 Core is changed to match any stack's interfaces or bases ahead of their deliberate
-move-down; or a stack grows its own copy of a leaf-layer type again.
+move-down; or a stack grows its own copy of a leaf-layer type, or of a control call that
+`ControlCalls` runs, again.

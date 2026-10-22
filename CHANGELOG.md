@@ -415,6 +415,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- A control's calls run in Core, once for every stack (AD-010 amended): `ControlCalls<TElement>`
+  in `Brinell.Core.Calls`, with Html's `ControlBase` and MAUI's and native Android's `ViewBase` as
+  its `IControlHost`. The `Run*` members keep their names and signatures; the three bases lost
+  about 860 lines between them. Html and native Android now count a replaced element as MAUI did
+  (an observation after the first attempt carries the element's identity), so the near-miss rule's
+  three replacements apply there too.
 - `PlaywrightTestContext.ResetAppState` clears the current origin's `localStorage` and
   `sessionStorage` as well as the cookies, so a value a page kept does not carry from one scenario
   to the next. The browser context stays, with its HTTP cache: a new context per scenario was

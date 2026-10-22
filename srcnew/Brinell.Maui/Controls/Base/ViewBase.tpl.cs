@@ -9,7 +9,7 @@ namespace Brinell.Maui.Controls.Base;
 /// Controls find elements within their scope (page, container, or list item).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent method chaining.</typeparam>
-public abstract partial class ViewBase<TScope> : IElementObject<TScope>
+public abstract partial class ViewBase<TScope> : IElementObject<TScope>, IControlHost<IMauiElement>
     where TScope : IMauiScope<TScope>
 {
     private readonly IMauiScope<TScope> _mauiScope;
@@ -75,98 +75,51 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
 
     #region Calls
 
-    // Every public member is one call (call-model contract, R1): one log pair, one
-    // budget, one poll. Each attempt of the poll checks the page, finds the element again, makes
-    // one visibility check, and then reads, compares or confirms readiness. Nothing inside a call
-    // waits with a budget of its own (R2). An action runs once, after the poll (R0).
+    // Every public member is one call (.docs/contracts/call-model.md, R1), run by Core's
+    // ControlCalls: one log pair, one budget, one poll, an action once after it (R0). This control
+    // is its host: the element, the scope and the settings. The Run* names and signatures are the
+    // generator's (R8), so its output compiles on every stack.
 
-    private string PageName => Page?.GetType().Name ?? "Unknown";
-    private string ControlId => Locator.Value;
+    private ControlCalls<IMauiElement>? _calls;
 
-    private ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
-
-    private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
-
-    private int AnimationMs => Context.Timeouts.Animation;
+    private ControlCalls<IMauiElement> Calls => _calls ??= new(this);
 
     /// <summary>
     /// What is left of the running call's budget, for a wait below the call (a scroll); the
-    /// default wait outside a call. Nothing inside a call starts a budget of its own (R2, R3).
+    /// default wait outside a call.
     /// </summary>
     protected int CallRemainingMs => CallBudget.RemainingOr(DefaultTimeoutMs);
 
-    /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
-    private Exception Failure(AttemptContext attempt, string caller, int budgetMs)
-        => attempt.Log.ToException(
-            Locator,
-            budgetMs,
-            NotFound,
-            readiness => ScopeGate.NotReady(readiness, caller, $"control '{Locator}'", budgetMs));
+    Locator IControlHost<IMauiElement>.Locator => Locator;
 
-    /// <summary>
-    /// One attempt against the element: the scope chain, then a fresh lookup, then (optionally) one
-    /// visibility check, then <paramref name="body"/>.
-    /// </summary>
-    private Observation Attempt(AttemptContext attempt, bool ensureVisible, Func<IMauiElement, Observation> body)
-    {
-        if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
-        {
-            return notReady;
-        }
+    ControlCall IControlHost<IMauiElement>.NewCall()
+        => new(Context.Logger, Context.Name, Context.NearMiss, Page?.GetType().Name ?? "Unknown", Locator.Value);
 
-        var element = Locate(attempt);
-        if (element == null)
-        {
-            return Observation.Missing();
-        }
+    int IControlHost<IMauiElement>.DefaultTimeoutMs => DefaultTimeoutMs;
 
-        try
-        {
-            if (ensureVisible)
-            {
-                EnsureVisible(element, attempt);
-            }
+    int IControlHost<IMauiElement>.PollingIntervalMs => PollingIntervalMs;
 
-            var observation = body(element);
-            return observation.Kind == ObservationKind.Done && attempt.Log.Attempts == 0
-                ? observation
-                : observation with { InstanceKey = KeyOf(element) };
-        }
-        catch (StaleElementException error)
-        {
-            return Observation.Stale(error, null);
-        }
-        catch (ElementNotReadyException error)
-        {
-            return Observation.NotReady(error, KeyOf(element));
-        }
-        catch (AssertionException error)
-        {
-            return Observation.Mismatch(error, KeyOf(element));
-        }
-    }
+    int IControlHost<IMauiElement>.AnimationMs => Context.Timeouts.Animation;
 
-    /// <summary>The element's identity, or null when it is already gone.</summary>
-    private static string? KeyOf(IMauiElement element)
-    {
-        try
-        {
-            return element.InstanceKey;
-        }
-        catch (StaleElementException)
-        {
-            return null;
-        }
-    }
+    ScopeReadiness IControlHost<IMauiElement>.ProbeScope() => _mauiScope.ProbeReadiness();
 
-    /// <summary>Polls the page alone until it is ready, or fails the call.</summary>
-    private void AwaitScope(AttemptContext attempt, string caller, int budgetMs)
-    {
-        if (!Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness()) ?? Observation.Done(), attempt, PollingIntervalMs))
-        {
-            throw Failure(attempt, caller, budgetMs);
-        }
-    }
+    IMauiElement? IControlHost<IMauiElement>.Locate(AttemptContext attempt) => Locate(attempt);
+
+    IMauiElement? IControlHost<IMauiElement>.TryFind() => TryFindElement();
+
+    bool? IControlHost<IMauiElement>.IsVisible(IMauiElement element) => IsVisibleCore(element);
+
+    void IControlHost<IMauiElement>.ScrollIntoView(IMauiElement element, int timeoutMs) => element.ScrollIntoView(timeoutMs);
+
+    string IControlHost<IMauiElement>.ScrollKey(IMauiElement element) => element.InstanceKey ?? Locator.ToString();
+
+    string? IControlHost<IMauiElement>.InstanceKey(IMauiElement element) => element.InstanceKey;
+
+    bool IControlHost<IMauiElement>.ChecksVisibilityBeforeAction(IMauiElement element) => true;
+
+    void IControlHost<IMauiElement>.EnsureReadyForAction(IMauiElement element) => EnsureReadyForActionCore(element);
+
+    ElementNotFoundException IControlHost<IMauiElement>.NotFound() => NotFound();
 
     /// <summary>
     /// Runs an operation once as one call: waits for the page, then runs it, with one log pair.
@@ -176,43 +129,15 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
         TValue? value,
         Func<TResult> operation,
         int? timeoutMs = null)
-    {
-        var budget = Budget(timeoutMs);
-        return Call.Run(action, value?.ToString(), budget, AnimationMs, attempt =>
-        {
-            AwaitScope(attempt, action, budget);
-            return operation();
-        });
-    }
+        => Calls.Run(action, value?.ToString(), operation, timeoutMs);
 
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
-    {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWait);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness()) ?? (operation() ? Observation.Done() : Observation.Pending()),
-                    attempt, PollingIntervalMs))
-            {
-                return true;
-            }
-
-            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
-        }, succeeded: met => met);
-    }
+        => Calls.Wait(operation, timeoutMs, caller ?? nameof(RunWait));
 
     protected bool RunWaitWithElement<T>(T? expected, Func<IMauiElement, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        if (expected == null)
-        {
-            return true;
-        }
-
-        return RunWaitObserving(element => coreOperation(element) ? Observation.Done() : Observation.Pending(),
-            timeoutMs, caller ?? nameof(RunWaitWithElement));
-    }
+        => expected == null || Calls.WaitWithElement(coreOperation, timeoutMs, caller ?? nameof(RunWaitWithElement));
 
     /// <summary>
     /// Polls <paramref name="until"/> on the value <paramref name="read"/> gives, until it holds.
@@ -220,191 +145,63 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// </summary>
     protected bool RunWaitForValue(Func<IMauiElement, string?> read, Func<string?, bool> until,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        ArgumentNullException.ThrowIfNull(until);
-        return RunWaitObserving(element =>
-            {
-                var value = read(element);
-                return until(value) ? Observation.Done() : Observation.Pending($"value '{value}'");
-            },
-            timeoutMs, caller ?? nameof(RunWaitForValue));
-    }
+        => Calls.WaitForValue(read, until, timeoutMs, caller ?? nameof(RunWaitForValue));
 
-    private bool RunWaitObserving(Func<IMauiElement, Observation> observe, int? timeoutMs, string caller)
-    {
-        var budget = Budget(timeoutMs);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (Poller.Until(a => Attempt(a, ensureVisible: true, observe),
-                    attempt, PollingIntervalMs))
-            {
-                return true;
-            }
-
-            // A predicate that stayed false answers false; a call that never got to ask fails.
-            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
-        }, succeeded: met => met);
-    }
-
-    /// <summary>
-    /// Polls a predicate that is meaningful when the element is absent.
-    /// </summary>
-    protected bool RunWaitWithOptionalElement<T>(T? expected,
-        Func<IMauiElement?, bool> coreOperation,
+    /// <summary>Polls a predicate that is meaningful when the element is absent.</summary>
+    protected bool RunWaitWithOptionalElement<T>(T? expected, Func<IMauiElement?, bool> coreOperation,
         int? timeoutMs = null, Func<IMauiElement?>? resolve = null,
         [CallerMemberName] string? caller = null)
-    {
-        if (expected == null)
-        {
-            return true;
-        }
+        => expected == null || Calls.WaitWithOptionalElement(coreOperation, timeoutMs, caller ?? nameof(RunWaitWithOptionalElement), resolve);
 
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWaitWithOptionalElement);
-        var find = resolve ?? TryFindElement;
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness())
-                    ?? (coreOperation(find()) ? Observation.Done() : Observation.Pending()),
-                    attempt, PollingIntervalMs))
-            {
-                return true;
-            }
-
-            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
-        }, succeeded: met => met);
-    }
-
-    /// <summary>
-    /// Asserts a value that is meaningful when the element is absent.
-    /// </summary>
+    /// <summary>Asserts a value that is meaningful when the element is absent.</summary>
     protected TScope RunAssertWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
         string? message = null, int? timeoutMs = null, Func<IMauiElement?>? resolve = null,
         [CallerMemberName] string? caller = null)
     {
-        if (expected == null)
+        if (expected != null)
         {
-            return ContainingScope;
+            Calls.AssertWithOptionalElement(expected, getActual, compare, message, timeoutMs,
+                caller ?? nameof(RunAssertWithOptionalElement), resolve);
         }
 
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunAssertWithOptionalElement);
-        var find = resolve ?? TryFindElement;
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (!Poller.Until(_ =>
-                {
-                    if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
-                    {
-                        return notReady;
-                    }
-
-                    var actual = getActual(find());
-                    return compare(actual, expected)
-                        ? Observation.Done()
-                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
-                }, attempt, PollingIntervalMs))
-            {
-                throw Failure(attempt, caller, budget);
-            }
-
-            return ContainingScope;
-        });
+        return ContainingScope;
     }
 
-    /// <summary>
-    /// Runs an operation as one call: waits for the page, then runs it once.
-    /// </summary>
+    /// <summary>Runs an operation as one call: waits for the scope, then runs it once.</summary>
     protected TScope RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunDo);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
+        Calls.Run(caller ?? nameof(RunDo), null, () =>
         {
-            AwaitScope(attempt, caller, budget);
             operation();
-            return ContainingScope;
-        });
+            return true;
+        }, timeoutMs);
+        return ContainingScope;
     }
 
-    /// <summary>
-    /// Whether an action waits for the element to be visible before it runs.
-    /// </summary>
+    /// <summary>Whether an action waits for the element to be visible before it runs.</summary>
     protected virtual bool RequiresVisibilityForAction => true;
 
-    /// <summary>
-    /// An action as one call: polls until the control is ready to be acted on, then acts once.
-    /// </summary>
+    /// <summary>An action as one call: polls until the control is ready to be acted on, then acts once.</summary>
     protected TScope RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunDoWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            ActOnce(attempt, RequiresVisibilityForAction, caller, budget, coreOperation);
-            return ContainingScope;
-        });
+        Calls.Act(coreOperation, RequiresVisibilityForAction, timeoutMs, caller ?? nameof(RunDoWithElement));
+        return ContainingScope;
     }
 
     /// <summary>
-    /// Resolves the control, then runs <paramref name="act"/> on it: once, unless it reports that
-    /// it did not act.
+    /// Waits, inside an action, for the effect of what the action has already done. Never repeats
+    /// the action (R0).
     /// </summary>
-    private void ActOnce(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs,
-        Action<IMauiElement> act)
-    {
-        while (true)
-        {
-            var element = ResolveReady(attempt, ensureVisible, caller, budgetMs);
-            try
-            {
-                act(element);
-                return;
-            }
-            catch (ElementNotReadyException error) when (attempt.Deadline.RemainingMs > 0)
-            {
-                attempt.Log.Add(Observation.NotReady(error, null), attempt.Deadline.ElapsedMs);
-                WaitHelper.Pause(Math.Max(1, Math.Min(PollingIntervalMs, attempt.Deadline.RemainingMs)));
-            }
-        }
-    }
-
-    /// <summary>
-    /// Polls until the control is ready to be acted on, and returns its element.
-    /// </summary>
-    private IMauiElement ResolveReady(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs)
-    {
-        IMauiElement? ready = null;
-        if (!Poller.Until(a => Attempt(a, ensureVisible, element =>
-            {
-                EnsureReadyForActionCore(element);
-                ready = element;
-                return Observation.Done();
-            }), attempt, PollingIntervalMs))
-        {
-            throw Failure(attempt, caller, budgetMs);
-        }
-
-        return ready!;
-    }
-
-    /// <summary>
-    /// Waits, inside a Core method, for the effect of an action the method has already done.
-    /// </summary>
-    /// <param name="read">Reads the value, typically a Core query on the held element.</param>
-    /// <param name="done">Whether the value is the one waited for.</param>
-    /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
-    /// <returns>How the wait ended, with the last value and error.</returns>
     protected Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
-        => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
+        => Calls.Confirm(read, done, timeoutMs);
 
     /// <summary>
-    /// Checks any additional readiness this control requires before it can be acted on.
+    /// Checks any readiness this control needs before it is acted on. Throw
+    /// <see cref="ElementNotReadyException"/> when it is not ready; the call asks again.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
     protected virtual void EnsureReadyForActionCore(IMauiElement element)
     {
     }
@@ -412,118 +209,50 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     protected TScope RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
          int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (value == null)
+        if (value != null)
         {
-            return ContainingScope;
+            Calls.Act(coreOperation, ensureVisible: true, timeoutMs, caller ?? nameof(RunSetWithElement), value.ToString());
         }
 
-        // Same split as RunDoWithElement: setting a value is an action, not a query, so it
-        // must not be replayed by the readiness retry.
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunSetWithElement);
-        return Call.Run(caller, value.ToString(), budget, AnimationMs, attempt =>
-        {
-            ActOnce(attempt, ensureVisible: true, caller, budget, coreOperation);
-            return ContainingScope;
-        });
+        return ContainingScope;
     }
 
     /// <summary>
-    /// Reads a value that is meaningful when the element is absent: once, with the element
-    /// resolved optionally.
+    /// Reads a value that is meaningful when the element is absent: once, after the scope is
+    /// ready, with the element resolved optionally.
     /// </summary>
     protected T? RunGetWithOptionalElement<T>(Func<IMauiElement?, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-        => Run(caller ?? nameof(RunGetWithOptionalElement), (object?)null,
-            () => coreOperation(TryFindElement()), timeoutMs);
+        => Calls.GetWithOptionalElement(coreOperation, timeoutMs, caller ?? nameof(RunGetWithOptionalElement));
 
     protected T? RunGetWithElement<T>(Func<IMauiElement, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunGetWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            var value = default(T);
-            if (!Poller.Until(a => Attempt(a, ensureVisible: true, element =>
-                {
-                    value = coreOperation(element);
-                    return Observation.Done();
-                }), attempt, PollingIntervalMs))
-            {
-                throw Failure(attempt, caller, budget);
-            }
+        => Calls.GetWithElement(coreOperation, timeoutMs, caller ?? nameof(RunGetWithElement));
 
-            return value;
-        });
-    }
-
-    /// <summary>
-    /// Run assertion with custom comparison function.
-    /// </summary>
+    /// <summary>Run assertion with custom comparison function.</summary>
     protected TScope RunAssert<T>(T? expected, Func<T?> getActual,
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (expected == null)
+        if (expected != null)
         {
-            return ContainingScope;
+            Calls.Assert(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssert));
         }
 
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunAssert);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (!Poller.Until(_ =>
-                {
-                    if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
-                    {
-                        return notReady;
-                    }
-
-                    var actual = getActual();
-                    return compare(actual, expected)
-                        ? Observation.Done()
-                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
-                }, attempt, PollingIntervalMs))
-            {
-                throw Failure(attempt, caller, budget);
-            }
-
-            return ContainingScope;
-        });
+        return ContainingScope;
     }
 
-    /// <summary>
-    /// An assertion as one call: finds the element again on every attempt, then compares.
-    /// </summary>
+    /// <summary>An assertion as one call: finds the element again on every attempt, then compares.</summary>
     protected TScope RunAssertWithElement<T>(T? expected, Func<IMauiElement, T?> getActual,
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (expected == null)
+        if (expected != null)
         {
-            return ContainingScope;
+            Calls.AssertWithElement(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssertWithElement));
         }
 
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunAssertWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, attempt =>
-        {
-            if (!Poller.Until(a => Attempt(a, ensureVisible: true, element =>
-                {
-                    var actual = getActual(element);
-                    return compare(actual, expected)
-                        ? Observation.Done()
-                        : Observation.Mismatch(
-                            new AssertionException(message ?? "Assert exception", expected, actual), null);
-                }), attempt, PollingIntervalMs))
-            {
-                throw Failure(attempt, caller, budget);
-            }
-
-            return ContainingScope;
-        });
+        return ContainingScope;
     }
 
     #endregion
@@ -717,30 +446,6 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
             IsVisibleAfterScrollCore, (actual, expected1) => actual == expected1,
             message ?? $"Expected VisibleAfterScroll to be '{expected}'. Locator: {Locator}", timeoutMs,
             Resolver(ScrollLookup.Once));
-
-    /// <summary>
-    /// One attempt at "visible": visible now, or scroll it into view (throttled) and look once
-    /// more. Throws <see cref="ElementNotReadyException"/> when it is still not visible.
-    /// </summary>
-    private void EnsureVisible(IMauiElement element, AttemptContext attempt)
-    {
-        if (IsVisibleCore(element) == true)
-        {
-            return;
-        }
-
-        if (attempt.MayScrollIntoView(KeyOf(element) ?? Locator.ToString()))
-        {
-            element.ScrollIntoView(attempt.Deadline.RemainingMs);
-
-            if (IsVisibleCore(element) == true)
-            {
-                return;
-            }
-        }
-
-        throw new ElementNotReadyException(Locator, NotReadyReason.NotVisible);
-    }
 
     #endregion
 
