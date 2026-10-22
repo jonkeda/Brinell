@@ -273,9 +273,10 @@ public abstract class MauiTestFixtureBase : IDisposable
     protected virtual void ConfigureiOSOptions(MauiDriverOptions options)
     {
         var serverUri = Configuration?.Maui?.ServerUri ?? "http://127.0.0.1:4723";
-        var deviceName = Configuration?.Maui?.DeviceName ?? "iPhone 15";
-        var platformVersion = Configuration?.Maui?.PlatformVersion ?? "17.0";
-        
+        var (deviceName, platformVersion) =
+            MauiDriverFactory.IosDevice(Configuration?.Maui?.DeviceName, Configuration?.Maui?.PlatformVersion);
+
+
         options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
         options.PlatformVersion = platformVersion;

@@ -44,6 +44,14 @@ public class SessionDefaultsTests
     }
 
     [Fact]
+    public void iOS_WithNoDeviceNamed_AsksForTheRunbooksSimulator()
+        => Assert.Equal(("iPhone 17 Pro Max", "26.5"), MauiDriverFactory.IosDevice(null, null));
+
+    [Fact]
+    public void iOS_ASuitesOwnDevice_OverridesTheDefault()
+        => Assert.Equal(("iPhone 16", "18.4"), MauiDriverFactory.IosDevice("iPhone 16", "18.4"));
+
+    [Fact]
     public void Windows_HasNone()
         => Assert.Empty(MauiDriverFactory.SessionCapabilities(new MauiDriverOptions { Platform = MauiPlatform.Windows }));
 }

@@ -212,6 +212,13 @@ public static class MauiDriverFactory
         _ => new Dictionary<string, object>(),
     };
 
+    /// <summary>
+    /// The simulator an iOS session asks for when the suite names none: the one
+    /// <c>docs/run/maui-ios.md</c> runs on. The fixture and the factory both read it.
+    /// </summary>
+    internal static (string DeviceName, string PlatformVersion) IosDevice(string? deviceName, string? platformVersion)
+        => (deviceName ?? "iPhone 17 Pro Max", platformVersion ?? "26.5");
+
     /// <summary>The capabilities a session starts with: the platform's defaults, then the suite's own over them.</summary>
     internal static IReadOnlyDictionary<string, object> SessionCapabilities(MauiDriverOptions options)
     {
@@ -246,8 +253,9 @@ public static class MauiDriverFactory
             case MauiPlatform.iOS:
                 platformNameProp?.SetValue(appiumOptions, "iOS");
                 automationNameProp?.SetValue(appiumOptions, "XCUITest");
-                deviceNameProp?.SetValue(appiumOptions, options.DeviceName ?? "iPhone 15");
-                platformVersionProp?.SetValue(appiumOptions, options.PlatformVersion ?? "17.0");
+                var (deviceName, platformVersion) = IosDevice(options.DeviceName, options.PlatformVersion);
+                deviceNameProp?.SetValue(appiumOptions, deviceName);
+                platformVersionProp?.SetValue(appiumOptions, platformVersion);
                 appProp?.SetValue(appiumOptions, options.AppPath);
                 break;
         }
