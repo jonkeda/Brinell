@@ -192,3 +192,20 @@ calls, 1,067 s in all, mean 549 ms; `WaitLoaded` 625 times, mean 293 ms.
 the call's budget, the review's M3, now measured. `TestTimePicker.SetTime` passes at 117 to 125%
 with its lookup done in tens of milliseconds, so the time is in the action and its confirmation.
 
+## M2 and M3 on the emulator
+
+**M2** (`move` 4505a4c7): the UiAutomator2 server killed 40 s into a run of five control classes
+(29 tests), twice. The test it hit failed at once with `AppUnavailableException` ("the Appium
+session has ended", from `AppiumErrors.Live`), the next opened a new session (about 20 s) and the
+rest passed: 28 of 29 the second time. The first time the test after the restart also failed (its
+page not ready within 5 s), then 13 passed; not seen again.
+
+**M3, not committed.** One scroll routine (`AppiumMauiDriver.ScrollUntil`) for scroll-to-find
+and an element's scroll into view, under the call's budget, with one lookup a swipe (the id and
+the description in one `UiSelector` query) and swipes of 90% instead of 70%. On `ScrollTests` and
+`TimePickerTests` (17): the bottom button's click went from 6.7 s to 5.1 s and the top label after
+it from 8.2 s to 6.6 s, but `MiddleButton_Click_UpdatesStatus` fails: from the middle the search
+goes down first, reaches the end, comes back up, and is out of its 5 s before the top label. A
+swipe with its lookup costs about a second on this emulator, and the page's worst paths need 6 to
+7 s of scrolling. Before M3 they passed by overrunning the budget (R2). Waiting on a decision.
+
