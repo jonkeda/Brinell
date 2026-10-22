@@ -8,10 +8,11 @@ that checks them: what to start, which tests prove each route, and what to chang
 
 | Route | Where | What it assumes |
 | --- | --- | --- |
-| At the navigation root | `AppiumMauiDriver.IsAtNavigationRoot` | a pushed page shows a button named `BackButton` |
-| Picker, date and time | `AppiumMauiElement.Wheels.cs` | tapping the field shows `XCUIElementTypePickerWheel`s and a `Done` button; a date's wheels read a month name, a day and a 4-digit year; a time's an hour, a minute and AM/PM |
+| At the navigation root | `AppiumMauiDriver.IsAtNavigationRoot` | a pushed page's navigation bar starts with a button in its leading third that is not the flyout opener (`OK`, `Menu`, `FlyoutIcon`); its name is not read, since UIKit names it after the previous page or `Back` (P1) |
+| Picker, date and time | `AppiumMauiElement.Wheels.cs` | tapping the field shows `XCUIElementTypePickerWheel`s and a `Done` button; a date's wheels read a month name, a day and a 4-digit year; a time's an hour, a minute and AM/PM; a picker's index is reached row by row from the first, within the call's budget (P3) |
 | Alerts | `AppiumMauiDriver.ReadIosAlert` | an `XCUIElementTypeAlert`, title then message as static texts, the cancel the first button |
-| Shell's tabs and flyout | `AppiumMauiDriver.IosShellChrome`, `AppiumMauiElement.OpenFlyout` | tabs are buttons in an `XCUIElementTypeTabBar`; the flyout is a table of cells; its opener is a navigation-bar button named `OK`, `Menu` or `FlyoutIcon`; a tap at the screen's right edge closes it |
+| Shell's tabs and flyout | `AppiumMauiDriver.IosShellChrome`, `AppiumMauiElement.OpenFlyout` | tabs are buttons in an `XCUIElementTypeTabBar`; the flyout is a table of cells, open when that table's `visible` is `true` (P2); its opener is a navigation-bar button named `OK`, `Menu` or `FlyoutIcon`; a tap at the screen's right edge closes it |
+| Scroll into view | `AppiumMauiElement.ScrollIntoViewiOS` | `mobile: scrollToElement`, then `mobile: scroll` to visible, then one swipe down, each after the first only while the call's budget lasts (P5) |
 | IndicatorView | `IndicatorView.ReadPageControl` | a `XCUIElementTypePageIndicator` whose value reads `page 2 of 5` |
 | Session settings | `MauiDriverFactory.SessionDefaults` (2026-10-22, M1) | `waitForQuiescence` false and `settings[waitForIdleTimeout]` 1 (seconds on XCUITest) keep an animating page from costing each command its 10 s; check a command on a page with an ActivityIndicator returns at once |
 | The Shell app | `samples/Brinell.Samples.Maui.ShellApp` (`net10.0-ios`), `ShellFixture.GetDefaultAppPath` | built like the hub app, into `bin/Debug/net10.0-ios/iossimulator-<arch>/` |
