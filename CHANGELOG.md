@@ -415,9 +415,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
-- `PlaywrightTestContext.ResetAppState` opens a new browser context and page on the same browser,
-  so cookies, `localStorage` and a Blazor circuit do not carry from one scenario to the next; the
-  screen size carries. A context over a page it was handed (`ForPage`) still clears cookies only.
+- `PlaywrightTestContext.ResetAppState` clears the current origin's `localStorage` and
+  `sessionStorage` as well as the cookies, so a value a page kept does not carry from one scenario
+  to the next. The browser context stays, with its HTTP cache: a new context per scenario was
+  tried and made Tomorrow's run a fifth slower, every script and font loaded cold.
 - Html actions on Playwright leave visibility to Playwright's actionability wait instead of
   checking it first (one round trip fewer per action). A Playwright timeout before the action
   ran is `ElementNotReadyException` naming the control and Playwright's reason (not visible, not

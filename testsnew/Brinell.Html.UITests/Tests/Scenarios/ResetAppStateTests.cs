@@ -3,8 +3,9 @@ using Microsoft.Playwright;
 namespace Brinell.Html.UITests.Tests.Scenarios;
 
 /// <summary>
-/// <c>ResetAppState</c> gives the next scenario a new visitor: a new browser context on the same
-/// browser, so neither cookies nor <c>localStorage</c> carry over (a tab a page remembered).
+/// <c>ResetAppState</c> gives the next scenario a new visitor: neither cookies nor the origin's
+/// <c>localStorage</c> and <c>sessionStorage</c> carry over (a tab a page remembered), while the
+/// page, its cache and the screen size stay.
 /// </summary>
 public sealed class ResetAppStateTests : IAsyncLifetime
 {
@@ -38,16 +39,16 @@ public sealed class ResetAppStateTests : IAsyncLifetime
     public async Task ResetAppState_ClearsStorageAndCookies()
     {
         var page = await OpenOriginAsync();
-        await page.EvaluateAsync("() => { localStorage.setItem('things.tab', 'Models'); document.cookie = 'kept=1'; }");
+        await page.EvaluateAsync("() => { localStorage.setItem('things.tab', 'Models'); sessionStorage.setItem('step', '2'); document.cookie = 'kept=1'; }");
         Assert.Equal("Models", await page.EvaluateAsync<string?>("() => localStorage.getItem('things.tab')"));
 
         _context!.ResetAppState();
 
-        var fresh = await OpenOriginAsync();
-        Assert.NotSame(page, fresh);
-        Assert.Null(await fresh.EvaluateAsync<string?>("() => localStorage.getItem('things.tab')"));
-        Assert.Equal(string.Empty, await fresh.EvaluateAsync<string>("() => document.cookie"));
-        Assert.True(page.IsClosed);
+        await page.ReloadAsync();
+        Assert.Same(page, _context.InternalPage);
+        Assert.Null(await page.EvaluateAsync<string?>("() => localStorage.getItem('things.tab')"));
+        Assert.Null(await page.EvaluateAsync<string?>("() => sessionStorage.getItem('step')"));
+        Assert.Equal(string.Empty, await page.EvaluateAsync<string>("() => document.cookie"));
     }
 
     [Fact]
