@@ -151,6 +151,14 @@ of 181 twice; Html's UI suite 27 of 27 three times (one run before them listed t
 same moment, its summary not kept); Tomorrow's UI suite 86 of 86 in 77 s (1 m 14 s), the fastest
 run of the day, within the machine's spread.
 
+## C2 to C4
+
+`move` 9112ad95, one run each, all green: Tomorrow's UI suite 86 of 86 in 86 s (1 m 22 s);
+Html 30 s (27), Blazor 39 s (35), Todo web UI tests 18 s (10, 1 skipped), Todo web scenarios
+82 s (35). Unit suites: Core 49, UAT 222, Html 72, MAUI 181, Narrator 74, Recording 31. FlaUI's
+bounded waits and the MAUI recorded-interaction test need a Windows MAUI head or the emulator and
+were not run.
+
 ## B3
 
 Not run yet.
