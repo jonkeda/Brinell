@@ -62,18 +62,43 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         return uri.LocalPath == Url;
     }
 
-    /// <summary>Whether the page is loaded now: its URL, and the browser idle. The override point.</summary>
+    /// <summary>The probe of the attempt <see cref="ProbeReadiness"/> is making, which <see cref="IsLoaded"/> reads.</summary>
+    private PageProbe? _probe;
+
+    /// <summary>
+    /// Whether the page is loaded now: its URL, and the document loaded (one look, when the
+    /// context answers <see cref="IHtmlPageProbe"/>; the browser idle otherwise). The override point.
+    /// </summary>
     public virtual bool IsLoaded()
     {
-        return CompareUrl()
-            && _context.IsIdle();
+        if (!CompareUrl())
+        {
+            return false;
+        }
+
+        var probe = _probe ?? (_context as IHtmlPageProbe)?.ProbePage(BusyAttribute);
+        return probe?.IsComplete ?? _context.IsIdle();
     }
 
     /// <summary>
     /// One probe of the page (design 7.2): loaded, then the busy signal. A page has no parent to
-    /// ask.
+    /// ask. Where the context answers <see cref="IHtmlPageProbe"/>, the load state and the busy
+    /// attribute come from one round trip.
     /// </summary>
     public virtual ScopeReadiness ProbeReadiness()
+    {
+        _probe = (_context as IHtmlPageProbe)?.ProbePage(BusyAttribute);
+        try
+        {
+            return ProbeReadinessOnce();
+        }
+        finally
+        {
+            _probe = null;
+        }
+    }
+
+    private ScopeReadiness ProbeReadinessOnce()
     {
         if (!IsLoaded())
         {
@@ -85,7 +110,7 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
             return ScopeReadiness.Ready(Name);
         }
 
-        var value = _context.TryFindElement(Body)?.GetAttribute(BusyAttribute);
+        var value = _probe is { } probe ? probe.Busy : _context.TryFindElement(Body)?.GetAttribute(BusyAttribute);
         return value switch
         {
             null when BusySignal == BusySignal.Required

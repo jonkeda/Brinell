@@ -106,6 +106,8 @@ public class CallModelPinTests
         var page = new Mock<IPage>();
         page.Setup(p => p.Locator(It.IsAny<string>(), It.IsAny<PageLocatorOptions?>())).Returns(root.Object);
         page.Setup(p => p.Url).Returns("http://localhost/pin");
+        page.Setup(p => p.EvaluateAsync<string>(It.IsAny<string>(), It.IsAny<object?>()))
+            .ReturnsAsync("""{"ready":"complete","body":true,"busy":null}""");
         return page;
     }
 

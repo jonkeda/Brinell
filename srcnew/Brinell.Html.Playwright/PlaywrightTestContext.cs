@@ -11,7 +11,7 @@ using Microsoft.Playwright;
 
 namespace Brinell.Html.Playwright;
 
-public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable, Brinell.Core.Recording.IRecordable
+public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly IPage _page;
     private readonly IFrame? _frame;
@@ -181,6 +181,8 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable, 
     public void GoForward() => _driver.GoForward();
 
     public bool IsIdle() => _driver.IsIdle();
+
+    public PageProbe ProbePage(string busyAttribute) => _driver.ProbePage(busyAttribute);
 
     public void Refresh() => _driver.Reload();
 

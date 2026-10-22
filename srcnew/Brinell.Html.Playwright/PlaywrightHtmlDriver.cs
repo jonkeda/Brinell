@@ -48,6 +48,32 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
         }
     }
 
+    /// <summary>
+    /// The document's load state and the body's <paramref name="busyAttribute"/>, from one
+    /// evaluation in the page (or its frame). A document a navigation is replacing answers
+    /// <see cref="PageProbe.Navigating"/>.
+    /// </summary>
+    public PageProbe ProbePage(string busyAttribute)
+    {
+        const string script = "a => JSON.stringify({ ready: document.readyState, body: document.body !== null, busy: document.body?.getAttribute(a) ?? null })";
+        try
+        {
+            var json = Live(() => (_frame != null
+                    ? _frame.EvaluateAsync<string>(script, busyAttribute)
+                    : _page.EvaluateAsync<string>(script, busyAttribute))
+                .GetAwaiter().GetResult());
+            using var answer = System.Text.Json.JsonDocument.Parse(json);
+            var root = answer.RootElement;
+            var busy = root.GetProperty("busy");
+            return new PageProbe(root.GetProperty("ready").GetString(), root.GetProperty("body").GetBoolean(),
+                busy.ValueKind == System.Text.Json.JsonValueKind.Null ? null : busy.GetString());
+        }
+        catch (Brinell.Core.Exceptions.StaleElementException)
+        {
+            return PageProbe.Navigating;
+        }
+    }
+
     /// <inheritdoc />
     public IReadOnlyList<IHtmlElement> FindElements(Locator locator) => Live<IReadOnlyList<IHtmlElement>>(() =>
     {

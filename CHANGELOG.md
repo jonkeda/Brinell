@@ -402,6 +402,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- An Html page's readiness probe is one round trip on Playwright: `IHtmlPageProbe.ProbePage` reads
+  `document.readyState` and the body's `data-busy` in one evaluation, and `HtmlPageObjectBase`
+  uses it when its context answers it. A page is loaded when its URL matches and the document is
+  `complete`; the browser's network idle (a 10 ms wait that threw while a page loaded) is no
+  longer asked. Contexts without the probe (bUnit's, mocks) read idle and the body as before.
 - The poll's pause between attempts (`WaitHelper.Pause`) blocks with `Thread.Sleep` instead of
   spinning, so parallel collections no longer keep a core busy each between attempts.
 - Gesture bridge targets may share an `AutomationId` (`.docs/contracts/bridge.md`).
