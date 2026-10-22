@@ -178,9 +178,51 @@ public static class MauiDriverFactory
         }
     }
     
-    private const string AndroidWaitForIdle = "settings[waitForIdleTimeout]";
+    /// <summary>
+    /// The session settings every MAUI suite on <paramref name="platform"/> starts with, in one
+    /// place; a suite's own <see cref="MauiDriverOptions.AdditionalCapabilities"/> override them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Android.</b> UiAutomator2 waits for the app to be idle before every command, up to 10 s,
+    /// and a page with anything moving (a playing MediaElement, an ActivityIndicator) never is:
+    /// each lookup there took 11 s. 100 ms bounds it (0 crashed the UiAutomator2 server in one
+    /// night's runs, 100 was clean); Brinell waits for state itself. Window animations off, so a
+    /// fresh emulator without the runbook's <c>adb shell settings</c> does not tap during a
+    /// transition.
+    /// </para>
+    /// <para>
+    /// <b>iOS</b>, not yet run on a simulator (<c>.my/ios/README.md</c>): XCUITest waits for the
+    /// app to be quiescent before each command by default, the same trap on an animating page, so
+    /// quiescence is off and its idle wait (in seconds there) is bounded to one.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyDictionary<string, object> SessionDefaults(MauiPlatform platform) => platform switch
+    {
+        MauiPlatform.Android => new Dictionary<string, object>
+        {
+            ["settings[waitForIdleTimeout]"] = 100,
+            ["disableWindowAnimation"] = true,
+        },
+        MauiPlatform.iOS => new Dictionary<string, object>
+        {
+            ["waitForQuiescence"] = false,
+            ["settings[waitForIdleTimeout]"] = 1,
+        },
+        _ => new Dictionary<string, object>(),
+    };
 
-    private const int AndroidIdleWaitMs = 500;
+    /// <summary>The capabilities a session starts with: the platform's defaults, then the suite's own over them.</summary>
+    internal static IReadOnlyDictionary<string, object> SessionCapabilities(MauiDriverOptions options)
+    {
+        var capabilities = new Dictionary<string, object>(SessionDefaults(options.Platform));
+        foreach (var (name, value) in options.AdditionalCapabilities)
+        {
+            capabilities[name] = value;
+        }
+
+        return capabilities;
+    }
 
     private static object BuildAppiumOptionsReflection(MauiDriverOptions options, Type appiumOptionsType)
     {
@@ -213,17 +255,7 @@ public static class MauiDriverFactory
         var addCapMethod = appiumOptionsType.GetMethod("AddAdditionalAppiumOption");
         if (addCapMethod != null)
         {
-            // UiAutomator2 waits up to 10 s for the app to be idle before every command, and a page
-            // with anything moving - a playing MediaElement, an ActivityIndicator - never is: each
-            // lookup there took 11 s. The native Android driver bounds it the same way; Brinell
-            // waits for state itself.
-            if (options.Platform == MauiPlatform.Android
-                && !options.AdditionalCapabilities.ContainsKey(AndroidWaitForIdle))
-            {
-                addCapMethod.Invoke(appiumOptions, [AndroidWaitForIdle, AndroidIdleWaitMs]);
-            }
-
-            foreach (var cap in options.AdditionalCapabilities)
+            foreach (var cap in SessionCapabilities(options))
             {
                 addCapMethod.Invoke(appiumOptions, [cap.Key, cap.Value]);
             }

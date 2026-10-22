@@ -152,10 +152,8 @@ public class ShellFixture : MauiTestFixtureBase
         // MAUI hashes the activity name, so wait on the package instead.
         options.AdditionalCapabilities["appWaitPackage"] = "com.brinell.samples.shell";
 
-        // Both settings are carried over from the other fixture, where they were measured:
-        // a MAUI app that animates may never report idle, and MAUI does not bump versionCode
-        // between builds, so without the reinstall a run can silently test the previous one.
-        options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
+        // MAUI does not bump versionCode between builds, so without the reinstall a run can
+        // silently test the previous one. The idle wait is the factory's (SessionDefaults).
         options.AdditionalCapabilities["enforceAppInstall"] = !TestConstants.AppPreinstalled;
     }
 }

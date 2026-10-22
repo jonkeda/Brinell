@@ -72,8 +72,7 @@ public static class TodoMauiLaunch
         // MAUI hashes the activity name, so wait on the package and accept whatever it launches.
         options.AdditionalCapabilities["appWaitPackage"] = AndroidPackage;
 
-        // A MAUI app that animates may never report idle; don't pay 10 s per command for it.
-        options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
+        // The idle wait and window animations are Brinell's defaults (MauiDriverFactory).
 
         // MAUI does not bump versionCode between builds: reinstall, or a run tests the old build.
         // The reinstall also clears the app's data, which is what gives each session an empty database.

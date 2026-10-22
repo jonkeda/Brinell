@@ -516,9 +516,7 @@ public class MauiFixture : MauiTestFixtureBase
         // lets UiAutomator2 accept whatever activity that package launches.
         options.AdditionalCapabilities["appWaitPackage"] = "com.brinell.samples.maui";
 
-        // UiAutomator2 waits for the app to report idle before each command, defaulting to
-        // 10 s. A MAUI app that animates may never report idle, so commands pay that wait.
-        options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
+        // The idle wait and window animations are the factory's (MauiDriverFactory.SessionDefaults).
 
         // Reinstall even when the installed APK reports the same version: MAUI does not bump
         // versionCode between builds, so without this a run can silently test the previous one.

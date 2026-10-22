@@ -1,0 +1,49 @@
+using Brinell.Maui.Configuration;
+using Brinell.Maui.Enums;
+
+namespace Brinell.Maui.Tests;
+
+/// <summary>
+/// The session settings are the factory's: every suite starts with the platform's defaults, and
+/// a suite's own capability overrides one.
+/// </summary>
+public class SessionDefaultsTests
+{
+    [Fact]
+    public void Android_BoundsTheIdleWait_AndTurnsWindowAnimationsOff()
+    {
+        var capabilities = MauiDriverFactory.SessionCapabilities(new MauiDriverOptions { Platform = MauiPlatform.Android });
+
+        Assert.Equal(100, capabilities["settings[waitForIdleTimeout]"]);
+        Assert.Equal(true, capabilities["disableWindowAnimation"]);
+        Assert.False(capabilities.ContainsKey("waitForQuiescence"));
+    }
+
+    [Fact]
+    public void iOS_TurnsQuiescenceOff_AndBoundsItsIdleWait()
+    {
+        var capabilities = MauiDriverFactory.SessionCapabilities(new MauiDriverOptions { Platform = MauiPlatform.iOS });
+
+        Assert.Equal(false, capabilities["waitForQuiescence"]);
+        Assert.Equal(1, capabilities["settings[waitForIdleTimeout]"]);
+        Assert.False(capabilities.ContainsKey("disableWindowAnimation"));
+    }
+
+    [Fact]
+    public void ASuitesOwnCapability_OverridesTheDefault()
+    {
+        var options = new MauiDriverOptions { Platform = MauiPlatform.Android };
+        options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 250;
+        options.AdditionalCapabilities["appWaitPackage"] = "com.example";
+
+        var capabilities = MauiDriverFactory.SessionCapabilities(options);
+
+        Assert.Equal(250, capabilities["settings[waitForIdleTimeout]"]);
+        Assert.Equal("com.example", capabilities["appWaitPackage"]);
+        Assert.Equal(true, capabilities["disableWindowAnimation"]);
+    }
+
+    [Fact]
+    public void Windows_HasNone()
+        => Assert.Empty(MauiDriverFactory.SessionCapabilities(new MauiDriverOptions { Platform = MauiPlatform.Windows }));
+}

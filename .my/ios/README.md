@@ -13,6 +13,7 @@ that checks them: what to start, which tests prove each route, and what to chang
 | Alerts | `AppiumMauiDriver.ReadIosAlert` | an `XCUIElementTypeAlert`, title then message as static texts, the cancel the first button |
 | Shell's tabs and flyout | `AppiumMauiDriver.IosShellChrome`, `AppiumMauiElement.OpenFlyout` | tabs are buttons in an `XCUIElementTypeTabBar`; the flyout is a table of cells; its opener is a navigation-bar button named `OK`, `Menu` or `FlyoutIcon`; a tap at the screen's right edge closes it |
 | IndicatorView | `IndicatorView.ReadPageControl` | a `XCUIElementTypePageIndicator` whose value reads `page 2 of 5` |
+| Session settings | `MauiDriverFactory.SessionDefaults` (2026-10-22, M1) | `waitForQuiescence` false and `settings[waitForIdleTimeout]` 1 (seconds on XCUITest) keep an animating page from costing each command its 10 s; check a command on a page with an ActivityIndicator returns at once |
 | The Shell app | `samples/Brinell.Samples.Maui.ShellApp` (`net10.0-ios`), `ShellFixture.GetDefaultAppPath` | built like the hub app, into `bin/Debug/net10.0-ios/iossimulator-<arch>/` |
 
 ## Run it

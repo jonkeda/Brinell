@@ -419,6 +419,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- MAUI's session settings are the factory's (`MauiDriverFactory.SessionDefaults`): Android's
+  idle wait 100 ms (from 500) and window animations off; iOS quiescence off and its idle wait
+  bounded to 1 s (not yet run on a simulator). A suite's own `AdditionalCapabilities` override
+  them; the MAUI and Todo fixtures no longer set the idle wait themselves.
 - **Breaking for the WPF, WinForms and Stride stacks' users** (AD-029): the first model's
   interfaces and waits moved to a new package, `Brinell.Core.Legacy`, in the same namespaces:
   `IDriver`, `IElement`, `IElementScope`, `IPageObject`, `IContainerControl`, `IContainerObject`,
