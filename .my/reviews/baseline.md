@@ -233,3 +233,16 @@ of the action stalled) and the rest the known `SetTime` and `SetValue` at about 
 M7 (popups, alerts, buttons, entries, pickers, IndicatorView, ContentDialog): 39 of 39. The Windows
 head was not run (it needs a live desktop); M7's Windows side rests on the build and the unit tests.
 
+## The Windows head, after M7, and the rest
+
+`move` 9b0cc10b, Brinell's MAUI suite on Windows (FlaUI, both sample apps built for Windows):
+357 passed, 1 failed, 2 skipped in 1 m 48 s. The failure, `ForegroundWatchdogTests.Navigating_
+DoesNotTakeTheForeground` (the app took the foreground 4 times), passed alone twice. The last
+recorded Windows run (2026-10-21) had 349 passed and 9 failed, put down to a locked screen.
+
+The NuGet advisories (4a8e2d9f): the solution restores and compiles again; `Brinell.Cli.Tests`
+320 of 320 in a separate worktree, since this checkout's `tools/Brinell.Cli/bin` is held by the
+running Brinell MCP servers. `[UiFact]` (9b0cc10b): a failure made on purpose in
+`Brinell.Html.UITests` left a PNG of the page as it failed; Tomorrow's 29 UI facts use it and its
+game suite is 86 of 86.
+
