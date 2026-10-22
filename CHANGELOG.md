@@ -419,6 +419,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- MAUI's Appium driver keeps no clock of its own: the picker dialog's wait, the iOS wheels' wait
+  and `FindChrome`/`FindAllChrome` (once Selenium's `WebDriverWait`) are `Settle.Until`, within
+  what the running call has left. An Android time picker's fields are typed without a clear first
+  (UiAutomator2 replaces the text) and its AM label is looked up once: `SetTime` 5.5 s to 5.0 s
+  on an emulator.
 - MAUI on Android scrolls with one routine (`AppiumMauiDriver.ScrollUntil`) for scroll-to-find
   and an element's scroll into view, bounded by the running call's budget (R2): a miss used to
   run past it, up to 8 s in a 5 s call. A swipe moves 90% of the scroller (from 70%) and is

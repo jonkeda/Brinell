@@ -216,3 +216,11 @@ suite 259 passed, the same 24 known gaps, 20 skipped in 22 m 36 s. Calls over th
 `TestTimePicker.SetTime` (its lookup tens of milliseconds, the time in the action and its
 confirmation: M4's picker wait).
 
+**M4**: the picker, wheel and chrome waits on `Settle.Until`; `SetTime` three round trips fewer.
+Pickers and Shell (flyout, tabs, stack), the toolbar and navigation controls and `TimePicker` on
+the emulator: 33 and 46 tests green. `SetTime` mean 5.46 s to 5.02 s. The full mobile suite 259
+passed, the same 24 known gaps, 20 skipped in 22 m 41 s; calls over budget 8 to 2 (one `SetTime`
+at 107%, one `TestStepper.SetValue` at 101%), both actions whose lookup took tens of milliseconds.
+`FindChrome` keeps a short wait rather than a plain lookup: it runs inside an action, where a miss
+is not asked again by the call's poll.
+

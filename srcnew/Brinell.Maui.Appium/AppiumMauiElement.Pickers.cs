@@ -165,10 +165,11 @@ public sealed partial class AppiumMauiElement
     private void ChooseTime(TimeSpan time)
     {
         // AM or PM on the clock first: the text fields that follow keep the clock's half of the day.
-        var twelveHour = DialogPart(AndroidId("am_label")) is not null;
+        var am = DialogPart(AndroidId("am_label"));
+        var twelveHour = am is not null;
         if (twelveHour)
         {
-            DialogPart(AndroidId(time.Hours < 12 ? "am_label" : "pm_label"))!.Click();
+            (time.Hours < 12 ? am : DialogPart(AndroidId("pm_label")))!.Click();
         }
 
         DialogPart(AndroidId("toggle_mode"))?.Click();
@@ -234,31 +235,14 @@ public sealed partial class AppiumMauiElement
         }
     }
 
-    private void TypeInto(string id, string text)
-    {
-        var field = DialogPart(AndroidId(id))!;
-        field.Clear();
-        field.SendKeys(text);
-    }
+    // UiAutomator2 sets an EditText's text, replacing what it held: no clear first, one trip fewer.
+    private void TypeInto(string id, string text) => DialogPart(AndroidId(id))!.SendKeys(text);
 
     private IWebElement? DialogPart(By by) => _driver.Driver.FindElements(by).FirstOrDefault();
 
     private static By AndroidId(string id)
         => MobileBy.AndroidUIAutomator($"new UiSelector().resourceId(\"android:id/{id}\")");
 
-    private static bool Poll(Func<bool> done)
-    {
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        while (!done())
-        {
-            if (clock.ElapsedMilliseconds > PickerDialogWaitMs)
-            {
-                return false;
-            }
-
-            Thread.Sleep(50);
-        }
-
-        return true;
-    }
+    // The dialog's own wait, within what the running call has left (R2).
+    private static bool Poll(Func<bool> done) => Brinell.Core.Calls.Settle.Until(done, PickerDialogWaitMs, pollingIntervalMs: 50);
 }

@@ -201,24 +201,16 @@ public sealed partial class AppiumMauiElement
     {
         Live(() => _element.Click());
 
-        var deadline = DateTime.UtcNow.AddMilliseconds(PickerDialogWaitMs);
-        while (true)
+        IReadOnlyList<IWebElement> wheels = [];
+        if (Brinell.Core.Calls.Settle.Until(() => (wheels = _driver.Driver.FindElements(IosWheels)).Count > 0,
+                PickerDialogWaitMs, pollingIntervalMs: 100))
         {
-            var wheels = _driver.Driver.FindElements(IosWheels);
-            if (wheels.Count > 0)
-            {
-                return wheels;
-            }
-
-            if (DateTime.UtcNow > deadline)
-            {
-                throw new TimeoutException(
-                    $"{nameof(AppiumMauiElement)}.{operation}: '{AutomationId}' was tapped, but no picker "
-                    + $"wheel showed within {PickerDialogWaitMs} ms.");
-            }
-
-            Thread.Sleep(100);
+            return wheels;
         }
+
+        throw new TimeoutException(
+            $"{nameof(AppiumMauiElement)}.{operation}: '{AutomationId}' was tapped, but no picker "
+            + $"wheel showed within {PickerDialogWaitMs} ms.");
     }
 
     /// <summary>Presses the wheels' Done, which closes them and keeps what they show.</summary>

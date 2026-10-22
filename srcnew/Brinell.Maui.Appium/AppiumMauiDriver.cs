@@ -76,18 +76,12 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// <exception cref="ElementNotFoundException">It did not appear in time.</exception>
     internal IMauiElement FindChrome(Locator locator, int timeoutMs)
     {
-        var by = locator.ToBy(_platform);
-        var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
-
-        try
-        {
-            var element = wait.Until(d => d.FindElement(by));
-            return new AppiumMauiElement((AppiumElement)element, this);
-        }
-        catch (WebDriverTimeoutException)
-        {
-            throw new ElementNotFoundException(locator);
-        }
+        // A short wait inside an action (a flyout's item, a toolbar's button), within what the
+        // running call has left; not Selenium's WebDriverWait, which kept a clock of its own.
+        IMauiElement? found = null;
+        return Brinell.Core.Calls.Settle.Until(() => (found = FindElements(locator).FirstOrDefault()) is not null, timeoutMs)
+            ? found!
+            : throw new ElementNotFoundException(locator);
     }
 
     /// <summary>
@@ -98,19 +92,10 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// <returns>The matches; empty when none appeared in time.</returns>
     internal IReadOnlyList<IMauiElement> FindAllChrome(Locator locator, int timeoutMs)
     {
-        var by = locator.ToBy(_platform);
-        var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
-
-        try
-        {
-            wait.Until(d => d.FindElements(by).Count > 0);
-        }
-        catch (WebDriverTimeoutException)
-        {
-            return Array.Empty<IMauiElement>();
-        }
-
-        return FindElements(locator);
+        IReadOnlyList<IMauiElement> found = [];
+        return Brinell.Core.Calls.Settle.Until(() => (found = FindElements(locator)).Count > 0, timeoutMs)
+            ? found
+            : [];
     }
 
     #endregion
