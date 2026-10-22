@@ -26,4 +26,11 @@ public class IosRoutesTests
     [Fact]
     public void ATrailingToolbarItem_IsNotTheBackButton()
         => Assert.False(AppiumMauiDriver.IsIosBackButton("Save", offsetInBar: 370, barWidth: 430));
+
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData(null, false)]
+    public void TheFlyout_IsOpen_OnlyWhenItsTableIsVisible(string? visible, bool open)
+        => Assert.Equal(open, AppiumMauiElement.IsIosVisible(visible));
 }

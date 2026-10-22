@@ -1359,11 +1359,19 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
         {
             RequireApp(nameof(IsFlyoutOpen));
 
-            return _driver.Platform is MauiPlatform.Android or MauiPlatform.iOS
-                ? _driver.FindElements(_driver.ShellChrome.FlyoutHost).Count > 0
-                : null;
+            return _driver.Platform switch
+            {
+                MauiPlatform.Android => _driver.FindElements(_driver.ShellChrome.FlyoutHost).Count > 0,
+                MauiPlatform.iOS => _driver.FindElements(_driver.ShellChrome.FlyoutHost)
+                    .Any(host => IsIosVisible(host.GetAttribute("visible"))),
+                _ => null,
+            };
         }
     }
+
+    /// <summary>Reads XCUITest's <c>visible</c> attribute; a missing one is not visible.</summary>
+    internal static bool IsIosVisible(string? visible)
+        => string.Equals(visible, "true", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Waits for the drawer to finish opening or closing, bounded by the chrome timeout.</summary>
     private void WaitForFlyout(bool open)
