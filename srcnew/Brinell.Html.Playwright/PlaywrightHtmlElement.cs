@@ -45,6 +45,12 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     private static float Budget => CallBudget.RemainingOr(OutsideACallMs);
 
+    /// <inheritdoc />
+    public bool WaitsForActionability => true;
+
+    /// <summary>This element's selector as a locator, for an action's not-ready report (the control names its own).</summary>
+    private Locator Self => Locator.ByCss(_locator.ToString() ?? string.Empty);
+
     /// <summary>
     /// A read of the element's state, which is about now (R2): an attached element answers at once,
     /// so the read waits for attachment only <see cref="ReadAttachMs"/>, and a node that is gone by
@@ -91,9 +97,9 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public Rectangle Rect => EvaluateRect(box => new Rectangle((int)box.X, (int)box.Y, (int)box.Width, (int)box.Height));
 
-    public void Click() => Marked(InteractionKind.Tap, () => Live(() => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
+    public void Click() => Marked(InteractionKind.Tap, () => Act(Self, () => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Live(() =>
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Act(Self, () =>
     {
         switch (method)
         {
@@ -107,19 +113,19 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         }
     }));
 
-    public void PressKey(string key) => Marked(InteractionKind.Type, () => Live(() => _locator.PressAsync(key, new() { Timeout = Budget }).GetAwaiter().GetResult()));
+    public void PressKey(string key) => Marked(InteractionKind.Type, () => Act(Self, () => _locator.PressAsync(key, new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void Clear() => Marked(InteractionKind.Clear, () => Live(() => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
+    public void Clear() => Marked(InteractionKind.Clear, () => Act(Self, () => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void DoubleClick() => Marked(InteractionKind.DoubleTap, () => Live(() => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
+    public void DoubleClick() => Marked(InteractionKind.DoubleTap, () => Act(Self, () => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void RightClick()
-        => Marked(InteractionKind.RightClick, () => Live(() => _locator.ClickAsync(new() { Button = MouseButton.Right, Timeout = Budget }).GetAwaiter().GetResult()));
+        => Marked(InteractionKind.RightClick, () => Act(Self, () => _locator.ClickAsync(new() { Button = MouseButton.Right, Timeout = Budget }).GetAwaiter().GetResult()));
 
-    public void Hover() => Marked(InteractionKind.Hover, () => Live(() => _locator.HoverAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
+    public void Hover() => Marked(InteractionKind.Hover, () => Act(Self, () => _locator.HoverAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
     public void LongPress(int durationMs = 1000)
-        => Marked(InteractionKind.LongPress, () => Live(() => _locator.ClickAsync(new() { Delay = durationMs, Timeout = Budget + durationMs }).GetAwaiter().GetResult()), TimeSpan.FromMilliseconds(durationMs));
+        => Marked(InteractionKind.LongPress, () => Act(Self, () => _locator.ClickAsync(new() { Delay = durationMs, Timeout = Budget + durationMs }).GetAwaiter().GetResult()), TimeSpan.FromMilliseconds(durationMs));
 
     public void ScrollIntoView(int timeoutMs)
         => Live(() => _locator.ScrollIntoViewIfNeededAsync(new() { Timeout = timeoutMs }).GetAwaiter().GetResult());

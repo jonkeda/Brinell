@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Brinell.Recording.Tests" />
+    <InternalsVisibleTo Include="Brinell.Html.Tests" />
   </ItemGroup>
 
 </Project>

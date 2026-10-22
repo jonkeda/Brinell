@@ -21,6 +21,13 @@ public interface IHtmlElement
     /// </summary>
     string InstanceKey { get; }
 
+    /// <summary>
+    /// Whether this element's actions wait by themselves until it is visible, stable and receives
+    /// events, and report it as <c>ElementNotReadyException</c> when it does not (Playwright's
+    /// actionability). A control then does not check visibility before acting on it.
+    /// </summary>
+    bool WaitsForActionability => false;
+
     #endregion
 
     #region State

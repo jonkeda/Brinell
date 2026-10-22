@@ -295,14 +295,25 @@ public abstract partial class ControlBase<TScope> : ObjectBase, IControlObject<T
                 attempt.Log.Add(Observation.NotReady(error, null), attempt.Deadline.ElapsedMs);
                 WaitHelper.Pause(Math.Max(1, Math.Min(PollingIntervalMs, attempt.Deadline.RemainingMs)));
             }
+            catch (ElementNotReadyException error) when (error.Locator != Locator)
+            {
+                // The element reported it by its own selector (Playwright's actionability); the call names the control's.
+                throw new ElementNotReadyException(Locator, error.Reason, error.Detail);
+            }
         }
     }
 
     private IHtmlElement ResolveReady(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs)
     {
         IHtmlElement? ready = null;
-        if (!Poller.Until(a => Attempt(a, ensureVisible, element =>
+        if (!Poller.Until(a => Attempt(a, ensureVisible: false, element =>
             {
+                // An element whose actions wait for actionability themselves (Playwright's) is not checked twice.
+                if (ensureVisible && !element.WaitsForActionability)
+                {
+                    EnsureVisible(element, a);
+                }
+
                 EnsureReadyForActionCore(element);
                 ready = element;
                 return Observation.Done();

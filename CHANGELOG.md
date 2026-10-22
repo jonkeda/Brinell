@@ -402,6 +402,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- Html actions on Playwright leave visibility to Playwright's actionability wait instead of
+  checking it first (one round trip fewer per action). A Playwright timeout before the action
+  ran is `ElementNotReadyException` naming the control and Playwright's reason (not visible, not
+  enabled, what intercepts pointer events), where it was a raw `System.TimeoutException`. A
+  timeout after the action ran, while Playwright waited for the navigation it started, is the
+  action done and is not repeated.
 - An Html page's readiness probe is one round trip on Playwright: `IHtmlPageProbe.ProbePage` reads
   `document.readyState` and the body's `data-busy` in one evaluation, and `HtmlPageObjectBase`
   uses it when its context answers it. A page is loaded when its URL matches and the document is

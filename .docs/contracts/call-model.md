@@ -74,7 +74,14 @@ The rules above hold unchanged. Where Playwright differs from UI Automation and 
   `CallBudget` today. A read waits for its element at most `PlaywrightHtmlElement.ReadAttachMs`.
 - **A page's busy signal is `data-busy` on `<body>`.** A Blazor page requires it: a page
   without it is not loaded yet (a prerendered page is not acted on), not misconfigured. A
-  value other than `true`/`false` is a configuration error and ends the call at once.
+  value other than `true`/`false` is a configuration error and ends the call at once. On
+  Playwright the page's load state and `data-busy` are read in one round trip (`IHtmlPageProbe`).
+- **An action's actionability is Playwright's.** Playwright waits, within the call's budget, for
+  the element to be visible, stable and receiving events, so a control does not check visibility
+  first (`IHtmlElement.WaitsForActionability`). A timeout before the action ran is
+  `ElementNotReadyException` with Playwright's reason ("element is not visible", "… intercepts
+  pointer events"). A timeout after it ran ("click action done", then waiting for the navigation
+  it started) is the action done (R0): it is not repeated, and the next call waits for the page.
 - **A row stands for its item.** It finds its element again by `data-item-key` on every
   lookup, with a selector on the key, never by position: a Playwright element found by position
   is found by position again on every read. When the item is gone it reports `ItemChanged` and
