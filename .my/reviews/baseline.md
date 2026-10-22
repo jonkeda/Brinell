@@ -10,16 +10,23 @@ after a build, `BRINELL_CALL_LOG` set to a folder; CPU by `Get-Counter` every 5 
 the counter itself takes about 2 s), as a share of the machine's 32 logical cores. The app runs
 in the test host (`TomorrowApp`), so its CPU is the test host's.
 
-| Measure | Before (2026-10-22) |
-| --- | --- |
-| Machine | not quiet: about 70 `dotnet` processes (build and language servers), machine CPU 39% average, 61% peak during the run |
-| Tests | 87: 82 passed, 4 failed, 1 skipped |
-| Wall time | 199 s (`dotnet test` reports 3 m 15 s); the build before it 46 s |
-| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak (about 4.4 cores) |
-| SQL Server CPU | 0.7% average, 4.1% peak |
-| Calls logged | 2,349 in 11 contexts (one per collection), 487 s of calls in all, median 76 ms |
-| Near-misses | 0 (see below) |
-| Calls over 2 s | `HerePage.Route_Note.AssertText` 8.2 s (passed); `LoginPage.login-submit.Click` 2.0 to 2.8 s, seven times; `HerePage.App_ErrorBanner.AssertVisible` 2.4 s; `HerePage.Here_Board.AssertAttribute` 2.3 s |
+| Measure | Before (2026-10-22) | After F1-F3 (2026-10-22) |
+| --- | --- | --- |
+| Commits | `move` 5a69338e, `game` 20a87afb | `move` 40b70088, the six sleeps gone |
+| Machine | not quiet: about 70 `dotnet` processes, machine CPU 39% average, 61% peak | the same: 40% average, 68% peak |
+| Tests | 87: 82 passed, 4 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped |
+| Wall time | 199 s (`dotnet test` 3 m 15 s) | 142 s (2 m 19 s) |
+| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak | 4.7% average (about 1.5 cores), 16.8% peak |
+| SQL Server CPU | 0.7% average, 4.1% peak | 1.0% average, 5.7% peak |
+| Calls logged | 2,349, 487 s in all, median 76 ms | 2,394, 371 s in all, median 50 ms |
+| Near-misses | 0 (see below) | 0 |
+| Calls over 2 s | `Route_Note.AssertText` 8.2 s; `login-submit.Click` 2.0 to 2.8 s, seven times; `App_ErrorBanner.AssertVisible` 2.4 s; `Here_Board.AssertAttribute` 2.3 s | `Route_Note.AssertText` 4.6 s; `login-submit.Click` 2.9 s, twice |
+
+The after column is one run on the same busy machine. The wall time (minus 29%) and the median
+call (minus 34%) moved more than the test host's CPU did. The likely cause is the pause: a spinning
+pause starved the app's own threads in the same process, rather than showing up as CPU of its
+own. One run does not separate F1 from F3 (F3 removed about 10 s of fixed sleeping at most) or
+either from load; a second run of each would.
 
 **The four failures pass alone** (14 tests in their groups, 44 s, all green), so they are load:
 
@@ -54,6 +61,17 @@ on a machine this busy it includes other work.
 - **Errors in the log, all expected:** four, from negative tests. Html's recycled-row `Click` scope not ready in 500 ms and `login-btn` "disabled: not enabled still after 5000 ms"; the Todo scenarios' two `StatusText.WaitText` meant to return false ("6 attempts; last: Pending").
 - **First load is the slow call.** Html's six collections each spend 2.8 s in their first `SampleShell.AssertIdle`, all ending at the same instant (the browsers launch together); later `AssertIdle`s take under 300 ms. The Todo suites' slowest calls are their first `TodoListPage.AssertIdle` too (1.9 s, 2.3 s). H1's one-trip probe should show here.
 - **Builds:** 12 s, 4 s, 18 s, 11 s.
+
+**After F1-F3** (`move` 40b70088), the same four suites, all green again:
+
+| Suite | Wall before | Wall after | Median call after |
+| --- | --- | --- | --- |
+| `Brinell.Html.UITests` | 37 s | 35 s | 62 ms |
+| `Brinell.Blazor.UITests` | 44 s | 41 s | 38 ms |
+| `Brinell.Samples.Todo.Web.UITests` | 26 s | 25 s | 64 ms |
+| `Brinell.Samples.Todo.Web.Uat` | 105 s | 106 s | 54 ms |
+
+These suites barely poll (their calls pass on the first attempt), so the pause had little to cost them; within noise.
 
 ## B3
 
