@@ -22,7 +22,7 @@ namespace Brinell.Maui.Containers;
 /// <typeparam name="TSelf">The container type itself (self-referencing for fluent returns).</typeparam>
 /// <typeparam name="TSetResult">The scope returned by generated set operations.</typeparam>
 public abstract class RootedScopeBase<TSelf, TSetResult>
-    : ObjectBase, IMauiScope<TSelf>
+    : ObjectBase, IMauiScope<TSelf>, IControlHost<IMauiElement>
     where TSelf : RootedScopeBase<TSelf, TSetResult>
 {
     private IMauiElement? _cachedRoot;
@@ -422,10 +422,16 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
     // Mirrors the helper surface on the control base, but returning TSelf instead of the
     // parent scope. Identical names and shapes let the generator emit one body for both
-    // hierarchies. The element these operate on is the container root.
+    // hierarchies. The element these operate on is the container root, never checked for
+    // visibility.
     //
-    // Every public member is one call (call-model contract, R1): one log pair, one
-    // budget, one poll, whose attempts check the page and then use the root. An action runs once.
+    // Every public member is one call (call-model contract, R1), run by Core's ControlCalls as a
+    // control's are; this scope is its host. The collection's own polls (an item, a scroll) use
+    // Call, Poll, RootAttempt and Failure below.
+
+    private ControlCalls<IMauiElement>? _calls;
+
+    private ControlCalls<IMauiElement> Calls => _calls ??= new(this);
 
     private protected ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
 
@@ -439,13 +445,45 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// </summary>
     protected int CallRemainingMs => CallBudget.RemainingOr(DefaultTimeoutMs);
 
+    Locator IControlHost<IMauiElement>.Locator => Locator;
+
+    ControlCall IControlHost<IMauiElement>.NewCall() => Call;
+
+    int IControlHost<IMauiElement>.DefaultTimeoutMs => DefaultTimeoutMs;
+
+    int IControlHost<IMauiElement>.PollingIntervalMs => PollingIntervalMs;
+
+    int IControlHost<IMauiElement>.AnimationMs => AnimationMs;
+
+    ScopeReadiness IControlHost<IMauiElement>.ProbeScope() => ProbeCallReadiness();
+
+    IMauiElement? IControlHost<IMauiElement>.Locate(AttemptContext attempt) => TryGetContainerRoot();
+
+    IMauiElement? IControlHost<IMauiElement>.TryFind() => TryGetContainerRoot();
+
+    bool? IControlHost<IMauiElement>.IsVisible(IMauiElement element) => element.Visible;
+
+    void IControlHost<IMauiElement>.ScrollIntoView(IMauiElement element, int timeoutMs) => element.ScrollIntoView(timeoutMs);
+
+    string IControlHost<IMauiElement>.ScrollKey(IMauiElement element) => Locator.ToString();
+
+    string? IControlHost<IMauiElement>.InstanceKey(IMauiElement element) => element.InstanceKey;
+
+    bool IControlHost<IMauiElement>.ChecksVisibilityBeforeAction(IMauiElement element) => false;
+
+    void IControlHost<IMauiElement>.EnsureReadyForAction(IMauiElement element) => EnsureReadyForActionCore(element);
+
+    ElementNotFoundException IControlHost<IMauiElement>.NotFound() => RootNotFound();
+
+    string IControlHost<IMauiElement>.Noun => "container";
+
+    bool IControlHost<IMauiElement>.ChecksVisibility => false;
+
+    void IControlHost<IMauiElement>.OnStale() => InvalidateCache();
+
     /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
     private protected Exception Failure(AttemptContext attempt, string caller, int budgetMs)
-        => attempt.Log.ToException(
-            Locator,
-            budgetMs,
-            RootNotFound,
-            readiness => ScopeGate.NotReady(readiness, caller, $"container '{Locator}'", budgetMs));
+        => Calls.Failure(attempt, caller, budgetMs);
 
     /// <summary>
     /// The error for this scope's root not found, in the words of whatever it is looked up in.
@@ -455,36 +493,8 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
     /// <summary>One attempt against the root: the scope chain, then the root, then <paramref name="body"/>.</summary>
     private protected Observation RootAttempt(Func<IMauiElement, Observation> body)
-    {
-        if (ScopeGate.Check(ProbeCallReadiness()) is { } notReady)
-        {
-            return notReady;
-        }
-
-        var root = TryGetContainerRoot();
-        if (root == null)
-        {
-            return Observation.Missing();
-        }
-
-        try
-        {
-            return body(root);
-        }
-        catch (StaleElementException error)
-        {
-            InvalidateCache();
-            return Observation.Stale(error, null);
-        }
-        catch (ElementNotReadyException error)
-        {
-            return Observation.NotReady(error, null);
-        }
-        catch (AssertionException error)
-        {
-            return Observation.Mismatch(error, null);
-        }
-    }
+        => Calls.Attempt(AttemptContext.Current ?? throw new InvalidOperationException("A root attempt runs inside a call."),
+            ensureVisible: false, body);
 
     /// <summary>A poll of <paramref name="attempt"/> as one call; false when it never reported Done.</summary>
     private protected bool Poll(AttemptContext context, Func<AttemptContext, Observation> attempt,
@@ -500,86 +510,42 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
     /// <returns>How the wait ended, with the last value and error.</returns>
     protected Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
-        => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
+        => Calls.Confirm(read, done, timeoutMs);
 
     /// <summary>Polls an arbitrary condition.</summary>
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
-    {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWait);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-            Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? (operation() ? Observation.Done() : Observation.Pending()))
-            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
-            succeeded: met => met);
-    }
+        => Calls.Wait(operation, timeoutMs, caller ?? nameof(RunWait));
 
     /// <summary>Polls a condition evaluated against the container root.</summary>
     protected bool RunWaitWithElement<T>(T? expected, Func<IMauiElement, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        if (expected == null) return true;
-
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWaitWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-            Poll(context, _ => RootAttempt(root => coreOperation(root) ? Observation.Done() : Observation.Pending()))
-            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
-            succeeded: met => met);
-    }
+        => expected == null || Calls.WaitWithElement(coreOperation, timeoutMs, caller ?? nameof(RunWaitWithElement));
 
     /// <summary>Runs an action once, as one call, after the scope chain is ready.</summary>
     protected TSelf RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunDo);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
+        Calls.Run(caller ?? nameof(RunDo), null, () =>
         {
-            if (!Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? Observation.Done()))
-            {
-                throw Failure(context, caller, budget);
-            }
-
             operation();
-            return Self;
-        });
+            return true;
+        }, timeoutMs);
+        return Self;
     }
 
     /// <summary>Runs an action against the container root, once, as one call.</summary>
     protected TSelf RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunDoWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-        {
-            ActOnceOnRoot(context, caller, budget, coreOperation);
-            return Self;
-        });
+        Calls.Act(coreOperation, ensureVisible: false, timeoutMs, caller ?? nameof(RunDoWithElement));
+        return Self;
     }
 
     /// <summary>Reads a value from the container root.</summary>
     protected T? RunGetWithElement<T>(Func<IMauiElement, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunGetWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-        {
-            var value = default(T);
-            if (!Poll(context, _ => RootAttempt(root =>
-                {
-                    value = coreOperation(root);
-                    return Observation.Done();
-                })))
-            {
-                throw Failure(context, caller, budget);
-            }
-
-            return value;
-        });
-    }
+        => Calls.GetWithElement(coreOperation, timeoutMs, caller ?? nameof(RunGetWithElement), ensureVisible: false);
 
     /// <summary>
     /// Reads a value that is meaningful when the container root is absent: once, with the root
@@ -587,36 +553,18 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// </summary>
     protected T? RunGetWithOptionalElement<T>(Func<IMauiElement?, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunGetWithOptionalElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-        {
-            if (!Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? Observation.Done()))
-            {
-                throw Failure(context, caller, budget);
-            }
-
-            return coreOperation(TryGetContainerRoot());
-        });
-    }
+        => Calls.GetWithOptionalElement(coreOperation, timeoutMs, caller ?? nameof(RunGetWithOptionalElement));
 
     /// <summary>Sets a value on the container, returning the parent scope.</summary>
     protected TSetResult RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (value == null)
+        if (value != null)
         {
-            return SetResult;
+            Calls.Act(coreOperation, ensureVisible: false, timeoutMs, caller ?? nameof(RunSetWithElement), value.ToString());
         }
 
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunSetWithElement);
-        return Call.Run(caller, value.ToString(), budget, AnimationMs, context =>
-        {
-            ActOnceOnRoot(context, caller, budget, coreOperation);
-            return SetResult;
-        });
+        return SetResult;
     }
 
     /// <summary>The scope returned by a generated set operation.</summary>
@@ -628,17 +576,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected bool RunWaitWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
-    {
-        if (expected == null) return true;
-
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunWaitWithOptionalElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-            Poll(context, _ => ScopeGate.Check(ProbeCallReadiness())
-                ?? (coreOperation(TryGetContainerRoot()) ? Observation.Done() : Observation.Pending()))
-            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
-            succeeded: met => met);
-    }
+        => expected == null || Calls.WaitWithOptionalElement(coreOperation, timeoutMs, caller ?? nameof(RunWaitWithOptionalElement));
 
     /// <summary>
     /// Asserts a value that is meaningful when the container root is absent.
@@ -648,10 +586,13 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         string? message = null, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        if (expected == null) return Self;
+        if (expected != null)
+        {
+            Calls.AssertWithOptionalElement(expected, getActual, compare, message, timeoutMs,
+                caller ?? nameof(RunAssertWithOptionalElement));
+        }
 
-        return RunAssertCore(expected, () => getActual(TryGetContainerRoot()), compare, message, timeoutMs,
-            caller ?? nameof(RunAssertWithOptionalElement));
+        return Self;
     }
 
     /// <summary>Asserts a value, returning the container for chaining.</summary>
@@ -659,9 +600,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (expected == null) return Self;
+        if (expected != null)
+        {
+            Calls.Assert(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssert));
+        }
 
-        return RunAssertCore(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssert));
+        return Self;
     }
 
     /// <summary>Asserts a value read from the container root.</summary>
@@ -669,51 +613,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        if (expected == null) return Self;
-
-        var budget = Budget(timeoutMs);
-        caller ??= nameof(RunAssertWithElement);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
+        if (expected != null)
         {
-            if (!Poll(context, _ => RootAttempt(root =>
-                {
-                    var actual = getActual(root);
-                    return compare(actual, expected)
-                        ? Observation.Done()
-                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
-                })))
-            {
-                throw Failure(context, caller, budget);
-            }
+            Calls.AssertWithElement(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssertWithElement));
+        }
 
-            return Self;
-        });
-    }
-
-    private TSelf RunAssertCore<T>(T expected, Func<T?> getActual, Func<T?, T?, bool> compare,
-        string? message, int? timeoutMs, string caller)
-    {
-        var budget = Budget(timeoutMs);
-        return Call.Run(caller, null, budget, AnimationMs, context =>
-        {
-            if (!Poll(context, _ =>
-                {
-                    if (ScopeGate.Check(ProbeCallReadiness()) is { } notReady)
-                    {
-                        return notReady;
-                    }
-
-                    var actual = getActual();
-                    return compare(actual, expected)
-                        ? Observation.Done()
-                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
-                }))
-            {
-                throw Failure(context, caller, budget);
-            }
-
-            return Self;
-        });
+        return Self;
     }
 
     /// <summary>
@@ -723,45 +628,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <param name="root">The root, just found.</param>
     protected virtual void EnsureReadyForActionCore(IMauiElement root)
     {
-    }
-
-    /// <summary>
-    /// Resolves the root, then runs <paramref name="act"/> on it: once, unless it reports that it
-    /// did not act.
-    /// </summary>
-    private void ActOnceOnRoot(AttemptContext context, string caller, int budgetMs, Action<IMauiElement> act)
-    {
-        while (true)
-        {
-            var root = ResolveReadyRoot(context, caller, budgetMs);
-            try
-            {
-                act(root);
-                return;
-            }
-            catch (ElementNotReadyException error) when (context.Deadline.RemainingMs > 0)
-            {
-                context.Log.Add(Observation.NotReady(error, null), context.Deadline.ElapsedMs);
-                WaitHelper.Pause(Math.Max(1, Math.Min(PollingIntervalMs, context.Deadline.RemainingMs)));
-            }
-        }
-    }
-
-    /// <summary>Polls until the scope chain is ready and the root there, and returns the root.</summary>
-    private IMauiElement ResolveReadyRoot(AttemptContext context, string caller, int budgetMs)
-    {
-        IMauiElement? ready = null;
-        if (!Poll(context, _ => RootAttempt(root =>
-            {
-                EnsureReadyForActionCore(root);
-                ready = root;
-                return Observation.Done();
-            })))
-        {
-            throw Failure(context, caller, budgetMs);
-        }
-
-        return ready!;
     }
 
     #endregion

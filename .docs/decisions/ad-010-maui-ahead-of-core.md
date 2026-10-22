@@ -36,9 +36,14 @@ native Android's scroll to find, Playwright's own actionability, the scroll thro
 bases keep the `Run*` names and signatures (R8) as one-line delegations, so the generator's
 output is unchanged. It still names no element interface: `TElement` is the stack's own.
 
-What is still per stack: the interfaces, the container, collection and item bases (MAUI's
-`ContainerObjectBase` with `ActOnceOnRoot`, Html's and native Android's containers), pages,
-collections and item keys, and Html's `BusySignal`.
+MAUI's scopes followed the same day: `RootedScopeBase`, under its containers, collections and
+rooted pages, had the same family over the scope's root (`ActOnceOnRoot`), and is now a host
+too, one that names itself a container, never checks its root's visibility and forgets a stale
+root. Html's and native Android's containers had no such family (a scope there only probes its
+readiness), so nothing of theirs moved.
+
+What is still per stack: the interfaces, the collections' own polls (an item found by scrolling,
+the end of a list), pages and their `RunProbe`, item keys, and Html's `BusySignal`.
 Expect those to differ from their Core counterparts, and from each other where the
 platform differs. Do not add adapters between them and Core: a bridge now would have to
 be undone in the move down.

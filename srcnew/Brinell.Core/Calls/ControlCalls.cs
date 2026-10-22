@@ -57,6 +57,17 @@ internal interface IControlHost<TElement>
 
     /// <summary>The error for a control that could not be found.</summary>
     ElementNotFoundException NotFound();
+
+    /// <summary>What the host is called in a message: "control", or "container" for a scope's root.</summary>
+    string Noun => "control";
+
+    /// <summary>Whether a read or an assertion checks that the element is visible (a container's root is not checked).</summary>
+    bool ChecksVisibility => true;
+
+    /// <summary>The element went stale in an attempt: a host that keeps it forgets it.</summary>
+    void OnStale()
+    {
+    }
 }
 
 /// <summary>
@@ -72,12 +83,13 @@ internal sealed class ControlCalls<TElement>(IControlHost<TElement> host)
 {
     private int Budget(int? timeoutMs) => timeoutMs ?? host.DefaultTimeoutMs;
 
-    private Exception Failure(AttemptContext attempt, string caller, int budgetMs)
+    /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
+    public Exception Failure(AttemptContext attempt, string caller, int budgetMs)
         => attempt.Log.ToException(
             host.Locator,
             budgetMs,
             host.NotFound,
-            readiness => ScopeGate.NotReady(readiness, caller, $"control '{host.Locator}'", budgetMs));
+            readiness => ScopeGate.NotReady(readiness, caller, $"{host.Noun} '{host.Locator}'", budgetMs));
 
     private Observation? CheckScope() => ScopeGate.Check(host.ProbeScope());
 
@@ -99,7 +111,7 @@ internal sealed class ControlCalls<TElement>(IControlHost<TElement> host)
     /// visibility check, then <paramref name="body"/>. An observation after the first attempt
     /// carries the element's identity, so a replaced element is counted.
     /// </summary>
-    private Observation Attempt(AttemptContext attempt, bool ensureVisible, Func<TElement, Observation> body)
+    public Observation Attempt(AttemptContext attempt, bool ensureVisible, Func<TElement, Observation> body)
     {
         if (CheckScope() is { } notReady)
         {
@@ -114,7 +126,7 @@ internal sealed class ControlCalls<TElement>(IControlHost<TElement> host)
 
         try
         {
-            if (ensureVisible)
+            if (ensureVisible && host.ChecksVisibility)
             {
                 EnsureVisible(element, attempt);
             }
@@ -126,6 +138,7 @@ internal sealed class ControlCalls<TElement>(IControlHost<TElement> host)
         }
         catch (StaleElementException error)
         {
+            host.OnStale();
             return Observation.Stale(error, null);
         }
         catch (ElementNotReadyException error)
