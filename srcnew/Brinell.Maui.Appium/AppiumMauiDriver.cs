@@ -572,6 +572,9 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// <param name="container">The container to scroll, or null for the first scrollable on screen.</param>
     /// <param name="locator">The locator for the element.</param>
     internal IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
+        => AppiumErrors.Live(() => FindByScrolling(container, locator));
+
+    private IMauiElement? FindByScrolling(IMauiElement? container, Locator locator)
     {
         if (_platform != MauiPlatform.Android)
         {
@@ -589,28 +592,61 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
             return null;
         }
 
-        foreach (var direction in ScrollDirections)
+        // Inside a call, what the call has left: a miss used to cost 24 swipes and 25 lookups,
+        // near nine seconds, inside one attempt of a 5 s call. Outside a call, the swipes' cap alone.
+        var budgetMs = Brinell.Core.Calls.CallBudget.RemainingOr(int.MaxValue);
+        var gesture = new Dictionary<string, object> { { "elementId", ((AppiumElement)scroller).Id } };
+
+        return ScrollUntil(gesture, ScrollDirections, () => FindOnScreen(locator) is not null, budgetMs, atLeastOneSwipe: false)
+            ? ReResolveAfterScrolling(locator) ?? FindOnScreen(locator)
+            : null;
+    }
+
+    /// <summary>
+    /// The one scroll routine (scroll-to-find and an element's scroll into view): swipes one
+    /// direction, then the next, until <paramref name="found"/> holds, the scroller cannot move,
+    /// or <paramref name="budgetMs"/> is spent. One <c>mobile: scrollGesture</c> a swipe, which also
+    /// says whether the scroller can move further.
+    /// </summary>
+    /// <param name="gesture">The gesture's target: an <c>elementId</c>, or a region.</param>
+    /// <param name="directions">The directions, in order.</param>
+    /// <param name="found">One look after each swipe.</param>
+    /// <param name="budgetMs">How long the swipes may take in all.</param>
+    /// <param name="atLeastOneSwipe">Swipe once even on a spent budget: the caller's poll decides whether to try again, and a zero budget must not mean "never scrolls".</param>
+    /// <returns>Whether <paramref name="found"/> held after a swipe.</returns>
+    internal bool ScrollUntil(IReadOnlyDictionary<string, object> gesture, IReadOnlyList<string> directions,
+        Func<bool> found, int budgetMs, bool atLeastOneSwipe)
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var swiped = false;
+        foreach (var direction in directions)
         {
             for (var swipe = 0; swipe < MaxScrollSwipes; swipe++)
             {
+                if ((swiped || !atLeastOneSwipe) && clock.ElapsedMilliseconds >= budgetMs)
+                {
+                    return false;
+                }
+
                 bool more;
                 try
                 {
-                    more = _driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
+                    var parameters = new Dictionary<string, object>(gesture)
                     {
-                        { "elementId", ((AppiumElement)scroller).Id },
-                        { "direction", direction },
-                        { "percent", ScrollPercent },
-                    }) is true;
+                        ["direction"] = direction,
+                        ["percent"] = ScrollPercent,
+                    };
+                    more = _driver.ExecuteScript("mobile: scrollGesture", parameters) is true;
                 }
-                catch (WebDriverException)
+                catch (Exception error) when (!AppiumErrors.IsGone(error))
                 {
-                    return null;
+                    return false;
                 }
 
-                if (FindOnScreen(locator) is not null)
+                swiped = true;
+                if (found())
                 {
-                    return ReResolveAfterScrolling(locator) ?? FindOnScreen(locator);
+                    return true;
                 }
 
                 if (!more)
@@ -620,7 +656,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
             }
         }
 
-        return null;
+        return false;
     }
 
     /// <summary>Down first: a page opens at its top, and most lookups are for what follows.</summary>
@@ -629,12 +665,29 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// <summary>Swipes each way before giving up; the sample's longest page is a few screens.</summary>
     private const int MaxScrollSwipes = 12;
 
-    /// <summary>How much of the scroller one swipe moves.</summary>
-    private const double ScrollPercent = 0.7;
+    /// <summary>
+    /// How much of the scroller one swipe moves: most of it, since a search only needs the element
+    /// to enter the viewport, and a swipe shorter than the scroller skips nothing.
+    /// </summary>
+    private const double ScrollPercent = 0.9;
+
+    /// <summary>An AutomationId a <c>UiSelector</c> can carry as it is.</summary>
+    private static readonly System.Text.RegularExpressions.Regex PlainId = new("^[A-Za-z0-9_]+$");
 
     /// <summary>The element if it is in the tree now, by the locator, or an AutomationId's description.</summary>
     private IMauiElement? FindOnScreen(Locator locator)
     {
+        // One round trip for both of MAUI's mappings, the resource id and the content description:
+        // UiAutomator2 answers a query of several selectors with their union. A scroll search looks
+        // after every swipe, so two lookups a miss doubled its cost.
+        if (locator.Strategy == LocatorStrategy.AutomationId && PlainId.IsMatch(locator.Value))
+        {
+            return _driver.FindElements(MobileBy.AndroidUIAutomator(
+                    $"new UiSelector().resourceIdMatches(\".*:id/{locator.Value}\");new UiSelector().description(\"{locator.Value}\")"))
+                .Select(element => new AppiumMauiElement(element, this))
+                .FirstOrDefault();
+        }
+
         var found = FindElements(locator).FirstOrDefault();
         if (found is null && locator.Strategy == LocatorStrategy.AutomationId)
         {

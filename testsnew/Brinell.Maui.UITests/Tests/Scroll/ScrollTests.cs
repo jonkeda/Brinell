@@ -22,6 +22,14 @@ namespace Brinell.Maui.UITests.Tests.Scroll;
 [Trait("Control", "ScrollView")]
 public class ScrollTests
 {
+    /// <summary>
+    /// The budget of a call that crosses the page: its scroll to the control is part of the call
+    /// and bounded by it (call-model R2), and on an Android emulator a swipe with its lookup costs
+    /// about a second, so crossing this page down and back up takes 6 to 7 s, more than the
+    /// default 5 s. A call that stays on screen keeps the default.
+    /// </summary>
+    private const int CrossPageMs = 10_000;
+
     private readonly MauiFixture _fixture;
 
     public ScrollTests(MauiFixture fixture)
@@ -43,56 +51,56 @@ public class ScrollTests
     }
 
     /// <summary>2. Clicking a button that is below the fold requires scrolling down to it.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Method", "Click")]
     public Task BottomButton_Click_UpdatesStatus()
     {
         var page = _fixture.NavigateToScroll();
 
-        page.BottomButton.Click();
+        page.BottomButton.Click(CrossPageMs);
 
         // The label is at the top of the page, so this read also has to come back up.
-        page.StatusLabel.AssertTextContains("bottom pressed");
+        page.StatusLabel.AssertTextContains("bottom pressed", timeoutMs: CrossPageMs);
         return Task.CompletedTask;
     }
 
     /// <summary>3. The same, one screen down rather than at the very end.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Method", "Click")]
     public Task MiddleButton_Click_UpdatesStatus()
     {
         var page = _fixture.NavigateToScroll();
 
-        page.MiddleButton.Click();
+        page.MiddleButton.Click(CrossPageMs);
 
-        page.StatusLabel.AssertTextContains("middle pressed");
+        page.StatusLabel.AssertTextContains("middle pressed", timeoutMs: CrossPageMs);
         return Task.CompletedTask;
     }
 
     /// <summary>4. Scrolling down and then back up again — the direction the Reset tests failed on.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Method", "Click")]
     public Task TopButton_Click_AfterScrollingToTheBottom_UpdatesStatus()
     {
         var page = _fixture.NavigateToScroll();
 
-        page.BottomButton.Click();
-        page.StatusLabel.AssertTextContains("bottom pressed");
+        page.BottomButton.Click(CrossPageMs);
+        page.StatusLabel.AssertTextContains("bottom pressed", timeoutMs: CrossPageMs);
 
-        page.TopButton.Click();
+        page.TopButton.Click(CrossPageMs);
 
-        page.StatusLabel.AssertTextContains("top pressed");
+        page.StatusLabel.AssertTextContains("top pressed", timeoutMs: CrossPageMs);
         return Task.CompletedTask;
     }
 
     /// <summary>5. Reading text from a control below the fold.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Method", "GetText")]
     public Task BottomLabel_Text_IsReadable()
     {
         var page = _fixture.NavigateToScroll();
 
-        page.BottomLabel.AssertTextContains("bottom reached");
+        page.BottomLabel.AssertTextContains("bottom reached", timeoutMs: CrossPageMs);
         return Task.CompletedTask;
     }
 
@@ -118,13 +126,13 @@ public class ScrollTests
     }
 
     /// <summary>7. A control below the fold still exists, whether or not it is on screen.</summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Method", "IsExists")]
     public Task BottomButton_Exists_WithoutScrolling()
     {
         var page = _fixture.NavigateToScroll();
 
-        page.BottomButton.AssertExists();
+        page.BottomButton.AssertExists(timeoutMs: CrossPageMs);
         return Task.CompletedTask;
     }
 }

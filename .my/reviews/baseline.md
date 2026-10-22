@@ -207,5 +207,12 @@ the description in one `UiSelector` query) and swipes of 90% instead of 70%. On 
 it from 8.2 s to 6.6 s, but `MiddleButton_Click_UpdatesStatus` fails: from the middle the search
 goes down first, reaches the end, comes back up, and is out of its 5 s before the top label. A
 swipe with its lookup costs about a second on this emulator, and the page's worst paths need 6 to
-7 s of scrolling. Before M3 they passed by overrunning the budget (R2). Waiting on a decision.
+7 s of scrolling. Before M3 they passed by overrunning the budget (R2). Decided: the bound stays,
+and `ScrollTests`' calls that cross the page pass `timeoutMs` 10 000 (`CrossPageMs`).
+
+**M3 committed** with that: `ScrollTests` 7 of 7 in 1 m 11 s (1 m 32 s in B3); the full mobile
+suite 259 passed, the same 24 known gaps, 20 skipped in 22 m 36 s. Calls over their budget in
+`near-misses.md`: 8, from 16 in B3; the scroll page's are gone, and all 8 left are
+`TestTimePicker.SetTime` (its lookup tens of milliseconds, the time in the action and its
+confirmation: M4's picker wait).
 

@@ -680,60 +680,38 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
         try
         {
             var windowSize = _driver.Driver.Manage().Window.Size;
-            var location = _element.Location;
-            
-            var direction = location.Y > windowSize.Height ? "down" : 
-                           location.Y < 0 ? "up" : "down";
-            
-            var scrollParams = new Dictionary<string, object>
+            var region = new Dictionary<string, object>
             {
                 { "left", 50 },
                 { "top", 150 },
                 { "width", windowSize.Width - 100 },
                 { "height", windowSize.Height - 300 },
-                { "direction", direction },
-                { "percent", 0.7 }
             };
-            
-            // At least one step, even on a spent budget: the caller's poll decides whether to try
-            // again, and a zero budget must not mean "never scrolls".
-            do
-            {
-                try
-                {
-                    if (_element.Displayed) return;
-                }
-                catch (Exception error) when (!AppiumErrors.IsGone(error)) { }
-                
-                try
-                {
-                    var canScrollMore = _driver.Driver.ExecuteScript("mobile: scrollGesture", scrollParams);
-                    WaitHelper.Pause(150);
-                    
-                    if (canScrollMore is bool canScroll && !canScroll)
-                    {
-                        if (direction == "down")
-                        {
-                            scrollParams["direction"] = "up";
-                            direction = "up";
-                            continue;
-                        }
-                        break;
-                    }
-                }
-                catch (Exception error) when (!AppiumErrors.IsGone(error))
-                {
-                    break;
-                }
-            }
-            while (DateTime.UtcNow - startTime < timeout);
+
+            // Towards the element first, then back: the driver's one scroll routine, within what is
+            // left of the caller's budget.
+            string[] directions = _element.Location.Y < 0 ? ["up", "down"] : ["down", "up"];
+            var budgetMs = (int)Math.Max(0, (timeout - (DateTime.UtcNow - startTime)).TotalMilliseconds);
+            _driver.ScrollUntil(region, directions, IsDisplayedNow, budgetMs, atLeastOneSwipe: true);
         }
         catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
-            // Scroll attempt failed
+            // Scroll attempt failed: the caller's poll sees it still not visible.
         }
     }
-    
+
+    private bool IsDisplayedNow()
+    {
+        try
+        {
+            return _element.Displayed;
+        }
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
+        {
+            return false;
+        }
+    }
+
     private void ScrollIntoViewiOS()
     {
         try
@@ -798,13 +776,14 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
 
     internal void WaitUntilPositionSettles()
     {
-        const int MaxChecks = 10;
+        // At most half a second, and never past what the running call has left.
         const int IntervalMs = 50;
+        var maxChecks = Brinell.Core.Calls.CallBudget.Within(500) / IntervalMs;
 
         try
         {
             var previous = Rect;
-            for (var check = 0; check < MaxChecks; check++)
+            for (var check = 0; check < maxChecks; check++)
             {
                 WaitHelper.Pause(IntervalMs);
                 var current = Rect;

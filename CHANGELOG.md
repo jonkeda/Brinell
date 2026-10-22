@@ -419,6 +419,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- MAUI on Android scrolls with one routine (`AppiumMauiDriver.ScrollUntil`) for scroll-to-find
+  and an element's scroll into view, bounded by the running call's budget (R2): a miss used to
+  run past it, up to 8 s in a 5 s call. A swipe moves 90% of the scroller (from 70%) and is
+  followed by one lookup that asks for the resource id and the content description together;
+  the settle after a hit is cut to the call's budget too. A test whose call crosses a long page
+  passes a longer `timeoutMs` (the gallery's `ScrollTests`, 10 s).
 - A lost Appium session is told by its type: `AppiumErrors.Live` (in `Brinell.Appium`) reads the
   server's messages once and raises `AppUnavailableException` for an ended or stuck session
   (a command not answered in time, which MAUI did not map before) and `StaleElementException` for
