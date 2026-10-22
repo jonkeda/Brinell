@@ -69,28 +69,60 @@ public interface IInteractionLog
 }
 
 /// <summary>
-/// The interactions of the scene being recorded. A driver's element reports each action here just
-/// before it runs it; with no recording, <see cref="Log"/> is null and a report costs a null check
-/// (AD-024: a run that does not record pays nothing).
+/// The interactions of the scenes being recorded, one log per recording target, so two
+/// collections recording at once keep their taps apart. A driver's element reports each action
+/// here just before it runs it, naming its target where it knows it; with no recording,
+/// <see cref="Log"/> is null and a report costs a null check (AD-024: a run that does not record
+/// pays nothing).
 /// </summary>
 public static class Interactions
 {
-    private static IInteractionLog? _log;
+    private static readonly object Gate = new();
+
+    // The logs by target. Copied on change and read without the lock: a report reads it once.
+    private static Dictionary<RecordingTarget, IInteractionLog> _logs = [];
 
     // An action that runs another (a double tap as a gesture, an Invoke as a Click) is one interaction.
     [ThreadStatic]
     private static int _depth;
 
-    /// <summary>The log of the scene being recorded; null when nothing records.</summary>
-    public static IInteractionLog? Log => Volatile.Read(ref _log);
+    /// <summary>The log of the only scene being recorded; null when none, or several, record.</summary>
+    public static IInteractionLog? Log => Volatile.Read(ref _logs) is { Count: 1 } logs ? logs.Values.First() : null;
 
-    /// <summary>Sends the interactions to <paramref name="log"/> until the returned scope is disposed.</summary>
+    /// <summary>
+    /// Sends the interactions on <paramref name="target"/> to <paramref name="log"/> until the
+    /// returned scope is disposed.
+    /// </summary>
+    /// <param name="target">What the recording shows.</param>
     /// <param name="log">The recording's log.</param>
-    public static IDisposable Begin(IInteractionLog log)
+    public static IDisposable Begin(RecordingTarget target, IInteractionLog log)
     {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(log);
-        var previous = Interlocked.Exchange(ref _log, log);
-        return new Restore(log, previous);
+        lock (Gate)
+        {
+            _logs = new Dictionary<RecordingTarget, IInteractionLog>(_logs) { [target] = log };
+        }
+
+        return new Restore(target, log);
+    }
+
+    // A report's log: its target's, or the only one there is when it names none. Null when nothing
+    // records, and when several record and the report cannot say which it belongs to.
+    private static IInteractionLog? LogFor(Func<RecordingTarget?>? target)
+    {
+        var logs = Volatile.Read(ref _logs);
+        if (logs.Count == 0)
+        {
+            return null;
+        }
+
+        if (target is not null && TryRead(target, out var named) && named is not null)
+        {
+            return logs.GetValueOrDefault(named);
+        }
+
+        return logs.Count == 1 ? logs.Values.First() : null;
     }
 
     /// <summary>
@@ -104,8 +136,9 @@ public static class Interactions
     /// <param name="to">Where a swipe ends.</param>
     /// <param name="duration">How long the action lasts.</param>
     /// <param name="key">The key's name, for <see cref="InteractionKind.Key"/>.</param>
-    public static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label = null, Point? from = null, Point? to = null, TimeSpan duration = default, string? key = null)
-        => Report(kind, bounds, label, _ => (from, to), duration, key);
+    /// <param name="target">Reads what the action is shown on (the browser page, the device); only called while recording.</param>
+    public static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label = null, Point? from = null, Point? to = null, TimeSpan duration = default, string? key = null, Func<RecordingTarget?>? target = null)
+        => Report(kind, bounds, label, _ => (from, to), duration, key, target);
 
     /// <summary>
     /// Reports a swipe that has a direction but no points (a bridge's <c>SwipeDown</c>): it is drawn
@@ -115,13 +148,14 @@ public static class Interactions
     /// <param name="dx">-1, 0 or 1: left or right.</param>
     /// <param name="dy">-1, 0 or 1: up or down.</param>
     /// <param name="label">Reads the target's AutomationId or name; only called while recording.</param>
-    public static Scope ReportSwipe(Func<Rectangle> bounds, int dx, int dy, Func<string?>? label = null)
-        => Report(InteractionKind.Swipe, bounds, label, rectangle => (Across(rectangle, -dx, -dy), Across(rectangle, dx, dy)), default, null);
+    /// <param name="target">Reads what the action is shown on; only called while recording.</param>
+    public static Scope ReportSwipe(Func<Rectangle> bounds, int dx, int dy, Func<string?>? label = null, Func<RecordingTarget?>? target = null)
+        => Report(InteractionKind.Swipe, bounds, label, rectangle => (Across(rectangle, -dx, -dy), Across(rectangle, dx, dy)), default, null, target);
 
-    private static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label, Func<Rectangle, (Point? From, Point? To)> path, TimeSpan duration, string? key)
+    private static Scope Report(InteractionKind kind, Func<Rectangle> bounds, Func<string?>? label, Func<Rectangle, (Point? From, Point? To)> path, TimeSpan duration, string? key, Func<RecordingTarget?>? target)
     {
         ArgumentNullException.ThrowIfNull(bounds);
-        if (Log is not { } log)
+        if (LogFor(target) is not { } log)
         {
             return default;
         }
@@ -173,8 +207,19 @@ public static class Interactions
         }
     }
 
-    private sealed class Restore(IInteractionLog log, IInteractionLog? previous) : IDisposable
+    private sealed class Restore(RecordingTarget target, IInteractionLog log) : IDisposable
     {
-        public void Dispose() => Interlocked.CompareExchange(ref _log, previous, log);
+        public void Dispose()
+        {
+            lock (Gate)
+            {
+                if (_logs.TryGetValue(target, out var current) && ReferenceEquals(current, log))
+                {
+                    var logs = new Dictionary<RecordingTarget, IInteractionLog>(_logs);
+                    logs.Remove(target);
+                    _logs = logs;
+                }
+            }
+        }
     }
 }

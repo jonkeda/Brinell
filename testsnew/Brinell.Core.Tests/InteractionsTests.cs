@@ -23,7 +23,7 @@ public sealed class InteractionsTests
     public void WhileRecording_AnAction_IsLoggedOnce_WithItsBounds_EvenWhenItRunsAnother()
     {
         var log = new Log();
-        using (Interactions.Begin(log))
+        using (Interactions.Begin(Window(1), log))
         {
             // A double click that runs as a gesture, which reports too: one interaction.
             using (Interactions.Report(InteractionKind.DoubleTap, () => new Rectangle(10, 20, 30, 40), () => "Row"))
@@ -49,7 +49,7 @@ public sealed class InteractionsTests
     public void ASwipeWithADirectionOnly_IsDrawnAcrossTheMiddleHalfOfItsTarget()
     {
         var log = new Log();
-        using (Interactions.Begin(log))
+        using (Interactions.Begin(Window(1), log))
         {
             using (Interactions.ReportSwipe(() => new Rectangle(0, 100, 400, 400), dx: 0, dy: 1))
             {
@@ -66,7 +66,7 @@ public sealed class InteractionsTests
     public void ATargetWhoseBoundsCannotBeRead_LeavesNoMark_AndTheActionRuns()
     {
         var log = new Log();
-        using (Interactions.Begin(log))
+        using (Interactions.Begin(Window(1), log))
         {
             using (Interactions.Report(InteractionKind.Tap, () => throw new InvalidOperationException("The element is stale.")))
             {
@@ -75,6 +75,51 @@ public sealed class InteractionsTests
 
         Assert.Empty(log.Taken);
     }
+
+    [Fact]
+    public void TwoRecordingsAtOnce_KeepTheirTapsApart()
+    {
+        var first = new Log();
+        var second = new Log();
+        using (Interactions.Begin(Window(1), first))
+        using (Interactions.Begin(Window(2), second))
+        {
+            using (Interactions.Report(InteractionKind.Tap, () => new Rectangle(1, 1, 1, 1), target: () => Window(1)))
+            {
+            }
+
+            using (Interactions.Report(InteractionKind.Swipe, () => new Rectangle(2, 2, 2, 2), target: () => Window(2)))
+            {
+            }
+
+            // A report that cannot name its recording, while two record, belongs to neither.
+            using (Interactions.Report(InteractionKind.Tap, () => new Rectangle(3, 3, 3, 3)))
+            {
+            }
+
+            Assert.Null(Interactions.Log);
+        }
+
+        Assert.Equal(InteractionKind.Tap, Assert.Single(first.Taken).Kind);
+        Assert.Equal(InteractionKind.Swipe, Assert.Single(second.Taken).Kind);
+        Assert.Null(Interactions.Log);
+    }
+
+    [Fact]
+    public void AReportNamingAnotherTarget_IsNotThisRecordings()
+    {
+        var log = new Log();
+        using (Interactions.Begin(Window(1), log))
+        {
+            using (Interactions.Report(InteractionKind.Tap, () => new Rectangle(1, 1, 1, 1), target: () => Window(9)))
+            {
+            }
+        }
+
+        Assert.Empty(log.Taken);
+    }
+
+    private static RecordingTarget Window(int handle) => new RecordingTarget.Window(handle);
 
     private sealed class Log : IInteractionLog
     {

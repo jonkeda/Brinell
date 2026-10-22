@@ -174,7 +174,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
 
     // A recorded video's touch mark (AD-024): the target as it is, before the action runs.
     private Interactions.Scope Report(InteractionKind kind, string? key = null, TimeSpan duration = default)
-        => Interactions.Report(kind, () => Rect, () => AutomationId, duration: duration, key: key);
+        => Interactions.Report(kind, () => Rect, () => AutomationId, duration: duration, key: key, target: () => _driver.RecordingTarget);
 
     private void Marked(InteractionKind kind, Action action) => Marked(kind, null, action);
 
@@ -199,7 +199,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     // A swipe's own points, in the device's pixels as the element's bounds are.
     private void Marked(Point from, Point to, TimeSpan duration, Action action)
     {
-        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => AutomationId, from, to, duration);
+        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => AutomationId, from, to, duration, target: () => _driver.RecordingTarget);
         action();
     }
     

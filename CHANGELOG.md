@@ -419,6 +419,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- The recorded interactions are kept per recording target (`Interactions.Begin(target, log)`),
+  where they were one log for the process: two collections recording at once no longer write each
+  other's taps into their scenes. A report names its target where its element knows it (a
+  Playwright element its page, an Appium MAUI element its device); one that does not goes to the
+  only recording there is, and to none while several record.
 - A control's calls run in Core, once for every stack (AD-010 amended): `ControlCalls<TElement>`
   in `Brinell.Core.Calls`, with Html's `ControlBase` and MAUI's and native Android's `ViewBase` as
   its `IControlHost`. The `Run*` members keep their names and signatures; the three bases lost

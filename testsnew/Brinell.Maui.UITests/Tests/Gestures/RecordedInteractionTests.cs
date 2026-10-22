@@ -34,7 +34,9 @@ public class RecordedInteractionTests
     {
         var log = new Log();
 
-        using (Interactions.Begin(log))
+        var target = ((IRecordable)_fixture.Context).RecordingTarget
+            ?? new RecordingTarget.Window(0); // a head that cannot say what it shows: its reports name no target either
+        using (Interactions.Begin(target, log))
         {
             Page.TriggerRefreshButton.Click();
             Page.RefreshText.WaitText("refreshed 1", TestConstants.DefaultTestTimeoutMs);

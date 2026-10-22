@@ -21,7 +21,8 @@ public sealed class RecordedInteractionTests : BlazorSampleTestBase
         var page = new CounterPage(Context);
         var log = new Log();
 
-        using (Interactions.Begin(log))
+        var target = ((IRecordable)Context).RecordingTarget ?? throw new InvalidOperationException("The page records nothing.");
+        using (Interactions.Begin(target, log))
         {
             page.IncrementButton.Click();
         }

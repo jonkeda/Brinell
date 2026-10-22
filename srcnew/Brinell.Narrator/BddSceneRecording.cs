@@ -147,7 +147,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
         _startedAt = _recording.StartedAt;
 
         // The test's taps and swipes, for the touch marks drawn when the video is composed.
-        _logging = Interactions.Begin(_interactions);
+        _logging = Interactions.Begin(target, _interactions);
     }
 
     private void StopLogging()

@@ -217,7 +217,10 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     // A recorded video's touch mark (AD-024): the target scrolled into view first, as the action
     // would scroll it, so its bounds are where it is when the action runs.
     private Interactions.Scope Report(InteractionKind kind, string? key = null, TimeSpan duration = default)
-        => Interactions.Report(kind, InView, () => _locator.ToString(), duration: duration, key: key);
+        => Interactions.Report(kind, InView, () => _locator.ToString(), duration: duration, key: key, target: Target);
+
+    // The page the element is on: the recording its marks belong to.
+    private RecordingTarget? Target() => _locator.Page is { } page ? new RecordingTarget.BrowserPage(page) : null;
 
     private void Marked(InteractionKind kind, Action action, TimeSpan duration = default, string? key = null)
     {
@@ -228,7 +231,7 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     // A swipe's own points, in the viewport's pixels as the element's bounds are.
     private void MarkedSwipe(Point from, Point to, int durationMs, Action action)
     {
-        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => _locator.ToString(), from, to, TimeSpan.FromMilliseconds(durationMs));
+        using var mark = Interactions.Report(InteractionKind.Swipe, () => Rect, () => _locator.ToString(), from, to, TimeSpan.FromMilliseconds(durationMs), target: Target);
         action();
     }
 
