@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Recording;
@@ -163,20 +164,26 @@ public abstract class UatScenarioTestBase<TFixture>
         await RunBoundScenarioAsync(context, matches[0], cancellationToken).ConfigureAwait(false);
     }
 
-    // xUnit creates a test-class instance per case, so the file last entered is kept per closed type.
-    private static string? _currentFile;
+    // xUnit creates a test-class instance per case, so the file last entered is kept per fixture:
+    // collections that share a test base but not a fixture (one per collection) each enter a file
+    // once, where one value per closed type made each switch between them enter it again.
+    private static readonly ConditionalWeakTable<object, StrongBox<string>> CurrentFiles = new();
 
     // Before binding: BeforeFile may restart the app, and binding reads the fixture's composition.
     private void EnterFile(string filePath)
     {
         var fullPath = Path.GetFullPath(filePath);
-        if (_currentFile == fullPath || BddMarkdownParser.ParseFile(filePath).Document is not { } document)
+        var current = CurrentFiles.GetValue(Fixture, _ => new StrongBox<string>());
+        lock (current)
         {
-            return;
-        }
+            if (current.Value == fullPath || BddMarkdownParser.ParseFile(filePath).Document is not { } document)
+            {
+                return;
+            }
 
-        BeforeFile(document);
-        _currentFile = fullPath;
+            BeforeFile(document);
+            current.Value = fullPath;
+        }
     }
 
     // Library code to the debugger, with its callers: a failed scenario is shown in the preview and

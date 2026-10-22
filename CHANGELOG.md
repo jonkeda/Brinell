@@ -644,6 +644,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed
+- UAT: `BeforeFile` runs once per file per fixture. The file last entered was one value per closed
+  test base, so collections sharing a base (one fixture each) entered their file again on every
+  switch between them.
 - Html: `Locator.ByAccessibilityId` finds by the accessible name (`aria-label`, `aria-labelledby`
   or a `<label>`, exactly), where it looked for a generic role with that name and found nothing;
   attribute and text selectors escape a backslash as well as a quote.

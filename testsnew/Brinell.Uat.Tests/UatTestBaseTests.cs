@@ -354,6 +354,72 @@ public sealed class UatTestBaseTests
         }
     }
 
+    /// <summary>
+    /// As xUnit runs them: a test-class instance per case, two collections each with a fixture of
+    /// its own, alternating files. Each fixture enters its file once.
+    /// </summary>
+    [Fact]
+    public async Task ScenarioTestBase_TwoFixturesAlternatingFiles_EachEnterTheirFileOnce()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var first = WriteScenario(directory, """
+                # Feature: First file
+
+                ## Scenario: One
+
+                ```gherkin
+                When I run the custom action
+                ```
+
+                ## Scenario: Two
+
+                ```gherkin
+                When I run the custom action
+                ```
+                """);
+            var second = Path.Combine(directory, "second.feature.md");
+            File.WriteAllText(second, """
+                # Feature: Second file
+
+                ## Scenario: Three
+
+                ```gherkin
+                When I run the custom action
+                ```
+
+                ## Scenario: Four
+
+                ```gherkin
+                When I run the custom action
+                ```
+                """);
+            var fixtureA = new HarnessFixture();
+            var fixtureB = new HarnessFixture();
+            var entered = new List<string>();
+
+            async Task Run(HarnessFixture fixture, string file, string scenario)
+            {
+                var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
+                await harness.RunScenarioAsync(file, scenario);
+                entered.AddRange(harness.FilesEntered.Select(title => $"{(ReferenceEquals(fixture, fixtureA) ? "A" : "B")}: {title}"));
+            }
+
+            await Run(fixtureA, first, "One");
+            await Run(fixtureB, second, "Three");
+            await Run(fixtureA, first, "Two");
+            await Run(fixtureB, second, "Four");
+
+            Assert.Equal(["A: First file", "B: Second file"], entered);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ScenarioTestBase_RunUatScenarioAsync_NamesTheScenariosWhenTheNameIsUnknown()
     {
