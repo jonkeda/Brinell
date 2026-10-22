@@ -117,7 +117,41 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>, IContro
 
     bool IControlHost<IMauiElement>.ChecksVisibilityBeforeAction(IMauiElement element) => true;
 
-    void IControlHost<IMauiElement>.EnsureReadyForAction(IMauiElement element) => EnsureReadyForActionCore(element);
+    void IControlHost<IMauiElement>.EnsureReadyForAction(IMauiElement element)
+    {
+        EnsureNotUnderADialog(element);
+        EnsureReadyForActionCore(element);
+    }
+
+    /// <summary>
+    /// On Android a control found is a control counted as visible, also under a dialog: the tap
+    /// then lands on the dialog, and the action reads as "accepted and did not take it". So before
+    /// an action, a control outside an open dialog's bounds is not ready, "covered by a dialog",
+    /// and the call keeps asking. One dialog lookup an action; a control inside the dialog passes.
+    /// </summary>
+    private void EnsureNotUnderADialog(IMauiElement element)
+    {
+        if (Context.Platform != Enums.MauiPlatform.Android)
+        {
+            return;
+        }
+
+        IMauiElement? dialog;
+        try
+        {
+            dialog = Context.AppElement.TryFindActiveDialog();
+        }
+        catch (Exception error) when (error is NotSupportedException or RouteUnavailableException)
+        {
+            return;
+        }
+
+        if (dialog is not null
+            && !dialog.Rect.Contains(Brinell.Core.Interfaces.ElementGeometryExtensions.CenterOf(element.Rect)))
+        {
+            throw new ElementNotReadyException(Locator, NotReadyReason.Other, "covered by a dialog");
+        }
+    }
 
     ElementNotFoundException IControlHost<IMauiElement>.NotFound() => NotFound();
 

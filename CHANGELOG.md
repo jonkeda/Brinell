@@ -424,6 +424,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- MAUI on Android: an action on a control outside an open dialog is not ready, "covered by a
+  dialog", and the call keeps asking, where before the tap landed on the dialog and read as
+  "accepted and did not take it". One dialog lookup an action (20 ms on an emulator); a control
+  inside the dialog is acted on as before.
 - MAUI's Appium driver keeps no clock of its own: the picker dialog's wait, the iOS wheels' wait
   and `FindChrome`/`FindAllChrome` (once Selenium's `WebDriverWait`) are `Settle.Until`, within
   what the running call has left. An Android time picker's fields are typed without a clear first
