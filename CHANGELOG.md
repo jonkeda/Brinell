@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Brinell.Maui.Testing.PageNavigation`: `WaitArrived` (a pushed page on top, as one logged call)
+  and `ReturnToRoot` (back to the app's root page between tests), which MAUI's fixture had as
+  loops of its own. `ReturnToRoot` goes back again only while a dialog or a pushed page covers the
+  root; a root that is only late gets the whole wait and one back after it, as a last resort,
+  where before it got up to three backs and could close the app.
 - `CallBudget.Within(windowMs)`: a driver's own wait, cut to what the running call has left. The
   waits below a call that had a window of their own (FlaUI's navigate back, navigation depth,
   bridge resend, dropdown open and close, scroll settle and scroll change, `FindChrome`, MAUI's

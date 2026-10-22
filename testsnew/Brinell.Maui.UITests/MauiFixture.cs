@@ -141,55 +141,7 @@ public class MauiFixture : MauiTestFixtureBase
     /// </para>
     /// </remarks>
     private void WaitForThePageToArrive()
-    {
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        var hub = _hub.Name;
-
-        while (clock.ElapsedMilliseconds < TestConstants.ShortTestTimeoutMs)
-        {
-            string top;
-
-            try
-            {
-                top = Context.Driver.CurrentRoute();
-            }
-            catch (NotSupportedException)
-            {
-                // Nothing on the bridge can answer yet - the state this is waiting out.
-                Thread.Sleep(25);
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(top))
-            {
-                // A driver with no way to name the top page: Appium on Android and iOS has no
-                // bridge, and answers an empty route. Waiting for a name that never comes cost
-                // the whole timeout, 10 s, on every page a mobile test opened. What can be seen
-                // there is the hub leaving - a covered page drops out of the accessibility tree -
-                // so that is the wait, and the test's first lookup polls for its own page.
-                if (Context.TryFindElement(Locator.ByAutomationId(hub)) is null)
-                {
-                    break;
-                }
-            }
-            else if (top != hub
-                && Context.TryFindElement(Locator.ByAutomationId(top)) is not null)
-            {
-                break;
-            }
-
-            Thread.Sleep(25);
-        }
-
-        try
-        {
-            Context.Driver.IsIdle();
-        }
-        catch (NotSupportedException)
-        {
-            // An app mid-transition has nobody to ask.
-        }
-    }
+        => PageNavigation.WaitArrived(Context, _hub.Name, TestConstants.ShortTestTimeoutMs);
 
     /// <summary>
     /// Returns to the hub if a page is open.
@@ -204,85 +156,35 @@ public class MauiFixture : MauiTestFixtureBase
     /// <summary>How many backs past the first a covered hub gets: a dialog, its page, one spare.</summary>
     private const int MaxExtraBacks = 3;
 
-    /// <summary>How long the hub gets to show after one of those backs.</summary>
-    private const int AfterExtraBackMs = 3_000;
 
     private void ReturnToHub()
     {
-        var attempts = new List<string>();
-
-        if (Context.Driver.IsAtNavigationRoot())
-        {
-            // Nothing to pop, and nothing to check afterwards beyond the postcondition below.
-            attempts.Add("already at the navigation root");
-        }
-        else
-        {
-            try
+        // The hub page object lives for the whole run and caches the root element it resolved;
+        // navigation replaces that element, so each back drops it. On Windows a refused back
+        // falls to the toolbar's BackToHub item.
+        var (atHub, steps) = PageNavigation.ReturnToRoot(
+            Context,
+            _hub,
+            TestConstants.ShortTestTimeoutMs,
+            forget: _hub.InvalidateCache,
+            whenBackRefused: () =>
             {
-                Context.Driver.NavigateBack();
-                attempts.Add("popped through the bridge");
-            }
-            catch (BrinellException failure)
-            {
-                // The bridge gave a specific reason and it is worth carrying into the
-                // postcondition's message, because the two failures read identically from the
-                // outside: the hub did not arrive.
-                attempts.Add($"the bridge refused: {failure.Message}");
-
-                if (BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
+                if (!BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
                 {
-                    // The toolbar verb on Windows, a tap elsewhere - ToolbarButton chooses.
-                    BackToHub.Click();
+                    return false;
                 }
-                else
-                {
-                    attempts.Add("no 'BackToHub' item on this page either");
-                }
-            }
-        }
 
-        // The hub page object lives for the whole run and caches the root element it resolved.
-        // Navigation replaces that element, and a cached one belonging to an earlier incarnation
-        // fails the readiness check in a way that reads as "not loaded yet" rather than "wrong
-        // element" - which is what this postcondition then reports, intermittently and against
-        // whichever test navigated next.
-        _hub.InvalidateCache();
+                BackToHub.Click();
+                return true;
+            },
+            maxExtraBacks: MaxExtraBacks);
 
-        // "At the root" is a reading of what is on screen, and something can be over the hub that
-        // does not look like a pushed page: on Android a CommunityToolkit popup is a modal page
-        // with no toolbar, so nothing reports a way back while it covers the hub. When the hub is
-        // not here after all, one more back dismisses that - and cannot leave the hub, because a
-        // hub that was showing would have satisfied the wait above.
-        //
-        // More than once, because a dialog can cover a pushed page: on Android a prompt a failed
-        // test left open hides the toolbar, so the page under it read as "at the root". One back
-        // closed the dialog, the page stayed, and every later test in the class failed here. Each
-        // further back still only happens while the hub is not showing.
-        for (var extra = 0;
-             extra < MaxExtraBacks
-             && !_hub.WaitLoaded(true, extra == 0 ? TestConstants.ShortTestTimeoutMs : AfterExtraBackMs);
-             extra++)
-        {
-            try
-            {
-                Context.Driver.NavigateBack();
-                attempts.Add("the hub was covered, so went back once more");
-            }
-            catch (BrinellException failure)
-            {
-                attempts.Add($"nothing to go back from: {failure.Message}");
-            }
-
-            _hub.InvalidateCache();
-        }
-
-        if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
+        if (!atHub)
         {
             throw new InvalidOperationException(
                 "Could not get back to the hub, so the next page cannot be opened. This is a "
-                + "navigation failure, not a fault in whatever is opened next.\n  "
-                + string.Join("\n  ", attempts));
+                + "navigation failure, not a fault in whatever is opened next." + Environment.NewLine + "  "
+                + string.Join(Environment.NewLine + "  ", steps));
         }
     }
 
