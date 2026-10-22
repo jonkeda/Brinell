@@ -135,6 +135,17 @@ minutes on 2026-10-20); a test moves by up to a minute between runs with where i
 start-up rush. PLT.03.1's failure is the Rules page's fall rules not loaded in 5 s, a page that
 timed out before (Tomorrow's abd8b2e6), and the near-miss list now names the calls to look at next.
 
+## C1: a control's calls in Core
+
+`move` 0ee76775, one run each, all green. Tomorrow's UI suite: 108 s (1 m 45 s), 86 of 86, its
+calls 176 s in all, median 36 ms; the only near-misses the two start-up login clicks. Brinell's
+web suites: Html 32 s (27 tests, the two reset tests new), Blazor 39 s, Todo web UI tests 18 s,
+Todo web scenarios 82 s, the same as after H4. Html's calls came to 43 s, from 18 s: four
+first-call `SampleShell.AssertIdle`s at about 3.5 s while the browsers start together (a page
+call, which `ControlCalls` does not run; the reset tests add two browsers to that start), the
+rest as before. The MAUI and native Android UI suites need the emulator and were not run; their
+unit suites are green (181 and 69).
+
 ## B3
 
 Not run yet.
