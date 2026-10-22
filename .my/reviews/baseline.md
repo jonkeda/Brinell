@@ -10,17 +10,17 @@ after a build, `BRINELL_CALL_LOG` set to a folder; CPU by `Get-Counter` every 5 
 the counter itself takes about 2 s), as a share of the machine's 32 logical cores. The app runs
 in the test host (`TomorrowApp`), so its CPU is the test host's.
 
-| Measure | Before (2026-10-22) | After F1-F3 (2026-10-22) | After H1 | After H2 |
-| --- | --- | --- | --- | --- |
-| Commits | `move` 5a69338e, `game` 20a87afb | `move` 40b70088, the six sleeps gone | `move` 840c7712, one-trip probe | `move` 502657bc, Playwright's actionability |
-| Machine | not quiet: about 70 `dotnet` processes, machine CPU 39% average, 61% peak | the same: 40% average, 68% peak | 32% average, 58% peak | 33% average, 63% peak |
-| Tests | 87: 82 passed, 4 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped |
-| Wall time | 199 s (`dotnet test` 3 m 15 s) | 142 s (2 m 19 s) | 128 s (2 m 6 s) | 81 s (1 m 18 s) |
-| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak | 4.7% average (about 1.5 cores), 16.8% peak | 6.3% average, 20.6% peak | 6.2% average, 20.7% peak |
-| SQL Server CPU | 0.7% average, 4.1% peak | 1.0% average, 5.7% peak | 1.0% average, 4.1% peak | 1.3% average, 3.5% peak |
-| Calls logged | 2,349, 487 s in all, median 76 ms | 2,394, 371 s in all, median 50 ms | 2,387, 236 s in all, median 48 ms | 2,389, 162 s in all, median 32 ms |
-| Near-misses | 0 (see below) | 0 | 0 | 0 |
-| Calls over 2 s | `Route_Note.AssertText` 8.2 s; `login-submit.Click` 2.0 to 2.8 s, seven times; `App_ErrorBanner.AssertVisible` 2.4 s; `Here_Board.AssertAttribute` 2.3 s | `Route_Note.AssertText` 4.6 s; `login-submit.Click` 2.9 s, twice | `Route_Note.AssertText` 5.5 s; `login-submit.Click` 4.7 s twice and 2.7 s; `registerSubmit.Click` 3.8 s | `Route_Note.AssertText` 4.4 s; `Fixture_Panel.AssertExists` 3.0 s (see below); `login-submit.Click` 2.7 s twice |
+| Measure | Before (2026-10-22) | After F1-F3 (2026-10-22) | After H1 | After H2 | After H3-H4 (two runs) |
+| --- | --- | --- | --- | --- | --- |
+| Commits | `move` 5a69338e, `game` 20a87afb | `move` 40b70088, the six sleeps gone | `move` 840c7712, one-trip probe | `move` 502657bc, Playwright's actionability | `move` bb4aa5e0, AccessibilityId and screenshots |
+| Machine | not quiet: about 70 `dotnet` processes, machine CPU 39% average, 61% peak | the same: 40% average, 68% peak | 32% average, 58% peak | 33% average, 63% peak | 31% average, 61% to 63% peak |
+| Tests | 87: 82 passed, 4 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped | 87: 86 passed, 0 failed, 1 skipped, twice |
+| Wall time | 199 s (`dotnet test` 3 m 15 s) | 142 s (2 m 19 s) | 128 s (2 m 6 s) | 81 s (1 m 18 s) | 125 s (2 m 2 s) and 127 s (1 m 33 s) |
+| Test host CPU | 5.5% average (about 1.8 cores), 13.7% peak | 4.7% average (about 1.5 cores), 16.8% peak | 6.3% average, 20.6% peak | 6.2% average, 20.7% peak | 5.3% and 6.2% average, 16.8% peak |
+| SQL Server CPU | 0.7% average, 4.1% peak | 1.0% average, 5.7% peak | 1.0% average, 4.1% peak | 1.3% average, 3.5% peak | 1.2% average, 6.3% peak |
+| Calls logged | 2,349, 487 s in all, median 76 ms | 2,394, 371 s in all, median 50 ms | 2,387, 236 s in all, median 48 ms | 2,389, 162 s in all, median 32 ms | 2,391 and 2,387, 188 s and 180 s in all, median 38 ms |
+| Near-misses | 0 (see below) | 0 | 0 | 0 | 0 |
+| Calls over 2 s | `Route_Note.AssertText` 8.2 s; `login-submit.Click` 2.0 to 2.8 s, seven times; `App_ErrorBanner.AssertVisible` 2.4 s; `Here_Board.AssertAttribute` 2.3 s | `Route_Note.AssertText` 4.6 s; `login-submit.Click` 2.9 s, twice | `Route_Note.AssertText` 5.5 s; `login-submit.Click` 4.7 s twice and 2.7 s; `registerSubmit.Click` 3.8 s | `Route_Note.AssertText` 4.4 s; `Fixture_Panel.AssertExists` 3.0 s (see below); `login-submit.Click` 2.7 s twice | `Route_Note.AssertText` 4.7 s; `Fixture_Panel.AssertExists` 3.0 s twice; `login-submit.Click` 2.2 s twice |
 
 The after column is one run on the same busy machine. The wall time (minus 29%) and the median
 call (minus 34%) moved more than the test host's CPU did. The likely cause is the pause: a spinning
@@ -38,6 +38,14 @@ After H2, the wall time fell by another 37% (128 s to 81 s) and the call time by
 The one error in the log is Tomorrow's own retry: `HerePage.PressE` presses E again when the
 verb list has not opened in 3 s, because the board drops a key pressed before it is drawn
 (WORLD-RW-51). Faster actions reach that early press more often, and each one costs 3 s.
+
+After H3 and H4 the suite ran twice: 2 m 2 s and 1 m 33 s by `dotnet test`'s clock (H2's run
+was 1 m 18 s), with the wall time 125 s and 127 s. Neither change runs on a passing call (H3 is
+a locator only no Tomorrow page uses, H4 runs on a failure), and the time inside calls barely
+moved (162 s to 180 s and 188 s). The test time outside calls did (366 s summed over tests
+after H2, 559 s in the first run after H4). So the spread is the machine: one run per change
+is not enough to rank the later steps, and H6 should measure with `tools/Scripts/repeat-run.ps1`
+over several runs.
 
 **The four failures pass alone** (14 tests in their groups, 44 s, all green), so they are load:
 
@@ -90,6 +98,10 @@ slowest calls are still each collection's first, about 2.8 s while the browsers 
 After H2 (`move` 502657bc): Html 27 s, Blazor 35 s, Todo web UI tests 15 s, Todo web
 scenarios 55 s, all green; calls in all 18 s, 8 s, 8 s, 30 s. Html's first-call 2.8 s is gone
 (one call over 2 s left). From the first baseline the four suites went from 212 s to 132 s.
+
+After H3 and H4 (`move` bb4aa5e0): Html 28 s, Blazor 41 s, Todo web UI tests 17 s, Todo web
+scenarios 81 s, all green; calls in all 18 s, 7 s, 12 s, 41 s. The same spread as B1's: the
+Todo scenarios' 55 s after H2 was the low end, not a level.
 
 These suites barely poll (their calls pass on the first attempt), so the pause had little to cost them; within noise.
 
