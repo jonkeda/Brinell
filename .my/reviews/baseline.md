@@ -159,6 +159,16 @@ Html 30 s (27), Blazor 39 s (35), Todo web UI tests 18 s (10, 1 skipped), Todo w
 bounded waits and the MAUI recorded-interaction test need a Windows MAUI head or the emulator and
 were not run.
 
+## C5
+
+`move` 9b71c97a. Every unit suite green: Core 50 (with `NoCallModelStack_ReferencesTheFirstModel`),
+UAT 222, Html 72, Blazor 173, MAUI 181, WPF 10, WinForms 9, Stride automation 3. Tomorrow's UI
+suite twice: 83 of 86 at 1 m 59 s on a busy machine (SRV.05.5, the first baseline's load failure;
+SRV.05.7 and SRV.08.1, a value and a page late), the three green alone twice; then 86 of 86 in
+1 m 36 s. The solution build fails its restore on two NuGet advisories (the Stride sample's
+`System.Security.Cryptography.Pkcs`, `Brinell.Cli.Tests`' `MessagePack`), so it compiles
+nothing: build with `-p:NuGetAudit=false` to check every project until the packages are updated.
+
 ## B3
 
 Not run yet.
