@@ -8,7 +8,9 @@ namespace Brinell.Core.Utilities;
 public static class WaitHelper
 {
     /// <summary>
-    /// Pauses execution for a short polling/settling interval without using Thread.Sleep.
+    /// Pauses execution for a short polling/settling interval: the poll's pause between attempts.
+    /// It blocks rather than spins, so a suite's parallel collections leave the cores to the app
+    /// and the database they wait for.
     /// </summary>
     /// <param name="milliseconds">Pause duration in milliseconds.</param>
     public static void Pause(int milliseconds)
@@ -19,7 +21,7 @@ public static class WaitHelper
             return;
         }
 
-        SpinWait.SpinUntil(static () => false, milliseconds);
+        Thread.Sleep(milliseconds);
     }
 
     /// <summary>
