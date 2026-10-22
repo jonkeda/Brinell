@@ -36,6 +36,25 @@ whose action used more than half the budget.
 The CSVs and the CPU samples are not committed; `calls.py` in the session scratchpad summarized
 them (results per direction, warnings, the slowest exits).
 
-## B2, B3
+## B2: Brinell's web suites
+
+2026-10-22, `move` at f4df2ddd, run one after the other, each built first, the same switches as B1.
+CPU as a share of 32 cores; "dotnet" sums every `dotnet` process (the Todo app runs as one), so
+on a machine this busy it includes other work.
+
+| Suite | Tests | Wall | Calls (median) | Test host CPU avg / peak |
+| --- | --- | --- | --- | --- |
+| `Brinell.Html.UITests` | 25 passed | 37 s | 110 (86 ms) | 1.0% / 2.2% |
+| `Brinell.Blazor.UITests` | 35 passed | 44 s | 111 (45 ms) | 0.5% / 1.7% |
+| `Brinell.Samples.Todo.Web.UITests` | 10 passed, 1 skipped | 26 s | 137 (61 ms) | 1.3% / 2.9% |
+| `Brinell.Samples.Todo.Web.Uat` | 35 passed | 105 s | 524 (51 ms) | 1.4% / 6.0% |
+
+- **Machine:** CPU 32% to 53% on average across the four suites, 72% at peak; not quiet, as in B1.
+- **Near-misses:** 0 in 882 calls.
+- **Errors in the log, all expected:** four, from negative tests. Html's recycled-row `Click` scope not ready in 500 ms and `login-btn` "disabled: not enabled still after 5000 ms"; the Todo scenarios' two `StatusText.WaitText` meant to return false ("6 attempts; last: Pending").
+- **First load is the slow call.** Html's six collections each spend 2.8 s in their first `SampleShell.AssertIdle`, all ending at the same instant (the browsers launch together); later `AssertIdle`s take under 300 ms. The Todo suites' slowest calls are their first `TodoListPage.AssertIdle` too (1.9 s, 2.3 s). H1's one-trip probe should show here.
+- **Builds:** 12 s, 4 s, 18 s, 11 s.
+
+## B3
 
 Not run yet.
