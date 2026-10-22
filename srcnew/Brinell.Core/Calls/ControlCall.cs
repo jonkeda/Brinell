@@ -78,10 +78,11 @@ internal sealed class ControlCall
             _logger?.LogExit(_testName, _pageName, _controlId, caller,
                 LogResult.Error, elapsed, context.Log.Summary());
         }
-        else if (IsNearMiss(context))
+        else if (IsNearMiss(context, elapsed))
         {
             _logger?.LogExit(_testName, _pageName, _controlId, caller,
                 LogResult.Warning, elapsed, $"near-miss: {context.Log.Summary()} (budget {budgetMs} ms)");
+            NearMisses.Add(new NearMisses.NearMiss(_testName, _pageName, _controlId, caller, elapsed, budgetMs, context.Log.Summary()));
         }
         else
         {
@@ -91,17 +92,24 @@ internal sealed class ControlCall
         return result;
     }
 
-    private bool IsNearMiss(AttemptContext context)
+    private bool IsNearMiss(AttemptContext context, int elapsedMs)
     {
         if (context.Log.Replacements >= _nearMiss.Replacements)
         {
             return true;
         }
 
-        // Judged on the poll alone: an action's confirmation has a budget of its own (R3).
         var budget = context.Deadline.BudgetMs;
-        return budget > 0
-               && context.Log.Attempts > 1
-               && context.Log.LastAtMs > budget * _nearMiss.BudgetShare;
+        if (budget <= 0)
+        {
+            return false;
+        }
+
+        // Several attempts: judged on the poll alone, since an action's confirmation has a budget
+        // of its own (R3). One attempt: on the call, since the time went into that attempt's own
+        // work, as a Playwright action that waits for its element or its navigation does.
+        return context.Log.Attempts > 1
+            ? context.Log.LastAtMs > budget * _nearMiss.BudgetShare
+            : elapsedMs > budget * _nearMiss.BudgetShare;
     }
 }

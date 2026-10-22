@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `BRINELL_TIMEOUT_SCALE`: a factor (0.1 to 20) on the waits a call takes from `TimeoutSettings`
+  (`DefaultWait`, `PageLoad`, `ElementFind`, `ElementState`), for a slow or shared machine; a
+  `timeoutMs` a test passes is not scaled.
+- `near-misses.md` in the suite's artifact folder (`NearMisses`): every call of the run that
+  passed after trouble, worst first, written when one happens, with no switch. A call that used
+  more than its budget's share in a single attempt now counts as a near-miss too (a Playwright
+  action that waited inside itself), where only a call of several attempts did.
 - A failing Html UAT scenario leaves a screenshot: `PlaywrightTestContext` is an
   `IScreenshotSource` (PNGs in the run's `suites/<suite>/screenshots`), and
   `UatScenarioResults.ScreenshotServiceOf` finds one on the fixture or on its public properties

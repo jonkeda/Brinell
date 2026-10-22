@@ -32,8 +32,10 @@ would have shipped the bug.
   element can reveal that it was recycled: give the item template an id.
 - **Success after trouble is reported.** A call that passed after its element was
   replaced three or more times, or after using more than half its budget, logs a
-  near-miss warning (thresholds: `MauiTestContextOptions.NearMiss`). Set `BRINELL_CALL_LOG` to a folder to write every context's calls
-  to CSV and list them.
+  near-miss warning (thresholds: `MauiTestContextOptions.NearMiss`), whether the time went
+  into several attempts or into one. The run's near-misses are listed in `near-misses.md` in
+  the suite's artifact folder, worst first. Set `BRINELL_CALL_LOG` to a folder to write every
+  context's calls to CSV.
 
 Proven on 2026-09-19 ([stale-readiness plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/plan.md), step 8): with the bug put back,
 the Todo journey TOD.04.4 failed 3 times out of 3, naming the dialog that never
