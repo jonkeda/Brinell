@@ -105,6 +105,36 @@ Todo scenarios' 55 s after H2 was the low end, not a level.
 
 These suites barely poll (their calls pass on the first attempt), so the pause had little to cost them; within noise.
 
+## H5 and H6: three runs each, and the studio's suite
+
+H5's first form (`move` fae7c5f9, a new browser context per sign-in) and H6 (c3ffdb2e), three
+runs of Tomorrow's UI suite: 161, 165 and 159 s; SRV.06.3 failed in one, `Sheet_OnAPhone_ShowsTabs`
+in another, both the Sheet page not loading in time. H6's first `near-misses.md` gave the cause:
+every login click at 82 to 91% of its budget, from about 50% before. A new context throws away the
+HTTP cache, so every sign-in loaded Blazor's scripts, styles and fonts cold. Two phone tests also
+failed in the first run, a sign-in in the test closing the page `UsePhone` had resized.
+
+H5 reworked (965eedd0): the same context, its cookies, `localStorage` and `sessionStorage` cleared.
+Three runs: 102, 154 and 129 s, 86 of 86 passed in each. `near-misses.md`: none in the first, the
+two login clicks of the start-up rush at 87% in the others, 11 to 15 ms of each finding the button
+and the rest Playwright waiting for the sign-in POST's navigation (the server, under ten
+collections signing in at once; since H2 a click that overruns there is done, not failed).
+RW-94, 138, 217 and 237 did not show.
+
+Tomorrow's studio suite (`tests/Tomorrow.Studio.UITests`, the same fixture source), once each:
+
+| Measure | Before today (`game` 20a87afb, `move` a7d989c7) | After H1-H6 (`move` 965eedd0) |
+| --- | --- | --- |
+| Tests | 103 passed | 102 passed, PLT.03.1 failed (passes alone, twice) |
+| Wall time | 602 s (9 m 59 s) | 534 s (8 m 50 s) |
+| Test time summed | 3,076 s | 2,955 s |
+| Near-misses | not counted | `QuestTry_Cast.SelectByValue` 94%, `World_Results` rows 92%, `BenchSites_Summary.AssertAttribute` 89%, `RulesPage.WaitReady` 54% (5.4 s of 10 s) |
+
+The suite is slow on this machine either way (the register had 2 m 44 s at platform/425, 4 to 6
+minutes on 2026-10-20); a test moves by up to a minute between runs with where it falls in the
+start-up rush. PLT.03.1's failure is the Rules page's fall rules not loaded in 5 s, a page that
+timed out before (Tomorrow's abd8b2e6), and the near-miss list now names the calls to look at next.
+
 ## B3
 
 Not run yet.
