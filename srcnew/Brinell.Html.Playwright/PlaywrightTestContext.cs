@@ -13,9 +13,10 @@ namespace Brinell.Html.Playwright;
 
 public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell.Core.Interfaces.IScreenshotSource, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
-    private readonly IPage _page;
+    // A new page and driver when ResetAppState opens a new browser context (one per scenario).
+    private IPage _page;
     private readonly IFrame? _frame;
-    private readonly PlaywrightHtmlDriver _driver;
+    private PlaywrightHtmlDriver _driver;
     private readonly bool _ownsLifecycle;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
@@ -24,6 +25,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private IBrowserContext? _browserContext;
+    private BrowserNewContextOptions? _contextOptions;
     private bool _disposed;
 
     private PlaywrightTestContext(
@@ -87,7 +89,8 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
 
         var browser = await browserType.LaunchAsync(launchOptions).ConfigureAwait(false);
 
-        var browserContext = await browser.NewContextAsync(shown ? new BrowserNewContextOptions { ViewportSize = ViewportSize.NoViewport } : null).ConfigureAwait(false);
+        var contextOptions = shown ? new BrowserNewContextOptions { ViewportSize = ViewportSize.NoViewport } : null;
+        var browserContext = await browser.NewContextAsync(contextOptions).ConfigureAwait(false);
         var page = await browserContext.NewPageAsync().ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(options.BaseUrl))
@@ -95,7 +98,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
             await page.GotoAsync(options.BaseUrl).ConfigureAwait(false);
         }
 
-        return new PlaywrightTestContext(playwright, browser, browserContext, page, options);
+        return new PlaywrightTestContext(playwright, browser, browserContext, page, options) { _contextOptions = contextOptions };
     }
 
     public static PlaywrightTestContext ForPage(IPage page, HtmlTestContextOptions? options = null)
@@ -211,9 +214,31 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
             Format = ScreenshotFormat.Png,
         });
 
+    /// <summary>
+    /// The app as a new visitor sees it. A context that launched its browser closes its browser
+    /// context and opens a new one with a blank page: cookies, storage and the server's circuit go
+    /// with it, at the cost of the page load the next step makes anyway. A context over a page it
+    /// was handed (<see cref="ForPage"/>) can only clear that page's cookies.
+    /// </summary>
     public void ResetAppState()
     {
-        _browserContext?.ClearCookiesAsync().GetAwaiter().GetResult();
+        if (!_ownsLifecycle || _browser is null || _frame is not null)
+        {
+            (_browserContext ?? _page.Context).ClearCookiesAsync().GetAwaiter().GetResult();
+            return;
+        }
+
+        // The screen's size is the environment a test set, not app state: it carries over.
+        var viewport = _page.ViewportSize;
+        _browserContext?.CloseAsync().GetAwaiter().GetResult();
+        _browserContext = _browser.NewContextAsync(_contextOptions).GetAwaiter().GetResult();
+        _page = _browserContext.NewPageAsync().GetAwaiter().GetResult();
+        if (viewport is not null && _contextOptions?.ViewportSize != ViewportSize.NoViewport)
+        {
+            _page.SetViewportSizeAsync(viewport.Width, viewport.Height).GetAwaiter().GetResult();
+        }
+
+        _driver = new PlaywrightHtmlDriver(_page);
     }
 
     /// <summary>
