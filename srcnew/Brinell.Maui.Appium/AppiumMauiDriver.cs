@@ -333,24 +333,52 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// test after the first failed to reach the hub.
     /// </para>
     /// <para>
-    /// iOS: true when no back button is shown. It answered true on every page before, so every
-    /// test paid a 10 s recovery in <c>MauiFixture.ReturnToHub</c>.
+    /// iOS: true when no navigation bar starts with a back button (<see cref="IsIosBackButton"/>).
+    /// UIKit names that button after the previous page's title or "Back", so it is known by its
+    /// place, not its name. Not yet run on a simulator.
     /// </para>
     /// </remarks>
     public bool IsAtNavigationRoot()
         => AppiumErrors.Live(() => _platform switch
         {
             MauiPlatform.Android => _driver.FindElements(AndroidNavigateUp).Count == 0,
-            MauiPlatform.iOS => _driver.FindElements(IosBackButton).Count == 0,
+            MauiPlatform.iOS => !IsIosBackButtonShown(),
             _ => true,
         });
 
+    private bool IsIosBackButtonShown()
+    {
+        foreach (var bar in _driver.FindElements(IosNavigationBar))
+        {
+            var first = bar.FindElements(IosBarButton).FirstOrDefault();
+            if (first is not null
+                && IsIosBackButton(first.GetAttribute("name"), first.Location.X - bar.Location.X, bar.Size.Width))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static readonly By IosBarButton = By.XPath("./XCUIElementTypeButton");
+
     /// <summary>
-    /// UIKit's back button, which a navigation bar shows on every pushed page. Not yet run on a
-    /// simulator.
+    /// The names MAUI's flyout opener has carried in the navigation bar. It sits where a back button
+    /// would, on a root page. Not measured yet.
     /// </summary>
-    private static readonly By IosBackButton =
-        MobileBy.IosNSPredicate("type == 'XCUIElementTypeButton' AND name == 'BackButton'");
+    internal static readonly IReadOnlyList<string> IosFlyoutOpenerNames = ["OK", "Menu", "FlyoutIcon"];
+
+    /// <summary>
+    /// Whether a navigation bar's first button is UIKit's back button: in the bar's leading third
+    /// (toolbar items sit trailing) and not the flyout opener.
+    /// </summary>
+    /// <param name="name">The button's <c>name</c>.</param>
+    /// <param name="offsetInBar">The button's x, from the bar's left edge.</param>
+    /// <param name="barWidth">The bar's width.</param>
+    internal static bool IsIosBackButton(string? name, int offsetInBar, int barWidth)
+        => offsetInBar < barWidth / 3
+           && !(name is not null && IosFlyoutOpenerNames.Contains(name, StringComparer.Ordinal));
 
     /// <inheritdoc />
     /// <remarks>

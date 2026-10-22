@@ -1279,8 +1279,10 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// The flyout button MAUI puts left in the navigation bar; its name is not measured yet, so the
     /// names it has carried are all tried.
     /// </summary>
-    private const string IosFlyoutOpener =
-        "//XCUIElementTypeNavigationBar/XCUIElementTypeButton[@name='OK' or @name='Menu' or @label='Menu' or @name='FlyoutIcon']";
+    private static readonly string IosFlyoutOpener =
+        "//XCUIElementTypeNavigationBar/XCUIElementTypeButton["
+        + string.Join(" or ", AppiumMauiDriver.IosFlyoutOpenerNames.Select(name => $"@name='{name}'"))
+        + " or @label='Menu']";
 
     /// <summary>How long Shell's chrome gets to appear.</summary>
     private const int ChromeFindTimeoutMs = 5000;
