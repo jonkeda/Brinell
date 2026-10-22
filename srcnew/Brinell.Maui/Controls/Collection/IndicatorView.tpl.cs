@@ -109,12 +109,12 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// </remarks>
     private (int Count, int? Position)? ReadDots(IMauiElement? element)
     {
-        if (element != null && Context.Driver.Platform == Enums.MauiPlatform.iOS)
+        if (element != null && Context.Driver?.PageControl is { } pageControl)
         {
-            return ReadPageControl(element);
+            return ReadPageControl(element, pageControl);
         }
 
-        if (element == null || Context.Driver.Platform != Enums.MauiPlatform.Android)
+        if (element == null || Context.Driver?.IndicatorDots is not { } dots)
         {
             return null;
         }
@@ -122,7 +122,7 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
         var count = 0;
         int? position = null;
 
-        foreach (var dot in element.FindElements(Locator.ByXPath("./*/*")))
+        foreach (var dot in element.FindElements(dots))
         {
             var match = DotDescription.Match(dot.Name ?? string.Empty);
             if (!match.Success)
@@ -141,11 +141,11 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     }
 
     /// <summary>The page control itself, or the one inside the view.</summary>
-    private static (int Count, int? Position)? ReadPageControl(IMauiElement element)
+    private static (int Count, int? Position)? ReadPageControl(IMauiElement element, (Locator Within, string Type) pageControl)
     {
-        var control = element.GetAttribute("type") == "XCUIElementTypePageIndicator"
+        var control = element.GetAttribute("type") == pageControl.Type
             ? element
-            : element.FindElements(Locator.ByXPath(".//XCUIElementTypePageIndicator")).FirstOrDefault();
+            : element.FindElements(pageControl.Within).FirstOrDefault();
 
         var match = PageDescription.Match(control?.GetAttribute("value") ?? string.Empty);
         return match.Success

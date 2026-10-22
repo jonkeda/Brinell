@@ -138,6 +138,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public IMauiElement AppElement => FlaUIMauiElement.ForApp(this);
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public bool ActivatesRowsThroughContainers => true;
+
     public ShellChromeLocators ShellChrome { get; } = new(
         TabHost: Locator.ByAutomationId("TopNavMenuItemsHost"),
         Tab: Locator.ByControlType("TabItem"),

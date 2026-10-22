@@ -794,6 +794,28 @@ public class ContainerCollectionTests
         rows[0].Verify(row => row.Select(), Times.Never);
     }
 
+    [Fact]
+    [Trait("Pattern", "Selection")]
+    public void SelectItem_WhereRowsAreActivatedThroughTheirContainer_SelectsTheListItemAroundTheRow()
+    {
+        // As the FlaUI driver answers: UI Automation selects the ListItem that holds a row.
+        var driver = new Mock<IMauiDriver>();
+        driver.Setup(d => d.ActivatesRowsThroughContainers).Returns(true);
+        _context.Setup(c => c.Driver).Returns(driver.Object);
+        var page = new TestPage(_context.Object);
+        var rows = SetupCollection("Rows", ("Alpha", "1.00"), ("Beta", "2.00"));
+        var listItem = new Mock<IMauiElement>();
+        listItem.Setup(e => e.Visible).Returns(true);
+        listItem.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 300, 40));
+        var root = Mock.Get(_context.Object.FindElement(Locator.ByAutomationId("Rows")));
+        root.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "ListItem"))).Returns([listItem.Object]);
+
+        page.Rows.SelectItem(1);
+
+        listItem.Verify(item => item.Select(), Times.Once);
+        rows[1].Verify(row => row.Select(), Times.Never);
+    }
+
     #endregion
 
     #region Test page objects

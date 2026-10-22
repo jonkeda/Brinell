@@ -126,26 +126,16 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
             return null;
         }
 
-        var byRole = Context.Driver.Platform == Enums.MauiPlatform.Android
-            ? AndroidAlertButtons
-                .Select(role => element.TryFindElement(role)?.Text)
-                .OfType<string>()
-                .ToList()
-            : [];
+        var byRole = (Context.Driver?.AlertButtons ?? [])
+            .Select(role => element.TryFindElement(role)?.Text)
+            .OfType<string>()
+            .ToList();
 
         return byRole.Count > 0
             ? byRole
             : [.. element.FindElements(Locator.ByControlType("button"))
                 .Select(button => button.Name ?? string.Empty)];
     }
-
-    /// <summary>An Android alert's buttons by role, whichever package their ids carry.</summary>
-    private static readonly Locator[] AndroidAlertButtons =
-    [
-        Locator.ByXPath(".//*[contains(@resource-id, ':id/button1')]"),
-        Locator.ByXPath(".//*[contains(@resource-id, ':id/button2')]"),
-        Locator.ByXPath(".//*[contains(@resource-id, ':id/button3')]"),
-    ];
 
     /// <summary>
     /// The question the dialog is asking, as the app phrased it.

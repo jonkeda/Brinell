@@ -45,6 +45,34 @@ public sealed class SolutionTests
             "The list of call-model projects no longer matches srcnew.");
     }
 
+    /// <summary>
+    /// MAUI's controls and containers ask the driver what the platform's tree is like
+    /// (<c>IMauiDriver.OmitsOffscreenElements</c>, <c>ChildrenPath</c>, <c>AlertButtons</c> ...),
+    /// as <c>ShellChrome</c> does; none branches on the platform or names a platform's element type.
+    /// <c>ElementMatch</c> normalizes type names from every platform and is the one exception.
+    /// </summary>
+    [Fact]
+    public void MauiControls_HoldNoPlatformBranchesOrPlatformNames()
+    {
+        var root = FindRepositoryRoot();
+        Assert.NotNull(root);
+        var pattern = new System.Text.RegularExpressions.Regex(@"MauiPlatform\.(Android|iOS|Windows)|XCUIElementType|android\.widget|android:id");
+        string[] folders = ["srcnew/Brinell.Maui/Controls", "srcnew/Brinell.Maui/Containers", "srcnew/Brinell.Maui.CommunityToolkit/Controls"];
+
+        var offenders = folders
+            .Select(folder => Path.Combine(root, folder))
+            .Where(Directory.Exists)
+            .SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+            .Where(file => !file.EndsWith(".gen.cs", StringComparison.Ordinal) && Path.GetFileName(file) != "ElementMatch.cs")
+            .SelectMany(file => File.ReadLines(file)
+                .Select((line, index) => (file, line: line.Trim(), number: index + 1)))
+            .Where(entry => !entry.line.StartsWith("//", StringComparison.Ordinal) && pattern.IsMatch(entry.line))
+            .Select(entry => $"{Path.GetRelativePath(root, entry.file)}:{entry.number}")
+            .ToList();
+
+        Assert.True(offenders.Count == 0, $"Ask the driver instead (IMauiDriver, 'What the platform's tree is like'): {string.Join(", ", offenders)}");
+    }
+
     private static IEnumerable<string> Projects(string directory)
     {
         foreach (var project in Directory.EnumerateFiles(directory, "*.csproj"))

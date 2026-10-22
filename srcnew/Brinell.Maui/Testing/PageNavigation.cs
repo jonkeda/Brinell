@@ -27,7 +27,7 @@ public static class PageNavigation
         ArgumentException.ThrowIfNullOrEmpty(leaving);
         var call = new ControlCall(context.Logger, context.Name, context.NearMiss, leaving, leaving);
         var arrived = call.Run(nameof(WaitArrived), null, timeoutMs, context.Timeouts.Animation,
-            attempt => Poller.Until(_ => ArrivalOf(context, leaving), attempt, context.Timeouts.PollingInterval),
+            attempt => Poller.Until(_ => ArrivalOf(context, leaving), attempt, Math.Min(context.Timeouts.PollingInterval, ArrivalPollMs)),
             succeeded: met => met);
 
         try
@@ -41,6 +41,10 @@ public static class PageNavigation
 
         return arrived;
     }
+
+    // Every test opens a page, so its arrival is looked for often: the fixture's loop looked every
+    // 25 ms, and the context's 100 ms cost a full mobile run about a minute.
+    private const int ArrivalPollMs = 25;
 
     private static Observation ArrivalOf(IMauiTestContext context, string leaving)
     {

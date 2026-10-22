@@ -130,6 +130,40 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Re
     /// has not been mapped and throws.
     /// </para>
     /// </remarks>
+    /// <inheritdoc />
+    public bool OmitsOffscreenElements => true;
+
+    /// <inheritdoc />
+    public bool FoundMeansVisible => _platform == MauiPlatform.Android;
+
+    /// <inheritdoc />
+    /// <remarks>Measured on UiAutomator2: "./*" walked the element itself; XCUITest's "./*" is the children.</remarks>
+    public Locator ChildrenPath => Locator.ByXPath(_platform == MauiPlatform.Android ? "./*/*" : "./*");
+
+    /// <inheritdoc />
+    /// <remarks>Android's alert buttons, whichever package their ids carry.</remarks>
+    public IReadOnlyList<Locator> AlertButtons => _platform == MauiPlatform.Android ? AndroidAlertButtons : [];
+
+    private static readonly Locator[] AndroidAlertButtons =
+    [
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button1')]"),
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button2')]"),
+        Locator.ByXPath(".//*[contains(@resource-id, ':id/button3')]"),
+    ];
+
+    /// <inheritdoc />
+    public bool DrawsRatingStars => _platform == MauiPlatform.Android;
+
+    /// <inheritdoc />
+    public Locator? IndicatorDots => _platform == MauiPlatform.Android ? Locator.ByXPath("./*/*") : null;
+
+    /// <inheritdoc />
+    /// <remarks>UIKit's <c>UIPageControl</c>; not yet run on a simulator.</remarks>
+    public (Locator Within, string Type)? PageControl
+        => _platform == MauiPlatform.iOS
+            ? (Locator.ByXPath(".//XCUIElementTypePageIndicator"), "XCUIElementTypePageIndicator")
+            : null;
+
     public ShellChromeLocators ShellChrome => _platform switch
     {
         MauiPlatform.Android => AndroidShellChrome,

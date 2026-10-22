@@ -1,5 +1,4 @@
 using Brinell.Core.Exceptions;
-using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Tests.Semantic;
 
@@ -10,11 +9,13 @@ namespace Brinell.Maui.Tests.Semantic;
 public class CoveredByDialogTests : SemanticControlTestsBase
 {
     private readonly Mock<IMauiElement> _app = new();
+    private readonly Mock<IMauiDriver> _driver = new();
 
     public CoveredByDialogTests()
     {
         Context.Setup(c => c.AppElement).Returns(_app.Object);
-        Context.Setup(c => c.Platform).Returns(MauiPlatform.Android);
+        Context.Setup(c => c.Driver).Returns(_driver.Object);
+        _driver.Setup(d => d.FoundMeansVisible).Returns(true);
         _app.Setup(a => a.TryFindActiveDialog()).Returns(CreateElement("Dialog", 50, 300, 300, 200).Object);
     }
 
@@ -47,9 +48,9 @@ public class CoveredByDialogTests : SemanticControlTestsBase
     }
 
     [Fact]
-    public void OnWindows_TheDialogIsNotAsked()
+    public void WhereAFoundControlIsNotCountedAsVisible_TheDialogIsNotAsked()
     {
-        Context.Setup(c => c.Platform).Returns(MauiPlatform.Windows);
+        _driver.Setup(d => d.FoundMeansVisible).Returns(false);
         var button = GivenButton("NativeDialog_Delete", 10, 10);
 
         Page.NativeDialogDelete.Click(timeoutMs: 100);

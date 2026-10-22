@@ -1,4 +1,5 @@
 using Brinell.Core.Interfaces;
+using Brinell.Core.Locators;
 using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Interfaces;
@@ -82,6 +83,61 @@ public interface IMauiDriver : IDiagnosticDriver, IDisposable
     ShellChromeLocators ShellChrome
         => throw new PlatformNotSupportedException(
             $"Shell chrome has not been mapped for {GetType().Name}. Dump the tree and map it in ShellChrome.");
+
+    #endregion
+
+    #region What the platform's tree is like
+
+    // A control asks these by name instead of branching on the platform (AD-010): the driver knows
+    // its platform, the control what it needs. Each default is the Windows (UI Automation) answer.
+
+    /// <summary>
+    /// Whether the tree leaves out what is off screen (UiAutomator2, XCUITest), so a miss is found
+    /// by scrolling; Windows keeps an off-screen element in its tree, and a miss there is an answer.
+    /// </summary>
+    bool OmitsOffscreenElements => false;
+
+    /// <summary>
+    /// Whether a found element counts as visible, also under a dialog (UiAutomator2), so an action
+    /// asks whether a dialog covers it.
+    /// </summary>
+    bool FoundMeansVisible => false;
+
+    /// <summary>
+    /// The XPath to an element's children: UiAutomator2 roots an element's XPath at the element,
+    /// so its children are <c>./*/*</c> there.
+    /// </summary>
+    Locator ChildrenPath => Locator.ByXPath("./*");
+
+    /// <summary>
+    /// Where a dialog's buttons are by role, positive to negative; empty where they are read as the
+    /// dialog's buttons by type.
+    /// </summary>
+    IReadOnlyList<Locator> AlertButtons => [];
+
+    /// <summary>
+    /// Whether a CommunityToolkit RatingView is drawn, publishing no value to select by index, so
+    /// a star is tapped on screen (Android).
+    /// </summary>
+    bool DrawsRatingStars => false;
+
+    /// <summary>
+    /// Whether a list row is selected through the row that contains it (UI Automation's
+    /// SelectionItem on Windows), where elsewhere the row's own element is tapped.
+    /// </summary>
+    bool ActivatesRowsThroughContainers => false;
+
+    /// <summary>
+    /// An IndicatorView's dots, each described "Item 2 of 5" and ", selected" on the current one
+    /// (Android); null where they are not in the tree.
+    /// </summary>
+    Locator? IndicatorDots => null;
+
+    /// <summary>
+    /// The page control an IndicatorView is drawn as, whose value reads "page 2 of 5" (iOS), and
+    /// its element type, for a view that is the control itself; null where there is none.
+    /// </summary>
+    (Locator Within, string Type)? PageControl => null;
 
     #endregion
 

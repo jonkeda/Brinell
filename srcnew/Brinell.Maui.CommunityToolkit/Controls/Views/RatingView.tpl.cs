@@ -120,7 +120,7 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
 
         EnsureSettableCore(element);
 
-        if (Context.Driver.Platform == Enums.MauiPlatform.Android)
+        if (Context.Driver?.DrawsRatingStars == true)
         {
             TapStarOnScreen(element, star.Value);
 

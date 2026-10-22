@@ -81,8 +81,7 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
     private IMauiElement? FindHeader(IMauiElement element)
     {
         var height = element.Rect.Height;
-        var children = Locator.ByXPath(
-            Context.Driver.Platform == Enums.MauiPlatform.Android ? "./*/*" : "./*");
+        var children = Context.Driver?.ChildrenPath ?? Locator.ByXPath("./*");
         IMauiElement? header = null;
         var node = element;
 
@@ -104,8 +103,7 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
         return header;
     }
 
-    private bool OnATouchPlatform
-        => Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS;
+    private bool OnATouchPlatform => Context.Driver?.OmitsOffscreenElements == true;
 
     /// <summary>How deep the header may sit below the expander's own node.</summary>
     private const int MaxWrapperDepth = 4;

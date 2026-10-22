@@ -224,3 +224,12 @@ at 107%, one `TestStepper.SetValue` at 101%), both actions whose lookup took ten
 `FindChrome` keeps a short wait rather than a plain lookup: it runs inside an action, where a miss
 is not asked again by the call's poll.
 
+**M5 to M7** (`move` 5fa3f40c, d655afa8, then M7): the full mobile suite 259 passed, the same 24
+known gaps, 20 skipped in 24 m 01 s (22 m 41 s after M4). `WaitArrived`, now a logged call, took
+680 ms a page opened (266, 180 s in all); its poll back at the fixture's 25 ms brought that to
+631 ms on a slice, most of it the lookup that sees the hub leave. The dialog check costs 20 ms an
+action. Calls over budget: 5, of which one `SetTime` at 11.3 s (its lookup 0.6 s: one round trip
+of the action stalled) and the rest the known `SetTime` and `SetValue` at about 100%. A slice with
+M7 (popups, alerts, buttons, entries, pickers, IndicatorView, ContentDialog): 39 of 39. The Windows
+head was not run (it needs a live desktop); M7's Windows side rests on the build and the unit tests.
+

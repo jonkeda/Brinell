@@ -131,7 +131,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>, IContro
     /// </summary>
     private void EnsureNotUnderADialog(IMauiElement element)
     {
-        if (Context.Platform != Enums.MauiPlatform.Android)
+        if (Context.Driver?.FoundMeansVisible != true)
         {
             return;
         }
@@ -358,7 +358,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>, IContro
     private IMauiElement? SweepThenFindInScope()
     {
         var swept = ScrollingElement()?.TryFindByScrolling(Locator);
-        if (swept is null || Context.Driver.Platform is not (Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS))
+        if (swept is null || Context.Driver?.OmitsOffscreenElements != true)
         {
             return swept;
         }

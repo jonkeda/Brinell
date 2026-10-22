@@ -1016,7 +1016,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             return false;
         }
 
-        if (Context.Platform == MauiPlatform.Windows)
+        if (Context.Driver?.ActivatesRowsThroughContainers == true)
         {
             foreach (var row in FindContainingRows(itemRoot))
             {

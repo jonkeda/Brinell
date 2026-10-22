@@ -424,6 +424,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- MAUI's controls and containers ask the driver what the platform's tree is like instead of
+  branching on the platform: `IMauiDriver.OmitsOffscreenElements`, `FoundMeansVisible`,
+  `ChildrenPath`, `AlertButtons`, `DrawsRatingStars`, `ActivatesRowsThroughContainers`,
+  `IndicatorDots` and `PageControl`, each with the Windows answer as its default, as
+  `ShellChrome` already did. A driver for a new platform answers them; no control changes.
 - MAUI on Android: an action on a control outside an open dialog is not ready, "covered by a
   dialog", and the call keeps asking, where before the tap landed on the dialog and read as
   "accepted and did not take it". One dialog lookup an action (20 ms on an emulator); a control

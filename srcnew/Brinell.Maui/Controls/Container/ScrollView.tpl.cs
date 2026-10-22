@@ -75,8 +75,7 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
         => RunDo(() =>
         {
             var element = TryFindElement(locator);
-            if (element is null
-                && Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS)
+            if (element is null && Context.Driver?.OmitsOffscreenElements == true)
             {
                 ContainerRoot.TryFindByScrolling(locator);
                 return;

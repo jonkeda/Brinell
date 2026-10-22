@@ -709,8 +709,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
                : null)
            ?? throw RootNotFound();
 
-    private bool OnATouchPlatform
-        => Context.Driver.Platform is Enums.MauiPlatform.Android or Enums.MauiPlatform.iOS;
+    private bool OnATouchPlatform => Context.Driver?.OmitsOffscreenElements == true;
 
     /// <inheritdoc />
     protected override ElementNotFoundException RootNotFound()
