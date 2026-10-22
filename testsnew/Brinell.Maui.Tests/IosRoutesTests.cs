@@ -33,4 +33,59 @@ public class IosRoutesTests
     [InlineData(null, false)]
     public void TheFlyout_IsOpen_OnlyWhenItsTableIsVisible(string? visible, bool open)
         => Assert.Equal(open, AppiumMauiElement.IsIosVisible(visible));
+
+    [Fact]
+    public void AWheel_IsTurnedBackToItsFirstRow_ThenOnToTheIndex()
+    {
+        var wheel = new FakeWheel(rows: 5, at: 3);
+
+        AppiumMauiElement.TurnWheel("Fruit", wheel.Step, index: 2, budgetMs: 1_000, () => 0);
+
+        Assert.Equal(2, wheel.At);
+    }
+
+    [Fact]
+    public void AnIndexPastTheWheelsEnd_IsOutOfRange()
+    {
+        var wheel = new FakeWheel(rows: 3, at: 0);
+
+        var failure = Assert.Throws<ArgumentOutOfRangeException>(
+            () => AppiumMauiElement.TurnWheel("Fruit", wheel.Step, index: 5, budgetMs: 1_000, () => 0));
+
+        Assert.Contains("shows 3 item(s)", failure.Message);
+    }
+
+    [Fact]
+    public void ASpentBudget_StopsTheTurn_AndSaysHowFarItGot()
+    {
+        var wheel = new FakeWheel(rows: 50, at: 0);
+        var elapsed = 0L;
+
+        var failure = Assert.Throws<TimeoutException>(() => AppiumMauiElement.TurnWheel(
+            "Fruit", order => { elapsed += 100; return wheel.Step(order); }, index: 40, budgetMs: 1_000, () => elapsed));
+
+        Assert.Contains("ran out at row 9", failure.Message);
+        Assert.Equal(10, wheel.Steps);
+    }
+
+    /// <summary>A wheel of <c>rows</c> rows standing at <c>at</c>.</summary>
+    private sealed class FakeWheel(int rows, int at)
+    {
+        public int At { get; private set; } = at;
+
+        public int Steps { get; private set; }
+
+        public bool Step(string order)
+        {
+            Steps++;
+            var next = order == "previous" ? At - 1 : At + 1;
+            if (next < 0 || next >= rows)
+            {
+                return false;
+            }
+
+            At = next;
+            return true;
+        }
+    }
 }

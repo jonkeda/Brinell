@@ -70,21 +70,59 @@ public sealed partial class AppiumMauiElement
     /// </summary>
     private void TurnToIndex(IWebElement wheel, int index)
     {
+        // Inside a call, what the call has left: each row is a round trip, and up to 500 of them
+        // back used to run past any budget.
+        var budgetMs = Brinell.Core.Calls.CallBudget.RemainingOr(int.MaxValue);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        TurnWheel(AutomationId, order => StepWheel(wheel, order), index, budgetMs, () => clock.ElapsedMilliseconds);
+    }
+
+    /// <summary>
+    /// Steps a wheel back to its first row, then <paramref name="index"/> rows on, while
+    /// <paramref name="elapsedMs"/> is under <paramref name="budgetMs"/>.
+    /// </summary>
+    /// <param name="name">The picker, for the messages.</param>
+    /// <param name="step">Turns one row, <c>"previous"</c> or <c>"next"</c>; false at the wheel's end.</param>
+    /// <param name="index">The row wanted, from the first.</param>
+    /// <param name="budgetMs">How long the steps may take in all.</param>
+    /// <param name="elapsedMs">The time spent so far.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The wheel has no row <paramref name="index"/>.</exception>
+    /// <exception cref="TimeoutException">The budget was spent first; the message says how far it got.</exception>
+    internal static void TurnWheel(string? name, Func<string, bool> step, int index, int budgetMs, Func<long> elapsedMs)
+    {
         if (index < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, $"'{AutomationId}' has no index {index}.");
+            throw new ArgumentOutOfRangeException(nameof(index), index, $"'{name}' has no index {index}.");
         }
 
-        for (var row = 0; row < MaxWheelRows && StepWheel(wheel, "previous"); row++)
+        var back = 0;
+        for (; back < MaxWheelRows; back++)
         {
+            if (elapsedMs() >= budgetMs)
+            {
+                throw new TimeoutException(
+                    $"'{name}': the call's {budgetMs} ms ran out turning the wheel back to its first row "
+                    + $"({back} row(s) back so far).");
+            }
+
+            if (!step("previous"))
+            {
+                break;
+            }
         }
 
         for (var row = 0; row < index; row++)
         {
-            if (!StepWheel(wheel, "next"))
+            if (elapsedMs() >= budgetMs)
+            {
+                throw new TimeoutException(
+                    $"'{name}': the call's {budgetMs} ms ran out at row {row} of the wheel, turning to index {index}.");
+            }
+
+            if (!step("next"))
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(index), index, $"'{AutomationId}' shows {row + 1} item(s); there is no index {index}.");
+                    nameof(index), index, $"'{name}' shows {row + 1} item(s); there is no index {index}.");
             }
         }
     }
