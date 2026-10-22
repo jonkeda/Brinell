@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `[UiFact]` (`Brinell.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
+  test method failed and before the test object is disposed, from the test object's own context
+  (public or not) or a fixture's. xUnit v2 tells a `[Fact]`'s `After` hook nothing of the outcome,
+  so the case runs through its own invoker. Under `dotnet test` a run's suite folder is the test
+  assembly (the one of those referencing xUnit that no other references), Brinell's own suites
+  included.
 - `Brinell.Maui.Testing.PageNavigation`: `WaitArrived` (a pushed page on top, as one logged call)
   and `ReturnToRoot` (back to the app's root page between tests), which MAUI's fixture had as
   loops of its own. `ReturnToRoot` goes back again only while a dialog or a pushed page covers the

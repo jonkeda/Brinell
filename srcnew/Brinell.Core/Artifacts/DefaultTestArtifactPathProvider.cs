@@ -157,20 +157,31 @@ public sealed class DefaultTestArtifactPathProvider : ITestArtifactPathProvider
         return TestAssemblyName() ?? entry ?? Assembly.GetCallingAssembly().GetName().Name ?? "default";
     }
 
-    /// <summary>The loaded assembly from the output folder that references xUnit: the suite under a test host.</summary>
+    /// <summary>
+    /// The test assembly under a test host: of the loaded assemblies in the output folder that
+    /// reference xUnit (the suite, and libraries such as Brinell.Uat), the one none of the others
+    /// references.
+    /// </summary>
     private static string? TestAssemblyName()
     {
         var folder = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
-        return AppDomain.CurrentDomain.GetAssemblies()
+        var candidates = AppDomain.CurrentDomain.GetAssemblies()
             .Where(assembly => !assembly.IsDynamic
                 && !string.IsNullOrEmpty(assembly.Location)
                 && string.Equals(Path.GetDirectoryName(assembly.Location), folder, StringComparison.OrdinalIgnoreCase)
-                && assembly.GetReferencedAssemblies().Any(reference => reference.Name?.StartsWith("xunit", StringComparison.OrdinalIgnoreCase) == true))
-            .Select(assembly => assembly.GetName().Name)
-            .FirstOrDefault(name => name != null
-                && !name.StartsWith("Brinell.", StringComparison.Ordinal)
+                && assembly.GetName().Name is { } name
                 && !name.StartsWith("xunit", StringComparison.OrdinalIgnoreCase)
-                && !name.StartsWith("Microsoft.", StringComparison.Ordinal));
+                && !name.StartsWith("Microsoft.", StringComparison.Ordinal)
+                && assembly.GetReferencedAssemblies().Any(reference => reference.Name?.StartsWith("xunit", StringComparison.OrdinalIgnoreCase) == true))
+            .ToList();
+        var referenced = candidates
+            .SelectMany(assembly => assembly.GetReferencedAssemblies())
+            .Select(reference => reference.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return candidates
+            .Select(assembly => assembly.GetName().Name)
+            .FirstOrDefault(name => name != null && !referenced.Contains(name));
     }
 
     private static string CreateLocalRunId()
