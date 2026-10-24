@@ -87,6 +87,9 @@ public interface IHtmlElement
     /// <summary>Clicks the element.</summary>
     void Click();
 
+    /// <summary>Clicks the element at a point of its own box, in CSS pixels from its top-left corner (a canvas's spot, say).</summary>
+    void ClickAt(double x, double y);
+
     /// <summary>Types or sets text.</summary>
     void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys);
 

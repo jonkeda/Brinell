@@ -27,6 +27,14 @@ public abstract partial class ClickableControlBase<TScope> : ControlBase<TScope>
     }
 
     #endregion
+    #region ClickAt
+
+    public TScope ClickAt(double x, double y, int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { ClickAtCore(element, x, y, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
     #region DoubleClick
 
     public TScope DoubleClick(int? timeoutMs = null)

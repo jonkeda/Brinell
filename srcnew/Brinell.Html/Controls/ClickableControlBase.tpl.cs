@@ -35,6 +35,16 @@ public abstract partial class ClickableControlBase<TScope> : ControlBase<TScope>
         element.Click();
     }
 
+    /// <summary>Clicks the control at a point of its own box, in CSS pixels from its top-left corner.</summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="x">Pixels from the box's left edge.</param>
+    /// <param name="y">Pixels from the box's top edge.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void ClickAtCore(IHtmlElement element, double x, double y, int? timeoutMs = null)
+    {
+        element.ClickAt(x, y);
+    }
+
     /// <summary>Double-clicks the control.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>

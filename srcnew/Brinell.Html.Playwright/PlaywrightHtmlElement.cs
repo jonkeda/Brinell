@@ -99,6 +99,9 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public void Click() => Marked(InteractionKind.Tap, () => Act(Self, () => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult()));
 
+    public void ClickAt(double x, double y)
+        => Marked(InteractionKind.Tap, () => Act(Self, () => _locator.ClickAsync(new() { Position = new Position { X = (float)x, Y = (float)y }, Timeout = Budget }).GetAwaiter().GetResult()));
+
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Marked(InteractionKind.Type, () => Act(Self, () =>
     {
         switch (method)
