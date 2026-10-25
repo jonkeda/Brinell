@@ -4,22 +4,35 @@ using Brinell.Html.UITests.Uat.Pages;
 
 using Brinell.Core.Configuration;
 using Brinell.Html.Testing;
+using Brinell.Html.UITests.TestBase;
 
 [TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Html.UITests.Uat.Pages")]
 public sealed class HtmlUatFixture : IDisposable
 {
-    private readonly WebAppHost _host;
-    private readonly PlaywrightTestContext _context;
+    private readonly WebAppHost? _host;
+    private readonly IHtmlTestContext _context;
+    private readonly string _baseUrl;
     private bool _disposed;
 
+    // The browser head starts the sample and a browser; the bUnit head renders its Routes (WebHeads).
     public HtmlUatFixture()
     {
+        if (BlazorSampleBunit.IsHead)
+        {
+            _context = BlazorSampleBunit.Create();
+            _baseUrl = BlazorSampleBunit.BaseUrl;
+            Composition = TestComposition.ForFixture(this, services =>
+                services.AddSingleton(_context));
+            return;
+        }
+
         var config = BrinellHtmlConfiguration.Load();
         _host = WebAppHost.Start(new WebAppHostOptions
         {
             AppPath = config?.Html?.AppPath ?? WebAppHost.FindBuiltApp("samples/Brinell.Samples.Blazor.App"),
             Name = "Blazor sample",
         });
+        _baseUrl = _host.BaseUrl;
         try
         {
             _context = PlaywrightTestContext.CreateAsync(new HtmlTestContextOptions
@@ -36,7 +49,7 @@ public sealed class HtmlUatFixture : IDisposable
         }
 
         Composition = TestComposition.ForFixture(this, services =>
-            services.AddSingleton<IHtmlTestContext>(_context));
+            services.AddSingleton(_context));
     }
 
     public TestComposition Composition { get; }
@@ -59,12 +72,18 @@ public sealed class HtmlUatFixture : IDisposable
         }
 
         _disposed = true;
-        _context.DisposeAsync().GetAwaiter().GetResult();
-        _host.Dispose();
+        try
+        {
+            (_context as IAsyncDisposable)?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            _host?.Dispose();
+        }
     }
 
     private void NavigateTo(string path)
     {
-        _context.NavigateTo($"{_host.BaseUrl}/{path.TrimStart('/')}");
+        _context.NavigateTo($"{_baseUrl}/{path.TrimStart('/')}");
     }
 }

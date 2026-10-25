@@ -43,6 +43,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   extend it
 - [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
   runs without a screen, its suite and step definitions
+- [The bUnit Head](guides/bunit.md) - a Blazor suite's page objects and scenarios without a browser
+  (`BRINELL_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
 - [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
   files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario

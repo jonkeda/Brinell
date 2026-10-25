@@ -3,19 +3,26 @@ using Brinell.Html.UITests.PageObjects;
 namespace Brinell.Html.UITests.TestBase;
 
 /// <summary>
-/// One browser per test, on the shared Blazor sample (<see cref="BlazorSample"/>).
+/// One browser per test, on the shared Blazor sample (<see cref="BlazorSample"/>); with
+/// <c>BRINELL_HEAD=bunit</c>, the sample's <c>Routes</c> rendered by bUnit instead (.my/bunit/plan.md).
 /// </summary>
 public abstract class BlazorSampleTestBase : IAsyncLifetime
 {
-    private PlaywrightTestContext? _context;
+    private IHtmlTestContext? _context;
 
     protected IHtmlTestContext Context => _context
         ?? throw new InvalidOperationException("Context has not been initialized.");
 
-    protected string BaseUrl => BlazorSample.BaseUrl;
+    protected string BaseUrl => BlazorSampleBunit.IsHead ? BlazorSampleBunit.BaseUrl : BlazorSample.BaseUrl;
 
     public virtual async Task InitializeAsync()
     {
+        if (BlazorSampleBunit.IsHead)
+        {
+            _context = BlazorSampleBunit.Create();
+            return;
+        }
+
         _context = await PlaywrightTestContext.CreateAsync(new HtmlTestContextOptions
         {
             BaseUrl = BaseUrl,
@@ -26,9 +33,9 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        if (_context is not null)
+        if (_context is IAsyncDisposable disposable)
         {
-            await _context.DisposeAsync();
+            await disposable.DisposeAsync();
         }
     }
 

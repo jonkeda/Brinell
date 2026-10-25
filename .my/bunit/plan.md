@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike), 2 (the driver), 3 (the context) and 4 (heads in the fixtures and scenarios) done; step 5 next. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: steps 1 to 5 done (Brinell's side: the driver, the context, the heads, both web suites on both heads, the guide and AD-030); step 6 is Tomorrow's, for the owner to schedule. Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -293,4 +293,31 @@ building them in place would rebuild the studio this checkout runs on 5219.
 
 ## Step 5 results
 
-Not run yet.
+2026-10-25, one run each, the same build, one after the other on a busy machine.
+
+| Suite | Head | Passed | Skipped as browser-only | Duration (wall) |
+| --- | --- | --- | --- | --- |
+| `Brinell.Blazor.UITests` | bUnit | 35 | 0 | 2 s (4 s) |
+| `Brinell.Blazor.UITests` | browser | 35 | 0 | 39 s (41 s) |
+| `Brinell.Html.UITests` | bUnit | 25 | 2 | 8 s (9 s) |
+| `Brinell.Html.UITests` | browser | 27 | 0 | 25 s (26 s) |
+| `Brinell.Html.Bunit.Tests` | none | 78 | 0 | 0.67 s |
+
+- **`Brinell.Html.UITests` got a bUnit head** as the Blazor suite has: `TestBase/BlazorSampleBunit.cs`, the head
+  switch in `TestBase/BlazorSampleTestBase.cs` and `Uat/HtmlUatFixture.cs`, references to `Brinell.Html.Bunit`
+  and the sample's assembly.
+- **Browser-only, marked `[BrowserFact]` with the reason:** `FramesPageTests.AControlInTheFrame_IsFoundInTheFrame_AndActsThere`
+  (an iframe is its own document) and `RecordedInteractionTests.AClick_IsLogged_WithItsButtonsBounds_InTheViewport`
+  (a click's bounds need layout). No scenario needed `@browser`.
+- **`TryGetFrameDocument` is browser-only now:** it returned null, so a `FrameScope` waited out its 5 s budget as
+  "missing root"; it throws `BrowserOnlyException` and ends the call (`BrowserOnly_Member_Throws`).
+- **Html's 8 s on bUnit is the sample, not the head:** `LoginFlow_WhenLoginNeverReenables_…` waits out its 5 s
+  budget by design (a negative test) and the login tests wait for the sample's own delay, on either head.
+- **`ResetAppStateTests` always run in a browser:** they make their own Playwright context to test it, so they ran
+  in Chromium on the bUnit head too.
+- **The guide** is `docs/guides/bunit.md` (in `docs/README.md`); **the decision** is
+  `.docs/decisions/ad-030-a-blazor-suite-runs-without-a-browser.md` (in `.docs/README.md`), earning the project's
+  place by AD-026's R3.
+
+Not done here: the Todo sample's web suites (`Todo.Web.UITests`, `Todo.Web.Uat`) have no bUnit head yet; the step
+named Brinell's Blazor and Html suites only.

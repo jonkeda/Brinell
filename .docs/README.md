@@ -48,6 +48,7 @@ How this differs from the other trees:
 - [AD-027: The Scraper records into the project and calls no model](decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md)
 - [AD-028: One command line](decisions/ad-028-one-command-line.md)
 - [AD-029: The first model is a project of its own](decisions/ad-029-the-first-model-is-a-project-of-its-own.md)
+- [AD-030: A Blazor suite runs without a browser, and the browser judges the gate](decisions/ad-030-a-blazor-suite-runs-without-a-browser.md)
 
 ## Contracts
 

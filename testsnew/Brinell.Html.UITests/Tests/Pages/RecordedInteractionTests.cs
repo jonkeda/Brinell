@@ -1,4 +1,5 @@
 using Brinell.Core.Recording;
+using Brinell.Core.Testing;
 using Brinell.Html.UITests.PageObjects;
 using Brinell.Html.UITests.TestBase;
 
@@ -14,7 +15,7 @@ public sealed class RecordedInteractionTests : BlazorSampleTestBase
 {
     private const string Alone = "Recorded interactions";
 
-    [Fact]
+    [BrowserFact("a recorded click carries its bounds in the viewport, which needs layout")]
     public void AClick_IsLogged_WithItsButtonsBounds_InTheViewport()
     {
         NavigateToPage("/counter");

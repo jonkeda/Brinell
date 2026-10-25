@@ -357,6 +357,7 @@ public sealed class MemberTests : IDisposable
         { "Swipe", e => e.Swipe(0, 0, 1, 1) },
         { "Evaluate", e => e.Evaluate("1") },
         { "Evaluate", e => e.Evaluate<int>("1") },
+        { "TryGetFrameDocument", e => e.TryGetFrameDocument() },
     };
 
     [Theory]

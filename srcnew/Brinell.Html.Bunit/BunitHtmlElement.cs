@@ -236,6 +236,9 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     public IHtmlElement? TryFindElement(Locator locator) => FindElements(locator).FirstOrDefault();
 
+    // An iframe is a document of its own, loaded by a browser; bUnit renders none.
+    public IHtmlElement? TryGetFrameDocument() => throw new BrowserOnlyException(nameof(TryGetFrameDocument));
+
     public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
