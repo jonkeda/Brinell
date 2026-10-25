@@ -45,6 +45,51 @@ internal static class MauiInternals
     public static void RemoveWindow(Application application, Window window)
         => RemoveWindowMethod.Value.Invoke(application, [window]);
 
+    // VisualElement.IsFocusedPropertyKey: IsFocused is read-only to everyone but the platform, whose
+    // handler sets it through this key when focus lands or leaves; its change raises Focused and Unfocused.
+    private static readonly Lazy<BindablePropertyKey> IsFocusedKey = new(() =>
+        typeof(VisualElement).GetField("IsFocusedPropertyKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?.GetValue(null) as BindablePropertyKey
+        ?? throw Missing("VisualElement.IsFocusedPropertyKey"));
+
+    // Page._pendingActions: what a page asks of its platform before it has one. DisplayAlertAsync,
+    // DisplayPromptAsync and DisplayActionSheetAsync each add a closure that holds MAUI's own
+    // (public) AlertArguments, PromptArguments or ActionSheetArguments, whose SetResult answers the app.
+    private static readonly Lazy<FieldInfo> PendingActionsField = new(() =>
+        typeof(Page).GetField("_pendingActions", Instance)
+        ?? throw Missing("Page._pendingActions"));
+
+    /// <summary>Takes the dialog requests waiting on <paramref name="page"/>, oldest first; other pending actions stay.</summary>
+    public static IReadOnlyList<object> TakeDialogRequests(Page page)
+    {
+        if (PendingActionsField.Value.GetValue(page) is not List<Action> pending || pending.Count == 0)
+            return [];
+
+        var requests = new List<object>();
+        foreach (var action in pending.ToList())
+        {
+            if (action.Target is not { } closure)
+                continue;
+
+            var request = closure.GetType().GetFields(Instance)
+                .Select(field => field.GetValue(closure))
+                .FirstOrDefault(value => value is Microsoft.Maui.Controls.Internals.AlertArguments
+                    or Microsoft.Maui.Controls.Internals.PromptArguments
+                    or Microsoft.Maui.Controls.Internals.ActionSheetArguments);
+            if (request is null)
+                continue;
+
+            pending.Remove(action);
+            requests.Add(request);
+        }
+
+        return requests;
+    }
+
+    /// <summary>Sets <see cref="VisualElement.IsFocused"/> as the platform does.</summary>
+    public static void SetFocused(VisualElement element, bool focused)
+        => element.SetValue(IsFocusedKey.Value, focused);
+
     /// <summary>Taps <paramref name="view"/> through <paramref name="recognizer"/>, as the platform does.</summary>
     public static void SendTapped(TapGestureRecognizer recognizer, View view)
         => SendTappedMethod.Value.Invoke(recognizer, [view, null]);

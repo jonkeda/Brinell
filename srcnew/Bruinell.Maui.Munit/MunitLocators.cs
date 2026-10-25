@@ -32,11 +32,30 @@ internal static class MunitLocators
             LocatorStrategy.Name => node => MunitMauiElement.NameOf(node.Element) == value,
             LocatorStrategy.Text or LocatorStrategy.LinkText => node => node.Text == value,
             LocatorStrategy.PartialLinkText => node => node.Text?.Contains(value, StringComparison.Ordinal) == true,
+            LocatorStrategy.ControlType when ControlTypes.TryGetValue(value, out var types)
+                => node => types.Any(type => type.IsInstanceOfType(node.Element)),
             LocatorStrategy.ClassName or LocatorStrategy.TagName or LocatorStrategy.ControlType
                 => node => IsOfType(node.Element, value),
             _ => throw new DeviceOnlyException($"Locator {locator.Strategy}:{value}"),
         };
     }
+
+    // The control-type words of the platform trees (UI Automation's, Appium's), as the MAUI types a
+    // device draws them for: a Label is text there, an Entry an edit, a row a list item.
+    private static readonly Dictionary<string, Type[]> ControlTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["text"] = [typeof(Label), typeof(Span)],
+        ["button"] = [typeof(Microsoft.Maui.Controls.Button), typeof(ImageButton)],
+        ["image"] = [typeof(Image), typeof(ImageButton)],
+        ["edit"] = [typeof(Entry), typeof(Editor), typeof(SearchBar)],
+        ["entry"] = [typeof(Entry), typeof(Editor), typeof(SearchBar)],
+        ["checkbox"] = [typeof(CheckBox)],
+        ["radiobutton"] = [typeof(RadioButton)],
+        ["combobox"] = [typeof(Picker)],
+        ["slider"] = [typeof(Slider)],
+        ["progressbar"] = [typeof(ProgressBar)],
+        ["tabitem"] = [typeof(ShellSection)],
+    };
 
     // "Button" names Button and every type derived from it, as a platform's class name names the control.
     private static bool IsOfType(Element element, string typeName)

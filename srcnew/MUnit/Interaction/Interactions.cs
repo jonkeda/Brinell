@@ -145,6 +145,123 @@ public static class Interactions
 
     #endregion
 
+    #region Focus
+
+    /// <summary>
+    /// Gives the element focus, as a tap into it does: whatever had focus in its window loses it
+    /// (Unfocused), then this one gains it (Focused). MAUI's own <c>Focus()</c> needs a platform.
+    /// </summary>
+    public static TElement SetFocus<TElement>(this TElement element) where TElement : VisualElement
+    {
+        Act(element, "focus", () =>
+        {
+            foreach (var other in FocusedIn(Top(element)).Where(other => !ReferenceEquals(other, element)))
+                MauiInternals.SetFocused(other, false);
+            MauiInternals.SetFocused(element, true);
+        });
+        return element;
+    }
+
+    /// <summary>Takes focus away from the element (Unfocused), as tapping elsewhere does.</summary>
+    public static TElement ClearFocus<TElement>(this TElement element) where TElement : VisualElement
+    {
+        var context = MauiTestContext.Of(element);
+        if (context is null)
+            MauiInternals.SetFocused(element, false);
+        else
+            context.Dispatcher.Run(() => MauiInternals.SetFocused(element, false));
+        return element;
+    }
+
+    private static Element Top(Element element)
+    {
+        var top = element;
+        while (top.Parent is { } parent)
+            top = parent;
+        return top;
+    }
+
+    private static IEnumerable<VisualElement> FocusedIn(Element root)
+        => VisualTree.Read(root).DescendantsAndSelf().Select(node => node.Element).OfType<VisualElement>().Where(e => e.IsFocused).ToList();
+
+    #endregion
+
+    #region Swipes
+
+    /// <summary>
+    /// Swipes a finger across the view in <paramref name="direction"/>, as each control answers a
+    /// swipe: a SwipeView opens the items the finger uncovers (right opens the left items), a
+    /// CarouselView moves one card along its axis, a RefreshView pulled down refreshes, and any
+    /// other view runs its SwipeGestureRecognizers for that direction.
+    /// </summary>
+    /// <exception cref="ElementNotInteractableException">Nothing answers that swipe, or the control declines it.</exception>
+    public static TView Swipe<TView>(this TView view, SwipeDirection direction) where TView : View
+    {
+        switch (view)
+        {
+            case SwipeView swipeView:
+                // Without a platform view Open only announces itself; the items' side is MAUI's to show.
+                Act(swipeView, "swipe", () => swipeView.Open(direction switch
+                {
+                    SwipeDirection.Right => OpenSwipeItem.LeftItems,
+                    SwipeDirection.Left => OpenSwipeItem.RightItems,
+                    SwipeDirection.Down => OpenSwipeItem.TopItems,
+                    _ => OpenSwipeItem.BottomItems,
+                }, animated: false));
+                return view;
+
+            case CarouselView carousel when CarouselStep(carousel, direction) is { } step:
+                var count = carousel.ItemsSource?.Cast<object?>().Count() ?? 0;
+                var target = carousel.Position + step;
+                if (carousel.Loop && count > 0)
+                    target = ((target % count) + count) % count;
+                if (!carousel.IsSwipeEnabled || count == 0 || target < 0 || target >= count)
+                    throw new ElementNotInteractableException($"Cannot swipe {Name(carousel)} {direction}: there is no card that way.");
+                Act(carousel, "swipe", () => carousel.Position = target);
+                return view;
+
+            case RefreshView refresh when direction == SwipeDirection.Down:
+                if (refresh.IsRefreshing)
+                    throw new ElementNotInteractableException($"Cannot pull {Name(refresh)}: it is refreshing already.");
+                refresh.Refresh();
+                return view;
+        }
+
+        // A ContentView that wraps a RefreshView is pulled through it, one level deep.
+        if (direction == SwipeDirection.Down && view is ContentView { Content: RefreshView wrapped })
+        {
+            wrapped.Swipe(direction);
+            return view;
+        }
+
+        var recognizers = view.GestureRecognizers.OfType<SwipeGestureRecognizer>()
+            .Where(recognizer => recognizer.Direction.HasFlag(direction))
+            .ToList();
+        if (recognizers.Count == 0)
+            throw new ElementNotInteractableException(
+                $"Cannot swipe {Name(view)} {direction}: it is not a SwipeView, CarouselView or RefreshView, and no SwipeGestureRecognizer takes {direction}.");
+
+        Act(view, "swipe", () =>
+        {
+            foreach (var recognizer in recognizers)
+                recognizer.SendSwiped(view, direction);
+        });
+        return view;
+    }
+
+    private static int? CarouselStep(CarouselView carousel, SwipeDirection direction)
+    {
+        var vertical = carousel.ItemsLayout is LinearItemsLayout { Orientation: ItemsLayoutOrientation.Vertical };
+        return (direction, vertical) switch
+        {
+            (SwipeDirection.Left, false) or (SwipeDirection.Up, true) => 1,
+            (SwipeDirection.Right, false) or (SwipeDirection.Down, true) => -1,
+            _ => null,
+        };
+    }
+
+    #endregion
+
     #region Ranges, dates and times
 
     /// <summary>Drags the slider to <paramref name="value"/>: DragStarted, ValueChanged, DragCompleted; MAUI clamps it.</summary>
@@ -173,7 +290,7 @@ public static class Interactions
     {
         if (date < picker.MinimumDate || date > picker.MaximumDate)
             throw new ElementNotInteractableException(
-                $"Cannot pick {date:d} in {Name(picker)}: it allows {picker.MinimumDate:d} to {picker.MaximumDate:d}.");
+                $"Cannot pick {date:yyyy-MM-dd} in {Name(picker)}: it allows MinimumDate {picker.MinimumDate:yyyy-MM-dd} to MaximumDate {picker.MaximumDate:yyyy-MM-dd}.");
 
         Act(picker, "pick a date in", () => picker.Date = date);
         return picker;
@@ -205,11 +322,18 @@ public static class Interactions
     }
 
     /// <summary>Picks the item at <paramref name="index"/>.</summary>
+    /// <exception cref="ElementNotInteractableException">
+    /// No item there, or an earlier item is equal to it: MAUI resolves the selection by equality,
+    /// so it would hold the earlier one, and a device would show that one too.
+    /// </exception>
     public static Picker SelectIndex(this Picker picker, int index)
     {
-        var count = picker.ItemsSource is { } source ? source.Cast<object?>().Count() : picker.Items.Count;
-        if (index < 0 || index >= count)
-            throw new ElementNotInteractableException($"Cannot pick item {index} in {Name(picker)}: it offers {count}.");
+        var items = picker.ItemsSource is { } source ? source.Cast<object?>().ToList() : picker.Items.Cast<object?>().ToList();
+        if (index < 0 || index >= items.Count)
+            throw new ElementNotInteractableException($"Cannot pick item {index} in {Name(picker)}: it is past the end of its {items.Count} items.");
+        if (items.Take(index).Any(earlier => Equals(earlier, items[index])))
+            throw new ElementNotInteractableException(
+                $"Cannot pick item {index} in {Name(picker)}: an earlier item is equal to this one, so MAUI would select that one instead.");
 
         Act(picker, "pick in", () => picker.SelectedIndex = index);
         return picker;
@@ -255,6 +379,34 @@ public static class Interactions
         return view;
     }
 
+    /// <summary>Taps a Shell tab: its item and section become current, and Shell navigates there.</summary>
+    public static ShellSection Select(this ShellSection tab)
+    {
+        if (tab.Parent is not ShellItem item || item.Parent is not Shell shell)
+            throw new ElementNotInteractableException($"Cannot select tab '{tab.Title}': it is in no Shell.");
+
+        Act(tab, "select", () =>
+        {
+            shell.CurrentItem = item;
+            item.CurrentItem = tab;
+        });
+        return tab;
+    }
+
+    /// <summary>Taps a Shell flyout entry: it becomes current, and the flyout closes.</summary>
+    public static ShellItem Select(this ShellItem item)
+    {
+        if (item.Parent is not Shell shell)
+            throw new ElementNotInteractableException($"Cannot select '{item.Title}': it is in no Shell.");
+
+        Act(item, "select", () =>
+        {
+            shell.CurrentItem = item;
+            shell.FlyoutIsPresented = false;
+        });
+        return item;
+    }
+
     /// <summary>Pulls to refresh: IsRefreshing and the Command.</summary>
     public static RefreshView Refresh(this RefreshView view)
     {
@@ -277,9 +429,9 @@ public static class Interactions
         context?.Dispatcher.RunPending();
 
         if (!VisualTree.IsEffectivelyVisible(element))
-            throw new ElementNotInteractableException($"Cannot {verb} {Name(element)}: it is not visible (IsVisible is false on it or an ancestor).");
+            throw new ElementNotInteractableException($"Cannot {verb} {Name(element)}: it is not visible (IsVisible is false on it or an ancestor).", InteractionRefusal.Hidden);
         if (!VisualTree.IsEffectivelyEnabled(element))
-            throw new ElementNotInteractableException($"Cannot {verb} {Name(element)}: it is disabled (IsEnabled is false on it or an ancestor, or its command cannot execute).");
+            throw new ElementNotInteractableException($"Cannot {verb} {Name(element)}: it is disabled (IsEnabled is false on it or an ancestor, or its command cannot execute).", InteractionRefusal.Disabled);
 
         if (context is null)
             action();
@@ -290,7 +442,7 @@ public static class Interactions
     private static void EnsureWritable(InputView input, string verb)
     {
         if (input.IsReadOnly)
-            throw new ElementNotInteractableException($"Cannot {verb} {Name(input)}: it is read-only.");
+            throw new ElementNotInteractableException($"Cannot {verb} {Name(input)}: it is read-only.", InteractionRefusal.ReadOnly);
     }
 
     private static int IndexOf(IEnumerable source, object item)

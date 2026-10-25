@@ -4,9 +4,11 @@ using Size = System.Drawing.Size;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Bruinell.Core;
+using Bruinell.Core.Exceptions;
 using Bruinell.Core.Locators;
 using Bruinell.Maui.Interfaces;
 using Microsoft.Maui.Controls;
+using MUnit.Dialogs;
 using MUnit.Inspection;
 using MUnit.Interaction;
 using MauiElement = Microsoft.Maui.Controls.Element;
@@ -16,47 +18,80 @@ namespace Bruinell.Maui.Munit;
 /// <summary>
 /// One MAUI element of a page rendered by MUnit, as Bruinell's controls ask for it. State is read
 /// from the element itself; actions go through MUnit's interactions, so they run the control's own
-/// events, commands and bindings and refuse what a user could not do.
+/// events, commands and bindings and refuse what a user could not do, with the Bruinell exceptions
+/// a device driver throws (<see cref="MunitRefusals"/>).
 /// </summary>
 /// <remarks>
+/// <para>
 /// There is no layout: a visible element reports nominal 1x1 bounds at the origin, so Bruinell's
 /// usable-bounds rule holds, and a hidden one reports none. Members a device alone can answer
-/// (hover, swipe, pixels) throw <see cref="DeviceOnlyException"/>.
+/// (hover, pointer paths, pixels) throw <see cref="DeviceOnlyException"/>.
+/// </para>
+/// <para>
+/// Where the app attaches a verb sink for Bruinell's Windows bridge, gestures and state reads go to
+/// it first (<see cref="MunitAppBridge"/>), as they do there.
+/// </para>
 /// </remarks>
 public sealed class MunitMauiElement : IMauiElement
 {
     private static readonly ConditionalWeakTable<MauiElement, string> Keys = new();
+    private static readonly ConditionalWeakTable<Picker, StrongBox<bool>> OpenDropdowns = new();
     private static long s_nextKey;
 
     private readonly MunitMauiDriver _driver;
     private readonly bool _isApp;
+    private readonly StepperPart _part;
 
     internal MunitMauiElement(MunitMauiDriver driver, MauiElement element, bool isApp = false)
+        : this(driver, element, isApp, StepperPart.None)
+    {
+    }
+
+    private MunitMauiElement(MunitMauiDriver driver, MauiElement element, bool isApp, StepperPart part)
     {
         _driver = driver;
         Element = element;
         _isApp = isApp;
+        _part = part;
     }
 
-    /// <summary>The MAUI element.</summary>
+    /// <summary>
+    /// The two buttons a device draws inside a Stepper, which Bruinell's Stepper presses: published
+    /// as its children, each stepping the value by Increment as the platform's button does.
+    /// </summary>
+    private enum StepperPart
+    {
+        None,
+        Minus,
+        Plus,
+    }
+
+    /// <summary>The MAUI element; for a Stepper's part, the Stepper.</summary>
     public MauiElement Element { get; }
 
     #region State
 
     public bool Visible => VisualTree.IsEffectivelyVisible(Element);
 
-    public bool Enabled => VisualTree.IsEffectivelyEnabled(Element);
+    public bool Enabled => VisualTree.IsEffectivelyEnabled(Element) && PartEnabled();
 
     public bool Selected => Element switch
     {
         RadioButton radio => radio.IsChecked,
         CheckBox box => box.IsChecked,
+        ShellSection tab => tab.Parent is ShellItem item && ReferenceEquals(item.CurrentItem, tab) && item.Parent is Shell shell && ReferenceEquals(shell.CurrentItem, item),
+        ShellItem flyoutItem => flyoutItem.Parent is Shell owner && ReferenceEquals(owner.CurrentItem, flyoutItem),
         _ => IsSelectedRow(),
     };
 
-    public string? Text => VisualTree.AdapterFor(Element, _driver.TestContext.Adapters).GetText(Element);
+    public string? Text => _part switch
+    {
+        StepperPart.Minus => "-",
+        StepperPart.Plus => "+",
+        _ => VisualTree.AdapterFor(Element, _driver.TestContext.Adapters).GetText(Element),
+    };
 
-    public string? TagName => Element.GetType().Name;
+    public string? TagName => _part == StepperPart.None ? Element.GetType().Name : "RepeatButton";
 
     public Point Location => Point.Empty;
 
@@ -69,13 +104,21 @@ public sealed class MunitMauiElement : IMauiElement
         ArgumentNullException.ThrowIfNull(name);
         if (name is "ClassName" or "class")
             return TagName;
+        if (name is "Name" or "name")
+            return Name;
 
-        // Any bindable property by its name: "IsToggled", "Placeholder", "Text".
-        var field = Element.GetType().GetField(name + "Property",
-            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.FlattenHierarchy);
-        return field?.GetValue(null) is BindableProperty property
-            ? Convert.ToString(Element.GetValue(property), CultureInfo.InvariantCulture)
-            : null;
+        return BindableValue(name);
+    }
+
+    public string? ReadState(string property)
+    {
+        ArgumentNullException.ThrowIfNull(property);
+
+        // The bridge's own names first, then what the app's sink answers, as on Windows.
+        return MunitState.Read(Element, property)
+               ?? MunitAppBridge.TryExchange(Element, "GetState", property)
+               ?? throw new NotSupportedException(
+                   $"{TagName} #{AutomationId} has no state '{property}': neither Bruinell's state names nor an app sink answer it.");
     }
 
     #endregion
@@ -85,21 +128,21 @@ public sealed class MunitMauiElement : IMauiElement
     public void Click() => Invoke();
 
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
-    {
-        var input = Input("type into");
-        input.SetText(method == TextInputMethod.SetValue ? text : (input.Text ?? string.Empty) + text);
-    }
+        => Do(() =>
+        {
+            var input = Input("type into");
+            input.SetText(method == TextInputMethod.SetValue ? text : (input.Text ?? string.Empty) + text);
+        });
 
-    public void Clear() => Input("clear").ClearText();
+    public void Clear() => Do(() => Input("clear").ClearText());
 
-    public void DoubleClick()
-        => (Element as View ?? throw new ElementNotInteractableException($"{TagName} cannot be tapped.")).Tap(taps: 2);
+    public void DoubleClick() => PerformGesture(MauiGesture.DoubleTap);
 
     public void RightClick() => throw new DeviceOnlyException(nameof(RightClick));
 
     public void Hover() => throw new DeviceOnlyException(nameof(Hover));
 
-    public void LongPress(int durationMs = 1000) => throw new DeviceOnlyException(nameof(LongPress));
+    public void LongPress(int durationMs = 1000) => PerformGesture(MauiGesture.LongPress);
 
     // Every element is in the tree and on "screen": there is nothing to scroll to.
     public void ScrollIntoView(int timeoutMs)
@@ -115,18 +158,31 @@ public sealed class MunitMauiElement : IMauiElement
 
     public IMauiElement? TryFindElement(Locator locator) => FindElements(locator).FirstOrDefault();
 
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator) => _driver.Find(Element, locator);
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+        if (_part != StepperPart.None)
+            return [];
+
+        // A Stepper's buttons are drawn by the platform, not declared in XAML.
+        if (Element is Stepper && locator is { Strategy: LocatorStrategy.ClassName, Value: "RepeatButton" }
+                or { Strategy: LocatorStrategy.ControlType, Value: "button" })
+            return [Part(StepperPart.Minus), Part(StepperPart.Plus)];
+
+        return _driver.Find(Element, locator);
+    }
 
     #endregion
 
     #region Identity
 
     public string InstanceKey
-        => Keys.GetValue(Element, _ => Interlocked.Increment(ref s_nextKey).ToString(CultureInfo.InvariantCulture));
+        => Keys.GetValue(Element, _ => Interlocked.Increment(ref s_nextKey).ToString(CultureInfo.InvariantCulture))
+           + (_part == StepperPart.None ? "" : "/" + _part);
 
-    public string? AutomationId => Element.AutomationId;
+    public string? AutomationId => _part == StepperPart.None ? Element.AutomationId : Element.AutomationId + _part;
 
-    public string? Name => NameOf(Element);
+    public string? Name => _part == StepperPart.None ? NameOf(Element) : Text;
 
     public bool Focused => Element is VisualElement { IsFocused: true };
 
@@ -141,8 +197,15 @@ public sealed class MunitMauiElement : IMauiElement
 
     #region Activation
 
-    public void Invoke()
+    public void Invoke() => Do(() =>
     {
+        if (_part != StepperPart.None)
+        {
+            var stepper = (Stepper)Element;
+            stepper.StepTo(stepper.Value + (_part == StepperPart.Plus ? stepper.Increment : -stepper.Increment));
+            return;
+        }
+
         switch (Element)
         {
             case Microsoft.Maui.Controls.Button button: button.Click(); break;
@@ -151,13 +214,16 @@ public sealed class MunitMauiElement : IMauiElement
             case Switch toggle: toggle.Toggle(); break;
             case CheckBox box: box.Toggle(); break;
             case RadioButton radio: radio.Select(); break;
+            case ShellSection tab: tab.Select(); break;
+            case ShellItem flyoutItem: flyoutItem.Select(); break;
             case MauiElement row when TrySelectRow(row): break;
+            case View view when MunitAppBridge.Names(view, "Tap"): MunitAppBridge.TryInvoke(view, "Tap", 0, 0); break;
             case View view: view.Tap(); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} has no primary action.");
         }
-    }
+    });
 
-    public void Toggle()
+    public void Toggle() => Do(() =>
     {
         switch (Element)
         {
@@ -165,15 +231,65 @@ public sealed class MunitMauiElement : IMauiElement
             case CheckBox box: box.Toggle(); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} cannot be toggled.");
         }
-    }
+    });
 
     public void Select() => Invoke();
 
-    public void InvokeToolbarItem(string automationId)
+    public void InvokeToolbarItem(string automationId) => _driver.InvokeToolbarItem(automationId);
+
+    #endregion
+
+    #region Gestures
+
+    public void PerformGesture(MauiGesture gesture) => PerformGesture(gesture, 0, 0);
+
+    /// <summary>
+    /// The gesture as the Windows bridge performs it: the app's sink when it names the verb, else
+    /// the control's own answer (a tap through its recognizers; a swipe on a SwipeView, a
+    /// CarouselView, a RefreshView or a SwipeGestureRecognizer).
+    /// </summary>
+    internal void PerformGesture(MauiGesture gesture, int arg1, int arg2) => Do(() =>
     {
-        var item = _driver.CurrentPage.ToolbarItems.FirstOrDefault(candidate => candidate.AutomationId == automationId)
-            ?? throw new ElementNotInteractableException($"The page has no toolbar item '{automationId}'.");
-        item.Click();
+        if (MunitAppBridge.TryInvoke(Element, gesture.ToString(), arg1, arg2))
+            return;
+
+        var view = Element as View
+            ?? throw new ElementNotInteractableException($"{TagName} #{AutomationId} takes no gestures.");
+        switch (gesture)
+        {
+            case MauiGesture.Tap: view.Tap(); break;
+            case MauiGesture.DoubleTap: view.Tap(taps: 2); break;
+            case MauiGesture.SwipeLeft: view.Swipe(SwipeDirection.Left); break;
+            case MauiGesture.SwipeRight: view.Swipe(SwipeDirection.Right); break;
+            case MauiGesture.SwipeUp: view.Swipe(SwipeDirection.Up); break;
+            case MauiGesture.SwipeDown: view.Swipe(SwipeDirection.Down); break;
+            case MauiGesture.LongPress:
+                throw new ElementNotInteractableException(
+                    $"Cannot long-press {TagName} #{AutomationId}: MAUI has no long-press gesture recognizer; attach a sink that names LongPress.");
+            default:
+                throw new ElementNotInteractableException(
+                    $"Cannot {gesture} {TagName} #{AutomationId}: MAUI's Send{gesture} is internal; attach a sink that names {gesture}.");
+        }
+    });
+
+    /// <summary>Whether <see cref="PerformGesture(MauiGesture, int, int)"/> has a route for <paramref name="gesture"/>.</summary>
+    internal bool SupportsGesture(MauiGesture gesture)
+    {
+        if (MunitAppBridge.Names(Element, gesture.ToString()))
+            return true;
+        if (Element is not View view)
+            return false;
+
+        return gesture switch
+        {
+            MauiGesture.Tap => view.GestureRecognizers.OfType<TapGestureRecognizer>().Any(r => r.NumberOfTapsRequired == 1),
+            MauiGesture.DoubleTap => view.GestureRecognizers.OfType<TapGestureRecognizer>().Any(r => r.NumberOfTapsRequired == 2),
+            MauiGesture.SwipeLeft or MauiGesture.SwipeRight or MauiGesture.SwipeUp or MauiGesture.SwipeDown
+                => view is SwipeView or CarouselView
+                   || (gesture == MauiGesture.SwipeDown && view is RefreshView or ContentView { Content: RefreshView })
+                   || view.GestureRecognizers.OfType<SwipeGestureRecognizer>().Any(),
+            _ => false,
+        };
     }
 
     #endregion
@@ -188,7 +304,7 @@ public sealed class MunitMauiElement : IMauiElement
         _ => null,
     };
 
-    public void SetChecked(bool isChecked)
+    public void SetChecked(bool isChecked) => Do(() =>
     {
         switch (Element)
         {
@@ -197,7 +313,7 @@ public sealed class MunitMauiElement : IMauiElement
             case RadioButton radio when isChecked: radio.Select(); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} has no checked state to set.");
         }
-    }
+    });
 
     public bool? IsReadOnly => Element is InputView input ? input.IsReadOnly : null;
 
@@ -209,7 +325,7 @@ public sealed class MunitMauiElement : IMauiElement
 
     public double? RangeSmallChange => Element is Stepper stepper ? stepper.Increment : null;
 
-    public void SetRangeValue(double value)
+    public void SetRangeValue(double value) => Do(() =>
     {
         switch (Element)
         {
@@ -217,19 +333,20 @@ public sealed class MunitMauiElement : IMauiElement
             case Stepper stepper: stepper.StepTo(value); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} has no range to set.");
         }
-    }
+    });
 
     public void AppendText(string text) => SendKeys(text, TextInputMethod.Keys);
 
     public void ClearFocus()
     {
+        if (Element is VisualElement visual)
+            visual.ClearFocus();
     }
 
     public void Focus()
-    {
-    }
+        => Do(() => (Element as VisualElement ?? throw new ElementNotInteractableException($"{TagName} cannot take focus.")).SetFocus());
 
-    public void Submit()
+    public void Submit() => Do(() =>
     {
         switch (Element)
         {
@@ -237,11 +354,52 @@ public sealed class MunitMauiElement : IMauiElement
             case SearchBar search: search.Search(); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} cannot be submitted.");
         }
-    }
+    });
 
     #endregion
 
-    #region Selection, dates and times
+    #region Scrolling
+
+    // Every row is realized and nothing is off screen, so a scroll has nowhere to go: it succeeds
+    // at once where the target exists, and says so where it does not.
+
+    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
+        => Element is ScrollView or ItemsView
+            ? ScrollStep.NotMoved
+            : throw new BruinellException($"{TagName} #{AutomationId} does not scroll.");
+
+    // Scrolling reveals what is off screen, and nothing is: what a lookup missed, a scroll cannot
+    // find. Answering with a lookup here made a container's miss an app-wide hit.
+    public IMauiElement? TryFindByScrolling(Locator locator) => null;
+
+    public void ScrollTo(string automationId)
+    {
+        if (_driver.Find(Element, Locator.ByAutomationId(automationId)).Count == 0)
+            throw new BruinellException($"{TagName} #{AutomationId} holds no element with AutomationId '{automationId}' to scroll to.");
+    }
+
+    public ScrollStep ScrollTowards(int index)
+    {
+        ScrollToIndex(index);
+        return ScrollStep.Jumped;
+    }
+
+    public void ScrollToIndex(int index)
+    {
+        var count = Element switch
+        {
+            ItemsView items => items.ItemsSource?.Cast<object>().Count() ?? 0,
+            _ => throw new BruinellException($"{TagName} #{AutomationId} has no items to scroll to."),
+        };
+        if (index < 0 || index >= count)
+            throw new ArgumentOutOfRangeException(nameof(index), index, $"{TagName} #{AutomationId}: {index} is past the end, its item count is {count}.");
+    }
+
+    public ScrollPosition ReadScrollPosition() => throw new DeviceOnlyException(nameof(ReadScrollPosition));
+
+    #endregion
+
+    #region Selection, dropdowns, dates and times
 
     public string? SelectedItemText => Element is Picker ? Text : null;
 
@@ -252,7 +410,24 @@ public sealed class MunitMauiElement : IMauiElement
         _ => null,
     };
 
-    public void SelectIndex(int index)
+    public bool? IsDropdownOpen => Element is Picker picker ? OpenDropdowns.GetValue(picker, _ => new StrongBox<bool>()).Value : null;
+
+    public void OpenDropdown()
+    {
+        if (Element is not Picker picker)
+            throw new BruinellException($"{TagName} #{AutomationId} has no dropdown.");
+        Do(() => Interactions.Act(picker, "open", () => OpenDropdowns.GetValue(picker, _ => new StrongBox<bool>()).Value = true));
+    }
+
+    public void CloseDropdown()
+    {
+        if (Element is Picker picker)
+            OpenDropdowns.GetValue(picker, _ => new StrongBox<bool>()).Value = false;
+    }
+
+    public IReadOnlyList<string>? ReadDropdownItemTexts() => Element is Picker picker ? [.. picker.Items] : null;
+
+    public void SelectIndex(int index) => Do(() =>
     {
         switch (Element)
         {
@@ -264,11 +439,12 @@ public sealed class MunitMauiElement : IMauiElement
                 view.Select(items[index]);
                 break;
             case CarouselView carousel: Interactions.Act(carousel, "swipe", () => carousel.Position = index); break;
+            case View view when MunitAppBridge.Names(view, "SelectIndex"): MunitAppBridge.TryInvoke(view, "SelectIndex", index, 0); break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} has no items to select.");
         }
-    }
+    });
 
-    public void SelectByText(string text)
+    public void SelectByText(string text) => Do(() =>
     {
         switch (Element)
         {
@@ -280,13 +456,13 @@ public sealed class MunitMauiElement : IMauiElement
                 break;
             default: throw new ElementNotInteractableException($"{TagName} #{AutomationId} has no items to select.");
         }
-    }
+    });
 
     public void SetDate(DateTime date)
-        => (Element as DatePicker ?? throw new ElementNotInteractableException($"{TagName} is no date picker.")).SetDate(date);
+        => Do(() => (Element as DatePicker ?? throw new ElementNotInteractableException($"{TagName} is no date picker.")).SetDate(date));
 
     public void SetTime(TimeSpan time)
-        => (Element as TimePicker ?? throw new ElementNotInteractableException($"{TagName} is no time picker.")).SetTime(time);
+        => Do(() => (Element as TimePicker ?? throw new ElementNotInteractableException($"{TagName} is no time picker.")).SetTime(time));
 
     #endregion
 
@@ -301,14 +477,31 @@ public sealed class MunitMauiElement : IMauiElement
 
     public void CloseFlyout() => SetFlyout(false);
 
-    // MUnit has no alert or action sheet yet (the proposal's Phase 4): none is ever open.
-    public AlertContents? ReadAlert() => _isApp ? null : throw new NotSupportedException("Ask IMauiTestContext.AppElement.");
+    // The dialog on top of the window: what the app raised with DisplayAlertAsync, DisplayPromptAsync
+    // or DisplayActionSheetAsync, as MUnit shows it (TestDialog).
+    public AlertContents? ReadAlert()
+    {
+        if (!_isApp)
+            throw new NotSupportedException("Ask IMauiTestContext.AppElement.");
 
-    public IMauiElement? TryFindActiveDialog() => _isApp ? null : throw new NotSupportedException("Ask IMauiTestContext.AppElement.");
+        _driver.TestContext.Dispatcher.RunPending();
+        return DialogRequests.Top(_driver.Window) is { } dialog
+            ? new AlertContents(dialog.Title, dialog.Message, dialog.Accept, dialog.Cancel)
+            : null;
+    }
+
+    public IMauiElement? TryFindActiveDialog()
+    {
+        if (!_isApp)
+            throw new NotSupportedException("Ask IMauiTestContext.AppElement.");
+
+        _driver.TestContext.Dispatcher.RunPending();
+        return DialogRequests.Top(_driver.Window) is { } dialog ? new MunitMauiElement(_driver, dialog) : null;
+    }
 
     public IMauiElement? TryFindDeclared(string automationId)
         => _isApp
-            ? _driver.Find(_driver.Window, Locator.ByAutomationId(automationId)).FirstOrDefault()
+            ? _driver.Find(_driver.Window, Locator.ByAutomationId(automationId), includeHidden: true).FirstOrDefault()
             : throw new NotSupportedException("Ask IMauiTestContext.AppElement.");
 
     #endregion
@@ -323,13 +516,46 @@ public sealed class MunitMauiElement : IMauiElement
 
     #endregion
 
-    /// <summary>The accessible name: the semantic description, else the automation name.</summary>
+    /// <summary>
+    /// The accessible name: the semantic description, else the automation name, else what the
+    /// platforms announce for a control that shows text (a button's or label's text, a tab's or a
+    /// dialog's title).
+    /// </summary>
     internal static string? NameOf(MauiElement element)
-        => element is BindableObject bindable
-            ? SemanticProperties.GetDescription(bindable) ?? AutomationProperties.GetName(bindable)
-            : null;
+        => SemanticProperties.GetDescription(element)
+           ?? AutomationProperties.GetName(element)
+           ?? element switch
+           {
+               TestDialog dialog => dialog.Title,
+               Microsoft.Maui.Controls.Button button => button.Text,
+               Label label => DefaultElementAdapter.Instance.GetText(label),
+               MenuItem item => item.Text,
+               BaseShellItem shellItem => shellItem.Title,
+               _ => null,
+           };
 
     public override string ToString() => $"{TagName} #{AutomationId}";
+
+    private void Do(Action action) => MunitRefusals.Run(Element, action);
+
+    private MunitMauiElement Part(StepperPart part) => new(_driver, Element, isApp: false, part);
+
+    private bool PartEnabled() => _part switch
+    {
+        StepperPart.Minus => ((Stepper)Element).Value > ((Stepper)Element).Minimum,
+        StepperPart.Plus => ((Stepper)Element).Value < ((Stepper)Element).Maximum,
+        _ => true,
+    };
+
+    private string? BindableValue(string name)
+    {
+        // Any bindable property by its name: "IsToggled", "Placeholder", "Text".
+        var field = Element.GetType().GetField(name + "Property",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.FlattenHierarchy);
+        return field?.GetValue(null) is BindableProperty property
+            ? Convert.ToString(Element.GetValue(property), CultureInfo.InvariantCulture)
+            : null;
+    }
 
     private InputView Input(string verb)
         => Element as InputView ?? throw new ElementNotInteractableException($"Cannot {verb} {TagName} #{AutomationId}: it is no text field.");
@@ -343,7 +569,7 @@ public sealed class MunitMauiElement : IMauiElement
         {
             case Shell shell: _driver.TestContext.Dispatcher.Run(() => shell.FlyoutIsPresented = open); break;
             case FlyoutPage flyout: _driver.TestContext.Dispatcher.Run(() => flyout.IsPresented = open); break;
-            default: throw new ElementNotInteractableException("The app has no flyout.");
+            default: throw new BruinellException("The app has no flyout.");
         }
     }
 

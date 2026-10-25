@@ -54,7 +54,9 @@ public static class VisualTree
         return node;
     }
 
-    private static bool OwnVisible(Element element) => element is not VisualElement visual || visual.IsVisible;
+    // A carousel shows one card: the others are realized but off screen.
+    private static bool OwnVisible(Element element)
+        => (element is not VisualElement visual || visual.IsVisible) && !ItemRealizer.IsCardOffScreen(element);
 
     private static bool OwnEnabled(Element element) => element switch
     {

@@ -1,4 +1,5 @@
 using System.Text;
+using Bruinell.Core.Exceptions;
 using Bruinell.Core.Locators;
 using Bruinell.Maui.Enums;
 using Bruinell.Maui.Interfaces;
@@ -26,7 +27,10 @@ namespace Bruinell.Maui.Munit;
 /// </remarks>
 public sealed class MunitMauiDriver : IMauiDriver
 {
+    private static int s_nextHandle;
+
     private readonly IRenderedElement<MauiElement> _rendered;
+    private readonly string _handle = "munit-" + Interlocked.Increment(ref s_nextHandle);
 
     public MunitMauiDriver(IRenderedElement<MauiElement> rendered)
     {
@@ -46,12 +50,30 @@ public sealed class MunitMauiDriver : IMauiDriver
 
     public IReadOnlyList<IMauiElement> FindElements(Locator locator) => Find(Window, locator);
 
-    internal IReadOnlyList<IMauiElement> Find(MauiElement root, Locator locator)
+    /// <summary>
+    /// The elements under <paramref name="root"/> that <paramref name="locator"/> names. An element
+    /// with <c>IsVisible</c> false (or under one) is left out, as Windows, Android and iOS leave it
+    /// out of their trees; one merely off screen, like a carousel's other cards, stays, as on
+    /// Windows. With <paramref name="includeHidden"/> it is found anyway, for <c>TryFindDeclared</c>.
+    /// </summary>
+    internal IReadOnlyList<IMauiElement> Find(MauiElement root, Locator locator, bool includeHidden = false)
     {
         ArgumentNullException.ThrowIfNull(locator);
         return MunitLocators.Match(Read(root), locator)
+            .Where(node => includeHidden || !IsHidden(node.Element))
             .Select(node => (IMauiElement)new MunitMauiElement(this, node.Element))
             .ToList();
+    }
+
+    private static bool IsHidden(MauiElement element)
+    {
+        for (var walker = element; walker is not null; walker = walker.Parent)
+        {
+            if (walker is VisualElement { IsVisible: false })
+                return true;
+        }
+
+        return false;
     }
 
     internal VisualNode Read(MauiElement root) => ElementQueries.Read(root);
@@ -75,15 +97,23 @@ public sealed class MunitMauiDriver : IMauiDriver
 
     public MauiPlatform Platform => MauiPlatform.Windows;
 
+    /// <summary>Shell's tab bar and flyout, as MUnit's tree shows them (<see cref="ShellTabBar"/>, <see cref="ShellFlyoutList"/>).</summary>
+    public ShellChromeLocators ShellChrome { get; } = new(
+        TabHost: Locator.ByClassName(nameof(ShellTabBar)),
+        Tab: Locator.ByClassName(nameof(ShellSection)),
+        FlyoutHost: Locator.ByClassName(nameof(ShellFlyoutList)),
+        FlyoutItem: Locator.ByClassName(nameof(ShellItem)));
+
     public IMauiElement AppElement => new MunitMauiElement(this, Window, isApp: true);
 
     public string Context { get; set; } = "NATIVE_APP";
 
     public IReadOnlyCollection<string> Contexts => ["NATIVE_APP"];
 
-    public string CurrentWindowHandle => "munit";
+    // One per rendered window, so two apps in one process are told apart, as two windows are.
+    public string CurrentWindowHandle => _handle;
 
-    public IReadOnlyCollection<string> WindowHandles => ["munit"];
+    public IReadOnlyCollection<string> WindowHandles => [_handle];
 
     public string GetPageSource() => TreeSnapshot.Format(Read(Window));
 
@@ -100,7 +130,17 @@ public sealed class MunitMauiDriver : IMauiDriver
         _rendered.Navigation.GoTo(destination);
     }
 
-    public void NavigateBack() => _rendered.Navigation.GoBack();
+    public void NavigateBack()
+    {
+        try
+        {
+            _rendered.Navigation.GoBack();
+        }
+        catch (InvalidOperationException nothingBehind)
+        {
+            throw new BruinellException(nothingBehind.Message);
+        }
+    }
 
     public int NavigationDepth() => _rendered.Navigation.Stack.Count + _rendered.Navigation.ModalStack.Count;
 
@@ -122,8 +162,72 @@ public sealed class MunitMauiDriver : IMauiDriver
 
     public object? ExecuteScript(string script, params object[] args) => throw new DeviceOnlyException(nameof(ExecuteScript));
 
+    /// <summary>
+    /// A menu bar or context menu item by its <c>AutomationId</c>, raised without opening a menu, as
+    /// the Windows bridge raises it: MAUI shows neither menu in any tree a test could walk.
+    /// </summary>
     public void InvokeMenuItem(string automationId)
-        => new MunitMauiElement(this, CurrentPage).InvokeToolbarItem(automationId);
+    {
+        var page = CurrentPage;
+        var menus = page.MenuBarItems.SelectMany(Flatten)
+            .Concat(Read(Window).DescendantsAndSelf()
+                .Select(node => node.Element)
+                .OfType<Microsoft.Maui.Controls.BindableObject>()
+                .Select(FlyoutBase.GetContextFlyout)
+                .OfType<MenuFlyout>()
+                .SelectMany(Flatten));
+        Raise(menus.OfType<MenuItem>().FirstOrDefault(item => item.AutomationId == automationId), automationId, "menu item");
+    }
+
+    /// <summary>A toolbar item of the current page or a page that contains it, by its <c>AutomationId</c>.</summary>
+    internal void InvokeToolbarItem(string automationId)
+    {
+        var items = new List<ToolbarItem>();
+        for (Element? walker = CurrentPage; walker is not null; walker = walker.Parent)
+        {
+            if (walker is Page level)
+                items.AddRange(level.ToolbarItems);
+        }
+
+        Raise(items.FirstOrDefault(item => item.AutomationId == automationId), automationId, "toolbar item");
+    }
+
+    private void Raise(MenuItem? item, string automationId, string kind)
+    {
+        if (item is null)
+            throw new BruinellException($"No {kind} on the page carries that AutomationId: '{automationId}'.");
+        if (!item.IsEnabled)
+            throw new ElementNotReadyException(Locator.ByAutomationId(automationId), NotReadyReason.Disabled, $"the {kind} is disabled");
+
+        TestContext.Dispatcher.Run(((IMenuItemController)item).Activate);
+    }
+
+    private static IEnumerable<IMenuElement> Flatten(IEnumerable<IMenuElement> entries)
+    {
+        foreach (var entry in entries)
+        {
+            yield return entry;
+            if (entry is MenuFlyoutSubItem submenu)
+            {
+                foreach (var deeper in Flatten(submenu))
+                    yield return deeper;
+            }
+        }
+    }
+
+    #endregion
+
+    #region Gestures
+
+    public bool SupportsGesture(string automationId, MauiGesture gesture)
+        => Declared(automationId) is { } element && element.SupportsGesture(gesture);
+
+    public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
+        => (Declared(automationId) ?? throw new BruinellException($"No element carries the AutomationId '{automationId}'."))
+            .PerformGesture(gesture, arg1, arg2);
+
+    private MunitMauiElement? Declared(string automationId)
+        => Find(Window, Locator.ByAutomationId(automationId), includeHidden: true).FirstOrDefault() as MunitMauiElement;
 
     #endregion
 

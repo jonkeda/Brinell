@@ -37,6 +37,16 @@ internal static class ItemRealizer
             yield return Adopt(footer, itemsView);
     }
 
+    /// <summary>Whether <paramref name="row"/> is a CarouselView's card other than the one at its Position.</summary>
+    public static bool IsCardOffScreen(Element row)
+    {
+        if (row.Parent is not CarouselView carousel || !TryGetItem(row, out var item))
+            return false;
+
+        var index = carousel.ItemsSource?.Cast<object?>().ToList().IndexOf(item) ?? -1;
+        return index >= 0 && index != carousel.Position;
+    }
+
     /// <summary>The item a realized row shows, or null when <paramref name="row"/> is no row.</summary>
     public static bool TryGetItem(Element row, out object? item)
     {

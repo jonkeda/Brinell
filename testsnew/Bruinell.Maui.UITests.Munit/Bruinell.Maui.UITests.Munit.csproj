@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\srcnew\Bruinell.Maui.FlaUI\Bruinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\..\srcnew\Bruinell.Uat\Bruinell.Uat.csproj" />
     <ProjectReference Include="..\..\samples\Bruinell.Samples.Maui.App.Headless\Bruinell.Samples.Maui.App.Headless.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinell.Samples.Maui.ShellApp.Headless\Bruinell.Samples.Maui.ShellApp.Headless.csproj" />
   </ItemGroup>
 
   <!-- FlaUIErrorsTests unit-tests the Windows driver's internals, visible to Bruinell.Maui.UITests only. -->
