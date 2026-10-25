@@ -30,6 +30,10 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     private readonly List<string> _forward = [];
     private BunitContext _bunit = null!;
     private global::Bunit.TestDoubles.BunitAuthorizationContext _authorization = null!;
+    private IServiceScope? _fallbackScope;
+
+    // The values users entered, by element, with the value attribute they were entered over (BunitHtmlElement.InputValue).
+    private readonly Dictionary<string, (string? Attribute, string Value)> _entered = new(StringComparer.Ordinal);
     private IRenderedComponent<IComponent> _root = null!;
 
     public BunitTestContext(BunitTestContextOptions options)
@@ -218,6 +222,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     public void Dispose()
     {
         _bunit.Dispose();
+        _fallbackScope?.Dispose();
         _logger.Flush();
         _logger.Dispose();
     }
@@ -225,6 +230,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     public async ValueTask DisposeAsync()
     {
         await _bunit.DisposeAsync().ConfigureAwait(false);
+        _fallbackScope?.Dispose();
         _logger.Flush();
         _logger.Dispose();
     }
@@ -248,7 +254,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         _options.ConfigureServices?.Invoke(_bunit.Services);
         if (_options.FallbackServices is { } fallback)
         {
-            _bunit.Services.AddFallbackServiceProvider(fallback);
+            // A scope per render of the root, as each circuit has its own: no scoped state outlives a reset.
+            _fallbackScope = fallback.GetService<IServiceScopeFactory>()?.CreateScope();
+            _bunit.Services.AddFallbackServiceProvider(_fallbackScope?.ServiceProvider ?? fallback);
         }
 
         _authorization = _bunit.AddAuthorization();
@@ -276,10 +284,49 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     private void Restart()
     {
         _bunit.Dispose();
+        _fallbackScope?.Dispose();
+        _entered.Clear();
         Start();
     }
 
-    private void Go(string url) => _root.InvokeAsync(() => Navigation.NavigateTo(url)).GetAwaiter().GetResult();
+    /// <summary>
+    /// Keeps what the user entered into the element at <paramref name="key"/> while its value attribute stays
+    /// <paramref name="attribute"/>; <paramref name="value"/> null forgets it (the render wrote the value).
+    /// </summary>
+    internal void Enter(string key, string? attribute, string? value)
+    {
+        if (value is null)
+        {
+            _entered.Remove(key);
+        }
+        else
+        {
+            _entered[key] = (attribute, value);
+        }
+    }
+
+    /// <summary>What the user entered at <paramref name="key"/>, while no render has changed its value attribute since; else null.</summary>
+    internal string? EnteredValue(string key, string? attribute)
+    {
+        if (!_entered.TryGetValue(key, out var entered))
+        {
+            return null;
+        }
+
+        if (string.Equals(entered.Attribute, attribute, StringComparison.Ordinal))
+        {
+            return entered.Value;
+        }
+
+        _entered.Remove(key);
+        return null;
+    }
+
+    private void Go(string url)
+    {
+        _entered.Clear();
+        _root.InvokeAsync(() => Navigation.NavigateTo(url)).GetAwaiter().GetResult();
+    }
 
     private static string Pop(List<string> stack)
     {

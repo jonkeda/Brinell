@@ -53,6 +53,19 @@
 
 <a data-testid="link" href="/elsewhere">Elsewhere</a>
 
+<button data-testid="wrap" @onclick="() => wrapped++"><span data-testid="wrap-inner">Inner</span></button>
+<span data-testid="wrap-echo">@wrapped</span>
+
+<input data-testid="refuse" value="@refused" @onchange="Refuse" />
+
+<select data-testid="adder" @onchange="Add">
+    <option value="">Add</option>
+    <option value="dog">Dog</option>
+</select>
+<span data-testid="added-echo">@string.Join(",", added)</span>
+
+<input data-testid="number" @bind="number" />
+
 <div data-testid="hidden" hidden>Hidden</div>
 <div style="display: none"><span data-testid="hidden-child">Hidden child</span></div>
 <div data-testid="invisible" style="visibility:hidden">Invisible</div>
@@ -78,7 +91,17 @@
     private string keys = string.Empty;
     private string focus = string.Empty;
     private int submitted;
+    private int wrapped;
+    private string refused = "20";
+    private List<string> added = [];
+    private int number;
     private int handled;
+
+    // The rules refuse every try: the value stays what it was.
+    private void Refuse(ChangeEventArgs e) => refused = "20";
+
+    // Adds the pick and leaves the picker on its placeholder.
+    private void Add(ChangeEventArgs e) => added.Add(e.Value?.ToString() ?? string.Empty);
 
     private void Double() => pointer = "double";
 

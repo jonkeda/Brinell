@@ -122,6 +122,14 @@ public sealed class MemberTests : IDisposable
     }
 
     [Fact]
+    public void Click_AnElementInsideAHandler_BubblesToIt()
+    {
+        Id("wrap-inner").Click();
+
+        Assert.Equal("1", Echo("wrap"));
+    }
+
+    [Fact]
     public void Click_Link_FollowsItsHref()
     {
         Id("link").Click();
@@ -177,6 +185,42 @@ public sealed class MemberTests : IDisposable
         Id("live").Fill("typing");
 
         Assert.Equal("typing", Echo("live"));
+    }
+
+    // As a browser's DOM: the render wrote no new value, so the field keeps what was typed.
+    [Fact]
+    public void Fill_AValueTheAppDoesNotRenderAgain_StaysWhatWasEntered()
+    {
+        Id("refuse").Fill("5");
+
+        Assert.Equal("5", Id("refuse").InputValue);
+    }
+
+    [Fact]
+    public void Fill_AValueTheAppRendersAnew_ReadsTheRenderedValue()
+    {
+        Id("number").Fill("07");
+
+        Assert.Equal("7", Id("number").InputValue);
+    }
+
+    [Fact]
+    public void Select_APickerThatResets_ShowsThePickUntilARenderChangesIt()
+    {
+        Id("adder").SelectOption("dog");
+
+        Assert.Equal("dog", Echo("added"));
+        Assert.Equal("dog", Id("adder").InputValue);
+    }
+
+    [Fact]
+    public void Fill_AfterAReset_IsForgotten()
+    {
+        Id("refuse").Fill("5");
+
+        _context.ResetAppState();
+
+        Assert.Equal("20", Id("refuse").InputValue);
     }
 
     [Fact]

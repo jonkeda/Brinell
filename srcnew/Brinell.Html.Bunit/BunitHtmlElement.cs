@@ -35,20 +35,7 @@ public sealed class BunitHtmlElement : IHtmlElement
     #region Identity
 
     // The path from the root by element index: the same element after a render keeps its key.
-    public string InstanceKey
-    {
-        get
-        {
-            var parts = new List<int>();
-            for (var node = Node; node.ParentElement is { } parent; node = parent)
-            {
-                parts.Add(parent.Children.Index(node));
-            }
-
-            parts.Reverse();
-            return string.Join('/', parts);
-        }
-    }
+    public string InstanceKey => KeyOf(Node);
 
     #endregion
 
@@ -105,34 +92,38 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     public bool IsChecked => Node is IHtmlInputElement input ? input.IsChecked || Node.HasAttribute("checked") : Node.HasAttribute("checked");
 
-    public string InputValue => Node switch
+    // What the user entered, while no render has changed the value attribute since (BunitTestContext.EnteredValue); else the DOM's.
+    public string InputValue
     {
-        IHtmlInputElement input => Node.GetAttribute("value") ?? input.Value,
-        IHtmlTextAreaElement area => Node.GetAttribute("value") ?? area.Value,
-        IHtmlSelectElement select => select.Value ?? string.Empty,
-        _ => Node.GetAttribute("value") ?? string.Empty,
-    };
+        get
+        {
+            var node = Node;
+            return _context.EnteredValue(KeyOf(node), node.GetAttribute("value")) ?? RenderedValue(node);
+        }
+    }
 
     #endregion
 
     #region Actions
 
-    // A browser's click: the handler if there is one; else a submit button submits its form and a link
-    // follows its href, which Blazor's script does in a browser and nothing does here. A disabled control
-    // gets no click, as in a browser.
+    // A browser's click: the handler of the element or of the nearest one around it (the click bubbles); else a
+    // submit button submits its form and a link follows its href, which Blazor's script does in a browser and
+    // nothing does here. A disabled control gets no click, as in a browser.
     public void Click()
     {
         var node = Node;
-        if (node.HasAttribute("disabled"))
+        var handler = Handling(node, "onclick");
+        if (node.HasAttribute("disabled") || handler?.HasAttribute("disabled") == true)
         {
             return;
         }
 
         // bUnit itself submits the form after a submit button's own click handler.
-        var form = SubmitsForm(node) ? node.Closest("form") : null;
-        if (Handles(node, "onclick"))
+        var target = handler ?? node;
+        var form = SubmitsForm(target) ? target.Closest("form") : null;
+        if (handler is not null)
         {
-            Raise(node, "onclick", new MouseEventArgs { Type = "click", Detail = 1 });
+            Raise(handler, "onclick", new MouseEventArgs { Type = "click", Detail = 1 });
         }
         else if (form is not null)
         {
@@ -198,23 +189,21 @@ public sealed class BunitHtmlElement : IHtmlElement
         var node = Node;
         var input = Handles(node, "oninput");
         var change = Handles(node, "onchange");
-        if (input)
+        Entering(value, () =>
         {
-            Raise(node, "oninput", new ChangeEventArgs { Value = value });
-        }
+            if (input)
+            {
+                Raise(node, "oninput", new ChangeEventArgs { Value = value });
+            }
 
-        if (change)
-        {
-            Raise(Node, "onchange", new ChangeEventArgs { Value = value });
-        }
-
-        if (!input && !change)
-        {
-            node.SetAttribute("value", value);
-        }
+            if (change)
+            {
+                Raise(Node, "onchange", new ChangeEventArgs { Value = value });
+            }
+        });
     }
 
-    public void SelectOption(string value) => Raise(Node, "onchange", new ChangeEventArgs { Value = value });
+    public void SelectOption(string value) => Entering(value, () => Raise(Node, "onchange", new ChangeEventArgs { Value = value }));
 
     public void SelectOption(string[] values) => Raise(Node, "onchange", new ChangeEventArgs { Value = values });
 
@@ -295,6 +284,51 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
 
         _context.ThrowIfAppFailed();
+    }
+
+    // A user's entry, as a browser's DOM keeps it: Blazor's diff writes the value only where a render changed it, so an
+    // entry the app rendered no new value for (a refused try, a picker reset to its placeholder) stays what the user entered.
+    private void Entering(string value, Action raise)
+    {
+        var before = Node.GetAttribute("value");
+        raise();
+        var node = Node;
+        var after = node.GetAttribute("value");
+        _context.Enter(KeyOf(node), after, string.Equals(before, after, StringComparison.Ordinal) ? value : null);
+    }
+
+    private static string KeyOf(IElement node)
+    {
+        var parts = new List<int>();
+        for (var at = node; at.ParentElement is { } parent; at = parent)
+        {
+            parts.Add(parent.Children.Index(at));
+        }
+
+        parts.Reverse();
+        return string.Join('/', parts);
+    }
+
+    private static string RenderedValue(IElement node) => node switch
+    {
+        IHtmlInputElement input => node.GetAttribute("value") ?? input.Value,
+        IHtmlTextAreaElement area => node.GetAttribute("value") ?? area.Value,
+        IHtmlSelectElement select => select.Value ?? string.Empty,
+        _ => node.GetAttribute("value") ?? string.Empty,
+    };
+
+    // The element that takes an event: itself or the nearest one around it, as a browser's event bubbles.
+    private static IElement? Handling(IElement node, string eventName)
+    {
+        for (IElement? at = node; at is not null; at = at.ParentElement)
+        {
+            if (Handles(at, eventName))
+            {
+                return at;
+            }
+        }
+
+        return null;
     }
 
     // A submit button: a <button> is one unless its type says otherwise.

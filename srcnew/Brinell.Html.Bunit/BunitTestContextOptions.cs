@@ -14,8 +14,9 @@ public sealed class BunitTestContextOptions : HtmlTestContextOptions
     public Action<IServiceCollection>? ConfigureServices { get; init; }
 
     /// <summary>
-    /// A provider asked for what <see cref="ConfigureServices"/> did not register: an app's own composition, such as a
-    /// scope of its in-process host's services, so a suite need not repeat the app's registrations.
+    /// A provider asked for what <see cref="ConfigureServices"/> did not register: an app's own composition, such as its
+    /// in-process host's services, so a suite need not repeat the app's registrations. The context takes a scope of it per
+    /// render of the root, as each circuit has its own.
     /// </summary>
     public IServiceProvider? FallbackServices { get; init; }
 

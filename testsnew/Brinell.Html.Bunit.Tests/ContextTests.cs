@@ -272,6 +272,18 @@ public sealed class ContextTests
         Assert.Equal("from the app", Text(context, "greeting"));
     }
 
+    [Fact]
+    public void Fallback_AScopedService_IsNewAfterAReset_AsEachCircuitHasItsOwn()
+    {
+        var app = new ServiceCollection().AddScoped<IGreeting>(_ => new FixedGreeting(Guid.NewGuid().ToString("N"))).BuildServiceProvider();
+        using var context = new BunitTestContext(new BunitTestContextOptions { RootComponent = typeof(Greeting), FallbackServices = app });
+        var first = Text(context, "greeting");
+
+        context.ResetAppState();
+
+        Assert.NotEqual(first, Text(context, "greeting"));
+    }
+
     #endregion
 
     #region Rendering
