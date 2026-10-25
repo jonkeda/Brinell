@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: steps 1 to 5 done (Brinell's side: the driver, the context, the heads, both web suites on both heads, the guide and AD-030); step 6 is Tomorrow's, for the owner to schedule. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: steps 1 to 6 done; the fights bench runs on both heads in Tomorrow. Follow-ups under "Step 6 results". Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -321,3 +321,54 @@ building them in place would rebuild the studio this checkout runs on 5219.
 
 Not done here: the Todo sample's web suites (`Todo.Web.UITests`, `Todo.Web.Uat`) have no bUnit head yet; the step
 named Brinell's Blazor and Html suites only.
+
+## Step 6 results
+
+2026-10-25, Tomorrow `game` at df570032 plus the work below, built in a worktree (`../tomorrow-bunit`, branch
+`wip/bunit`) while the studio ran on 5219. One machine, busy.
+
+| Run | Result | Scenario time summed (median) | `dotnet test` (wall) |
+| --- | --- | --- | --- |
+| PLT.35 (16 scenarios), bUnit, three runs | 16 of 16 each | 28 to 32 s (0.9 s) | 28 to 32 s (42 to 47 s) |
+| PLT.35, browser, two runs | 16 of 16 each | 56 s (2.6 to 2.7 s) | 36 s (56 s) |
+| Tomorrow's game suite, `Gate=Smoke`, browser | 4 of 4 | | 5 s |
+| `Tomorrow.Architecture.Tests` | 140 of 140 | | 3 s |
+| The whole studio suite, bUnit, once | 119 passed, 44 failed, the serial collection cut at 10 min | | stopped |
+
+- **About three times faster per scenario, not twenty.** The studio's own work dominates: PLT.35.4 runs 100 fights
+  and takes 15 s on both heads; without it the scenarios sum to about 14 s on bUnit and 41 s in the browser. The
+  in-process start (migrations, the geo import, the area generated) is most of the wall time on either head, so a
+  warm host between runs (`BddWarmRunners`, the selection paper) would save more in the inner loop than the head.
+- **How Tomorrow got a bUnit head** (studio suite only):
+  - `TomorrowApp.StartAsync` builds one settings map; on the bUnit head `UiHost.StartInProcess` hosts the studio
+    in this process with `WebApplicationFactory<StudioHost>` (its own `Program`, migrations, workers; Development,
+    content root `src/Tomorrow.Studio`), the browser head starts the built app as before.
+  - The fixture makes `UiHost.CreateBunitContext(services, baseUrl)`: the studio's `Routes`, `FallbackServices` the
+    in-process host's provider, `StudioTrail` registered again in bUnit's own services (it follows navigation).
+  - Sign-in: the account is arranged as before, then `UiHost.SignInInProcess` signs it in through the test
+    authorization (name and id); `StartTest` starts signed out on no page, since Identity's pages are Razor Pages.
+  - The game's `UiHost` says it has no bUnit head; its suite is unchanged in the browser.
+  - `Tomorrow.Studio.UITests` references the studio's assembly, `Brinell.Html.Bunit` and `Microsoft.AspNetCore.Mvc.Testing`.
+- **What the driver needed, found by the fights bench** (each with tests in `Brinell.Html.Bunit.Tests`, 92 now):
+  - `FallbackServices`: an app's own provider behind bUnit's, a scope of it per render of the root, as each circuit
+    has one, so no scoped state outlives a reset.
+  - `SignIn`/`SignOut` while a page is rendered (through bUnit's authentication provider), kept across page loads.
+  - The renderer says Interactive Server (`SetRendererInfo`), as the app's circuit.
+  - `NavigateTo` is a page load, as Playwright's `GoTo`: a fresh root and scope, still signed in; a link clicked in
+    the page stays in its circuit.
+  - A click bubbles to the nearest element that handles it (a marker inside a grid button).
+  - A value the user entered stays until a render changes that attribute, as Blazor's diff leaves the DOM, and only
+    until the next action (an element is known by its place, which cannot tell a field rendered anew).
+  - Events are raised asynchronously (waited up to 100 ms): an event on a handler a newer render dropped is a stale
+    element, retried by the call, never the app failing.
+  - Blazor's error banner (`#blazor-error-ui`) is never visible: its style sheet hides it, its script shows it.
+- **The whole studio suite on bUnit, what failed** (follow-up, not this step):
+  - needs a browser and should say so (`@browser`, `[BrowserFact]`): the canvas and WebGL viewers (Street, Region,
+    Area, the world map, model views), `Hover`, audio (Ruben's greeting), the window fit, details folds kept in the
+    browser's storage;
+  - the sign-in page tests (12, `AccountTests` and the like): browser-only, or signed in in process;
+  - the rest to look at one by one: `Interactions_Building` not found (4), a job row changing under the poll, two
+    values.
+
+Next, for the owner to choose: mark the studio's browser-only scenarios and tests so the whole suite is green on
+bUnit, then measure it; a warm in-process host between runs; the game suite's bUnit head.
