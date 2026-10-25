@@ -274,6 +274,18 @@ public sealed class ContextTests
 
     #endregion
 
+    #region Rendering
+
+    [Fact]
+    public void Renderer_IsInteractiveServer_AsTheAppsCircuit()
+    {
+        using var context = Of<RenderedBy>();
+
+        Assert.Equal("Server True", Text(context, "renderer"));
+    }
+
+    #endregion
+
     #region Scripts
 
     [Fact]

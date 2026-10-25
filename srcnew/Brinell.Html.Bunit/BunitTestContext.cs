@@ -258,6 +258,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
             _authorization.SetRoles([.. _options.Roles]);
         }
 
+        // As a Blazor Server circuit renders, so a component asking RendererInfo gets the answer it has in the app; after the
+        // services, since it makes the renderer.
+        _bunit.SetRendererInfo(new RendererInfo("Server", isInteractive: true));
         var root = _options.RootComponent;
         _root = _bunit.Render(builder =>
         {
