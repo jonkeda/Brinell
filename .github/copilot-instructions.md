@@ -32,9 +32,13 @@ dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr
 dotnet test testsnew\Brinell.Uat.Tests\Brinell.Uat.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Html.Bunit.Tests\Brinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
-Use the focused platform run guides under `docs/run/` for UI tests.
+Use the focused platform run guides under `docs/run/` for UI tests. The Html and Blazor UI
+suites also run without a browser: `$env:BRINELL_HEAD = "bunit"` (the bUnit head,
+`docs/guides/bunit.md`, AD-030). Use it for the narrow runs while working; run the same filter
+once in the browser before calling the work done, since the browser judges every gate.
 `Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
@@ -89,6 +93,9 @@ debug-only pauses.
 - Keep fixture constructors focused on runtime setup.
 - Keep page ownership in test classes or page-object composition.
 - Do not add ad-hoc cleanup or back-navigation loops inside test methods.
+- A web test that needs a browser (layout, CSS values, script, frames, recordings) is
+  `[BrowserFact("why")]`, a scenario `@browser`; never make a test pass on one head by
+  changing what it checks.
 
 ## Documentation Rules
 

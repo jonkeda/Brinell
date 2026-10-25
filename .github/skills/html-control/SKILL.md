@@ -1,6 +1,6 @@
 ---
 name: html-control
-description: Create or extend a Brinell Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in srcnew/Brinell.Html or srcnew/Brinell.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet.
+description: Create or extend a Brinell Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in srcnew/Brinell.Html or srcnew/Brinell.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet, or a control must work on the bUnit head as well as in a browser.
 ---
 
 # Write an Html ControlObject
@@ -59,10 +59,19 @@ constructors) stays a plain `.cs`.
   and set `AsksParent => false` for a scope shown over its parent.
 - **No catch-alls, no sleeps.** A failure is an answer or a signal (`StaleElementException`,
   `ElementNotReadyException`, `AppUnavailableException`).
+- **Read the DOM, so the control works on both heads.** Every control runs in a browser and on
+  the bUnit head (`docs/guides/bunit.md`, AD-030). Text, attributes, `InputValue`, `IsChecked`,
+  `Enabled`, `Visible` and the actions work on both. `Evaluate`, `GetCssValue`, `Location`/`Size`/`Rect`,
+  `Hover`, `ClickAt`, `Swipe` and frames work only in a browser and end the call on bUnit with
+  `BrowserOnlyException`. A member that needs one of them is browser-only: say so in its
+  `<summary>`, and prefer an attribute the app renders (`aria-*`, `data-*`) when one says the same.
 
 ## Prove it
 
 Add a unit test in `testsnew/Brinell.Html.Tests` against a mocked `IHtmlElement`. A mocked
 element must show the effect of an action (a `Callback` that sets the value), or a confirming
 member fails, and that is the point. Then add a UI test on the Blazor sample with the
-`html-ui-test` skill.
+`html-ui-test` skill, and run it on both heads: `$env:BRINELL_HEAD = "bunit"` first, then the
+browser. A control that fails only on bUnit needs a driver member in `srcnew/Brinell.Html.Bunit`
+(with its test in `testsnew/Brinell.Html.Bunit.Tests/MemberTests.cs`), or is browser-only and
+says so.

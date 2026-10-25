@@ -148,11 +148,16 @@ dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr
 dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
 dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Html.Bunit.Tests\Brinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
 The Html and Blazor UI suites (`testsnew\Brinell.Html.UITests`, `testsnew\Brinell.Blazor.UITests`)
 start the Blazor sample themselves on a free port and need Playwright's Chromium installed
 (`pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
+They also run without a browser, on the **bUnit head**: `$env:BRINELL_HEAD = "bunit"` renders the
+sample's components in the test process (about 2 s for the Blazor suite against about 40 s in a
+browser). Tests that need a browser are `[BrowserFact]`, scenarios `@browser`, and are skipped there
+([the guide](docs/guides/bunit.md), AD-030).
 
 ### Match the test scope to the change
 
@@ -173,6 +178,11 @@ genuinely broad.
 Use tier 3 only when finishing a phase of work, when the change touches shared
 infrastructure (fixture, navigation, `MauiProgram`, handler registration), or when a
 narrower tier fails in a way that suggests wider breakage.
+
+For the Html and Blazor suites, the same rule with two heads: while working, run the
+narrowest filter on the bUnit head (`$env:BRINELL_HEAD = "bunit"`); before reporting the work
+done, run that filter once in the browser (unset the variable). The browser judges: a pass on
+bUnit alone is not done, because bUnit has no layout, style sheets or script.
 
 Notes:
 
