@@ -75,6 +75,13 @@ public sealed class UatScenarioTestCase : XunitTestCase
         if (Scenario(TestMethodArguments) is var (file, name) && name.Length > 0)
         {
             Traits[BddScenarioAddress.Trait] = [BddScenarioAddress.Of(UatScenarioSourceFile.RelativeToConfig(file), name)];
+
+            // A scenario its suite's config skips here (a head, @browser, a skip rule) is reported skipped with the reason, and
+            // never run; reported as passed, a run's counts said it ran (.my/test-selection/next-plan.md, item 2).
+            if (UatScenarioSkip.Of(file, name) is { } reason)
+            {
+                SkipReason = reason;
+            }
         }
     }
 
@@ -97,6 +104,34 @@ public sealed class UatScenarioTestCase : XunitTestCase
 
     private static (string File, string Name)? Scenario(object[]? arguments)
         => arguments is [string file, string name, ..] ? (file, name) : null;
+}
+
+/// <summary>Whether the suite's config skips a scenario, decided as the runner decides it, from its tags.</summary>
+public static class UatScenarioSkip
+{
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, BddConfig?> Configs = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The reason the config next to the scenarios skips the scenario now; null when it runs.</summary>
+    public static string? Of(string file, string scenarioName)
+    {
+        var configPath = BddScenarioSource.GetConfigFilePath();
+        var config = Configs.GetOrAdd(configPath, path => File.Exists(path) ? BddConfigParser.ParseFile(path) : null);
+        return config is null ? null : Of(config, file, scenarioName, Environment.GetEnvironmentVariable);
+    }
+
+    /// <summary>The reason <paramref name="config"/> skips the scenario, with these environment variables; null when it runs.</summary>
+    public static string? Of(BddConfig config, string file, string scenarioName, Func<string, string?> getEnvironmentVariable)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        var scenario = BddMarkdownParser.ParseFile(file).Document?.Scenarios.FirstOrDefault(candidate => candidate.Name == scenarioName);
+        if (scenario is null)
+        {
+            return null;
+        }
+
+        var decision = config.EvaluateSkip(scenario.Tags, getEnvironmentVariable);
+        return decision.ShouldSkip ? decision.Reason ?? "Skipped by the suite's config." : null;
+    }
 }
 
 // Where a case's scenario is: its file relative to the config (in the build output, as the tests
