@@ -21,7 +21,7 @@ namespace Brinell.Html.Bunit;
 /// controls run unchanged. Navigation goes through bUnit's navigation manager; the root's router renders
 /// the page.
 /// </summary>
-public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncDisposable
+public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell.Core.Interfaces.IScreenshotSource, IAsyncDisposable
 {
     private readonly BunitTestContextOptions _options;
     private readonly ITestLogger _logger;
@@ -173,6 +173,20 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         File.WriteAllBytes(Path.ChangeExtension(path, ".html"), TakeScreenshot());
     }
+
+    private Brinell.Core.Services.ScreenshotService? _screenshots;
+
+    // A failed test's evidence, as the browser head leaves its picture: the markup, where the run keeps its screenshots.
+    public Brinell.Core.Interfaces.IScreenshotService Screenshots => _screenshots ??= new(
+        SaveScreenshot,
+        _logger,
+        new ScreenshotSettings
+        {
+            OutputDirectory = Brinell.Core.Artifacts.DefaultTestArtifactPathProvider.Create().ScreenshotsDirectory,
+            CaptureOnFailure = true,
+            IncludeTimestamp = true,
+            Format = ScreenshotFormat.Png,
+        });
 
     /// <summary>
     /// Signs <paramref name="user"/> in, as a suite's sign-in step does on this head (an app's sign-in page is not a
