@@ -26,8 +26,8 @@ where not.
 
 | # | Proposal | Value | Cost | Who decides |
 | --- | --- | --- | --- | --- |
-| 1 | Deal scenarios to collections by their last duration | ~5 s bUnit, ~20 to 30 s browser, every full run | S | done by Claude |
-| 2 | Report a skipped scenario as skipped, not Passed | True counts in every run and gate | S | done by Claude |
+| 1 | Deal scenarios to collections by their last duration (done) | ~5 s bUnit, ~20 to 30 s browser, every full run | S | done by Claude |
+| 2 | Report a skipped scenario as skipped, not Passed (done) | True counts in every run and gate | S | done by Claude |
 | 3 | Selection: the touch map and a script that picks what a diff reaches | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
 | 4 | Fewer fights in PLT.35.4 (done: 10) | 15 to 20 s off the slowest collection | S | the owner: the scenario |
 | 5 | A warm host between runs | ~10 to 20 s off every small run | M | done by Claude |
@@ -55,6 +55,26 @@ A scenario skipped by `@browser`, a head rule or a skip rule shows as Passed in 
 
 - `Brinell.Uat`'s scenario theory reports the row as skipped with its reason (xUnit's dynamic skip).
 - Done when the bUnit run shows 18 more skipped and 18 fewer passed, with their reasons.
+
+## Items 1 and 2, done (2026-10-25)
+
+- **2:** a scenario its config skips for its head or tags (`@browser`, a head) is reported skipped with the reason at
+  discovery and never run (`UatScenarioSkip`, in `UatScenarioTestCase.Initialize`). A skip rule's variable may be set by the
+  fixture as it starts (Tomorrow's `TOMORROW_OWN_DATABASE`), so rule-based skips stay the run's: the first try skipped all 20
+  `@own-database` scenarios at discovery. The bUnit run now counts 22 skipped (18 `@browser`, 4 `UiFact(Browser)`).
+- **1:** Tomorrow's `UatCollections.Deal` deals the parallel scenarios longest first to the part with the least time,
+  from `durations.json` (`tools/Update-UiDurations.ps1` writes it from a full run's timings); without the file every
+  scenario weighs the same and the deal is round-robin, as the game suite's still is.
+- **The World lane is gone again:** with the new deal, World studio scenarios that keep backgrounds ran beside parts that read
+  them, and PLT.37.1 (bUnit) and PLT.38.1 (browser) failed. The World studio's `@serial` scenarios are serial again; the Avatars
+  lane stays.
+- **The full studio suite after both:** browser 172 of 172 in 3 m 24 s (wall 207 s; 2 m 41 s with the World lane, which was
+  not safe); bUnit 149 passed, 22 skipped, 1 failed in 2 m 1 s.
+- **Open: PLT.39.2 on bUnit** ("Hoorn's background generated in one go") finds no run line after Generate. It fails alone, on
+  a fresh database too, and passed inside the serial collection's own run: it depends on state an earlier scenario leaves,
+  which bUnit's speed exposes. Its Generate returns at once (no status line), so `model` or `view` is not set when it is
+  clicked. To be made to stand alone, in Tomorrow.
+- Brinell's own suites have no parallel collections of their own to deal yet; the dealer moves to `Brinell.Uat` when one has.
 
 ## 3. Selection
 

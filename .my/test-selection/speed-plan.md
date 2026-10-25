@@ -158,3 +158,6 @@ workflow need; `brinell touch-map` reads this file (paper, step 3).
 The World lane (33 s on bUnit, 54 s in the browser) runs beside the parts; Serial holds the 20 `@own-database` scenarios
 (33 s, 55 s). The World lane's writers ran beside the parts' World page readers on both heads without a failure: one run
 each, so a later full run that fails there points at this lane first.
+
+**Reverted the same day:** the next full run (with next-plan item 1's deal) failed PLT.37.1 and PLT.38.1, readers of what the
+World lane keeps. The World studio's scenarios are serial again; the Avatars lane stays. See next-plan, "Items 1 and 2".
