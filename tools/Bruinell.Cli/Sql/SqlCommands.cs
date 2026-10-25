@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Bruinell.Cli.Selection;
 using Bruinell.Mocking.Data;
+using Bruinell.Mocking.Data.Replay;
 using Microsoft.Data.SqlClient;
 
 namespace Bruinell.Cli.Sql;
@@ -18,6 +19,7 @@ internal static class SqlCommands
     public static Command Build(CliIo io) => new("sql", "The SQL log: the schema snapshot, an Extended Events capture, and the report of what each test spent in the database.")
     {
         SchemaCommand(io),
+        StaleCommand(io),
         new Command("capture", "An Extended Events session on the test database: the app's commands, logged by SQL Server, the app unchanged.")
         {
             StartCommand(io),
@@ -31,15 +33,75 @@ internal static class SqlCommands
     {
         var connection = Connection();
         var output = new Option<string>("--out") { Description = "The snapshot's file.", DefaultValueFactory = _ => "schema.json" };
-        var command = new Command("schema", "Write the database's schema snapshot: tables, views, procedures and functions, their hashes and references.") { connection, output };
+        var references = new Option<string?>("--references") { Description = "A JSON file of references kept by hand, for dynamic SQL: { \"dbo.search\": [\"dbo.places\"] }." };
+        var data = new Option<string[]>("--data") { Description = "A table of reference data whose rows are hashed with it (repeatable, or comma-separated).", AllowMultipleArgumentsPerToken = true };
+        var defaultSchema = new Option<string>("--default-schema") { Description = "The app's user's default schema: a command's unqualified name is taken in it, then dbo.", DefaultValueFactory = _ => "dbo" };
+        var command = new Command("schema", "Write the database's schema snapshot: tables, views, procedures and functions, their hashes and references.") { connection, output, references, data, defaultSchema };
         command.Action(io, async (parsed, cancellationToken) =>
         {
             await using var sql = await OpenAsync(parsed.GetValue(connection)!, cancellationToken);
-            var snapshot = await SchemaSnapshot.ReadAsync(sql, cancellationToken);
+            var options = new SnapshotOptions
+            {
+                Data = [.. (parsed.GetValue(data) ?? []).SelectMany(item => item.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))],
+                DefaultSchema = parsed.GetValue(defaultSchema)!,
+            };
+            var snapshot = await SchemaSnapshot.ReadAsync(sql, options, cancellationToken);
+            if (parsed.GetValue(references) is { } file)
+            {
+                foreach (var unknown in snapshot.MergeReferences(Path.GetFullPath(file, io.CurrentDirectory)))
+                {
+                    io.Error.WriteLine($"warning: {unknown} in {file} is not in the database");
+                }
+            }
+
             var to = Path.GetFullPath(parsed.GetValue(output)!, io.CurrentDirectory);
             snapshot.Save(to);
+            var dynamic = snapshot.Objects.Where(pair => pair.Value.Dynamic && !pair.Value.Listed).Select(pair => pair.Key).ToList();
             io.Error.WriteLine($"{snapshot.Objects.Count} objects of {sql.Database}; wrote {to}");
+            if (dynamic.Count > 0)
+            {
+                io.Error.WriteLine($"{dynamic.Count} with dynamic SQL and no references listed (--references): {string.Join(", ", dynamic)}");
+            }
+
             return 0;
+        });
+        return command;
+    }
+
+    private static Command StaleCommand(CliIo io)
+    {
+        var schema = new Option<string>("--schema") { Description = "The schema snapshot now.", Required = true };
+        var recordings = new Option<string>("--recordings") { Description = "The folder of recordings (<head>/<test>.json).", Required = true };
+        var versions = new Option<string[]>("--version") { Description = "A version that shapes the SQL, name=value (ef=10.0.12); compared with the recordings' (repeatable).", AllowMultipleArgumentsPerToken = true };
+        var command = new Command("stale", "The recordings a schema change made stale, and what changed, from their stamps without replaying: the tests to re-record. Exit 1 when any is stale.") { schema, recordings, versions };
+        command.Action(io, (parsed, cancellationToken) =>
+        {
+            var snapshot = SchemaSnapshot.Load(Path.GetFullPath(parsed.GetValue(schema)!, io.CurrentDirectory));
+            var given = (parsed.GetValue(versions) ?? []).Select(item => item.Split(['='], 2)).Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+            var folder = Path.GetFullPath(parsed.GetValue(recordings)!, io.CurrentDirectory);
+            var states = RecordingCheck.Check(folder, snapshot.ToSchema(given));
+            foreach (var state in states.Where(state => state.IsStale))
+            {
+                io.Out.WriteLine(Path.GetRelativePath(folder, state.Path));
+                foreach (var difference in state.Differences)
+                {
+                    io.Out.WriteLine("  " + difference);
+                }
+            }
+
+            var unlisted = states.SelectMany(state => state.Objects).Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(name => snapshot.Objects.TryGetValue(name, out var item) && item.Dynamic && !item.Listed)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
+            if (unlisted.Count > 0)
+            {
+                io.Error.WriteLine($"warning: recordings touch dynamic SQL with no references listed, so a change to what it reads is missed: {string.Join(", ", unlisted)}");
+            }
+
+            var stale = states.Count(state => state.IsStale);
+            io.Error.WriteLine($"{stale} of {states.Count} recordings stale");
+            return Task.FromResult(stale > 0 ? 1 : 0);
         });
         return command;
     }

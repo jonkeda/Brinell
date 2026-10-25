@@ -113,7 +113,7 @@ public sealed class ReplaySession
                 _recording.MarkVolatile(_previous);
             }
 
-            _recording.Stamp = _schema?.StampFor(_recording.Exchanges.SelectMany(exchange => Statements.Objects(exchange.Text)));
+            _recording.Stamp = _schema?.StampFor(_recording.Exchanges.SelectMany(exchange => _schema.Named(exchange.Text)));
             _recording.Save(Path);
         }
     }

@@ -4,8 +4,9 @@ Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a,
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
 legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
 step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Step 2, replay in
-the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](replay-results.md)). Next: the
-owner measures the legacy system (1.7); step 3 after. Each step ends green:
+the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](replay-results.md)). Step 3, the
+snapshot's gaps and `bruinell sql stale`, is built and S1 to S6 pass ([stamp-results.md](stamp-results.md)).
+Next: the owner measures the legacy system (1.7); step 4 after. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -278,6 +279,41 @@ through its container, its host or its async flow.
 | R3 | EF | On SQLite through `UseSqlReplay`; the spike app on SQL Server through the package, spatial included |
 | R4 | Parallel | 8 sessions at once through one `ReplayingDbProviderFactory`, each replaying its own recording with no cross-talk; the spike suite on the package, 20 parallel replays on each head without a miss |
 | R5 | .NET Framework | The ADO.NET replay in the net48 test over `System.Data.SqlClient` |
+
+## Step 3: the schema snapshot and the stamp
+
+The snapshot (`SchemaSnapshot`, `bruinell sql schema`) closes the four gaps the proposal names, and
+a command shows which recordings a schema change made stale, without replaying them.
+
+### 3.1 Decisions
+
+| Gap | Decision |
+| --- | --- |
+| Triggers | A trigger's body is a line of its table's hash; what the trigger's body references is added to its table's references (a write to `dbo.orders` touches the audit table its trigger fills). Defaults and check constraints are lines of their table too |
+| Unqualified names in a body | Resolved by `sys.sql_expression_dependencies.referenced_id` to the object SQL Server bound; unresolved, the referencing object's own schema, then `dbo` |
+| Dynamic SQL | A body with `sp_executesql` or `EXEC(` is marked `Dynamic`. Its references come from a hand-kept file, `--references <file.json>` (`{ "dbo.search": ["dbo.places"] }`), merged into the snapshot; `bruinell sql stale` warns about a dynamic object with none |
+| Reference data | `--data <table,...>`: the listed tables' rows are hashed (count and `CHECKSUM_AGG(BINARY_CHECKSUM(*))`) into their table's hash, so changed lookup rows stale the recordings that read them. Not a shared recording: the stamp already does the job |
+| Default schema | `Schema.DefaultSchema` (from `--default-schema`, kept in the snapshot, default `dbo`): a command's unqualified name is taken in it, then `dbo`, as SQL Server resolves it |
+
+### 3.2 What is built
+
+| Part | Where |
+| --- | --- |
+| `SchemaSnapshot.ReadAsync(connection, SnapshotOptions)`: triggers, defaults, checks, resolved references, `Dynamic`, data hashes; `DefaultSchema`, `Merge(references)` | `srcnew/Bruinell.Mocking.Data/SchemaSnapshot.cs` |
+| `Schema.DefaultSchema`, `Schema.Named(text)` over `Statements.Names`; `ReplaySession.Finish` stamps through it | `Replay/Recording.cs`, `Replay/ReplaySession.cs` |
+| `RecordingCheck.Check(folder, schema)`: each recording's differences, without replaying | `Replay/RecordingCheck.cs` |
+| `bruinell sql schema --references --data --default-schema`; `bruinell sql stale --schema <file> --recordings <folder>`: stale recordings and why, exit 1 when any | `tools/Bruinell.Cli/Sql/SqlCommands.cs` |
+
+### 3.3 Checks
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| S1 | Triggers | Changing a trigger changes its table's hash; the trigger's target table is in its table's references |
+| S2 | Unqualified names | A procedure in `sales` naming `orders` references `sales.orders`, not `dbo.orders` |
+| S3 | Dynamic SQL | A procedure with `sp_executesql` is `Dynamic`; merged references follow it to its tables; `stale` warns about one with none |
+| S4 | Reference data | Changing a row of a `--data` table changes its hash; a table not listed keeps its hash |
+| S5 | Default schema | With default schema `sales`, a recording's command naming `orders` is stamped `sales.orders` |
+| S6 | `bruinell sql stale` | On the spike's recordings: none stale on the checked-in snapshot; a changed procedure lists only the recordings that call it, exit 1 |
 
 ## Steps 1 to 6: outline
 

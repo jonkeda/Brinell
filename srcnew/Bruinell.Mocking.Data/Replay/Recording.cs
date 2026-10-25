@@ -82,6 +82,15 @@ public sealed record Schema(
     /// <summary>The hash of an unknown object: a name in a command the schema doesn't hold.</summary>
     public const string Unknown = "?";
 
+    /// <summary>The schema a command's unqualified name is taken in first (the app's user's default schema), then <c>dbo</c>.</summary>
+    public string DefaultSchema { get; init; } = "dbo";
+
+    /// <summary>The objects <paramref name="text"/> names, an unqualified one resolved as SQL Server does: in <see cref="DefaultSchema"/>, else <c>dbo</c>.</summary>
+    public IEnumerable<string> Named(string text)
+        => Statements.Names(text).Select(name => name.Schema is { } schema
+            ? schema + "." + name.Name
+            : Objects.ContainsKey(DefaultSchema + "." + name.Name) || !Objects.ContainsKey("dbo." + name.Name) ? DefaultSchema + "." + name.Name : "dbo." + name.Name);
+
     /// <summary>
     /// The stamp of a recording whose commands named <paramref name="named"/>: those objects and every object their
     /// bodies reference, followed through views into tables, so a procedure's recording goes stale with its tables.

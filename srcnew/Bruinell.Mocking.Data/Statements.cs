@@ -30,7 +30,10 @@ public static class Statements
     /// <c>MERGE</c> or <c>USING</c>, not a function called there (<c>OPENJSON(</c>); procedures after <c>EXEC</c>; as <c>schema.name</c> in lower case, <c>dbo</c> when none is written.
     /// What a view's or procedure's body touches comes from the schema snapshot's references.
     /// </summary>
-    public static IEnumerable<string> Objects(string text)
+    public static IEnumerable<string> Objects(string text) => Names(text).Select(name => (name.Schema ?? "dbo") + "." + name.Name);
+
+    /// <summary>The objects a command names as <see cref="Objects"/> finds them, in lower case, the schema null where none is written.</summary>
+    public static IEnumerable<(string? Schema, string Name)> Names(string text)
     {
         var normalized = Normalize(text);
         foreach (Match match in Named.Matches(normalized).Cast<Match>().Concat(Procedures.Matches(normalized).Cast<Match>()))
@@ -41,7 +44,7 @@ public static class Statements
                 continue;
             }
 
-            yield return parts.Length == 1 ? "dbo." + parts[0] : parts[parts.Length - 2] + "." + parts[parts.Length - 1];
+            yield return parts.Length == 1 ? (null, parts[0]) : (parts[parts.Length - 2], parts[parts.Length - 1]);
         }
     }
 

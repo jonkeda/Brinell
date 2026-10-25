@@ -29,5 +29,6 @@
       "Hash": "272C777889BE",
       "References": []
     }
-  }
+  },
+  "DefaultSchema": "dbo"
 }
