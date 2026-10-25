@@ -121,10 +121,41 @@ as needing the database rather than replaying a different exception type.
 Refused with a named exception: bulk copy, `SqlDependency` and query notifications, `GetSchema`,
 and provider-only reader methods outside the EF adapter.
 
-## Which test a command belongs to
+## On the bUnit head
 
-In a UI test the browser drives the server, and the test's `AsyncLocal` doesn't flow into request
-threads, SignalR circuits or hosted services. Two options, chosen by the fixture:
+Replay belongs first on Brinell's bUnit head (`Brinell.Html.Bunit`, AD-030), where the problem of
+which test a command belongs to doesn't arise.
+
+- **Scoped by the test's container.** Each bUnit context has its own `ServiceProvider`; the replay
+  `DbDataSource` or the EF interceptors are registered there, so every command belongs to that
+  test by construction. No `AsyncLocal`, no header.
+- **Calls start in the test.** A `Click()` runs the component's handler from the test's own call,
+  and awaits carry its execution context. A warm host shared across tests can still scope by
+  `AsyncLocal`, which it can't across Kestrel.
+- **Less traffic to match.** No hosted services or SignalR circuit run unless the fixture registers
+  them, and bUnit renders once, without prerendering.
+
+The heads then split the work:
+
+| Run | Head | Database |
+| --- | --- | --- |
+| Development | bUnit | Replay |
+| Recording | bUnit | Real |
+| Gate | Browser | Real |
+
+A test records on the bUnit head, where its traffic is deterministic, and replays there during
+development. The gate runs every scenario in the browser against the real database, which catches
+both a fidelity miss of the head and a stale recording.
+
+**Recordings are kept per head.** The browser head prerenders and the bUnit head doesn't, so the
+same scenario sends a different number of reads on each; with occurrence keys one head's recording
+doesn't fit the other. A recording's name carries the head.
+
+## Which test a command belongs to, in the browser
+
+Later, and only if the spike shows browser replay is worth having. In a browser test the browser
+drives Kestrel, and the test's `AsyncLocal` doesn't flow into request threads, SignalR circuits or
+hosted services. Two options, chosen by the fixture:
 
 - **A host per test** (or per test collection run one at a time): every command the host sends
   belongs to the current test.
@@ -133,7 +164,7 @@ threads, SignalR circuits or hosted services. Two options, chosen by the fixture
   replay unless their commands are part of a shared startup recording.
 
 Startup traffic (migrations, seeding, reference data) is recorded once per stamp and shared, not
-copied into every recording.
+copied into every recording, on either head.
 
 ## Recording maintenance
 
@@ -160,8 +191,10 @@ recordings shared across providers, re-recording by itself, and TDS on a socket.
      timing spans. If it is small, replay waits and only the log is built.
    - **EF on SQL Server** through interceptors: the page's scenarios replayed, including the
      spatial column and a unique-key `SqlException` caught by its number.
-   - **Timing-dependent traffic.** One Blazor scenario, prerendering on, replayed 20 times in a
-     row: zero misses with occurrence keys and write barriers.
+   - **Timing-dependent traffic, on both heads.** One Blazor scenario recorded and replayed 20
+     times in a row on the bUnit head: zero misses, which shows replay is deterministic there.
+     The same scenario in the browser, prerendering on, with a host per test: its misses decide
+     whether browser replay is worth building at all.
    - **Churn.** The spike app's scenarios recorded, then 10 typical changes made as commits (a
      column added, an `Include`, a renamed property, an EF minor upgrade, a new filter). Counted:
      misses per change, recordings touched, and whether the stamp and summary made each one clear.
@@ -172,11 +205,13 @@ recordings shared across providers, re-recording by itself, and TDS on a socket.
 2. **Replay core.** Occurrence keys, write barriers, the provider rules for SQLite and SqlClient,
    errors, the stamp, the miss message.
 3. **Value binding.** Binding and rewriting, and volatile values found by recording twice.
-4. **Test scoping.** A host per test and the test-id header, with the shared startup recording.
+4. **The bUnit head.** Replay registered in the bUnit context's container, recordings named by
+   head, the shared startup recording; the spike app's suite recorded and replayed on bUnit.
 5. **Maintenance.** The re-record summary and the check on unread re-records.
 6. **Todo's suites on replay**, measured against their SQLite runs, and the spike app's suite on
-   replay against SQL Server.
-7. **Guide and decision.** `docs/guides/sql-replay.md` and an AD on when a test replays and when
+   the bUnit head with replay against the browser head with SQL Server.
+7. **Browser scoping, if the spike earned it.** A host per test and the test-id header.
+8. **Guide and decision.** `docs/guides/sql-replay.md` and an AD on when a test replays and when
    it needs the database.
 
 ## Open questions, with proposals
@@ -184,8 +219,9 @@ recordings shared across providers, re-recording by itself, and TDS on a socket.
 - **One package or two?** Proposal: one, `Brinell.Mocking.Data`, with EF Core as a dependency of
   a second, `Brinell.Mocking.Data.EntityFrameworkCore`, so raw ADO.NET users don't pull in EF.
   Under AD-026 the dependency split is the reason it earns its place.
-- **One recording per test, or per scenario and head?** Proposal: per test, named by the xUnit
-  test as the call log is. A scenario on two heads sends the same commands and shares it.
+- **One recording per test, or per scenario and head?** Proposal: per test and head, named by the
+  xUnit test as the call log is, with the head added. The heads send different traffic
+  (prerendering), so sharing one would miss.
 - **Should the spike app stay as a sample?** Proposal: yes, if the spike passes; Brinell has no
   sample with EF Core and SQL Server, and steps 1 to 6 need one.
 - **Should replay be released at all if the log shows the database is a small share of test
