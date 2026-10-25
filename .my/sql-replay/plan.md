@@ -6,7 +6,8 @@ legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, p
 step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Step 2, replay in
 the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](replay-results.md)). Step 3, the
 snapshot's gaps and `bruinell sql stale`, is built and S1 to S6 pass ([stamp-results.md](stamp-results.md)).
-Next: the owner measures the legacy system (1.7); step 4 after. Each step ends green:
+Step 4, the heads, adds the test-id hook for an app in a process of its own; H1 to H6 pass, H6 without IIS
+([hook-results.md](hook-results.md)). 1.7 waits until the owner has the legacy system; next: step 5. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -314,6 +315,44 @@ a command shows which recordings a schema change made stale, without replaying t
 | S4 | Reference data | Changing a row of a `--data` table changes its hash; a table not listed keeps its hash |
 | S5 | Default schema | With default schema `sales`, a recording's command naming `orders` is stamped `sales.orders` |
 | S6 | `bruinell sql stale` | On the spike's recordings: none stale on the checked-in snapshot; a changed procedure lists only the recordings that call it, exit 1 |
+
+## Step 4: the heads
+
+bUnit's container and a host per test in the test's process already pass on the package (step 2:
+the spike suite, `ConfigureDbContext` with `UseSqlReplay(session)`). Step 4 adds the third head: an
+app in a process of its own (IIS, a started exe), where the test's session can't be handed over in
+code. 1.7 waits until the owner has the legacy system again; step 4 is proven on a sample here.
+
+### 4.1 Decisions
+
+| Question | Decision |
+| --- | --- |
+| How a request names its test | Cookie `bruinell-test` (what a browser sends on every request), or header `X-Bruinell-Test` (an API client). Test ids: `[A-Za-z0-9._-]`, so no path escapes the folder |
+| Where sessions live | In the app's process: `ReplayRegistry`, one session per test id, its recording `<folder>/<test>.json`. Mode and folder from the app's environment: `BRUINELL_SQL_REPLAY`, `BRUINELL_SQL_RECORDINGS`; an optional `BRUINELL_SQL_SCHEMA` snapshot for the stamp |
+| Begin and end | Control paths on the app: `/__bruinell/sql/begin?test=<id>` starts the session and sets the cookie (a browser navigates there first); `/__bruinell/sql/end?test=<id>` finishes it and answers 200, or 409 with the misses. `ReplayHook.EndAsync` throws `ReplayMissException` on 409 |
+| Safety | Without `BRUINELL_SQL_REPLAY` in the app's environment the hook adds nothing: no control paths (404), no scope |
+| How commands find the session | ASP.NET Core: middleware enters `ReplayScope` for the request. System.Web: an `IHttpModule` keeps it in `HttpContext.Items`, read through `ReplayScope.Fallback`, as `AsyncLocal` doesn't flow through the classic pipeline's events. The app's connections come from `ReplayingDbProviderFactory` or EF's `UseSqlReplay()`; a `new SqlConnection` in app code can't be reached (noted, as in the proposal) |
+
+### 4.2 What is built
+
+| Part | Where |
+| --- | --- |
+| `ReplayRegistry` (`Begin`, `Find`, `End`, `FromEnvironment`), `ReplayHook` (names, test id of a request, control paths, `BeginUrl`, `EndAsync`), `ReplayScope.Fallback` | `srcnew/Bruinell.Mocking.Data/Replay/ReplayHook.cs`, `ReplaySession.cs` |
+| `UseSqlReplayHook()` middleware | new `srcnew/Bruinell.Mocking.Data.AspNetCore` (net10.0, `Microsoft.AspNetCore.App`) |
+| `SqlReplayModule : IHttpModule` | new `srcnew/Bruinell.Mocking.Data.SystemWeb` (net48, outside `Bruinell.sln` like the net48 tests) |
+| A minimal ASP.NET Core app over SQLite through `ReplayingDbProviderFactory` | new `samples/Bruinell.Samples.Sql.Hook` |
+| Its tests: the app started as a process of its own | new `testsnew/Bruinell.Mocking.Data.Hook.Tests` |
+
+### 4.3 Checks
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| H1 | In-process heads | The spike suite still passes on both heads through the package (step 2's R4) |
+| H2 | Another process | The sample started with `dotnet` as its own process: tests record through the hook, then replay with the database file gone |
+| H3 | Parallel | 8 tests at once against one app process, 3 rounds, each answered from its own recording; a writing test's error (SQLite 19 as HTTP 409) replayed |
+| H4 | Misses come back | A request not recorded fails in the app, and `EndAsync` throws with the miss |
+| H5 | Off by default | Without `BRUINELL_SQL_REPLAY` the control paths are 404 and the app runs on its database |
+| H6 | System.Web | The module builds for net48; the hook's core and `ReplayScope.Fallback` pass in the net48 tests. Not run under IIS here |
 
 ## Steps 1 to 6: outline
 

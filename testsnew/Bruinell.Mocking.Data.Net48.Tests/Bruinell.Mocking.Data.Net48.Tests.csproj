@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Data\Bruinell.Mocking.Data.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Data.SystemWeb\Bruinell.Mocking.Data.SystemWeb.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
   </ItemGroup>
 
   <ItemGroup>

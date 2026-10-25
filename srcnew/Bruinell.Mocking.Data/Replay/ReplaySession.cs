@@ -372,8 +372,15 @@ public static class ReplayScope
 {
     private static readonly AsyncLocal<ReplaySession?> Now = new();
 
-    /// <summary>The session of this flow; null outside one.</summary>
-    public static ReplaySession? Current => Now.Value;
+    /// <summary>The session of this flow, else the <see cref="Fallback"/>'s; null outside one.</summary>
+    public static ReplaySession? Current => Now.Value ?? Fallback?.Invoke();
+
+    /// <summary>
+    /// Where the session is found when the flow has none: a host whose requests don't flow an <c>AsyncLocal</c> (System.Web's
+    /// pipeline) keeps it per request and reads it here. Set once by that host; it resolves per call, so requests in
+    /// parallel each get their own.
+    /// </summary>
+    public static Func<ReplaySession?>? Fallback { get; set; }
 
     /// <summary>Enters <paramref name="session"/> for this flow and what it starts; disposing puts back the one before.</summary>
     public static IDisposable Enter(ReplaySession? session)
