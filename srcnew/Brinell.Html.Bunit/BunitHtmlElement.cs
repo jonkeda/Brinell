@@ -279,6 +279,12 @@ public sealed class BunitHtmlElement : IHtmlElement
         {
             node.TriggerEvent(eventName, args);
         }
+        catch (Exception error) when (GoneHandler(error))
+        {
+            // A render replaced the element between finding it and raising the event: stale, as in a browser; the event never ran,
+            // so the call may find it again.
+            throw new StaleElementException(_locator, error, $"Its {eventName} handler was rendered anew.");
+        }
         catch (Exception error) when (error is not BrinellException)
         {
             throw BunitTestContext.HandlerFailed(eventName, error);
@@ -330,6 +336,20 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
 
         return null;
+    }
+
+    // Blazor's renderer refuses an event whose handler id a newer render dropped.
+    private static bool GoneHandler(Exception error)
+    {
+        for (Exception? at = error; at is not null; at = at is AggregateException many ? many.InnerExceptions.FirstOrDefault() : at.InnerException)
+        {
+            if (at is ArgumentException && at.Message.Contains("no event handler", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // A submit button: a <button> is one unless its type says otherwise.
