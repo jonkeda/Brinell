@@ -38,6 +38,8 @@ public sealed class SelectionTests : IDisposable
             <input id="coupon" />
             """);
         Write("Shop.App/Components/Pages/About.razor", "<p>About</p>");
+        Write("Shop.App/Components/Pages/Bench.razor", "@page \"/bench/{Id}\"\n<BenchTools />");
+        Write("Shared/Pages/BenchPage.cs", "public sealed class BenchPage() : PageBase(\"/bench/\") {}");
         Write("Shop.App/Components/Layout/MainLayout.razor", "@Body");
         Write("Shop.UITests/uat.config.md", "# UAT Config\n");
         Write("Shop.UITests/Features/counter.feature.md", """
@@ -62,6 +64,7 @@ public sealed class SelectionTests : IDisposable
             1;bunit;Shop.UITests.Tests.CartTests.Lines;;;call;Count;CartPage;Rows('Css:[data-testid^='line-']');Count;11;1;1;ok
             1;bunit;Shop.UITests.Tests.ShellTests.Menu;;;call;Click;SampleShell;SampleShell;Click;12;1;1;ok
             1;bunit;Shop.UITests.Tests.MenuTests.Open;;;call;Click;MenuPage;menu-list;Click;12;1;1;ok
+            1;bunit;Shop.UITests.Tests.BenchTests.Tools;;;call;Click;BenchPage;bench-tool;Click;12;1;1;ok
             1;bunit;Shop.UITests.Tests.CounterTests.Visible;;;query;TryFind;CounterPage;[data-testid='increment-btn'];TryFind;12;0;;
             1;bunit;Uat: Counting up;Counting up;3: Given the counter page;call;Click;CounterPage;[data-testid='increment-btn'];Click;13;1;1;ok
             """);
@@ -152,6 +155,16 @@ public sealed class SelectionTests : IDisposable
     [Fact]
     public void AComponentsTestIdParameter_CountsAsATestId()
         => Assert.Equal(["Shop.UITests.Tests.MenuTests.Open"], Changed("Shop.App/Components/Pages/Menu.razor").Picked.Select(test => test.Name));
+
+    // Its tests use only a child component's ids; they open its route through their page object.
+    [Fact]
+    public void ARoutedPage_ReachesTheTestsWhosePageObjectOpensIt()
+    {
+        var picked = Changed("Shop.App/Components/Pages/Bench.razor").Picked;
+
+        Assert.Equal(["Shop.UITests.Tests.BenchTests.Tools"], picked.Select(test => test.Name));
+        Assert.Contains("opens /bench/ (BenchPage)", picked[0].Why);
+    }
 
     [Fact]
     public void AFeatureFile_RunsItsScenarios()

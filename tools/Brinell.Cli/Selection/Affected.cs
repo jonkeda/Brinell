@@ -32,19 +32,20 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
         var apps = appFolders?.Select(Folder).ToList() ?? references.Where(IsWebProject).ToList();
         var scenarios = SuiteScenarios.Of(suiteFolder);
         var linked = Linked(suiteFolder);
+        IReadOnlyList<(string Path, string Text)>? sources = null;
         var picked = new List<PickedTest>();
         var notes = new List<string>();
 
         foreach (var file in changed.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (Under(file, suiteFolder) || linked.Any(item => item.IsMatch(file)))
+            if (Under(file, suiteFolder) || linked.Any(item => item.Pattern.IsMatch(file)))
             {
                 if (InSuite(file, suiteFolder, map, scenarios, picked, notes) is { } whole)
                     return new Affected(whole, [], notes);
             }
             else if (apps.FirstOrDefault(app => Under(file, app)) is { } app)
             {
-                if (InApp(file, app, map, picked, notes) is { } whole)
+                if (InApp(file, app, map, () => sources ??= SuiteSources(suiteFolder, linked), picked, notes) is { } whole)
                     return new Affected(whole, [], notes);
             }
             else if (references.FirstOrDefault(reference => Under(file, reference)) is { } reference)
@@ -112,7 +113,7 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
     }
 
     // A file of the app: a page reaches the tests that used its test ids; the rest of the app (layout, start, styles) all.
-    private static string? InApp(string file, string app, TouchMap map, List<PickedTest> picked, List<string> notes)
+    private static string? InApp(string file, string app, TouchMap map, Func<IReadOnlyList<(string Path, string Text)>> suiteSources, List<PickedTest> picked, List<string> notes)
     {
         var name = Name(file, app);
         var page = Regex.Replace(file, @"\.razor\.(cs|css)$", ".razor", RegexOptions.IgnoreCase);
@@ -124,7 +125,8 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
             return $"{name} was removed";
         }
 
-        var ids = TestIds(File.ReadAllText(page)).ToList();
+        var razor = File.ReadAllText(page);
+        var ids = TestIds(razor).ToList();
         var reached = 0;
         foreach (var test in map.Tests)
         {
@@ -135,9 +137,53 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
             }
         }
 
+        // A routed page is also every page object that opens its route: a test that only reaches its child components'
+        // ids still stands on the page.
+        foreach (var route in Routes(razor))
+        {
+            var opening = suiteSources()
+                .Where(source => source.Text.Contains(route, StringComparison.Ordinal))
+                .SelectMany(source => Regex.Matches(source.Text, @"\b(?:class|record)\s+(\w+)").Select(match => match.Groups[1].Value))
+                .Distinct()
+                .ToList();
+            foreach (var test in map.Tests)
+            {
+                if (opening.FirstOrDefault(type => test.Pages.Any(used => PageIs(used, type))) is { } type)
+                {
+                    picked.Add(new PickedTest(test.Name, test.Filter, $"opens {route.Trim('"')} ({type}) of {name}"));
+                    reached++;
+                }
+            }
+        }
+
         if (reached == 0)
             notes.Add(ids.Count == 0 ? $"{name}: no test ids" : $"{name}: no test of the map uses its test ids");
         return null;
+    }
+
+    /// <summary>
+    /// A page's routes as a page object would write them: <c>"/bench/fights"</c> quoted whole, a route with a parameter by
+    /// what comes before it (<c>"/area/</c>).
+    /// </summary>
+    public static IEnumerable<string> Routes(string razor)
+        => Regex.Matches(razor, @"@page\s+""([^""]+)""")
+            .Select(match => match.Groups[1].Value)
+            .Select(route => route.IndexOf('{') is var at and >= 0 ? "\"" + route[..at] : "\"" + route + "\"")
+            .Where(route => route.Length > 2)
+            .Distinct();
+
+    // The suite's C# files, its own and those it links, for the page objects that open a route.
+    private static IReadOnlyList<(string Path, string Text)> SuiteSources(string suiteFolder, IReadOnlyList<(string Glob, Regex Pattern)> linked)
+    {
+        var own = Directory.EnumerateFiles(suiteFolder, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !Regex.IsMatch(Name(file, suiteFolder), @"(^|/)(bin|obj)/"));
+        var others = linked
+            .Select(item => Path.GetDirectoryName(item.Glob.IndexOf('*') is var star and >= 0 ? item.Glob[..star] : item.Glob)!)
+            .Where(Directory.Exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .SelectMany(root => Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
+            .Where(file => linked.Any(item => item.Pattern.IsMatch(file)));
+        return own.Concat(others).Distinct(StringComparer.OrdinalIgnoreCase).Select(file => (file, File.ReadAllText(file))).ToList();
     }
 
     /// <summary>
@@ -192,9 +238,10 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
 
     /// <summary>
     /// The files the suite's project links from outside its folder (<c>Compile</c>, <c>None</c>, <c>Content</c> items whose
-    /// path leaves it), as patterns over full paths: <c>*</c> within a folder, <c>**</c> across folders.
+    /// path leaves it): each as its full path with wildcards, and as a pattern over full paths (<c>*</c> within a folder,
+    /// <c>**</c> across folders).
     /// </summary>
-    public static IReadOnlyList<Regex> Linked(string suiteFolder)
+    public static IReadOnlyList<(string Glob, Regex Pattern)> Linked(string suiteFolder)
         => Directory.EnumerateFiles(suiteFolder, "*.csproj")
             .SelectMany(project => XDocument.Load(project).Descendants()
                 .Where(element => element.Name.LocalName is "Compile" or "None" or "Content" or "EmbeddedResource")
@@ -204,7 +251,7 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
                 .Select(include => Path.GetFullPath(include.Replace('\\', Path.DirectorySeparatorChar), Path.GetDirectoryName(project)!)))
             .Where(path => !Under(path, suiteFolder))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(path => new Regex("^" + Regex.Escape(path).Replace(@"\*\*", "\u0001").Replace(@"\*", @"[^\\/]*").Replace("\u0001", ".*") + "$", RegexOptions.IgnoreCase))
+            .Select(path => (path, new Regex("^" + Regex.Escape(path).Replace(@"\*\*", "\u0001").Replace(@"\*", @"[^\\/]*").Replace("\u0001", ".*") + "$", RegexOptions.IgnoreCase)))
             .ToList();
 
     private static bool IsWebProject(string folder)
