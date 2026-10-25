@@ -13,6 +13,12 @@ public sealed class BunitTestContextOptions : HtmlTestContextOptions
     /// <summary>The app's services, registered by the suite before the root renders.</summary>
     public Action<IServiceCollection>? ConfigureServices { get; init; }
 
+    /// <summary>
+    /// A provider asked for what <see cref="ConfigureServices"/> did not register: an app's own composition, such as a
+    /// scope of its in-process host's services, so a suite need not repeat the app's registrations.
+    /// </summary>
+    public IServiceProvider? FallbackServices { get; init; }
+
     /// <summary>The signed-in user's name for bUnit's test authorization; null is signed out.</summary>
     public string? User { get; init; }
 

@@ -237,6 +237,41 @@ public sealed class ContextTests
         Assert.Equal("Admin", Text(context, "admin"));
     }
 
+    [Fact]
+    public void SignIn_WhileThePageIsRendered_ShowsTheUser()
+    {
+        using var context = Of<Secret>();
+        Assert.Equal("Not signed in", Text(context, "who"));
+
+        context.SignIn("ada@example.test", ["admin"]);
+
+        Assert.Equal("ada@example.test", Text(context, "who"));
+        Assert.Equal("Admin", Text(context, "admin"));
+    }
+
+    [Fact]
+    public void SignOut_WhileThePageIsRendered_ShowsSignedOut()
+    {
+        using var context = Of<Secret>("ada@example.test");
+
+        context.SignOut();
+
+        Assert.Equal("Not signed in", Text(context, "who"));
+    }
+
+    #endregion
+
+    #region Services
+
+    [Fact]
+    public void Fallback_AServiceTheContextDidNotRegister_ComesFromTheAppsProvider()
+    {
+        var app = new ServiceCollection().AddSingleton<IGreeting>(new FixedGreeting("from the app")).BuildServiceProvider();
+        using var context = new BunitTestContext(new BunitTestContextOptions { RootComponent = typeof(Greeting), FallbackServices = app });
+
+        Assert.Equal("from the app", Text(context, "greeting"));
+    }
+
     #endregion
 
     #region Scripts

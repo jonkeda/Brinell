@@ -29,6 +29,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     private readonly List<string> _back = [];
     private readonly List<string> _forward = [];
     private BunitContext _bunit = null!;
+    private global::Bunit.TestDoubles.BunitAuthorizationContext _authorization = null!;
     private IRenderedComponent<IComponent> _root = null!;
 
     public BunitTestContext(BunitTestContextOptions options)
@@ -154,6 +155,38 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         File.WriteAllBytes(Path.ChangeExtension(path, ".html"), TakeScreenshot());
     }
 
+    /// <summary>
+    /// Signs <paramref name="user"/> in, as a suite's sign-in step does on this head (an app's sign-in page is not a
+    /// component): the rendered page sees the new authentication state at once.
+    /// </summary>
+    /// <param name="user">The user's name, which <c>AuthorizeView</c> shows.</param>
+    /// <param name="roles">The user's roles.</param>
+    /// <param name="claims">Further claims the app reads, such as the user's id.</param>
+    public void SignIn(string user, IEnumerable<string>? roles = null, IEnumerable<System.Security.Claims.Claim>? claims = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(user);
+        string[] granted = [.. roles ?? []];
+        System.Security.Claims.Claim[] extra = [.. claims ?? []];
+        _root.InvokeAsync(() =>
+        {
+            _authorization.SetAuthorized(user);
+            _authorization.SetRoles(granted);
+            _authorization.SetClaims(extra);
+            Authentication.TriggerAuthenticationStateChanged(user, granted, extra, "bUnit");
+        }).GetAwaiter().GetResult();
+    }
+
+    /// <summary>Signs the user out; the rendered page sees it at once.</summary>
+    public void SignOut() => _root.InvokeAsync(() =>
+    {
+        _authorization.SetNotAuthorized();
+        Authentication.TriggerUnauthenticationStateChanged();
+    }).GetAwaiter().GetResult();
+
+    // bUnit's own provider: setting the authorization context alone does not tell a rendered page.
+    private global::Bunit.TestDoubles.BunitAuthenticationStateProvider Authentication
+        => (global::Bunit.TestDoubles.BunitAuthenticationStateProvider)_bunit.Services.GetRequiredService<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>();
+
     public void ResetAppState()
     {
         _back.Clear();
@@ -213,11 +246,16 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         _bunit.JSInterop.SetupVoid(BusyScript, _ => true).SetVoidResult();
         _options.ConfigureJs?.Invoke(_bunit.JSInterop);
         _options.ConfigureServices?.Invoke(_bunit.Services);
-        var authorization = _bunit.AddAuthorization();
+        if (_options.FallbackServices is { } fallback)
+        {
+            _bunit.Services.AddFallbackServiceProvider(fallback);
+        }
+
+        _authorization = _bunit.AddAuthorization();
         if (_options.User is { } user)
         {
-            authorization.SetAuthorized(user);
-            authorization.SetRoles([.. _options.Roles]);
+            _authorization.SetAuthorized(user);
+            _authorization.SetRoles([.. _options.Roles]);
         }
 
         var root = _options.RootComponent;
