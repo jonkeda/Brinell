@@ -3,7 +3,7 @@
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
 legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
-step 0). Next: step 1, the log. Each step ends green:
+step 0). Next: step 1, the log, detailed below. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -114,13 +114,135 @@ didn't touch counts as a confusing miss.
 why, and the changes to the proposal and to steps 1 to 8. The proposal is amended in the same
 commit.
 
+## Step 1: the log
+
+The log records every command a test sends, with its time, without changing what the app does,
+and reports what replay would be worth: the database's share of each test, and how many tests
+each table, view and procedure reaches. Its first use is measuring the legacy system. It records
+no parameter values and no rows, only their shape, so a log from a database with real data is
+safe to keep and share.
+
+### 1.1 Fixed points
+
+| What | Value |
+| --- | --- |
+| Test scope | `Brinell.Core.Testing.TestScope` (`AsyncLocal`): `Test`, `Scenario`, `Step`; set by the runners |
+| Timings | `Brinell.Core.Logging.Timing`, `BRINELL_TIMINGS` folder, `timings-<run>.csv`: `Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;Attempts;Result` |
+| Touch map | `tools/Brinell.Cli/Selection/TouchMap.cs`, `touch-map.json` beside a suite; the `brinell tests` commands |
+| Spike code reused | `Statements` (normalize, key, objects) and `SchemaSnapshot` from `testsnew/Brinell.Sql.Spike.Tests/Spike/`; its `CommandLog` is replaced |
+| Log variable | `BRINELL_SQL_LOG`: a folder; unset, nothing is logged and nothing is wrapped |
+| Legacy reach | The ADO.NET part targets `netstandard2.0`, so a .NET Framework app can load it; no dependency on `Brinell.Core` there |
+
+### 1.2 Three sources, one log
+
+| Source | Where it runs | For | Test of a command |
+| --- | --- | --- | --- |
+| EF interceptor | The app's process | EF Core apps (net8.0 and later) | `SqlLogScope.Current`, from `TestScope` in-process |
+| ADO.NET wrapper | The app's process | Raw ADO.NET, Dapper, `System.Data.SqlClient` or `Microsoft.Data.SqlClient`, .NET Framework too | The same in-process; by time out of process |
+| Extended Events | SQL Server | Any app, unchanged, in any process | By time: joined to the timings' test spans |
+
+Extended Events is the legacy system's source: nothing in the app changes. A session on the test
+database records `rpc_completed` and `sql_batch_completed` with their duration, row count, object
+name and text; `brinell sql capture` starts, stops and reads it. Commands are given to tests by
+time: a test owns the commands that ended inside its span in the timings. That needs the measured
+run to be serial (`-- xUnit.ParallelizeTestCollections=false`) and the two clocks to agree: at
+start the CLI sends a marker query (`SELECT 'brinell-marker-<guid>'`) and reads its server
+timestamp, which gives the offset.
+
+### 1.3 The log format
+
+One JSON line per command in `<BRINELL_SQL_LOG>/sql-<run>-<pid>.jsonl` (in-process) or
+`sql-xe-<run>.jsonl` (read from Extended Events):
+
+| Field | What |
+| --- | --- |
+| `run`, `test`, `scenario` | The run and the test scope; `test` null when none is known yet (joined later for XE) |
+| `start`, `ms` | UTC start, to the millisecond; duration, a reader's until it is disposed |
+| `kind` | `reader`, `non-query`, `scalar`, `error`, `open` |
+| `text` | The normalized text; a stored procedure as its `EXEC`; `sp_executesql`'s inner statement for XE |
+| `parameters` | Names only |
+| `rows`, `affected`, `error` | Rows read, rows affected, the error number |
+| `objects` | The objects the text names (`Statements.Objects`) |
+
+### 1.4 Projects
+
+| Project | Targets | Holds |
+| --- | --- | --- |
+| `srcnew/Brinell.Mocking.Data` | `netstandard2.0;net8.0;net9.0;net10.0` | `SqlLog` (writer, thread-safe), `SqlLogEntry`, `SqlLogScope` (`Func<string?>` for the test, set by the suite), `LoggingDbConnection`, `LoggingDbCommand`, `LoggingDbDataReader`, `LoggingDbProviderFactory`, `Statements`, `SchemaSnapshot` (over any `DbConnection`), `ExtendedEvents` (the session's SQL; reading through `sys.fn_xe_file_target_read_file`) |
+| `srcnew/Brinell.Mocking.Data.EntityFrameworkCore` | `net8.0;net9.0;net10.0` | `SqlLogInterceptor` (command and connection), `UseSqlLog(this DbContextOptionsBuilder, SqlLog)` |
+| `testsnew/Brinell.Mocking.Data.Tests` | `net10.0` | Unit tests; wrapper tests on SQLite and on the local SQL Server; the XE tests in category `SqlServer`, skipped without one |
+| `tools/Brinell.Cli/Sql/` | as the CLI | `brinell sql schema`, `brinell sql capture start`, `stop`, `read`, `brinell sql report` |
+
+`SqlLogScope` is how the log learns the test without referencing `Brinell.Core`: a suite sets
+`SqlLogScope.Current = () => TestScope.Current.Test`; the Brinell fixtures that host an app
+in-process do it for the suite.
+
+### 1.5 The commands
+
+| Command | Does |
+| --- | --- |
+| `brinell sql schema --connection <c> --out <schema.json>` | The schema snapshot: tables, views, procedures, functions, hashes, references. Read-only |
+| `brinell sql capture start --connection <c> --database <db> --folder <server folder>` | Creates and starts the session `brinell_sql_<db>`, filtered to the database; sends the marker |
+| `brinell sql capture stop --connection <c> --database <db>` | Stops and drops the session; the `.xel` files stay |
+| `brinell sql capture read --connection <c> --files <server path> --out <folder>` | Reads the `.xel` files through the server into `sql-xe-<run>.jsonl`, the clock offset applied |
+| `brinell sql report --log <folder> --timings <folder> --schema <schema.json> --out <report.md>` | Joins commands to tests, expands objects through the schema's references, writes the report and `sql-touch-map.json` |
+
+### 1.6 The report
+
+`report.md` (a human document) and `report.json`:
+
+- **Per test:** its time; the database's time inside it, split into arrange (the fixture's spans:
+  reset and seed) and the test's own steps; the share of each; commands; distinct objects.
+- **For the suite:** the median and p90 share, with and without the arrange part; the database's
+  time in all.
+- **Per object:** the tests that touch it, directly or through a view or procedure. The fan-out:
+  for each object, the share of the suite's tests it reaches; its median, p90 and the top 20.
+- **Repeats:** a command sent more than 10 times in one test with different parameters (an N+1),
+  and one sent more than 3 times with the same ones (a read repeated between writes).
+- **Not attributed:** commands outside every test's span (start-up, hosted services), counted.
+
+`sql-touch-map.json` beside the suite maps each object to its tests, as `touch-map.json` does for
+pages; selecting tests from a schema change reads it later.
+
+### 1.7 Measuring the legacy system
+
+What the owner runs, once, on a test database:
+
+1. `brinell sql schema` against the test database: the snapshot, read-only.
+2. `brinell sql capture start`: needs `ALTER ANY EVENT SESSION` on the server and a folder the
+   server can write to.
+3. The UI suite, serial, with `BRINELL_TIMINGS` set, as it runs today.
+4. `brinell sql capture stop`, then `read`, then `brinell sql report`.
+
+What it answers, and the proposed threshold for each:
+
+| Question | Read from | Replay pays when |
+| --- | --- | --- |
+| Is the database a large part of a test? | Median share with arrange | At least 15% |
+| How much does a schema change cost? | Median fan-out per object | A typical object reaches at most 5% of the tests |
+| How is the database made today? | Arrange time per test and per fixture | No threshold: it is the baseline |
+| Does replay hold for it? | Repeats, errors, unattributed commands, procedures without references (dynamic SQL) | Reported as risks |
+
+The numbers go to `.my/sql-replay/legacy-measure.md` by hand, without names of tables or data;
+step 2 and later are decided from them.
+
+### 1.8 Checks before step 1 is done
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| L1 | Wrapper and interceptor | Unit tests green; the spike suite logs through `UseSqlLog` (its `CommandLog` removed) and Todo through `LoggingDbConnection` at `TodoDatabase.OpenAsync`, on both heads, in parallel |
+| L2 | Nothing changes | Every suite touched passes with `BRINELL_SQL_LOG` set and unset |
+| L3 | Extended Events against in-process | The spike suite run serially in the browser with the sample as its own process: the XE log gives each test the same distinct commands as the in-process log, prerender repeats aside |
+| L4 | The report | On the spike suite: the shares within 2 points of spike-results (4.9%, 37%); the detail tests reach `dbo.visits` through `dbo.visitcount`; the fan-out table lists the five objects |
+| L5 | .NET Framework | The wrapper's `netstandard2.0` build loads in a `net48` test project over `System.Data.SqlClient` (on Windows) |
+
 ## Steps 1 to 6: outline
 
 From the amended proposal; each is detailed here before it is built.
 
 | Step | What | Projects |
 | --- | --- | --- |
-| 1 | The log for ADO.NET and EF: commands per test, their time, the objects they touch; first used to measure the legacy system (database share, fan-out per change) | `srcnew/Brinell.Mocking.Data`, `srcnew/Brinell.Mocking.Data.EntityFrameworkCore`, their tests |
+| 1 | The log: detailed above | `srcnew/Brinell.Mocking.Data`, `srcnew/Brinell.Mocking.Data.EntityFrameworkCore`, their tests |
 | 2 | The package from the spike's code: core, ADO.NET adapter, SqlClient rules, EF adapter (spatial mapping, `SqlException`), matching, binding, errors, the miss message | the same |
 | 3 | The schema snapshot as its own command, the stamp per object; dynamic procedures, triggers, reference data, default schemas | the same, a CLI command |
 | 4 | The heads: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs | the same, `Brinell.Html.Bunit`, `Brinell.Html.Playwright` fixtures |
