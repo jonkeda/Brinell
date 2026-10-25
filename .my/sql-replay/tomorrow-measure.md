@@ -39,7 +39,9 @@ wall time (0.8 s), as the studio's background work runs beside the page.
   studio's claim loops at once, and each claim holds the lock through two sweeping updates, the
   lanes' check and the pick, so the three that find nothing queue behind the one that gets the
   job. It is waiting in the background, not work, and the job itself starts first: it costs the
-  tests little time.
+  tests little time. Fixed in Tomorrow (game `b6a7bab4`): a new job wakes one loop. Two runs
+  each way: lock waiting 3.5 and 3.9 s before, 0.7 and 0.8 s after; claims 355 and 342 before,
+  273 and 239 after; the suite's time unchanged (50 to 59 s), as the waiting was in the background.
 - **The geo tables take 28%**, the call queue alone 7%.
 - **Repeats:** in PLT.38.5 one `PlayAreaCell` query ran 161 times and two others 119 times each,
   in PLT.41.4 and PLT.38.3 over 100: candidates for an N+1. `settings.setting` was read 651 times
