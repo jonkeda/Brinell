@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    New and edit user. One field of each kind a test drives: text, email, a choice of three, an
+    optional date, a fixed list, a whole number, a decimal, a time, on/off, a range and
+    multi-line text.
+
+    The end date is disabled, not hidden, while "Has an end date" is off, so it stays in the
+    automation tree. The stepper and the slider each have a label echoing their value, which a
+    test reads on every platform. Save is enabled while the form is invalid; pressing it shows
+    every error on its field.
+
+    The date and time pickers have no UI Automation route to set a value on Windows; they publish
+    SetDate and SetTime through Bruinell's gesture bridge, as the Bruinell sample's pickers do.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Bruinell.Samples.Todo.Core.ViewModels;assembly=Bruinell.Samples.Todo.Core"
+             xmlns:views="clr-namespace:Bruinell.Samples.Todo.App.Views"
+             xmlns:uia="clr-namespace:Bruinell.Maui.AppSupport.Uia;assembly=Bruinell.Maui.AppSupport"
+             x:Class="Bruinell.Samples.Todo.App.Pages.UserEditPage"
+             x:DataType="vm:UserEditViewModel"
+             AutomationId="UserEditPage"
+             Title="{Binding PageTitle}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" AutomationId="UserEdit_Cancel" Command="{Binding CancelCommand}" />
+        <ToolbarItem Text="Save" AutomationId="UserEdit_Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <Style x:Key="FieldError" TargetType="Label">
+            <Setter Property="TextColor" Value="Red" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="Label">
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label AutomationId="UserEdit_Offline"
+                   Text="{Binding OfflineNotice}"
+                   IsVisible="{Binding IsOffline}" />
+            <Label AutomationId="UserEdit_SaveError"
+                   Text="{Binding SaveError}"
+                   Style="{StaticResource FieldError}"
+                   IsVisible="{Binding HasSaveError}" />
+
+            <views:SectionCard AutomationId="UserEdit_Person" Header="Person">
+                <VerticalStackLayout Spacing="6">
+                    <Entry AutomationId="UserEdit_Name"
+                           Placeholder="Name"
+                           Text="{Binding Name}" />
+                    <Label AutomationId="UserEdit_NameError"
+                           Text="{Binding NameError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasNameError}" />
+                    <Entry AutomationId="UserEdit_Email"
+                           Placeholder="Email (optional)"
+                           Keyboard="Email"
+                           Text="{Binding Email}" />
+                    <Label AutomationId="UserEdit_EmailError"
+                           Text="{Binding EmailError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasEmailError}" />
+                    <Editor AutomationId="UserEdit_Notes"
+                            Placeholder="Notes"
+                            AutoSize="TextChanges"
+                            Text="{Binding Notes}" />
+                    <Label AutomationId="UserEdit_NotesError"
+                           Text="{Binding NotesError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasNotesError}" />
+                </VerticalStackLayout>
+            </views:SectionCard>
+
+            <views:SectionCard AutomationId="UserEdit_Access" Header="Access">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Status" FontAttributes="Bold" />
+                    <VerticalStackLayout AutomationId="UserEdit_Status" RadioButtonGroup.GroupName="UserStatus">
+                        <RadioButton AutomationId="UserEdit_Status_Active" Content="Active" IsChecked="{Binding IsActive}" />
+                        <RadioButton AutomationId="UserEdit_Status_OnLeave" Content="On leave" IsChecked="{Binding IsOnLeave}" />
+                        <RadioButton AutomationId="UserEdit_Status_Inactive" Content="Inactive" IsChecked="{Binding IsInactive}" />
+                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                        <Label Text="Has an end date" Style="{StaticResource FieldLabel}" />
+                        <CheckBox Grid.Column="1" AutomationId="UserEdit_HasEndDate" IsChecked="{Binding HasEndDate}" />
+                        <DatePicker Grid.Column="2"
+                                    AutomationId="UserEdit_AllowedUntil"
+                                    Format="dd-MMM-yyyy"
+                                    Date="{Binding AllowedUntil}"
+                                    IsEnabled="{Binding HasEndDate}"
+                                    uia:GestureAutomation.Verbs="SetDate,GetState" />
+                    </Grid>
+                    <Picker AutomationId="UserEdit_Role"
+                            Title="Role"
+                            ItemsSource="{Binding RoleNames}"
+                            SelectedIndex="{Binding RoleIndex}" />
+                </VerticalStackLayout>
+            </views:SectionCard>
+
+            <views:SectionCard AutomationId="UserEdit_Work" Header="Work">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                        <Label Text="Hours per week" Style="{StaticResource FieldLabel}" />
+                        <Label Grid.Column="1"
+                               AutomationId="UserEdit_HoursValue"
+                               Text="{Binding HoursText}"
+                               Style="{StaticResource FieldLabel}" />
+                        <Stepper Grid.Column="2"
+                                 AutomationId="UserEdit_Hours"
+                                 Minimum="0"
+                                 Maximum="99"
+                                 Increment="1"
+                                 Value="{Binding HoursPerWeek}" />
+                    </Grid>
+                    <Label AutomationId="UserEdit_HoursError"
+                           Text="{Binding HoursError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasHoursError}" />
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Label Text="Hourly rate" Style="{StaticResource FieldLabel}" />
+                        <Entry Grid.Column="1"
+                               AutomationId="UserEdit_Rate"
+                               Keyboard="Numeric"
+                               Placeholder="1,250.75"
+                               Text="{Binding RateText}" />
+                    </Grid>
+                    <Label AutomationId="UserEdit_RateError"
+                           Text="{Binding RateError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasRateError}" />
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Label Text="Start of day" Style="{StaticResource FieldLabel}" />
+                        <TimePicker Grid.Column="1"
+                                    AutomationId="UserEdit_StartOfDay"
+                                    Format="HH:mm"
+                                    Time="{Binding StartOfDay}"
+                                    uia:GestureAutomation.Verbs="SetTime,GetState" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Receives reminders" Style="{StaticResource FieldLabel}" />
+                        <Switch Grid.Column="1"
+                                AutomationId="UserEdit_Reminders"
+                                IsToggled="{Binding ReceivesReminders}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Label Text="Workload" Style="{StaticResource FieldLabel}" />
+                        <Slider Grid.Column="1"
+                                AutomationId="UserEdit_Workload"
+                                Minimum="0"
+                                Maximum="100"
+                                Value="{Binding Workload}" />
+                        <Label Grid.Column="2"
+                               AutomationId="UserEdit_WorkloadValue"
+                               Text="{Binding WorkloadText}"
+                               Style="{StaticResource FieldLabel}" />
+                    </Grid>
+                    <Label AutomationId="UserEdit_WorkloadError"
+                           Text="{Binding WorkloadError}"
+                           Style="{StaticResource FieldError}"
+                           IsVisible="{Binding HasWorkloadError}" />
+                </VerticalStackLayout>
+            </views:SectionCard>
+
+            <Label AutomationId="UserEdit_LastChanged"
+                   Text="{Binding LastChangedText}"
+                   FontSize="12" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

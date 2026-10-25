@@ -1,6 +1,6 @@
 # Control unit tests
 
-`testsnew/Brinell.Maui.Tests` tests control logic without an app. A mocked `IMauiElement` is
+`testsnew/Bruinell.Maui.Tests` tests control logic without an app. A mocked `IMauiElement` is
 the **fixture**; the test still calls the control's **public API** through a test page. This is
 the one place a test sets up `IMauiElement`, and it only arranges: the act and the assert go
 through the control.
@@ -56,8 +56,8 @@ public class CheckBoxControlTests : SemanticControlTestsBase
 - Assert with `Verify` on the mock for "which operation was asked for", and with xUnit `Assert`
   on the control's `Get*`/`Is*` for "what it reports". No FluentAssertions.
 - Name: `<Control>_<Action>_<ExpectedResult>`, as for UI tests.
-- Run: `dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false`
+- Run: `dotnet test testsnew\Bruinell.Maui.Tests\Bruinell.Maui.Tests.csproj -v:minimal /nr:false`
   (seconds; no app, no UI).
 
-Generator behaviour (what a template emits) is tested in `testsnew/Brinell.Cli.Tests` (`Generate/`),
+Generator behaviour (what a template emits) is tested in `testsnew/Bruinell.Cli.Tests` (`Generate/`),
 not here.

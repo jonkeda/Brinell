@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Recording.Tests</RootNamespace>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Recording\Bruinell.Recording.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Narrator.Windows\Bruinell.Narrator.Windows.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Appium\Bruinell.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

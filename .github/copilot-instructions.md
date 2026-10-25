@@ -1,6 +1,6 @@
-# Copilot Instructions For Brinell
+# Copilot Instructions For Bruinell
 
-These instructions apply to the Brinell submodule.
+These instructions apply to the Bruinell submodule.
 
 ## Active Sources
 
@@ -23,33 +23,33 @@ reference it points to; if your tool does not load skills, open them directly.
 
 ## Build And Test
 
-Commands are from the Brinell root.
+Commands are from the Bruinell root.
 
 ```powershell
-dotnet build Brinell.sln -v:minimal /nr:false
-dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Uat.Tests\Brinell.Uat.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Html.Bunit.Tests\Brinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
+dotnet build Bruinell.sln -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Core.Tests\Bruinell.Core.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Maui.Tests\Bruinell.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Uat.Tests\Bruinell.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.Tests\Bruinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.Tests\Bruinell.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.Bunit.Tests\Bruinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
 Use the focused platform run guides under `docs/run/` for UI tests. The Html and Blazor UI
-suites also run without a browser: `$env:BRINELL_HEAD = "bunit"` (the bUnit head,
+suites also run without a browser: `$env:BRUINELL_HEAD = "bunit"` (the bUnit head,
 `docs/guides/bunit.md`, AD-030). Use it for the narrow runs while working; run the same filter
 once in the browser before calling the work done, since the browser judges every gate. The narrow
 filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` prints the tests the working
 tree's change reaches, with why, and one `--filter` (`-Run` runs it); shared code runs the suite whole.
-`Brinell.sln` holds every project in the repository, in folders by area. The two
+`Bruinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
-MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
+MSBuild, and build from `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx`.
 
 ## Architecture Rules
 
-- Keep `Brinell.Core` platform-neutral.
+- Keep `Bruinell.Core` platform-neutral.
 - Put shared contracts, locators, waits, artifacts, and base abstractions in
-  `Brinell.Core`.
+  `Bruinell.Core`.
 - Put driver-specific element handling in the matching platform project.
 - Page objects own page or screen structure.
 - Controls own repeated interaction behavior.
@@ -78,7 +78,7 @@ debug-only pauses.
   RangeValue, and ExpandCollapse before pointer strategies.
 - Do not expose direct mouse movement as a normal public test API.
 - Pointer input is opt-in for gesture-only surfaces and remains gated by
-  `BRINELL_ALLOW_POINTER_INPUT`.
+  `BRUINELL_ALLOW_POINTER_INPUT`.
 
 ## Error Handling
 
@@ -104,7 +104,7 @@ debug-only pauses.
 - Active docs live in `docs/`; do not copy `docs2/` back wholesale.
 - Durable decisions, invariants and contracts live in `.docs/`; record a decision once,
   there, never also in code prose.
-- Use `Brinell.*` namespaces in examples.
+- Use `Bruinell.*` namespaces in examples.
 - Keep links relative and valid.
 - Mark command working directories.
 - Do not reference missing `.specs`, `.cnv2`, or old numbered docs.

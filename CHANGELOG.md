@@ -8,13 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `[UiFact]` (`Brinell.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
+- `[UiFact]` (`Bruinell.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
   test method failed and before the test object is disposed, from the test object's own context
   (public or not) or a fixture's. xUnit v2 tells a `[Fact]`'s `After` hook nothing of the outcome,
   so the case runs through its own invoker. Under `dotnet test` a run's suite folder is the test
-  assembly (the one of those referencing xUnit that no other references), Brinell's own suites
+  assembly (the one of those referencing xUnit that no other references), Bruinell's own suites
   included.
-- `Brinell.Maui.Testing.PageNavigation`: `WaitArrived` (a pushed page on top, as one logged call)
+- `Bruinell.Maui.Testing.PageNavigation`: `WaitArrived` (a pushed page on top, as one logged call)
   and `ReturnToRoot` (back to the app's root page between tests), which MAUI's fixture had as
   loops of its own. `ReturnToRoot` goes back again only while a dialog or a pushed page covers the
   root; a root that is only late gets the whole wait and one back after it, as a last resort,
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   waits below a call that had a window of their own (FlaUI's navigate back, navigation depth,
   bridge resend, dropdown open and close, scroll settle and scroll change, `FindChrome`, MAUI's
   `NavigationRecovery`, UAT's `WaitUntil`) no longer outlast the caller's `timeoutMs`.
-- `BRINELL_TIMEOUT_SCALE`: a factor (0.1 to 20) on the waits a call takes from `TimeoutSettings`
+- `BRUINELL_TIMEOUT_SCALE`: a factor (0.1 to 20) on the waits a call takes from `TimeoutSettings`
   (`DefaultWait`, `PageLoad`, `ElementFind`, `ElementState`), for a slow or shared machine; a
   `timeoutMs` a test passes is not scaled.
 - `near-misses.md` in the suite's artifact folder (`NearMisses`): every call of the run that
@@ -47,64 +47,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the video. The IDE runner host calls it when it closes a scenario. When the scenario failed or
   was canceled, its own failure is reported and a failing `AfterScenario` is only traced; the host
   then ends the fixture rather than keeping it.
-- `Brinell.NativeAndroid` in MAUI's and Html's shape (AD-010, AD-013, `docs/platform-guides/native-android.md`):
+- `Bruinell.NativeAndroid` in MAUI's and Html's shape (AD-010, AD-013, `docs/platform-guides/native-android.md`):
   its own `INativeAndroid*` interfaces; the Core calls layer (act once, confirm, one log pair); scope
-  readiness (the app in front, the page's activity and ready view, the `brinell_busy` busy view);
+  readiness (the app in front, the page's activity and ready view, the `bruinell_busy` busy view);
   generated controls with Android's widget names (`EditText`, `Spinner`, `RecyclerView`, `RatingBar`,
   `TabLayout`, `AlertDialog`, `PermissionDialog`, ...); collections whose rows follow their item
   when a `RecyclerView` recycles; scroll-to-find with `UiScrollable`; named, element-relative
   gestures. `tools/Scripts/CreateNativeAndroid.Bat` generates the controls. The breaking change is
   total: the old hand-written classes (`NativeAndroidControl`, `NativeAndroidPageObjectBase`, the
   MAUI-named controls) are gone; nothing in the repository used them.
-- `Brinell.Appium` (AD-026 R4): Appium's error mapping (now public, with `IsUnknownCommand` and
-  `IsNoAnswer`), `AndroidHost` and `AndroidRecorder`, moved out of `Brinell.Maui.Appium` so the
-  MAUI and native Android stacks share them. `Brinell.Appium.Tests` took their tests.
-- `samples/Brinell.Samples.NativeAndroid.App`, a .NET for Android control gallery, and
-  `testsnew/Brinell.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
+- `Bruinell.Appium` (AD-026 R4): Appium's error mapping (now public, with `IsUnknownCommand` and
+  `IsNoAnswer`), `AndroidHost` and `AndroidRecorder`, moved out of `Bruinell.Maui.Appium` so the
+  MAUI and native Android stacks share them. `Bruinell.Appium.Tests` took their tests.
+- `samples/Bruinell.Samples.NativeAndroid.App`, a .NET for Android control gallery, and
+  `testsnew/Bruinell.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
   `docs/run/native-android.md`); the `android-control` and `android-ui-test` skills.
 - UAT finds a control by Core's `IElementObject<>` as well as by its name's suffix, and no longer
   takes a page's `Self` for a control.
-- One command line, `brinell` (AD-028, `docs/run/cli.md`): a dotnet tool (`Brinell.Cli`) with
+- One command line, `bruinell` (AD-028, `docs/run/cli.md`): a dotnet tool (`Bruinell.Cli`) with
   `scrape` (`new`, `list`, `status`, `check`, `explore`, `record`, `draft`, `verify`, `config`,
-  `install-browser`), `data` (what `brinell-data` did), `scenario` (`preview`, `results delete`),
-  `controls generate` (what `Brinell.Generator` did), `version`, and the servers `lsp` and `mcp`.
+  `install-browser`), `data` (what `bruinell-data` did), `scenario` (`preview`, `results delete`),
+  `controls generate` (what `Bruinell.Generator` did), `version`, and the servers `lsp` and `mcp`.
   One set of options (`--solution`, `--project`, `--json`, `--yes`, `--headless`) and exit codes
-  (0 fine, 1 problems found, 2 could not run). `tools/Brinell.Bdd.LanguageServer` is now
-  `tools/Brinell.Cli` (assembly `brinell`); `tools/Brinell.DataValidator` and `tools/Brinell.Generator`
-  are folders of it, and their tests are in `testsnew/Brinell.Cli.Tests`. The IDE extensions start
-  `brinell.dll lsp`; `brinell-data`, `--mcp` and `--preview` are gone. `tools/Scripts/brinell.ps1`
+  (0 fine, 1 problems found, 2 could not run). `tools/Bruinell.Bdd.LanguageServer` is now
+  `tools/Bruinell.Cli` (assembly `bruinell`); `tools/Bruinell.DataValidator` and `tools/Bruinell.Generator`
+  are folders of it, and their tests are in `testsnew/Bruinell.Cli.Tests`. The IDE extensions start
+  `bruinell.dll lsp`; `bruinell-data`, `--mcp` and `--preview` are gone. `tools/Scripts/bruinell.ps1`
   runs it from source.
-- The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Brinell.Scraper`
+- The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Bruinell.Scraper`
   records an app's pages through Playwright's Chromium into the UI test project
   (`scraper.config.md`, `Recordings/`), finds repeated parts, suggests controls and locators, diffs
   captures, writes code and builds it. The language server serves it to a Scraper view in VS Code and
-  Visual Studio and to agents as MCP tools; the `scrape-pages` skill and `/brinell-scrape-pages`
-  prompt say how. `Brinell.Core.Scraping` holds `IScrapeSource` and the snapshot model. The WPF
-  Scraper (`tools/Brinell.Scraper`), its per-user SQLite corpus and its Copilot SDK calls are removed.
+  Visual Studio and to agents as MCP tools; the `scrape-pages` skill and `/bruinell-scrape-pages`
+  prompt say how. `Bruinell.Core.Scraping` holds `IScrapeSource` and the snapshot model. The WPF
+  Scraper (`tools/Bruinell.Scraper`), its per-user SQLite corpus and its Copilot SDK calls are removed.
 - Packaging of the IDE extensions: a release attaches the Visual Studio VSIX and the VS Code VSIX,
   each with the language server inside and stamped with the tag's version. CI builds both on
   every pull request (`ide-extensions`). The server warns on the suite config (`UATG010`) when the
-  suite's build references a Brinell assembly at another major or minor version than its own
+  suite's build references a Bruinell assembly at another major or minor version than its own
   (`BddVersionCheck`, `BddSuite.VersionMismatches`).
 - Debugging the app too: while a debugger is attached to a test, `DebuggedApps.Announce`
-  (`Brinell.Core.Diagnostics`) writes each app the test starts to
-  `%TEMP%\Brinell\debugged-apps\<test pid>-<app pid>.json`. The MAUI FlaUI driver and the web host
+  (`Bruinell.Core.Diagnostics`) writes each app the test starts to
+  `%TEMP%\Bruinell\debugged-apps\<test pid>-<app pid>.json`. The MAUI FlaUI driver and the web host
   announce theirs; the web host skips `dotnet run`, whose process is the CLI. A Debug from the
   Visual Studio preview or from VS Code's Test Explorer attaches to each announced app after the
   testhost, so a breakpoint in the app's own code stops too.
-- The VS Code extension (`tools/Brinell.Bdd.VsCode`, TypeScript):
+- The VS Code extension (`tools/Bruinell.Bdd.VsCode`, TypeScript):
   - an LSP client for feature, step and config files on the same language server;
   - the same Scenario Preview in a webview, its screenshots through the webview's own URIs;
   - Test Explorer on the scenarios' addresses: build, then `dotnet test --filter BddScenario=...`,
     results from the reports, and Debug attaching the C# debugger to the testhost;
   - step breakpoints in the file Visual Studio uses, with gutter dots.
-  The server gains `brinell/scenarios` (each suite's tests and filters) and `brinell/lastRuns`
+  The server gains `bruinell/scenarios` (each suite's tests and filters) and `bruinell/lastRuns`
   (a file's last results with the failed step).
-- The Brinell MCP server, for Copilot's agent mode and other agents:
-  `Brinell.Bdd.LanguageServer --mcp [--solution <folder>]` (`BddMcpServer`), over stdio. It has the
+- The Bruinell MCP server, for Copilot's agent mode and other agents:
+  `Bruinell.Bdd.LanguageServer --mcp [--solution <folder>]` (`BddMcpServer`), over stdio. It has the
   tools `list_suites`, `list_steps` (by words), `list_pages`, `list_test_sets`, `validate_scenario`
   (a draft checked with the gate's words) and `find_step_usages`. It calls no model. The prompt
-  file `.github/prompts/brinell-write-scenario.prompt.md` writes a feature file with them, using
+  file `.github/prompts/bruinell-write-scenario.prompt.md` writes a feature file with them, using
   only the suite's steps. The Scraper's corpus tools (`scraper-in-extension.md`) are not part of it:
   that proposal waits for its owner.
 - Config and data files in the editor: `uat.config.md` and `bdd.config.md` get diagnostics (`UATG001`-`UATG009`)
@@ -113,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a head, boolean, test set or app row that is not valid, and a missing AppsFile;
   - an assembly not built yet, a `Using` namespace nothing is in, and a suite that cannot bind;
   - a `testdata.schema.json` out of date with its definition, which a quick fix regenerates as
-    `brinell-data schema` would.
+    `bruinell-data schema` would.
   Completion and hover cover the fields, their values (heads, booleans, test sets), the assembly
   kinds, the namespaces and the apps' heads. A feature file's `TestData` metadata offers the test
   sets. `BddSuite.TestDataDefinitions` loads the suite's test-data definitions with its build, each
@@ -124,10 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     callable steps by step file, and the hooks of each step-definition class with their tags;
   - **Pages**: each page with its controls (type, where tapping goes) and its page phrases;
   - **Results**: the last run of each scenario.
-  The language server renders them (`brinell/explorerHost`, `brinell/explorer`), and the window
+  The language server renders them (`bruinell/explorerHost`, `bruinell/explorer`), and the window
   refreshes after a build and when a run writes results.
 - Quick fixes and refactorings in the editor (`textDocument/codeAction`, `prepareRename`, `rename`):
-  - a value with one right answer is rewritten, as `brinell-data validate --fix` does;
+  - a value with one right answer is rewritten, as `bruinell-data validate --fix` does;
   - old headings are rewritten, and an old file name is renamed (UAT029) when the client can
     rename files;
   - **Create step definition** for a step that binds to nothing puts a stub, with its phrase and a
@@ -139,13 +139,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BddSuite.StepDefinitionTypes` lists the loaded suite's step-definition classes.
 - CodeLens from C# to scenarios (Visual Studio): "used in N BDD steps · M scenarios" above step
   definitions, page phrases and page-object controls, with the steps in its details.
-  `brinell/usages` in the language server counts across every suite. A new assembly,
-  `Brinell.Bdd.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
+  `bruinell/usages` in the language server counts across every suite. A new assembly,
+  `Bruinell.Bdd.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
   server through the extension's `ICodeLensCallbackListener`.
-- Hover, go to definition and find references in the editor (`Brinell.Bdd.LanguageServer`). Hover
+- Hover, go to definition and find references in the editor (`Bruinell.Bdd.LanguageServer`). Hover
   shows what a step binds to, its page and app, the method's XML `<summary>`, and each argument as
   written and as read. A call shows the callable and its body. Definition opens a C# step's method
-  through the portable PDB (`BddSourceLocator` in `Brinell.Bdd.Workspace`, which also reads a PDB
+  through the portable PDB (`BddSourceLocator` in `Bruinell.Bdd.Workspace`, which also reads a PDB
   beside a renamed assembly), a control verb's control on the page at that line, a page step's page
   class, and a call's `## Step:` heading. References finds every step in the suite's feature files,
   linked files included, that binds to the same method or calls the same callable.
@@ -156,45 +156,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current page's steps come first, and the file's callable steps are included. The values of the
   parameter at the caret are offered too: pages, the controls of the page the binder has the
   scenario on at that line, users, apps, enum members, and an outline's Examples columns.
-- Outline, folding and semantic colours in the editor (`Brinell.Bdd.LanguageServer`):
+- Outline, folding and semantic colours in the editor (`Bruinell.Bdd.LanguageServer`):
   `textDocument/documentSymbol` gives the heading tree by kind, `foldingRange` folds the sections,
   fences, tables and doc strings, and `semanticTokens/full` colours keywords, quoted values, `{x}`
   and `<x>` placeholders, tags and comments. They come from the file's shape (`BddDocumentStructure`),
   so they work before a build and while the file does not parse.
-- Diagnostics in the editor (Visual Studio, `Brinell.Bdd.LanguageServer`): feature, step and config
-  files get the `brinell-bdd` content type (derived from Markdown) and an LSP client. The server
+- Diagnostics in the editor (Visual Studio, `Bruinell.Bdd.LanguageServer`): feature, step and config
+  files get the `bruinell-bdd` content type (derived from Markdown) and an LSP client. The server
   publishes the gate's diagnostics word for word: the open file after a pause in typing, and every
   file of its suites on save and after a build. A step that failed in the last run is a `UATRUN`
-  error at its line. `BddFileAnalysis` (`Brinell.Bdd.Preview`) is the one check the preview and the
+  error at its line. `BddFileAnalysis` (`Bruinell.Bdd.Preview`) is the one check the preview and the
   server share. The server only computes diagnostics for a client that declares it takes them.
 - Debug from the preview (Visual Studio): **Debug** beside each **Run** and **Debug file** beside
   **Run file** run with `VSTEST_HOST_DEBUG` and attach Visual Studio's debugger to the testhost; a
   failed attach cancels the run. Step breakpoints are toggled by clicking a step's keyword in the
   preview, or with **Toggle BDD Step Breakpoint** (editor context menu, **Ctrl+K, F9**) on a step
-  line. Either way they are written to `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, and a red dot
+  line. Either way they are written to `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json`, and a red dot
   shows in the preview's gutter and in the editor's glyph margin. Breakpoints move with their lines
   as the file is edited.
 - Run from the preview (Visual Studio): **Run** on each scenario heading and **Run file** on the title
   build the solution, then run `dotnet test --no-build --filter BddScenario=<address>` with the output
   in the Output pane. One run at a time; a build started during a run is cancelled; **Cancel run**
-  stops the test process tree. `brinell/runTarget` gives the project and filter; a suite whose test
+  stops the test process tree. `bruinell/runTarget` gives the project and filter; a suite whose test
   class keeps `[Theory]` shows the buttons disabled, saying why (`BddSuite.HasScenarioTheory`).
-- Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `BddStepExecutionSession.RunNextAsync`
-  stops before a step whose line `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json` lists, with a
+- Step breakpoints (`Bruinell.Bdd`): while a debugger is attached, `BddStepExecutionSession.RunNextAsync`
+  stops before a step whose line `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json` lists, with a
   `BddStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
   call, a call's line once before its first step, and `breakOnFailure` after a failed step. The
   check is behind `IBddBreakHook` (`BddExecutionContext.Breaks`); without a debugger nothing is read.
-- `[UatScenarioTheory]` (`Brinell.Uat`): `[Theory]` with a stable address per scenario, the `BddScenario`
-  trait `<file relative to the config>#<slug>` (`BddScenarioAddress` in `Brinell.Bdd`), so
+- `[UatScenarioTheory]` (`Bruinell.Uat`): `[Theory]` with a stable address per scenario, the `BddScenario`
+  trait `<file relative to the config>#<slug>` (`BddScenarioAddress` in `Bruinell.Bdd`), so
   `dotnet test --filter "BddScenario=..."` runs one scenario. A case whose feature file is the
   project's own has the scenario's line as its source. The Todo MAUI, web, mixed and service suites
   use it; their cases and counts are unchanged.
-- `Brinell.Bdd.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
+- `Bruinell.Bdd.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
   with a `uat.config.md` or `bdd.config.md`), reads the config, knows which suites a feature file
   is linked into, and builds the catalogs from a shadow copy of the build output in a collectible
   load context, so a build never meets a locked file and `Reload` releases the old build.
-  `brinell-data` loads suites through it; its output is unchanged.
-- `Brinell.Bdd.Preview` (tools/): renders a feature or step file as HTML for the IDE preview, from the
+  `bruinell-data` loads suites through it; its output is unchanged.
+- `Bruinell.Bdd.Preview` (tools/): renders a feature or step file as HTML for the IDE preview, from the
   engine's parse: steps with the keyword in a gutter, quoted values, `{x}` arguments and `<x>`
   placeholders marked, tables and doc strings, tags, the metadata table, `## Step:` sections, and
   each parse diagnostic at its line (UAT029 with its fix for the old forms). Markdig renders the
@@ -203,21 +203,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   With the suite's catalogs it binds the file (unsaved text too) with the gate's own check: each
   step says what it binds to and on which page, the page shows where it changes, a step that binds
   to nothing shows the gate's diagnostic word for word, a callable call unfolds into its body with
-  the values filled in, and each Scenario Outline row can be opened. `Brinell.Bdd` gains
+  the values filled in, and each Scenario Outline row can be opened. `Bruinell.Bdd` gains
   `BddScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
   `BddLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
   `BddBindResult.Scenarios`: every scenario as far as it bound, errors or not.
-- `Brinell.Bdd.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
+- `Bruinell.Bdd.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
   LSP framing (StreamJsonRpc). It serves `initialize` (the suites under the solution), full-text
-  document sync, `brinell/preview` (the file rendered, bound in its suite or parsed only with the
-  reason; a file linked into several suites offers each) and `brinell/buildDone` (reload the
+  document sync, `bruinell/preview` (the file rendered, bound in its suite or parsed only with the
+  reason; a file linked into several suites offers each) and `bruinell/buildDone` (reload the
   catalogs). `--preview <file> --out <page.html>` renders one file as a page without an IDE.
-- `Brinell.Bdd.VisualStudio` (tools/, its own `.slnx`, built with Visual Studio's MSBuild): the Scenario
+- `Bruinell.Bdd.VisualStudio` (tools/, its own `.slnx`, built with Visual Studio's MSBuild): the Scenario
   Preview tool window for Visual Studio 2022 17.10+ and 2026. A WebView2 shows the language
   server's preview of the active feature or step file; it renders again after a pause in typing and
   after each build, keeps the caret and the preview in step both ways, follows the VS theme, and
   offers a suite picker for a linked file. **Ctrl+K, V** opens it. The VSIX carries the server.
-  `BddPreview.HostPage` is the webview's page (the same for VS Code) and `brinell/previewHost`
+  `BddPreview.HostPage` is the webview's page (the same for VS Code) and `bruinell/previewHost`
   serves it. Guide: "Scenario Preview In Visual Studio".
 - UAT reports name their file, lines and steps: `__result.json` is named after the feature file and the
   scenario (two files with a scenario of the same name no longer share one), and always holds the
@@ -226,11 +226,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest record gains `suite`, `file` and `line`. The preview shows the newest run of each
   scenario: step statuses with text alternatives, the scenario's result and duration, a failed
   step's message and screenshot; the server finds it through the manifests and sends
-  `brinell/resultsChanged` when a run writes one.
+  `bruinell/resultsChanged` when a run writes one.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
-  its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
+  its tiers) and AD-021 (`Bruinell.Bdd` under `Bruinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.
-- Hooks on step-definition classes (`Brinell.Bdd`): `[BddBeforeFeature]` (static, once per feature
+- Hooks on step-definition classes (`Bruinell.Bdd`): `[BddBeforeFeature]` (static, once per feature
   file per run), `[BddBeforeScenario(tags)]`, `[BddAfterScenario(tags)]` and `[BddAfterStep(tags)]`,
   after the test base's own overrides and in class and method order.
 - `BddSets.AssertSet(expected, actual, ordered)`: one diff for two lists (missing, extra, the closest
@@ -244,11 +244,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UAT `Using` (AD-019): a scenario file's `Using` metadata row and the config's `## Using` table
   name the namespaces a file sees besides its folder's. A `Using` that names nothing is `UATB011`;
   one no step needs is a `UATB012` warning. Pages have namespaces too (`[UatNamespace]` on the page
-  class or assembly, now in `Brinell.Core.Testing` and allowed on a class): one name in two
+  class or assembly, now in `Bruinell.Core.Testing` and allowed on a class): one name in two
   namespaces is two pages, a step names the one it sees, or `Accounts/Detail` when it sees both.
   A failure report names each step's scope (`[Invoicing]`, `[page Todo List]`);
-  `brinell-data phrases <file>` lists only what that file sees, by namespace, and
-  `brinell-data references <namespace>` lists who uses one. The Todo suites put their backend,
+  `bruinell-data phrases <file>` lists only what that file sees, by namespace, and
+  `bruinell-data references <namespace>` lists who uses one. The Todo suites put their backend,
   device, app-lifecycle and stored-data phrases in namespaces, used by every file through
   `## Using`.
 - UAT folder namespaces: a folder under `Scenarios/` is a namespace, and a scenario sees the
@@ -256,7 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (copy them with `Scenarios\**\*.phrases.md`); `[UatPhraseClass(Namespace = "Invoicing")]` and
   `[assembly: UatNamespace("Invoicing")]` put a C# phrase class in one. A callable's body binds
   where it is written. A step that matches only another folder's phrases is `UATB010`, naming the
-  folder; a phrase of the folder and a wider one for one step are ambiguous. `brinell-data`
+  folder; a phrase of the folder and a wider one for one step are ambiguous. `bruinell-data`
   checks phrase files in subfolders and lists each phrase's namespace.
 - UAT page scope: control verbs and page phrases bind against the current page, which the binder
   follows through the steps before running (the page a step names, a returned page object,
@@ -279,7 +279,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   table. Calls are expanded and checked at bind time; a problem inside one is reported at the
   call with `via` lines to the body. No control flow, three levels deep at most, no shadowing.
   Broken callables (`UATC001`-`UATC008`) fail only their calls. The trace indents a call's steps,
-  `brinell-data validate` checks phrase files and `phrases` lists callables with their types.
+  `bruinell-data validate` checks phrase files and `phrases` lists callables with their types.
 - Typed UAT arguments (AD-016): a phrase's `{name}` takes its type from the method parameter, and
   every step value, Examples cell and table cell is read by `BddValues` in one invariant format -
   dates `12-May-2026` (or `today`, `+2d`), numbers `1,250.75`, enums by name with spaces, lists
@@ -292,7 +292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   phrase, parameters in capitals (`I_open_the_todo_TITLE(string title)`).
 - Broken phrases (`UATA010`-`UATA013`) no longer stop the catalog: the phrase is marked and only a
   step that binds to it fails.
-- `brinell-data validate` checks scenario files too (parse, bind, arguments), `--fix` rewrites
+- `bruinell-data validate` checks scenario files too (parse, bind, arguments), `--fix` rewrites
   values with one right answer, `phrases` lists the phrases with argument types, and `snippet`
   writes a method for a step that binds to nothing.
 - UAT subjects (AD-015): a step that starts with an app or user from the `Apps` table runs on
@@ -307,19 +307,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UAT mixed suites: `Head | mixed` runs only `@mixed` scenarios, and each app binds against its
   own head's pages (`IBddSessionHost.CompositionFor`, `BddCatalogSet`, AD-014). Each app keeps its
   own current page, and the result JSON records the app of every step.
-- `TestAppDefinition`, `ITestApp` and `TestAppSet` (`Brinell.Core.Testing`): the apps of a
+- `TestAppDefinition`, `ITestApp` and `TestAppSet` (`Bruinell.Core.Testing`): the apps of a
   fixture, started on first use, reset between tests, found by name or user, and captured
   together on a failure (`CaptureAll`, `ScreenshotTestAttribute.SetApps`). `IUatAppsHost` gives a
-  UAT fixture its sessions from a set. `MarkdownTables` (`Brinell.Core.Utilities`) reads the
+  UAT fixture its sessions from a set. `MarkdownTables` (`Bruinell.Core.Utilities`) reads the
   tables of `uat.config.md` and `apps.md`.
 - `TestComposition.ForFixture(fixture, options)` and `TestCompositionDiscoveryOptions.FromScans`:
   a composition of named modules, one per head.
 - MAUI: `MauiTestContextOptions.Name` (the app's name in the call log) and
-  `MauiDriverOptions.Placement`, a window placement for one launch; `BRINELL_AUT_PLACE` gains
+  `MauiDriverOptions.Placement`, a window placement for one launch; `BRUINELL_AUT_PLACE` gains
   `left-half` and `right-half`.
 - The Todo sample's mixed projects: `TestSupport.Apps` (`apps.md`, `TodoAppsFixture`,
   `TodoMauiDevice`), `Mixed.UITests` and `Mixed.Uat`: Windows, web and Android apps in one test.
-- `[UatGiven]`, `[UatWhen]` and `[UatThen]` (`Brinell.Core.Testing`): the one way to declare a
+- `[UatGiven]`, `[UatWhen]` and `[UatThen]` (`Bruinell.Core.Testing`): the one way to declare a
   UAT step, on control methods, fixture methods and phrase-class methods alike (AD-011).
 - Generated Html and Blazor controls: every Html and Blazor control is a `.tpl.cs` template and a
   generated `.gen.cs`, as on MAUI (`tools/Scripts/CreateHtml.Bat`). The Html capability bases
@@ -336,13 +336,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every head it is tagged for and is skipped on the others.
 - UAT with several apps in one scenario: an `Apps` table in `uat.config.md`, `IBddSessionHost`
   on the fixture, and the built-in step `{app} uses the app`. A failure names the app.
-- The Todo sample's UAT on the web head (`Brinell.Samples.Todo.Web.Uat`): the MAUI suite's
+- The Todo sample's UAT on the web head (`Bruinell.Samples.Todo.Web.Uat`): the MAUI suite's
   scenario files, run through the web page objects, and a two-device scenario (Alice and Bob on
   one backend). The web detail page has a Back button, as the MAUI navigation bar does.
-- Html on the call model (`.my/html/plan.md`): `Brinell.Html` owns its interfaces
+- Html on the call model (`.my/html/plan.md`): `Bruinell.Html` owns its interfaces
   (`IHtmlElement` with `InstanceKey`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`,
   `IHtmlTestContext`) and runs every control, page, container and row member as one call
-  (`Brinell.Core.Calls`), with near-miss warnings and `BRINELL_CALL_LOG` (AD-009, AD-010).
+  (`Bruinell.Core.Calls`), with near-miss warnings and `BRUINELL_CALL_LOG` (AD-009, AD-010).
 - Html exceptions: `StaleElementException`, `ElementNotReadyException`,
   `ScopeNotReadyException`, `AppUnavailableException`, `RouteUnavailableException`. A closed
   browser is `AppUnavailableException` and ends the call at once.
@@ -354,12 +354,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ControlBase.ActAndConfirm`: Html actions that change state confirm their effect and are
   never repeated. `SetText`, `TypeText`, `Append`, `Clear`, `SetChecked`, `Toggle`,
   `SelectByValue`, `SelectByText`, `SelectByIndex`, `SetValue`, `Focus` and `Blur` use it.
-- `Brinell.Html.Testing.WebAppHost`: starts a web app on a free port with explicit launch
+- `Bruinell.Html.Testing.WebAppHost`: starts a web app on a free port with explicit launch
   settings.
-- The Todo sample's web head (`samples/Todo/src/Brinell.Samples.Todo.Web`) and its UI tests;
+- The Todo sample's web head (`samples/Todo/src/Bruinell.Samples.Todo.Web`) and its UI tests;
   `X-Todo-Client` (`TODO_CLIENT_ID`) and `Todo.Api`'s request log.
 - `html-control` and `html-ui-test` skills.
-- `Brinell.Maui.CommunityToolkit` control objects for CommunityToolkit.Maui: `Expander`,
+- `Bruinell.Maui.CommunityToolkit` control objects for CommunityToolkit.Maui: `Expander`,
   `AvatarView`, `RatingView`, `DrawingView`, `Popup`, `StateContainer` and `MediaElement`, each
   with a sample page section and Windows UI tests. Routes and platform gaps are in
   `docs/controls/community-toolkit.md`.
@@ -387,7 +387,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `timeoutMs` on `Item(int)`, `FindItem` and `ItemWhere`.
 - Near-miss warnings: a call that passed after three or more replacements, or after using more
   than half its budget, logs `LogResult.Warning`. The thresholds are settings:
-  `MauiTestContextOptions.NearMiss` (`NearMissSettings`), read through `IMauiTestContext.NearMiss`. `BRINELL_CALL_LOG` (a folder) makes
+  `MauiTestContextOptions.NearMiss` (`NearMissSettings`), read through `IMauiTestContext.NearMiss`. `BRUINELL_CALL_LOG` (a folder) makes
   `MauiTestContext` write every call to CSV.
 - `tools/Scripts/repeat-run.ps1`: runs a test project N times and summarizes failures by test.
 - AD-009 (app bugs stay failures) and AD-010 (MAUI ahead of Core, on purpose).
@@ -398,8 +398,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AvatarInitials` and `AvatarImage` part controls; `ContentDialog` gains `WaitTitle`,
   `AssertTitle`, `AssertButtonTexts` (sequence), `...HasItem`, `...Count`, `WaitMessage`,
   `AssertMessage`.
-- Initial release of Brinell UI testing framework
-- `Brinell.Core` - Core abstractions and interfaces
+- Initial release of Bruinell UI testing framework
+- `Bruinell.Core` - Core abstractions and interfaces
   - `IDriverAdapter` and `IElementAdapter` for platform abstraction
   - `ITestContext` with platform identification
   - Control interfaces: `IButton`, `ICheckBox`, `ITextBox`, etc.
@@ -408,23 +408,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Screenshot service abstractions
   - CSV test logging support
   
-- `Brinell.Wpf` - WPF application automation
+- `Bruinell.Wpf` - WPF application automation
   - FlaUI-based driver and element adapters
   - Control implementations: Button, CheckBox, ComboBox, ListBox, etc.
   - Page Object base class with control discovery
   - Visual validation support
   
-- `Brinell.Html` - Web application automation
+- `Bruinell.Html` - Web application automation
   - Selenium WebDriver-based implementation
   - HTML control wrappers
   - Support for Chrome, Firefox, Edge browsers
   
-- `Brinell.Maui` - Mobile/MAUI automation
+- `Bruinell.Maui` - Mobile/MAUI automation
   - Appium-based driver implementation
   - MAUI control wrappers
   - Android and iOS support
   
-- `Brinell.Mocking` - API mocking
+- `Bruinell.Mocking` - API mocking
   - WireMock.Net integration
   - Fluent API stub builder
   - Request/response recording
@@ -450,7 +450,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   followed by one lookup that asks for the resource id and the content description together;
   the settle after a hit is cut to the call's budget too. A test whose call crosses a long page
   passes a longer `timeoutMs` (the gallery's `ScrollTests`, 10 s).
-- A lost Appium session is told by its type: `AppiumErrors.Live` (in `Brinell.Appium`) reads the
+- A lost Appium session is told by its type: `AppiumErrors.Live` (in `Bruinell.Appium`) reads the
   server's messages once and raises `AppUnavailableException` for an ended or stuck session
   (a command not answered in time, which MAUI did not map before) and `StaleElementException` for
   a replaced element. MAUI's Appium element and driver (find, back, the root check, scripts,
@@ -461,10 +461,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bounded to 1 s (not yet run on a simulator). A suite's own `AdditionalCapabilities` override
   them; the MAUI and Todo fixtures no longer set the idle wait themselves.
 - **Breaking for the WPF, WinForms and Stride stacks' users** (AD-029): the first model's
-  interfaces and waits moved to a new package, `Brinell.Core.Legacy`, in the same namespaces:
+  interfaces and waits moved to a new package, `Bruinell.Core.Legacy`, in the same namespaces:
   `IDriver`, `IElement`, `IElementScope`, `IPageObject`, `IContainerControl`, `IContainerObject`,
   `IPagedScope`, `IRangePatternElement`, `ITestContext<T>`, `PageReadinessSnapshot`,
-  `Brinell.Core.Abstractions.Controls.ControlObjectBase`, the `IElement` geometry helpers
+  `Bruinell.Core.Abstractions.Controls.ControlObjectBase`, the `IElement` geometry helpers
   (`LegacyElementGeometryExtensions`) and `WaitHelper.WaitFor*` (now `LegacyWaitHelper.WaitFor*`).
   Core keeps the non-generic `ITestContext`, `BusySignalPolicy`, `WaitHelper.Pause` and
   `ElementGeometryExtensions.CenterOf`, and adds `Settle.Until` for a wait below a call.
@@ -474,7 +474,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Playwright element its page, an Appium MAUI element its device); one that does not goes to the
   only recording there is, and to none while several record.
 - A control's calls run in Core, once for every stack (AD-010 amended): `ControlCalls<TElement>`
-  in `Brinell.Core.Calls`, with Html's `ControlBase` and MAUI's and native Android's `ViewBase` as
+  in `Bruinell.Core.Calls`, with Html's `ControlBase` and MAUI's and native Android's `ViewBase` as
   its `IControlHost`. The `Run*` members keep their names and signatures; the three bases lost
   about 860 lines between them. Html and native Android now count a replaced element as MAUI did
   (an observation after the first attempt carries the element's identity), so the near-miss rule's
@@ -498,58 +498,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The poll's pause between attempts (`WaitHelper.Pause`) blocks with `Thread.Sleep` instead of
   spinning, so parallel collections no longer keep a core busy each between attempts.
 - Gesture bridge targets may share an `AutomationId` (`.docs/contracts/bridge.md`).
-  `BrinellUiaBridge.Register` adds instead of replacing; the host withdraws an element's own
+  `BruinellUiaBridge.Register` adds instead of replacing; the host withdraws an element's own
   target before re-publishing it. A new meta verb `GetBounds` (4) is answered for every target,
-  and `IBrinellVerbTarget.TryGetScreenBounds` is required. The FlaUI client picks the target
+  and `IBruinellVerbTarget.TryGetScreenBounds` is required. The FlaUI client picks the target
   nearest the real element when several match.
-- Presenter runs a suite in a runner process of its own (AD-025): `Brinell.Uat.dll` has an entry
+- Presenter runs a suite in a runner process of its own (AD-025): `Bruinell.Uat.dll` has an entry
   point and is started in the suite's output with the suite's `runtimeconfig.json` and `deps.json`,
   so a scenario runs from Presenter as under `dotnet test`. Presenter drives it a step at a time
-  over a named pipe (`Brinell.Bdd.Runner`); the runner paces and records. The process ends with
+  over a named pipe (`Bruinell.Bdd.Runner`); the runner paces and records. The process ends with
   the run: Presenter no longer grows with every run of a suite with a mock server or a database,
   and the suite can be rebuilt while Presenter is open. `AssemblyFile.Record` and `PathOf` are gone.
-- **Breaking: `Uat` names are only for `Brinell.Uat`.** Bdd is the main and Uat a specialization
-  of it (AD-021), so everything outside `Brinell.Uat` takes `Bdd` names. No old names are kept.
-  - The 111 `Uat*` types of `Brinell.Bdd` and `Brinell.Core` are `Bdd*`: `BddBinder`,
+- **Breaking: `Uat` names are only for `Bruinell.Uat`.** Bdd is the main and Uat a specialization
+  of it (AD-021), so everything outside `Bruinell.Uat` takes `Bdd` names. No old names are kept.
+  - The 111 `Uat*` types of `Bruinell.Bdd` and `Bruinell.Core` are `Bdd*`: `BddBinder`,
     `BddCatalogSet`, `BddMarkdownParser`, `IBddClock`, `BddEffectiveStepKeyword`,
     `[BddIgnore]`, `[BddArgumentType]` and the rest. So are the Presenter's types and the Todo
     sample's orderer.
   - The run address trait is `BddScenario=<file>#<slug>`.
-  - The tool projects are `Brinell.Bdd.Workspace`, `Brinell.Bdd.Preview`,
-    `Brinell.Bdd.LanguageServer`, `Brinell.Bdd.VisualStudio` (and `.CodeLens`) and
-    `Brinell.Bdd.VsCode`, and their types are `Bdd*`. The test project
-    `Brinell.Presenter.Uat.Tests` is `Brinell.Presenter.Bdd.Tests`.
-  - The IDE extensions are "Brinell BDD", with new identities, so uninstall the old ones: the
-    BDD Explorer, **Toggle BDD Step Breakpoint**, `brinellBdd.*` settings, the MCP server
-    `brinell-bdd`, and `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`.
+  - The tool projects are `Bruinell.Bdd.Workspace`, `Bruinell.Bdd.Preview`,
+    `Bruinell.Bdd.LanguageServer`, `Bruinell.Bdd.VisualStudio` (and `.CodeLens`) and
+    `Bruinell.Bdd.VsCode`, and their types are `Bdd*`. The test project
+    `Bruinell.Presenter.Uat.Tests` is `Bruinell.Presenter.Bdd.Tests`.
+  - The IDE extensions are "Bruinell BDD", with new identities, so uninstall the old ones: the
+    BDD Explorer, **Toggle BDD Step Breakpoint**, `bruinellBdd.*` settings, the MCP server
+    `bruinell-bdd`, and `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json`.
   - `UatPlatformsAttribute` keeps its name for now.
-- The feature-file engine is its own package, `Brinell.Bdd`: parser and models, values, argument
+- The feature-file engine is its own package, `Bruinell.Bdd`: parser and models, values, argument
   types, tables, the catalog and binder, callable steps, namespaces, config, execution and runner,
   the step-definition runtime, `[BddStepDefinitions]`, `BddStepDefinitionsBase`, `[BddIgnore]`,
-  `IBddClock` and `IBddSessionHost`, in the namespace `Brinell.Bdd`. `Brinell.Uat` depends on it and
+  `IBddClock` and `IBddSessionHost`, in the namespace `Bruinell.Bdd`. `Bruinell.Uat` depends on it and
   keeps pages, controls, page scope (behind `IStepScopeModel` / `IStepScope` on the catalog's
-  `Scope`), apps, name inference and the UAT test base. A project that uses `Brinell.Uat` types adds
-  `using Brinell.Bdd;` (or `<Using Include="Brinell.Bdd" />`). Type names are unchanged.
+  `Scope`), apps, name inference and the UAT test base. A project that uses `Bruinell.Uat` types adds
+  `using Bruinell.Bdd;` (or `<Using Include="Bruinell.Bdd" />`). Type names are unchanged.
 - The folder of feature and step files is `Features/`, not `Scenarios/`: the default of
   `BddScenarioSource`, `UatScenarioTestBase`, `UatSpecFormatTestBase` and the tools. The files stay in
-  the projects that own them. `brinell-data validate` reports an old `Scenarios/` folder beside the
+  the projects that own them. `bruinell-data validate` reports an old `Scenarios/` folder beside the
   config as `UAT029`, and `--fix` renames it.
 - Feature and step files use the BDD words (D5 of the Bdd plan), with no period where both are
   read: `*.uat.md` is `*.feature.md` with `# Feature:`, `*.phrases.md` is `*.steps.md` with
   `# Steps:`, and `## Phrase:` / `## Phrase for each row:` are `## Step:` / `## Step for each row:`.
-  An old heading or file name is `UAT029`; `brinell-data validate --fix` renames the file and
+  An old heading or file name is `UAT029`; `bruinell-data validate --fix` renames the file and
   rewrites its headings. A service suite's config is `bdd.config.md`; `uat.config.md` stays for
   UI suites, and the tools read either.
 - Step attributes use the BDD words (D3 of the Bdd plan), with no aliases: `[UatGiven]`/`[UatWhen]`/
   `[UatThen]` are `[BddGiven]`/`[BddWhen]`/`[BddThen]`, `UatPhraseAttribute` is `BddStepAttribute`,
   `[UatPhraseClass]` is `[BddStepDefinitions]`, `UatPhraseClassBase` is `BddStepDefinitionsBase` and
-  `[UatNamespace]` is `[BddNamespace]`, all still in `Brinell.Core.Testing`. `[UatNavigatesTo]` keeps
+  `[UatNamespace]` is `[BddNamespace]`, all still in `Bruinell.Core.Testing`. `[UatNavigatesTo]` keeps
   its name. The guide `uat-phrases-and-flows.md` is now `uat-step-definitions.md`, beside a new
   `bdd-glossary.md`.
 - `BddTableBinding` reads cells with `BddValues`: table dates are written `12-May-2026`, not
   `2026-05-12`, and failure tables print values that way. A phrase method with a `CommandId` is a
   broken phrase instead of a catalog exception; `UatDiscovery` reports it as a warning.
-- `UatPhraseAttribute` is abstract, lives in `Brinell.Core.Testing`, has a non-null `Keyword`
+- `UatPhraseAttribute` is abstract, lives in `Bruinell.Core.Testing`, has a non-null `Keyword`
   and carries `CommandId`, `Literal` and `HasLiteral`. A phrase method that sets any of those
   three fails discovery with an error naming the method (`UATD004` in `UatDiscovery`).
   `UatCommandBinding.Keyword` and `BddPhraseMethodPhrase.Keyword` are non-null.
@@ -569,21 +569,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `Uncheck` do nothing when the box is already in that state, as on MAUI.
 - The Html and Blazor UAT fixtures start the Blazor sample with `WebAppHost`; `HtmlSampleHost`
   and `BlazorSampleHost` are gone.
-- `TodoDataPhrases` moved to `Brinell.Samples.Todo.TestSupport.Uat`, over `ITodoArrangement`, so
+- `TodoDataPhrases` moved to `Bruinell.Samples.Todo.TestSupport.Uat`, over `ITodoArrangement`, so
   both heads' UAT suites share it. The Todo web fixture runs devices (`TodoWebDevice`) on one
   fake backend, and can restart and change test set.
-- **Breaking:** the calls layer, its exceptions and scope readiness moved from `Brinell.Maui`
-  and `Brinell.Html` into Core, one copy for both stacks (AD-010,
-  `.my/core/review-what-can-move-now.md`). `Brinell.Maui.Calls`, `Brinell.Html.Calls`,
-  `Brinell.Maui.Exceptions`, `Brinell.Html.Exceptions` and `Brinell.Maui.Scopes` are gone:
-  - `Brinell.Core.Calls`: `Confirmation<T>`, `ConfirmationResult` (was
-    `Brinell.Maui.Controls.Base`), `CallBudget`, `NearMissSettings` (was
-    `Brinell.Maui.Context` / `Brinell.Html.Context`); the internal call types.
-  - `Brinell.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException`,
+- **Breaking:** the calls layer, its exceptions and scope readiness moved from `Bruinell.Maui`
+  and `Bruinell.Html` into Core, one copy for both stacks (AD-010,
+  `.my/core/review-what-can-move-now.md`). `Bruinell.Maui.Calls`, `Bruinell.Html.Calls`,
+  `Bruinell.Maui.Exceptions`, `Bruinell.Html.Exceptions` and `Bruinell.Maui.Scopes` are gone:
+  - `Bruinell.Core.Calls`: `Confirmation<T>`, `ConfirmationResult` (was
+    `Bruinell.Maui.Controls.Base`), `CallBudget`, `NearMissSettings` (was
+    `Bruinell.Maui.Context` / `Bruinell.Html.Context`); the internal call types.
+  - `Bruinell.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException`,
     `NotReadyReason`, `ScopeNotReadyException`, `AppUnavailableException`,
     `RouteUnavailableException`. One type across stacks: a catch works for either.
-  - `Brinell.Core.Scopes`: `ScopeReadiness` (with `RootReacquired`, on both stacks now),
-    `ScopeReadinessState`. Html's `BusySignal` stays in `Brinell.Html.Scopes`.
+  - `Bruinell.Core.Scopes`: `ScopeReadiness` (with `RootReacquired`, on both stacks now),
+    `ScopeReadinessState`. Html's `BusySignal` stays in `Bruinell.Html.Scopes`.
 - The merged calls layer is the union of both copies. MAUI gains the confirmation's own
   budget context and the cut-off rule for a driver timeout after the deadline; Html gains
   `ItemChanged`, the scroll-to-find throttle and the poll's `stop`. `ControlCall` takes the
@@ -594,10 +594,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or replaced".
 - `CommunityToolkit.Maui` 9.0.0 -> 15.0.1 and `Microsoft.Maui.Controls` -> 10.0.90 (required by the
   toolkit). Added `CommunityToolkit.Maui.MediaElement` 10.0.0.
-- `Brinell.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally
-  versioned, and is in `srcnew/Brinell.sln`. `CreateMaui.Bat` generates its controls too.
-- `MediaElement<TScope>` moved from `Brinell.Maui.Controls.Media` to
-  `Brinell.Maui.CommunityToolkit.Controls.Media`.
+- `Bruinell.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally
+  versioned, and is in `srcnew/Bruinell.sln`. `CreateMaui.Bat` generates its controls too.
+- `MediaElement<TScope>` moved from `Bruinell.Maui.Controls.Media` to
+  `Bruinell.Maui.CommunityToolkit.Controls.Media`.
 - `MediaElement` forwards to its parts instead of polling around them: `SetPlaying` returns
   the media element rather than the page; `WaitProgressPasses` is replaced by
   `WaitProgressGreaterThan`, and `WaitDurationKnown` by `WaitOpened`.
@@ -671,7 +671,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `UatStepAttribute`, the writable `[UatPhrase(keyword, phrase)]` and the `[UatPhrase(phrase)]`
   form without a keyword. Use `[UatGiven]`, `[UatWhen]` or `[UatThen]`.
-- **Breaking:** Html's async members: `Brinell.Html.Interfaces.Async` (`IAsyncHtmlElement`,
+- **Breaking:** Html's async members: `Bruinell.Html.Interfaces.Async` (`IAsyncHtmlElement`,
   `IHtmlAsyncControlObject` and the capability interfaces), `HtmlAsyncExtensions`,
   `ControlBase.RunWithElementAsync`, `HtmlPageObjectBase.WaitLoadedAsync` and the other `*Async`
   page, container and context wrappers. They wrapped the synchronous calls and added nothing;
@@ -695,7 +695,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Two transitive packages pinned past their security advisories, so the solution restores again:
   `System.Security.Cryptography.Pkcs` 9.0.21 in the Stride sample (from Stride's toolkit,
-  GHSA-2fmv-rv2c-59x7) and `MessagePack` 2.5.303 in `Brinell.Cli` (from StreamJsonRpc,
+  GHSA-2fmv-rv2c-59x7) and `MessagePack` 2.5.303 in `Bruinell.Cli` (from StreamJsonRpc,
   GHSA-qhrr-8q5h-9q3h). With warnings as errors the advisories failed the whole solution's restore,
   so a solution build compiled nothing.
 - UAT: `BeforeFile` runs once per file per fixture. The file last entered was one value per closed
@@ -714,7 +714,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Html: a keyed row was found again by position, so after a re-render it read another item's row
   and answered for the wrong item. It is found by its `data-item-key` now.
 - Html: `CollectionObjectBase`'s "no row matches" failure names what the wait last saw.
-- `Brinell.Maui.UITests`' `NavigationDemoPage` looked up by name through an XPath locator the
+- `Bruinell.Maui.UITests`' `NavigationDemoPage` looked up by name through an XPath locator the
   FlaUI driver does not support, so its "unreachable by name" probes never looked.
 - `AndroidRecorder` stopped every `screenrecord` on the device (`pkill screenrecord`) and failed when
   one belonged to another user; it stops only its own now. It also pulled the video into the

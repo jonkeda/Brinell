@@ -5,7 +5,7 @@ render, the stamp per object from a schema snapshot); see [spike-results.md](spi
 legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
 step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Next: the
 owner measures the legacy system (1.7); step 2 after. Each step ends green:
-`dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
+`dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
 ## Fixed points
@@ -15,13 +15,13 @@ when Todo is touched, the step's own tests, and the suites it touches on every h
 | Target framework, runner | `net10.0`; xUnit 2.9.3 |
 | EF Core | `Microsoft.EntityFrameworkCore` 10.0.12 (root `Directory.Packages.props`); add `Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite` at 10.0.12 |
 | SQLite | `Microsoft.Data.Sqlite` 10.0.12 |
-| bUnit head | `srcnew/Brinell.Html.Bunit`: `BunitTestContext(BunitTestContextOptions)` with `RootComponent`, `ConfigureServices`, `FallbackServices`, `User`, `Roles`, `JsInterop`; example `testsnew/Brinell.Blazor.UITests/TestBase/BlazorSampleBunit.cs` |
-| Head switch | `Brinell.Core.Testing.WebHeads`: `BRINELL_HEAD=bunit`, else the browser |
-| Replay switch | `BRINELL_SQL_REPLAY` = `Off` (default) \| `Record` \| `Replay` |
-| SQL Server | Local instance; `BRINELL_SQL_CONNECTION`, default `Server=.;Database=BrinellSqlSpike;Integrated Security=True;TrustServerCertificate=True`; never LocalDB |
+| bUnit head | `srcnew/Bruinell.Html.Bunit`: `BunitTestContext(BunitTestContextOptions)` with `RootComponent`, `ConfigureServices`, `FallbackServices`, `User`, `Roles`, `JsInterop`; example `testsnew/Bruinell.Blazor.UITests/TestBase/BlazorSampleBunit.cs` |
+| Head switch | `Bruinell.Core.Testing.WebHeads`: `BRUINELL_HEAD=bunit`, else the browser |
+| Replay switch | `BRUINELL_SQL_REPLAY` = `Off` (default) \| `Record` \| `Replay` |
+| SQL Server | Local instance; `BRUINELL_SQL_CONNECTION`, default `Server=.;Database=BruinellSqlSpike;Integrated Security=True;TrustServerCertificate=True`; never LocalDB |
 | Todo.Web | Blazor Interactive Server; composition `AddTodoServices(settings)` plus `WebNavigator`, `WebDialogs`; root `Components/Routes.razor`; data `TodoDatabase` (returns `SqliteConnection`), `SqliteTodoRepository`, `SqliteUserRepository` |
-| Todo.Web suite | `samples/Todo/tests/Brinell.Samples.Todo.Web.UITests`: `TodoWebFixture` (seeded SQLite file, `MockApiServer` for `Todo.Api`, a pinned clock), host as its own process through `WebAppHost`; `Tests/JourneyTests.cs` 10 tests; `Live/` skipped without the live API |
-| Not changed in step 0 | `srcnew/Brinell.Mocking`, every package's public API; the spike's replay code lives in the spike's test project |
+| Todo.Web suite | `samples/Todo/tests/Bruinell.Samples.Todo.Web.UITests`: `TodoWebFixture` (seeded SQLite file, `MockApiServer` for `Todo.Api`, a pinned clock), host as its own process through `WebAppHost`; `Tests/JourneyTests.cs` 10 tests; `Live/` skipped without the live API |
+| Not changed in step 0 | `srcnew/Bruinell.Mocking`, every package's public API; the spike's replay code lives in the spike's test project |
 
 ## Step 0: the spike
 
@@ -33,7 +33,7 @@ thrown away by step 2; the app and the bUnit head of Todo.Web stay.
 
 | Item | Value |
 | --- | --- |
-| Project | `samples/Brinell.Samples.Sql.App` (Blazor Interactive Server, prerendering on) |
+| Project | `samples/Bruinell.Samples.Sql.App` (Blazor Interactive Server, prerendering on) |
 | Data | `SpikeDbContext` on `UseSqlServer(connection, o => o.UseNetTopologySuite())`; migrations in the project; database created by `Database.MigrateAsync()` at start |
 | Entity `Place` | `Id` `Guid` (`Guid.NewGuid()` in the app, not the database), `Name` `nvarchar(100)` with a unique index, `Kind` `nvarchar(30)`, `Location` `geography` point, `Population` `decimal(12,2)`, `CreatedAt` `datetimeoffset` from `TimeProvider.System` |
 | Seed | 5 places, written by the fixture before a run, not by the app |
@@ -46,17 +46,17 @@ thrown away by step 2; the app and the bUnit head of Todo.Web stay.
 
 | Item | Value |
 | --- | --- |
-| Project | `testsnew/Brinell.Sql.Spike.Tests` |
+| Project | `testsnew/Bruinell.Sql.Spike.Tests` |
 | Page objects | `PlacesPage`, `NewPlacePage`, `PlacePage` over `IHtmlTestContext` |
 | Fixture | `SpikeFixture`: seeds the database, makes the context by head: bUnit (`BunitTestContext` over the app's `Routes`, the app's services registered in `ConfigureServices`) or browser (`WebAppHost` over the app's `.csproj`, a host per test in replay) |
 | Scenarios | `ListShowsSeededPlaces`, `FilterByKind`, `AddPlaceShowsIt` (insert, then the detail page by the new `Id`), `AddDuplicateNameIsRefused` (the `SqlException` path), `DistanceIsShown` (spatial) |
-| Spike replay | `Spike/ReplayInterceptor.cs` (suppresses the open, answers reader, non-query and scalar with `SuppressWithResult`), `Spike/SqlErrors.cs` (`SqlException` by reflection), `Spike/SpatialReplay.cs` (the geometry mapping read through `DbDataReader`), `Spike/Recording.cs` (JSON per test and head, `Recordings/<head>/<test>.json`), `Spike/ReplaySession.cs` (occurrence keys, writes as barriers, values bound from two recordings), `Spike/ReplayDataReader.cs`; `BRINELL_SQL_REPLAY=Record` twice, then `Replay` |
+| Spike replay | `Spike/ReplayInterceptor.cs` (suppresses the open, answers reader, non-query and scalar with `SuppressWithResult`), `Spike/SqlErrors.cs` (`SqlException` by reflection), `Spike/SpatialReplay.cs` (the geometry mapping read through `DbDataReader`), `Spike/Recording.cs` (JSON per test and head, `Recordings/<head>/<test>.json`), `Spike/ReplaySession.cs` (occurrence keys, writes as barriers, values bound from two recordings), `Spike/ReplayDataReader.cs`; `BRUINELL_SQL_REPLAY=Record` twice, then `Replay` |
 | Command log | `Spike/CommandLog.cs`: every command's text, parameters, start and duration, written to `TestResults/sql-log/<head>/<test>.jsonl`, on in every mode |
 
 ### 0.3 Todo.Web's bUnit head
 
 The database's share only means something on the head replay would run on, and Todo.Web's host is
-its own process. So Todo.Web.UITests gets a bUnit head as `Brinell.Blazor.UITests` has one.
+its own process. So Todo.Web.UITests gets a bUnit head as `Bruinell.Blazor.UITests` has one.
 
 - `TodoWebFixture` makes the device's context by `HtmlHeads`: on bUnit, a `BunitTestContext` over
   Todo.Web's `Routes` with `AddTodoServices(settings)`, `WebNavigator` and `WebDialogs` registered,
@@ -70,7 +70,7 @@ its own process. So Todo.Web.UITests gets a bUnit head as `Brinell.Blazor.UITest
 
 | Item | Value |
 | --- | --- |
-| Database time, Todo | `Brinell.Samples.Todo.Web.UITests/Spike/DatabaseClock.cs` (`TimedTodoRepository`, `TimedUserRepository` over the real repositories in the bUnit head's composition), `Spike/DatabaseShare.cs` (`BRINELL_DB_SHARE` folder, `[MeasureDatabaseShare]`, run with `-- xUnit.ParallelizeTestCollections=false`); plus the fixture's seed |
+| Database time, Todo | `Bruinell.Samples.Todo.Web.UITests/Spike/DatabaseClock.cs` (`TimedTodoRepository`, `TimedUserRepository` over the real repositories in the bUnit head's composition), `Spike/DatabaseShare.cs` (`BRUINELL_DB_SHARE` folder, `[MeasureDatabaseShare]`, run with `-- xUnit.ParallelizeTestCollections=false`); plus the fixture's seed |
 | Database time, spike app | The command log's durations, plus the seed |
 | Test time | A `Stopwatch` per test in the fixture, from the test's start to its end |
 | Runs | Each suite on the bUnit head 3 times; the median per test |
@@ -103,7 +103,7 @@ didn't touch counts as a confusing miss.
 | # | Check | Passes when | If it fails |
 | --- | --- | --- | --- |
 | P1 | Database share | Median share on the bUnit head at least 15% in Todo.Web or the spike app | Only the log is built: steps 1, 5 and 8; replay stays on the shelf |
-| P2 | EF on SQL Server | All five scenarios replay on bUnit with `BRINELL_SQL_CONNECTION` pointing at a server that doesn't exist; the duplicate name shows "That name is taken"; the distance shows | The EF adapter's design changes before step 2 |
+| P2 | EF on SQL Server | All five scenarios replay on bUnit with `BRUINELL_SQL_CONNECTION` pointing at a server that doesn't exist; the duplicate name shows "That name is taken"; the distance shows | The EF adapter's design changes before step 2 |
 | P3a | Determinism, bUnit | 20 replays in a row of the five scenarios: 0 misses | The matcher's design changes before step 2 |
 | P3b | Determinism, browser | 20 replays with a host per test: at most 1 miss | Step 7 is dropped |
 | P4 | Churn | Every change gives its expected outcome; no confusing miss | The stamp, keys or summary change before step 2 |
@@ -127,12 +127,12 @@ safe to keep and share.
 
 | What | Value |
 | --- | --- |
-| Test scope | `Brinell.Core.Testing.TestScope` (`AsyncLocal`): `Test`, `Scenario`, `Step`; set by the runners |
-| Timings | `Brinell.Core.Logging.Timing`, `BRINELL_TIMINGS` folder, `timings-<run>.csv`: `Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;Attempts;Result` |
-| Touch map | `tools/Brinell.Cli/Selection/TouchMap.cs`, `touch-map.json` beside a suite; the `brinell tests` commands |
-| Spike code reused | `Statements` (normalize, key, objects) and `SchemaSnapshot` from `testsnew/Brinell.Sql.Spike.Tests/Spike/`; its `CommandLog` is replaced |
-| Log variable | `BRINELL_SQL_LOG`: a folder; unset, nothing is logged and nothing is wrapped |
-| Legacy reach | The ADO.NET part targets `netstandard2.0`, so a .NET Framework app can load it; no dependency on `Brinell.Core` there |
+| Test scope | `Bruinell.Core.Testing.TestScope` (`AsyncLocal`): `Test`, `Scenario`, `Step`; set by the runners |
+| Timings | `Bruinell.Core.Logging.Timing`, `BRUINELL_TIMINGS` folder, `timings-<run>.csv`: `Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;Attempts;Result` |
+| Touch map | `tools/Bruinell.Cli/Selection/TouchMap.cs`, `touch-map.json` beside a suite; the `bruinell tests` commands |
+| Spike code reused | `Statements` (normalize, key, objects) and `SchemaSnapshot` from `testsnew/Bruinell.Sql.Spike.Tests/Spike/`; its `CommandLog` is replaced |
+| Log variable | `BRUINELL_SQL_LOG`: a folder; unset, nothing is logged and nothing is wrapped |
+| Legacy reach | The ADO.NET part targets `netstandard2.0`, so a .NET Framework app can load it; no dependency on `Bruinell.Core` there |
 
 ### 1.2 Three sources, one log
 
@@ -144,15 +144,15 @@ safe to keep and share.
 
 Extended Events is the legacy system's source: nothing in the app changes. A session on the test
 database records `rpc_completed` and `sql_batch_completed` with their duration, row count, object
-name and text; `brinell sql capture` starts, stops and reads it. Commands are given to tests by
+name and text; `bruinell sql capture` starts, stops and reads it. Commands are given to tests by
 time: a test owns the commands that ended inside its span in the timings. That needs the measured
 run to be serial (`-- xUnit.ParallelizeTestCollections=false`) and the two clocks to agree: at
-start the CLI sends a marker query (`SELECT 'brinell-marker-<guid>'`) and reads its server
+start the CLI sends a marker query (`SELECT 'bruinell-marker-<guid>'`) and reads its server
 timestamp, which gives the offset.
 
 ### 1.3 The log format
 
-One JSON line per command in `<BRINELL_SQL_LOG>/sql-<run>-<pid>.jsonl` (in-process) or
+One JSON line per command in `<BRUINELL_SQL_LOG>/sql-<run>-<pid>.jsonl` (in-process) or
 `sql-xe-<run>.jsonl` (read from Extended Events):
 
 | Field | What |
@@ -169,24 +169,24 @@ One JSON line per command in `<BRINELL_SQL_LOG>/sql-<run>-<pid>.jsonl` (in-proce
 
 | Project | Targets | Holds |
 | --- | --- | --- |
-| `srcnew/Brinell.Mocking.Data` | `netstandard2.0;net8.0;net9.0;net10.0` | `SqlLog` (writer, thread-safe), `SqlLogEntry`, `SqlLogScope` (`Func<string?>` for the test, set by the suite), `LoggingDbConnection`, `LoggingDbCommand`, `LoggingDbDataReader`, `LoggingDbProviderFactory`, `Statements`, `SchemaSnapshot` (over any `DbConnection`), `ExtendedEvents` (the session's SQL; reading through `sys.fn_xe_file_target_read_file`) |
-| `srcnew/Brinell.Mocking.Data.EntityFrameworkCore` | `net10.0` (EF Core 10) | `SqlLogInterceptor` (command and connection), `UseSqlLog(this DbContextOptionsBuilder, SqlLog)` |
-| `testsnew/Brinell.Mocking.Data.Tests` | `net10.0` | Unit tests; wrapper tests on SQLite and on the local SQL Server; the XE tests in category `SqlServer`, skipped without one |
-| `tools/Brinell.Cli/Sql/` | as the CLI | `brinell sql schema`, `brinell sql capture start`, `stop`, `read`, `brinell sql report` |
+| `srcnew/Bruinell.Mocking.Data` | `netstandard2.0;net8.0;net9.0;net10.0` | `SqlLog` (writer, thread-safe), `SqlLogEntry`, `SqlLogScope` (`Func<string?>` for the test, set by the suite), `LoggingDbConnection`, `LoggingDbCommand`, `LoggingDbDataReader`, `LoggingDbProviderFactory`, `Statements`, `SchemaSnapshot` (over any `DbConnection`), `ExtendedEvents` (the session's SQL; reading through `sys.fn_xe_file_target_read_file`) |
+| `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore` | `net10.0` (EF Core 10) | `SqlLogInterceptor` (command and connection), `UseSqlLog(this DbContextOptionsBuilder, SqlLog)` |
+| `testsnew/Bruinell.Mocking.Data.Tests` | `net10.0` | Unit tests; wrapper tests on SQLite and on the local SQL Server; the XE tests in category `SqlServer`, skipped without one |
+| `tools/Bruinell.Cli/Sql/` | as the CLI | `bruinell sql schema`, `bruinell sql capture start`, `stop`, `read`, `bruinell sql report` |
 
-`SqlLogScope` is how the log learns the test without referencing `Brinell.Core`: a suite sets
-`SqlLogScope.Current = () => TestScope.Current.Test`; the Brinell fixtures that host an app
+`SqlLogScope` is how the log learns the test without referencing `Bruinell.Core`: a suite sets
+`SqlLogScope.Current = () => TestScope.Current.Test`; the Bruinell fixtures that host an app
 in-process do it for the suite.
 
 ### 1.5 The commands
 
 | Command | Does |
 | --- | --- |
-| `brinell sql schema --connection <c> --out <schema.json>` | The schema snapshot: tables, views, procedures, functions, hashes, references. Read-only |
-| `brinell sql capture start --connection <c> --database <db> --folder <server folder>` | Creates and starts the session `brinell_sql_<db>`, filtered to the database; sends the marker |
-| `brinell sql capture stop --connection <c> --database <db>` | Stops and drops the session; the `.xel` files stay |
-| `brinell sql capture read --connection <c> --files <server path> --out <folder>` | Reads the `.xel` files through the server into `sql-xe-<run>.jsonl`, the clock offset applied |
-| `brinell sql report --log <folder> --timings <folder> --schema <schema.json> --out <report.md>` | Joins commands to tests, expands objects through the schema's references, writes the report and `sql-touch-map.json` |
+| `bruinell sql schema --connection <c> --out <schema.json>` | The schema snapshot: tables, views, procedures, functions, hashes, references. Read-only |
+| `bruinell sql capture start --connection <c> --database <db> --folder <server folder>` | Creates and starts the session `bruinell_sql_<db>`, filtered to the database; sends the marker |
+| `bruinell sql capture stop --connection <c> --database <db>` | Stops and drops the session; the `.xel` files stay |
+| `bruinell sql capture read --connection <c> --files <server path> --out <folder>` | Reads the `.xel` files through the server into `sql-xe-<run>.jsonl`, the clock offset applied |
+| `bruinell sql report --log <folder> --timings <folder> --schema <schema.json> --out <report.md>` | Joins commands to tests, expands objects through the schema's references, writes the report and `sql-touch-map.json` |
 
 ### 1.6 The report
 
@@ -209,11 +209,11 @@ pages; selecting tests from a schema change reads it later.
 
 What the owner runs, once, on a test database:
 
-1. `brinell sql schema` against the test database: the snapshot, read-only.
-2. `brinell sql capture start`: needs `ALTER ANY EVENT SESSION` on the server and a folder the
+1. `bruinell sql schema` against the test database: the snapshot, read-only.
+2. `bruinell sql capture start`: needs `ALTER ANY EVENT SESSION` on the server and a folder the
    server can write to.
-3. The UI suite, serial, with `BRINELL_TIMINGS` set, as it runs today.
-4. `brinell sql capture stop`, then `read`, then `brinell sql report`.
+3. The UI suite, serial, with `BRUINELL_TIMINGS` set, as it runs today.
+4. `bruinell sql capture stop`, then `read`, then `bruinell sql report`.
 
 What it answers, and the proposed threshold for each:
 
@@ -232,7 +232,7 @@ step 2 and later are decided from them.
 | # | Check | Passes when |
 | --- | --- | --- |
 | L1 | Wrapper and interceptor | Unit tests green; the spike suite logs through `UseSqlLog` (its `CommandLog` removed) and Todo through `LoggingDbConnection` at `TodoDatabase.OpenAsync`, on both heads, in parallel |
-| L2 | Nothing changes | Every suite touched passes with `BRINELL_SQL_LOG` set and unset |
+| L2 | Nothing changes | Every suite touched passes with `BRUINELL_SQL_LOG` set and unset |
 | L3 | Extended Events against in-process | The spike suite run serially in the browser with the sample as its own process: the XE log gives each test the same distinct commands as the in-process log, prerender repeats aside |
 | L4 | The report | On the spike suite: the shares within 2 points of spike-results (4.9%, 37%); the detail tests reach `dbo.visits` through `dbo.visitcount`; the fan-out table lists the five objects |
 | L5 | .NET Framework | The wrapper's `netstandard2.0` build loads in a `net48` test project over `System.Data.SqlClient` (on Windows) |
@@ -243,9 +243,9 @@ From the amended proposal; each is detailed here before it is built.
 
 | Step | What | Projects |
 | --- | --- | --- |
-| 1 | The log: detailed above | `srcnew/Brinell.Mocking.Data`, `srcnew/Brinell.Mocking.Data.EntityFrameworkCore`, their tests |
+| 1 | The log: detailed above | `srcnew/Bruinell.Mocking.Data`, `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore`, their tests |
 | 2 | The package from the spike's code: core, ADO.NET adapter, SqlClient rules, EF adapter (spatial mapping, `SqlException`), matching, binding, errors, the miss message | the same |
 | 3 | The schema snapshot as its own command, the stamp per object; dynamic procedures, triggers, reference data, default schemas | the same, a CLI command |
-| 4 | The heads: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs | the same, `Brinell.Html.Bunit`, `Brinell.Html.Playwright` fixtures |
+| 4 | The heads: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs | the same, `Bruinell.Html.Bunit`, `Bruinell.Html.Playwright` fixtures |
 | 5 | Maintenance: the re-record summary, the check on unread re-records | the same, a build check |
 | 6 | `docs/guides/sql-replay.md` and an AD on when a test replays and when it needs the database | `docs/`, `.docs/decisions/` |

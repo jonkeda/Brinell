@@ -1,15 +1,15 @@
 # Stride Platform Guide
 
-Brinell supports Stride game/UI testing through `Brinell.Stride` and
-`Brinell.Stride.Automation`.
+Bruinell supports Stride game/UI testing through `Bruinell.Stride` and
+`Bruinell.Stride.Automation`.
 
 ## Projects
 
-- `srcnew/Brinell.Stride`
-- `srcnew/Brinell.Stride.Automation`
-- `testsnew/Brinell.Stride.Automation.Tests`
-- `testsnew/Brinell.Stride.UITests` (the UI tests and the UAT suite)
-- `samples/Brinell.Samples.Stride.App`
+- `srcnew/Bruinell.Stride`
+- `srcnew/Bruinell.Stride.Automation`
+- `testsnew/Bruinell.Stride.Automation.Tests`
+- `testsnew/Bruinell.Stride.UITests` (the UI tests and the UAT suite)
+- `samples/Bruinell.Samples.Stride.App`
 
 ## Rules
 

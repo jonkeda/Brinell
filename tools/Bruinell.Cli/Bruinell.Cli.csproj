@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>bruinell</AssemblyName>
+    <RootNamespace>Bruinell.Cli</RootNamespace>
+    <Description>bruinell: Bruinell's one command line - the Scraper, test data and scenarios, control generation, and the language and MCP servers the IDEs and agents start.</Description>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>bruinell</ToolCommandName>
+    <PackageId>Bruinell.Cli</PackageId>
+    <!-- Playwright's driver carries .ps1 files of its own; NuGet only warns that it will not run them. -->
+    <NoWarn>$(NoWarn);NU5110;NU5111</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Bdd.Workspace\Bruinell.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Scraper\Bruinell.Scraper.csproj" />
+    <!-- data: Bruinell.TestData is shared with the loaded assemblies, so their definitions are the tool's ITestDataDefinition. -->
+    <ProjectReference Include="..\..\srcnew\Bruinell.TestData\Bruinell.TestData.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Uat\Bruinell.Uat.csproj" />
+    <!-- sql: the SQL log's schema snapshot, Extended Events and report (.my/sql-replay/plan.md, step 1). -->
+    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Data\Bruinell.Mocking.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" />
+    <!-- Pinned past GHSA-qhrr-8q5h-9q3h: StreamJsonRpc brings 2.5.302 (Directory.Packages.props). -->
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <!-- SqlClient brings 9.0.11, which has known vulnerabilities: lifted to the repository's pinned version. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <!-- controls generate -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinell.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinell.Bdd" />
+    <Using Include="Bruinell.Uat" />
+  </ItemGroup>
+
+  <!-- The recorder and voice for Record, which a net10.0-windows suite cannot reference (they need
+       the Windows 10 SDK's projections): built here, and copied into recorders\ beside the server,
+       which the recording run is pointed at (BRUINELL_RECORDERS). -p:BruinellRecorders=false leaves them out, for a
+       build that only selects or checks (Tomorrow's tools/Select-Tests.ps1, into its own artifacts folder). -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' And '$(BruinellRecorders)' != 'false'">
+    <ProjectReference Include="..\..\srcnew\Bruinell.Narrator.Windows\Bruinell.Narrator.Windows.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows10.0.19041.0" Private="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RecordersOutput>..\..\srcnew\Bruinell.Narrator.Windows\bin\$(Configuration)\net10.0-windows10.0.19041.0\</RecordersOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RecorderFile Include="$(RecordersOutput)Bruinell.Narrator.Windows.dll;$(RecordersOutput)Microsoft.Windows.SDK.NET.dll;$(RecordersOutput)WinRT.Runtime.dll" />
+  </ItemGroup>
+
+  <Target Name="CopyRecorders" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT' And '$(BruinellRecorders)' != 'false'">
+    <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(OutDir)recorders" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PublishRecorders" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT' And '$(BruinellRecorders)' != 'false'">
+    <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(PublishDir)recorders" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

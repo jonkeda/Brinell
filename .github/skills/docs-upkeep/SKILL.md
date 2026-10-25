@@ -1,6 +1,6 @@
 ---
 name: docs-upkeep
-description: Run the closing documentation checklist when a piece of work lands in Brinell. Use at the end of a task or phase to check whether a decision needs recording, whether `docs/` describes a surface that moved, whether anything in `.docs/` now contradicts the code, and whether the `.my/` plan is marked done. This is the step that is otherwise forgotten.
+description: Run the closing documentation checklist when a piece of work lands in Bruinell. Use at the end of a task or phase to check whether a decision needs recording, whether `docs/` describes a surface that moved, whether anything in `.docs/` now contradicts the code, and whether the `.my/` plan is marked done. This is the step that is otherwise forgotten.
 ---
 
 # Docs upkeep at the close of work
@@ -15,7 +15,7 @@ action.
 
 2. **Did a user-facing surface move?** If a control, page API, command, setting or artifact
    layout changed, update the matching page under `docs/` and, if the set of docs changed,
-   `docs/README.md`. `docs/` describes what someone *using* Brinell sees - keep it true.
+   `docs/README.md`. `docs/` describes what someone *using* Bruinell sees - keep it true.
 
 3. **Does anything in `.docs/` now contradict the code?** Re-read the decisions, contracts
    and invariants the work touched. A contract that no longer matches the code is worse than

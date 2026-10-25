@@ -1,15 +1,15 @@
 # Reporting And Artifacts
 
-Brinell-owned outputs use the shared artifact provider in
-`srcnew/Brinell.Core/Artifacts`.
+Bruinell-owned outputs use the shared artifact provider in
+`srcnew/Bruinell.Core/Artifacts`.
 
 ## Environment
 
 | Variable | Purpose |
 | --- | --- |
-| `BRINELL_TEST_RESULTS_DIR` | Overrides the `TestResults` root |
-| `BRINELL_TEST_RUN_ID` | Reuses a run folder across projects |
-| `BRINELL_TEST_SUITE` | Overrides the suite folder name |
+| `BRUINELL_TEST_RESULTS_DIR` | Overrides the `TestResults` root |
+| `BRUINELL_TEST_RUN_ID` | Reuses a run folder across projects |
+| `BRUINELL_TEST_SUITE` | Overrides the suite folder name |
 
 ## Folder Layout
 
@@ -75,16 +75,16 @@ the provider's `UatDirectory`.
 
 Supported path tokens:
 
-- `$(BrinellTestResults)`
-- `${BrinellTestResults}`
+- `$(BruinellTestResults)`
+- `${BruinellTestResults}`
 
 Both resolve to the provider suite directory. UAT scenario result files are
 registered as `uat-scenario` artifacts.
 
 ## Source Files
 
-- `srcnew/Brinell.Core/Artifacts/TestArtifactOptions.cs`
-- `srcnew/Brinell.Core/Artifacts/DefaultTestArtifactPathProvider.cs`
-- `srcnew/Brinell.Core/Artifacts/ITestArtifactPathProvider.cs`
-- `srcnew/Brinell.Core/Artifacts/TestArtifactManifestWriter.cs`
-- `srcnew/Brinell.Uat/UatScenarioTestBase.cs`
+- `srcnew/Bruinell.Core/Artifacts/TestArtifactOptions.cs`
+- `srcnew/Bruinell.Core/Artifacts/DefaultTestArtifactPathProvider.cs`
+- `srcnew/Bruinell.Core/Artifacts/ITestArtifactPathProvider.cs`
+- `srcnew/Bruinell.Core/Artifacts/TestArtifactManifestWriter.cs`
+- `srcnew/Bruinell.Uat/UatScenarioTestBase.cs`

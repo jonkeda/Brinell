@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document describes the CI/CD pipeline implemented for the Brinell Framework as part of Phase 001, Task 4. The pipeline automates build, test, and validation processes for all platform implementations.
+This document describes the CI/CD pipeline implemented for the Bruinell Framework as part of Phase 001, Task 4. The pipeline automates build, test, and validation processes for all platform implementations.
 
 ### Key Features
 
@@ -30,7 +30,7 @@ This document describes the CI/CD pipeline implemented for the Brinell Framework
 - Pull requests to `main` or `develop` branches
 - Changes to specific paths:
   - `src/**` - All platform implementations
-  - `samples/Brinell.Samples.Maui.Fixtures/**` - Sample fixture tests
+  - `samples/Bruinell.Samples.Maui.Fixtures/**` - Sample fixture tests
   - `tests/**` - Test projects
   - `.github/workflows/**` - CI/CD configuration
   - `Directory.*.props` - Central package management files
@@ -79,7 +79,7 @@ Phase 001 Task: Task 3 - Sample Data & Fixtures
 5. Upload test results artifact
 
 **Test Coverage:**
-- `Brinell.Samples.Maui.Fixtures` - 33 unit tests
+- `Bruinell.Samples.Maui.Fixtures` - 33 unit tests
   - UserFixture (7 tests) - Bogus generation, builder pattern
   - ProductFixture (15+ tests) - Product generation, convenience methods
   - TestDataFactory (9+ tests) - Factory patterns, test scenarios
@@ -109,14 +109,14 @@ Phase 001 Task: Task 5 - Interface Assembly
 5. Upload test results artifact
 
 **Test Coverage:**
-- Brinell.Core - Interface contracts (57 interfaces)
-- Brinell.Maui - MAUI platform implementation
-- Brinell.Wpf - WPF platform implementation
-- Brinell.WinForms - WinForms platform implementation
-- Brinell.Html - HTML/web platform
-- Brinell.Html.Playwright - Playwright integration
-- Brinell.Stride - Stride platform
-- Brinell.FlaUI - FlaUI integration
+- Bruinell.Core - Interface contracts (57 interfaces)
+- Bruinell.Maui - MAUI platform implementation
+- Bruinell.Wpf - WPF platform implementation
+- Bruinell.WinForms - WinForms platform implementation
+- Bruinell.Html - HTML/web platform
+- Bruinell.Html.Playwright - Playwright integration
+- Bruinell.Stride - Stride platform
+- Bruinell.FlaUI - FlaUI integration
 
 **Success Criteria:**
 - All unit tests passing
@@ -192,7 +192,7 @@ BUILD_VERBOSITY: minimal (faster logs, cleaner output)
 
 ### Fixture Test Results
 
-**Location:** `samples/Brinell.Samples.Maui.Fixtures/bin/Release/net9.0/test-results.trx`
+**Location:** `samples/Bruinell.Samples.Maui.Fixtures/bin/Release/net9.0/test-results.trx`
 
 **Retention:** 30 days (Phase 001 only)
 
@@ -210,7 +210,7 @@ BUILD_VERBOSITY: minimal (faster logs, cleaner output)
 **Retention:** 30 days
 
 **Contents:**
-- Brinell.Core interface contract tests
+- Bruinell.Core interface contract tests
 - Platform-specific implementation tests
 - Mock object validation tests
 
@@ -225,12 +225,12 @@ BUILD_VERBOSITY: minimal (faster logs, cleaner output)
 - **Pipeline Integration:** N/A (documentation only)
 
 ### Task 3: Sample Data & Fixtures ✅
-- 33 unit tests in Brinell.Samples.Maui.Fixtures
+- 33 unit tests in Bruinell.Samples.Maui.Fixtures
 - UserFixture, ProductFixture, TestDataFactory
 - **Pipeline Integration:** `test-fixtures` job validates all 33 tests pass
 
 ### Task 5: Interface Assembly ✅
-- 57 interfaces added to Brinell.Core
+- 57 interfaces added to Bruinell.Core
 - Platform implementations updated
 - **Pipeline Integration:** `test-core` job validates interface contracts
 
@@ -375,20 +375,20 @@ Before pushing, validate locally:
 
 ```bash
 # Build all platforms
-dotnet build Brinell.sln -c Release
+dotnet build Bruinell.sln -c Release
 
 # Run fixture tests
-dotnet test samples/Brinell.Samples.Maui.Fixtures/ -c Release
+dotnet test samples/Bruinell.Samples.Maui.Fixtures/ -c Release
 
 # Run all tests
-dotnet test Brinell.sln -c Release
+dotnet test Bruinell.sln -c Release
 ```
 
 ---
 
 ## Contacts & Support
 
-- **Framework Owner:** Brinell Team
+- **Framework Owner:** Bruinell Team
 - **Pipeline Issues:** GitHub Issues with `[pipeline]` label
 - **Questions:** See CONTRIBUTING.md
 

@@ -1,11 +1,11 @@
 # Run Playwright Tests
 
-Working directory: Brinell root.
+Working directory: Bruinell root.
 
 ## Build
 
 ```powershell
-dotnet build srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj -v:minimal /nr:false
+dotnet build srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj -v:minimal /nr:false
 ```
 
 ## Install Browsers
@@ -20,6 +20,6 @@ pwsh bin\Debug\net10.0\playwright.ps1 install
 ## Run Tests
 
 ```powershell
-dotnet test testsnew\Brinell.Html.UITests\Brinell.Html.UITests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.UITests\Brinell.Blazor.UITests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.UITests\Bruinell.Html.UITests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.UITests\Bruinell.Blazor.UITests.csproj -v:minimal /nr:false
 ```

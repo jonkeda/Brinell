@@ -11,7 +11,7 @@ As built, where it differs from below:
 - Step 6: the Presenter's rehearsal speaks with the script's voice but not its instructions (its
   interface has no place for them; a recorded scene has them). The IDEs' Voice settings say
   `azure:<voice>`; they do not list the cloud voices.
-- Tests: `testsnew/Brinell.Narrator.Tests/CloudVoiceTests.cs` (14), with a fake HTTP handler; none
+- Tests: `testsnew/Bruinell.Narrator.Tests/CloudVoiceTests.cs` (14), with a fake HTTP handler; none
   calls the service.
 Adds a second voice next to the Windows one: Azure OpenAI's `gpt-4o-mini-tts`, called over HTTPS,
 with its key in a file git never sees. Builds on
@@ -33,12 +33,12 @@ instructions for tone ("calm, friendly, a product demo").
 
 | Fact | Where |
 | --- | --- |
-| A voice is an `ISpeechSynthesizer`: `IsAvailable`, and `SynthesizeAsync(text, voice, wavPath)` that writes a PCM WAV and returns its length. | `srcnew/Brinell.Narrator/Speech.cs` |
-| Synthesizers are declared with `[assembly: SpeechSynthesizer(typeof(...))]`; `Speech.Discover()` loads the known platform packages and takes the **first available** one. Only `WindowsSpeech` (`Brinell.Narrator.Windows`) exists. | `Speech.cs`, `srcnew/Brinell.Narrator.Windows/WindowsSpeech.cs` |
+| A voice is an `ISpeechSynthesizer`: `IsAvailable`, and `SynthesizeAsync(text, voice, wavPath)` that writes a PCM WAV and returns its length. | `srcnew/Bruinell.Narrator/Speech.cs` |
+| Synthesizers are declared with `[assembly: SpeechSynthesizer(typeof(...))]`; `Speech.Discover()` loads the known platform packages and takes the **first available** one. Only `WindowsSpeech` (`Bruinell.Narrator.Windows`) exists. | `Speech.cs`, `srcnew/Bruinell.Narrator.Windows/WindowsSpeech.cs` |
 | Without a synthesizer, a line's length is estimated from its words and it shows as a caption only. | `Speech.ClipAsync`, `Speech.Estimate` |
 | The length of a clip comes from the WAV header (`Speech.WavDuration`, the `data` chunk's size). | `Speech.cs` |
-| The voice is named by the script (`Voice` row), `BRINELL_VOICE`, or the IDEs' and Presenter's settings; a scene is out of date when its voice changed. | guide, `BddRecordingSession`, `BddNarrationPacer` |
-| The Presenter makes `new WindowsSpeech()` itself in five places, not through `Speech.Discover`. | `srcnew/Brinell.Presenter/Services/PresenterRecorder.cs` |
+| The voice is named by the script (`Voice` row), `BRUINELL_VOICE`, or the IDEs' and Presenter's settings; a scene is out of date when its voice changed. | guide, `BddRecordingSession`, `BddNarrationPacer` |
+| The Presenter makes `new WindowsSpeech()` itself in five places, not through `Speech.Discover`. | `srcnew/Bruinell.Presenter/Services/PresenterRecorder.cs` |
 | The repo already ignores local secrets: `*.env`, `**/TestSettings/**/*.secrets.json`, `**/TestSettings/secrets/*` (examples kept). | `.gitignore` lines 12-23 |
 
 The service: `POST {endpoint}/openai/deployments/{deployment}/audio/speech?api-version={version}`
@@ -53,12 +53,12 @@ deployment `gpt-4o-mini-tts`, api version `2025-03-01-preview`.
 
 Looked up in this order; the first that has a key wins:
 
-1. **Environment variables** `BRINELL_VOICE_KEY` (and `BRINELL_VOICE_ENDPOINT`,
-   `BRINELL_VOICE_DEPLOYMENT`): for a build agent, from its secret store.
+1. **Environment variables** `BRUINELL_VOICE_KEY` (and `BRUINELL_VOICE_ENDPOINT`,
+   `BRUINELL_VOICE_DEPLOYMENT`): for a build agent, from its secret store.
 2. **`voice.secrets.json` in the suite's folder** (beside `uat.config.md`), then in each folder
    above it up to the repository root: for a key per repository. Git-ignored by a new rule
    `**/voice.secrets.json`; a committed `voice.secrets.example.json` shows the shape.
-3. **`%USERPROFILE%\.brinell\voice.secrets.json`**: one key for every repository on the machine,
+3. **`%USERPROFILE%\.bruinell\voice.secrets.json`**: one key for every repository on the machine,
    never inside a working tree at all. The recommended place.
 
 ```json
@@ -74,7 +74,7 @@ The key is never written anywhere else: not in a log, the Output pane, a timelin
 an exception message or a test name. It goes only into the `api-key` header, never into a URL.
 A check that the rule holds: `git check-ignore` on the file, in a test (step 1).
 
-### V2. The cloud voice lives in `Brinell.Narrator`, not a package of its own
+### V2. The cloud voice lives in `Bruinell.Narrator`, not a package of its own
 
 It needs only `HttpClient` and works on every platform, so none of AD-026's reasons for a project
 of its own applies (no other target framework, no dependency users should not get). It is declared
@@ -98,7 +98,7 @@ It is sent as `instructions`, and it is part of a scene's hash, like the voice.
 ### V5. Clips are cached
 
 The same line with the same voice and instructions is the same audio: clips are kept in
-`%LOCALAPPDATA%\Brinell\speech-cache\<hash>.wav` (hash of synthesizer, voice, instructions, text),
+`%LOCALAPPDATA%\Bruinell\speech-cache\<hash>.wav` (hash of synthesizer, voice, instructions, text),
 so recording a scene again costs nothing and is not slowed by the network. A cache file is
 written only when the whole answer arrived.
 
@@ -120,8 +120,8 @@ Each step one commit, with tests; nothing calls the real service except step 7, 
 
 | # | Step | Files | Done when |
 | --- | --- | --- | --- |
-| 1 | **Settings and the key file** (V1): `VoiceSecrets` reads the three places in order; the example file; the `.gitignore` rule; the key never in `ToString` or an exception. | `srcnew/Brinell.Narrator/VoiceSecrets.cs`, `voice.secrets.example.json`, `.gitignore` | Unit tests: order, a missing file, a half-filled file, the key not in any message; a test that `git check-ignore` ignores `voice.secrets.json` in a suite folder. |
-| 2 | **`AzureOpenAiSpeech`** (V2, V6): the request, the WAV written, its length. The service's WAV may carry a streaming header (data size `0xFFFFFFFF` or 0): the header is corrected from the file's length before `WavDuration` reads it. Retries on 429. | `srcnew/Brinell.Narrator/AzureOpenAiSpeech.cs` | Unit tests with a fake `HttpMessageHandler`: the URL and headers (key only in `api-key`), the body, a streaming-header WAV measured right, each error of V6. |
+| 1 | **Settings and the key file** (V1): `VoiceSecrets` reads the three places in order; the example file; the `.gitignore` rule; the key never in `ToString` or an exception. | `srcnew/Bruinell.Narrator/VoiceSecrets.cs`, `voice.secrets.example.json`, `.gitignore` | Unit tests: order, a missing file, a half-filled file, the key not in any message; a test that `git check-ignore` ignores `voice.secrets.json` in a suite folder. |
+| 2 | **`AzureOpenAiSpeech`** (V2, V6): the request, the WAV written, its length. The service's WAV may carry a streaming header (data size `0xFFFFFFFF` or 0): the header is corrected from the file's length before `WavDuration` reads it. Retries on 429. | `srcnew/Bruinell.Narrator/AzureOpenAiSpeech.cs` | Unit tests with a fake `HttpMessageHandler`: the URL and headers (key only in `api-key`), the body, a streaming-header WAV measured right, each error of V6. |
 | 3 | **A voice names its synthesizer** (V3): `Speech.Discover(voice)`; `azure:` names; the order with no voice named. | `Speech.cs`, `BddRecordingSession.cs`, the narrator's callers | Unit tests: Windows name to Windows, `azure:coral` to the cloud voice, none to the configured one; a missing key with `azure:` fails naming V1's places. |
 | 4 | **Instructions** (V4): the script's `Instructions` row, the settings' default, in the hash. | the video script parser, `BddNarrationPacer` | Parser and hash tests. |
 | 5 | **The cache** (V5). | `Speech.ClipAsync` | Tests: a second clip of the same line makes no request; a different voice or instruction does. |
@@ -146,4 +146,4 @@ Each step one commit, with tests; nothing calls the real service except step 7, 
 - **The service changes** (`api-version` is a preview). The version is a setting, defaulting to
   the one above.
 - **Network in a test run.** A recording needs the network for lines not cached yet; a gate run
-  without `BRINELL_RECORD` never calls the service.
+  without `BRUINELL_RECORD` never calls the service.

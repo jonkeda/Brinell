@@ -9,7 +9,7 @@ Each charter has a time box and a mission. Write down what you find. When a find
 reproduced, push it down into an automated tier and record where it went, in the charter's
 **Moved down** line. A charter whose findings all moved down can be retired.
 
-The coverage report (`Brinell.Samples.Todo.JourneyCoverage`) checks that every subtask
+The coverage report (`Bruinell.Samples.Todo.JourneyCoverage`) checks that every subtask
 `journeys.md` marks **M** is named here.
 
 ---

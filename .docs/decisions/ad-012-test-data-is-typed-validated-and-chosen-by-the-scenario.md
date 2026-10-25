@@ -3,10 +3,10 @@
 A test's starting data is a named **test set**: a JSON file in the app's `TestData/` folder,
 read strictly into the app's real types (the API's DTOs for the server half, the app's own model
 for the device half). An app describes its test sets once, in a `TestDataDefinition<TSet>`: the
-folder, the root type and the rules. One engine, `Brinell.TestData`, checks them - shape (unknown
+folder, the root type and the rules. One engine, `Bruinell.TestData`, checks them - shape (unknown
 field, missing field, wrong value), the app's own rules and consistency - and reports
-`file:line: CODE path: message`. The xUnit gate and `brinell data`
-(`tools/Brinell.Cli`, which loads the app's assembly at run time) both run that
+`file:line: CODE path: message`. The xUnit gate and `bruinell data`
+(`tools/Bruinell.Cli`, which loads the app's assembly at run time) both run that
 engine, so they cannot disagree.
 
 A UAT scenario file names its test set in its `TestData` metadata; `DefaultTestData` in
@@ -16,7 +16,7 @@ the device's database is not reset between scenarios. Additions and checks are s
 to the same real types, compared on the listed columns only.
 
 A mock response body is a contract type or a recorded sample, never an anonymous object.
-`BRINELL001` (shipped in `Brinell.Mocking`) reports one.
+`BRUINELL001` (shipped in `Bruinell.Mocking`) reports one.
 
 **Ruled out:** anonymous-object stub bodies (they compile whatever their fields are called, and a
 test passes against JSON the app would never be sent); a private copy of a model for seeding (it

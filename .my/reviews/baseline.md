@@ -6,7 +6,7 @@ run adds a column; the machine's state is part of each row.
 ## B1: Tomorrow's UI suite
 
 2026-10-22, `move` at 5a69338e, Tomorrow `game` at 20a87afb. `dotnet test tests/Tomorrow.App.UITests --no-build`
-after a build, `BRINELL_CALL_LOG` set to a folder; CPU by `Get-Counter` every 5 s (28 samples,
+after a build, `BRUINELL_CALL_LOG` set to a folder; CPU by `Get-Counter` every 5 s (28 samples,
 the counter itself takes about 2 s), as a share of the machine's 32 logical cores. The app runs
 in the test host (`TomorrowApp`), so its CPU is the test host's.
 
@@ -49,7 +49,7 @@ over several runs.
 
 **The four failures pass alone** (14 tests in their groups, 44 s, all green), so they are load:
 
-- `SurvivorTests.Home_AddNewSurvivor_PicksTheStartFirst` and `StartTests.Home_WithoutSurvivor_LinksToTheStartPicker`, both at 53 s into the run: `login-submit.Click` spent its 4,964 ms inside Playwright's "waiting for scheduled navigations to finish", i.e. the sign-in POST answered late while every collection signed in at once. The exception is a raw `System.TimeoutException`, not one of Brinell's (H2).
+- `SurvivorTests.Home_AddNewSurvivor_PicksTheStartFirst` and `StartTests.Home_WithoutSurvivor_LinksToTheStartPicker`, both at 53 s into the run: `login-submit.Click` spent its 4,964 ms inside Playwright's "waiting for scheduled navigations to finish", i.e. the sign-in POST answered late while every collection signed in at once. The exception is a raw `System.TimeoutException`, not one of Bruinell's (H2).
 - `SRV.12.4 A new survivor beside the others`: `NewSurvivor_Begin` "found but is disabled: not enabled still after 5000 ms".
 - `SRV.05.5 Begin waits for loose points and a name`: `AttributeRows` "had no item 'Agility' within 5000 ms … MissingRoot".
 
@@ -62,7 +62,7 @@ whose action used more than half the budget.
 The CSVs and the CPU samples are not committed; `calls.py` in the session scratchpad summarized
 them (results per direction, warnings, the slowest exits).
 
-## B2: Brinell's web suites
+## B2: Bruinell's web suites
 
 2026-10-22, `move` at f4df2ddd, run one after the other, each built first, the same switches as B1.
 CPU as a share of 32 cores; "dotnet" sums every `dotnet` process (the Todo app runs as one), so
@@ -70,10 +70,10 @@ on a machine this busy it includes other work.
 
 | Suite | Tests | Wall | Calls (median) | Test host CPU avg / peak |
 | --- | --- | --- | --- | --- |
-| `Brinell.Html.UITests` | 25 passed | 37 s | 110 (86 ms) | 1.0% / 2.2% |
-| `Brinell.Blazor.UITests` | 35 passed | 44 s | 111 (45 ms) | 0.5% / 1.7% |
-| `Brinell.Samples.Todo.Web.UITests` | 10 passed, 1 skipped | 26 s | 137 (61 ms) | 1.3% / 2.9% |
-| `Brinell.Samples.Todo.Web.Uat` | 35 passed | 105 s | 524 (51 ms) | 1.4% / 6.0% |
+| `Bruinell.Html.UITests` | 25 passed | 37 s | 110 (86 ms) | 1.0% / 2.2% |
+| `Bruinell.Blazor.UITests` | 35 passed | 44 s | 111 (45 ms) | 0.5% / 1.7% |
+| `Bruinell.Samples.Todo.Web.UITests` | 10 passed, 1 skipped | 26 s | 137 (61 ms) | 1.3% / 2.9% |
+| `Bruinell.Samples.Todo.Web.Uat` | 35 passed | 105 s | 524 (51 ms) | 1.4% / 6.0% |
 
 - **Machine:** CPU 32% to 53% on average across the four suites, 72% at peak; not quiet, as in B1.
 - **Near-misses:** 0 in 882 calls.
@@ -85,10 +85,10 @@ on a machine this busy it includes other work.
 
 | Suite | Wall before | Wall after | Median call after |
 | --- | --- | --- | --- |
-| `Brinell.Html.UITests` | 37 s | 35 s | 62 ms |
-| `Brinell.Blazor.UITests` | 44 s | 41 s | 38 ms |
-| `Brinell.Samples.Todo.Web.UITests` | 26 s | 25 s | 64 ms |
-| `Brinell.Samples.Todo.Web.Uat` | 105 s | 106 s | 54 ms |
+| `Bruinell.Html.UITests` | 37 s | 35 s | 62 ms |
+| `Bruinell.Blazor.UITests` | 44 s | 41 s | 38 ms |
+| `Bruinell.Samples.Todo.Web.UITests` | 26 s | 25 s | 64 ms |
+| `Bruinell.Samples.Todo.Web.Uat` | 105 s | 106 s | 54 ms |
 
 After H1 (`move` 840c7712): Html 32 s, Blazor 39 s, Todo web UI tests 18 s, Todo web
 scenarios 82 s, all green; calls in all 41 s, 8 s, 12 s, 41 s (from 57, 7, 16, 61). The Todo
@@ -138,7 +138,7 @@ timed out before (Tomorrow's abd8b2e6), and the near-miss list now names the cal
 ## C1: a control's calls in Core
 
 `move` 0ee76775, one run each, all green. Tomorrow's UI suite: 108 s (1 m 45 s), 86 of 86, its
-calls 176 s in all, median 36 ms; the only near-misses the two start-up login clicks. Brinell's
+calls 176 s in all, median 36 ms; the only near-misses the two start-up login clicks. Bruinell's
 web suites: Html 32 s (27 tests, the two reset tests new), Blazor 39 s, Todo web UI tests 18 s,
 Todo web scenarios 82 s, the same as after H4. Html's calls came to 43 s, from 18 s: four
 first-call `SampleShell.AssertIdle`s at about 3.5 s while the browsers start together (a page
@@ -166,13 +166,13 @@ UAT 222, Html 72, Blazor 173, MAUI 181, WPF 10, WinForms 9, Stride automation 3.
 suite twice: 83 of 86 at 1 m 59 s on a busy machine (SRV.05.5, the first baseline's load failure;
 SRV.05.7 and SRV.08.1, a value and a page late), the three green alone twice; then 86 of 86 in
 1 m 36 s. The solution build fails its restore on two NuGet advisories (the Stride sample's
-`System.Security.Cryptography.Pkcs`, `Brinell.Cli.Tests`' `MessagePack`), so it compiles
+`System.Security.Cryptography.Pkcs`, `Bruinell.Cli.Tests`' `MessagePack`), so it compiles
 nothing: build with `-p:NuGetAudit=false` to check every project until the packages are updated.
 
 ## B3: MAUI on Android, and M1 on a device
 
-2026-10-22, `move` 140c69fb (everything through M1), `Brinell_Android` (8 cores), Appium 3.1.2,
-both apps installed fresh, `BRINELL_APP_PREINSTALLED=1`, the call log on.
+2026-10-22, `move` 140c69fb (everything through M1), `Bruinell_Android` (8 cores), Appium 3.1.2,
+both apps installed fresh, `BRUINELL_APP_PREINSTALLED=1`, the call log on.
 
 **M1 on the device.** The emulator's window animation scale was set to 1 before a run of the
 button and ActivityIndicator tests (10 of 10, 59 s). It read 0.0 from the session's start and 1.0
@@ -182,7 +182,7 @@ again after it: the factory's `disableWindowAnimation` reached the device, so th
 (about 11 s per lookup without it).
 
 **The full mobile suite:** 259 passed, 24 failed, 20 skipped in 23 m 03 s (wall 23 m 15 s).
-The 24 are the known gaps (`.my/brinell/maui-android.md` in Tomorrow): MediaElement 11, CarouselView
+The 24 are the known gaps (`.my/bruinell/maui-android.md` in Tomorrow): MediaElement 11, CarouselView
 5, RatingView 4, DrawingView 3, ProductCollection `ItemWhere_ScrollsToFindOffscreenRow` 1. The
 last full run before today's changes: 258 passed, the same 24, 20 skipped in 23 m 17 s. 1,942
 calls, 1,067 s in all, mean 549 ms; `WaitLoaded` 625 times, mean 293 ms.
@@ -235,14 +235,14 @@ head was not run (it needs a live desktop); M7's Windows side rests on the build
 
 ## The Windows head, after M7, and the rest
 
-`move` 9b0cc10b, Brinell's MAUI suite on Windows (FlaUI, both sample apps built for Windows):
+`move` 9b0cc10b, Bruinell's MAUI suite on Windows (FlaUI, both sample apps built for Windows):
 357 passed, 1 failed, 2 skipped in 1 m 48 s. The failure, `ForegroundWatchdogTests.Navigating_
 DoesNotTakeTheForeground` (the app took the foreground 4 times), passed alone twice. The last
 recorded Windows run (2026-10-21) had 349 passed and 9 failed, put down to a locked screen.
 
-The NuGet advisories (4a8e2d9f): the solution restores and compiles again; `Brinell.Cli.Tests`
-320 of 320 in a separate worktree, since this checkout's `tools/Brinell.Cli/bin` is held by the
-running Brinell MCP servers. `[UiFact]` (9b0cc10b): a failure made on purpose in
-`Brinell.Html.UITests` left a PNG of the page as it failed; Tomorrow's 29 UI facts use it and its
+The NuGet advisories (4a8e2d9f): the solution restores and compiles again; `Bruinell.Cli.Tests`
+320 of 320 in a separate worktree, since this checkout's `tools/Bruinell.Cli/bin` is held by the
+running Bruinell MCP servers. `[UiFact]` (9b0cc10b): a failure made on purpose in
+`Bruinell.Html.UITests` left a PNG of the page as it failed; Tomorrow's 29 UI facts use it and its
 game suite is 86 of 86.
 

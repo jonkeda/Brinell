@@ -28,7 +28,7 @@ cell - with one reader, `BddValues`, in one invariant format whatever the machin
   that cannot be read, two table parameters, a duplicate, a control-verb property on a phrase
   method: the phrase is marked (`UATA010`-`UATA013`), everything else loads, and only a step that
   binds to it fails, naming the declaring method.
-- **One checker.** The xUnit gate and the `brinell data` tool run the same parser, binder and
+- **One checker.** The xUnit gate and the `bruinell data` tool run the same parser, binder and
   reader (as AD-012 does for test data); the tool builds the catalog from the fixture's type
   without starting it, and `--fix` rewrites only values with one right answer.
 

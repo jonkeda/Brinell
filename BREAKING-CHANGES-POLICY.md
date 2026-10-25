@@ -1,9 +1,9 @@
-# Brinell Framework Breaking Changes Policy
+# Bruinell Framework Breaking Changes Policy
 
 **Version:** 1.0  
 **Status:** Active  
 **Date:** January 3, 2026  
-**Applies to:** All Brinell packages (Core, MAUI, Blazor, etc.)
+**Applies to:** All Bruinell packages (Core, MAUI, Blazor, etc.)
 
 ---
 
@@ -405,16 +405,16 @@ See [MIGRATION-GUIDE.md](docs/MIGRATION-GUIDE.md) for upgrade instructions
 
 ```xml
 <!-- Most Restrictive -->
-<PackageReference Include="Brinell.Maui.Controls" Version="1.5.0" />
+<PackageReference Include="Bruinell.Maui.Controls" Version="1.5.0" />
 
 <!-- Allow patches only (safer) -->
-<PackageReference Include="Brinell.Maui.Controls" Version="1.5.*" />
+<PackageReference Include="Bruinell.Maui.Controls" Version="1.5.*" />
 
 <!-- Allow minor updates (with warnings) -->
-<PackageReference Include="Brinell.Maui.Controls" Version="1.*" />
+<PackageReference Include="Bruinell.Maui.Controls" Version="1.*" />
 
 <!-- Allow major updates (may need migration) -->
-<PackageReference Include="Brinell.Maui.Controls" Version="*" />
+<PackageReference Include="Bruinell.Maui.Controls" Version="*" />
 ```
 
 ---
@@ -540,10 +540,10 @@ A: Yes. Just ensure clear migration paths for each.
 **Created:** January 3, 2026  
 **Last Updated:** January 3, 2026  
 **Next Review:** April 3, 2026  
-**Owner:** Brinell Team  
+**Owner:** Bruinell Team  
 **Status:** Active & Enforced
 
-This policy is mandatory for all Brinell packages. Violations require exception approval.
+This policy is mandatory for all Bruinell packages. Violations require exception approval.
 
 ---
 

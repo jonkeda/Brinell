@@ -34,11 +34,11 @@
 
 .PARAMETER AllowProcess
     Sample processes the runs need running, by name: a web host such as
-    Brinell.Samples.Blazor.App, which the Html UI tests expect to be up. Any other sample process
+    Bruinell.Samples.Blazor.App, which the Html UI tests expect to be up. Any other sample process
     still stops the script.
 
 .EXAMPLE
-    .\tools\Scripts\repeat-run.ps1 -Project samples/Todo/tests/Brinell.Samples.Todo.UITests -Runs 5
+    .\tools\Scripts\repeat-run.ps1 -Project samples/Todo/tests/Bruinell.Samples.Todo.UITests -Runs 5
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Project,
@@ -64,7 +64,7 @@ if (Get-Process -Name testhost -ErrorAction SilentlyContinue) {
 # A sample app left over from an earlier run breaks the next run's attach (FlaUI GetMainWindow
 # fails with "Unexpected HRESULT"): every test of that fixture fails, and none of it is real.
 $orphans = Get-Process -ErrorAction SilentlyContinue |
-    Where-Object { $_.ProcessName -like 'Brinell.Samples.*' -and $AllowProcess -notcontains $_.ProcessName }
+    Where-Object { $_.ProcessName -like 'Bruinell.Samples.*' -and $AllowProcess -notcontains $_.ProcessName }
 if ($orphans) {
     throw "Sample app(s) still running from an earlier run: $(($orphans | ForEach-Object { "$($_.ProcessName) ($($_.Id))" }) -join ', '). Stop them first."
 }

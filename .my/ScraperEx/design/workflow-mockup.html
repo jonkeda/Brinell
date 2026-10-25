@@ -108,7 +108,7 @@
   <header>
     <div class="field">
       <label for="project">Project</label>
-      <div style="display:flex;gap:4px"><select id="project"><option>Brinell.Html.React</option><option>Brinell.Html.Plain</option><option>Brinell.Blazor.UITests</option></select><button title="New scraped project" aria-label="New scraped project">+</button></div>
+      <div style="display:flex;gap:4px"><select id="project"><option>Bruinell.Html.React</option><option>Bruinell.Html.Plain</option><option>Bruinell.Blazor.UITests</option></select><button title="New scraped project" aria-label="New scraped project">+</button></div>
     </div>
     <div class="next" id="next"></div>
   </header>
@@ -252,8 +252,8 @@ function wireSettings() {
 
 const panels = {
   1: () => `<h2>1 Project</h2><p class="why">The UI test project the page objects go into.</p>
-    <table><tr><th>Folder</th><td><code>Scraper.Sites/Brinell.Html.React</code></td></tr><tr><th>Platform</th><td>html</td></tr>
-    <tr><th>Start URL</th><td><code>https://demoqa.com/tabs</code></td></tr><tr><th>Namespace</th><td><code>Brinell.Html.React.Pages</code></td></tr></table>
+    <table><tr><th>Folder</th><td><code>Scraper.Sites/Bruinell.Html.React</code></td></tr><tr><th>Platform</th><td>html</td></tr>
+    <tr><th>Start URL</th><td><code>https://demoqa.com/tabs</code></td></tr><tr><th>Namespace</th><td><code>Bruinell.Html.React.Pages</code></td></tr></table>
     <div class="actions"><button class="primary" id="sc-primary">New project…</button>${more(["Open scraper.config.md", "Add a config to an existing project"])}</div>${footer(1)}`,
   2: () => `<h2>2 Connect</h2><p class="why">Can the Scraper reach the app, signed in, and may it go there?</p>${intro()}
     <table><tr><th>Start URL</th><td><code>https://demoqa.com/tabs</code></td></tr>

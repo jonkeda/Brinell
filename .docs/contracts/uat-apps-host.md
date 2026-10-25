@@ -10,11 +10,11 @@ subject).
 
 | Part | Owner | Holds |
 | --- | --- | --- |
-| `TestAppDefinition`, `ITestApp`, `TestAppSet` | `Brinell.Core.Testing` | apps: rows, running apps, start, reset, evidence |
-| `IUatAppsHost` | `Brinell.Uat` | words: sessions, subjects, a catalog per head |
+| `TestAppDefinition`, `ITestApp`, `TestAppSet` | `Bruinell.Core.Testing` | apps: rows, running apps, start, reset, evidence |
+| `IUatAppsHost` | `Bruinell.Uat` | words: sessions, subjects, a catalog per head |
 | A device per app (`TodoMauiDevice`, `TodoWebDevice`) | the app's test support | how one app is arranged and started |
 
-Core does not reference `Brinell.Uat`. In C# UI tests apps are variables with their own page
+Core does not reference `Bruinell.Uat`. In C# UI tests apps are variables with their own page
 types; only UAT has subjects and a current app.
 
 ## The rules
@@ -54,4 +54,4 @@ object, so a restarted app gets a fresh scope. The fixture does not write `UseSe
   started.
 - A failure captures only the current app while others are running.
 - Two files list the same cast for a UAT suite and its UI tests.
-- `Brinell.Core` references `Brinell.Uat`.
+- `Bruinell.Core` references `Bruinell.Uat`.

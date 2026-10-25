@@ -18,10 +18,10 @@ Source XAML lives under `Exact.Core.Construction/Controls/` (shared library) and
 
 These 8 controls already exist in `Exact.Core.Construction.UITest/Controls/<Folder>/` as
 `.tpl.cs` + `.gen.cs` pairs, namespaced `Exact.Core.Construction.UITest.Controls.<Folder>`
-and referencing Brinell through the shared props. Nothing to create; phase 0 just confirms
+and referencing Bruinell through the shared props. Nothing to create; phase 0 just confirms
 they build.
 
-| Id | Brinell control | Source folder | Purpose |
+| Id | Bruinell control | Source folder | Purpose |
 | --- | --- | --- | --- |
 | S1 | `PageSearchControl<TParent>` | `Search/` | Entry + Search button + Cancel button + busy indicator |
 | S2 | `InlineAlertControl<TScope>` | `Messaging/` | Inline alert with message + optional action button |
@@ -57,7 +57,7 @@ the PoC phase because Todos needs it.
 Read from `Exact.Construction/Modules/Todos/Views/*.xaml`. These land during phase 1 so
 phase 2 can wire the Todos test suite.
 
-| Id | Construction XAML | Brinell control | Base | Notes | State |
+| Id | Construction XAML | Bruinell control | Base | Notes | State |
 | --- | --- | --- | --- | --- | --- |
 | T1 | `search:PageSearchView` | S1 | Component | Exists - already listed above | exists |
 | T2 | `messaging:InlineAlertView` | S2 | Component | Exists | exists |
@@ -91,7 +91,7 @@ Currently hand-written in `Exact.Construction.UITests/Controls/`. Convert with
 under `Exact.Core.Construction.UITest/Controls/Loose/` (rename the folder when a
 better home appears - e.g. `Buttons/`, `Navigation/`).
 
-| Id | Source class | Brinell control | Base | State |
+| Id | Source class | Bruinell control | Base | State |
 | --- | --- | --- | --- | --- |
 | C6 | `RoundButtonControl.cs` | `RoundButtonControl<TScope>` | Button | convert |
 | C7 | `TabMenuItemControl.cs` | `TabMenuItemControl<TScope>` | Component (icon + label + tap) | convert |
@@ -100,7 +100,7 @@ better home appears - e.g. `Buttons/`, `Navigation/`).
 
 ### P2 - new library controls (added when a P2 module needs them)
 
-| Id | Construction control | Brinell control | Base | Notes | State |
+| Id | Construction control | Bruinell control | Base | Notes | State |
 | --- | --- | --- | --- | --- | --- |
 | C10 | `Cells/BaseCollectionCell` + specialisations | one control per cell shape actually consumed by a test (e.g. `TwoLineCellControl`, `IconCellControl`) | Component | Do **not** try to model every cell up front - add on demand | - |
 | C11 | `FilterSheet/*` | `FilterSheetControl<TParent>` | Container (modal sheet, root scoped to the modal window) | Confirm root-scope approach on the first module that uses it (Contacts, phase 3) before landing the control | - |
@@ -109,7 +109,7 @@ better home appears - e.g. `Buttons/`, `Navigation/`).
 
 ### P3 - later
 
-| Id | Construction control | Brinell control | Notes | State |
+| Id | Construction control | Bruinell control | Notes | State |
 | --- | --- | --- | --- | --- |
 | C14 | `RichContent/*` | `RichContentControl<TScope>` | Read-only rich text renderer | - |
 | C14b | `RichEditor/*` | `RichEditorControl<TScope>` | Interactive rich text editor; verify what's actually testable through UIA before shape-choosing | - |
@@ -123,7 +123,7 @@ better home appears - e.g. `Buttons/`, `Navigation/`).
 `RichText/` and `Date/` folders that Todos does not use. Add them as sibling controls of
 T7-T10 the first time a module test needs them.
 
-| Construction control | Brinell control | First likely consumer | State |
+| Construction control | Bruinell control | First likely consumer | State |
 | --- | --- | --- | --- |
 | `Boolean/*` | `BooleanFormInputControl<TScope>` | Contacts filter | - |
 | `Number/*` | `NumberFormInputControl<TScope>` | Hours, Materials | - |

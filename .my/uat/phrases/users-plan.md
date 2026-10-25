@@ -11,7 +11,7 @@ settled.
   keeps assignees when the field is **missing** and replaces them when present, even `[]`. Only
   available users can be assigned; an inactive or expired assignee stays on the todo, marked.
   The edit page gets an "Assigned to" section with a CheckBox row per available user
-  (`TodoEdit_Assignees`), which exercises Brinell's collection and toggle controls.
+  (`TodoEdit_Assignees`), which exercises Bruinell's collection and toggle controls.
 - **"Me".** A **Sign in as** action on a user row, `TODO_USER` as a launch setting, "Signed in as"
   on the list (`TodoList_Me`), and `X-Todo-User` recorded by the API. No passwords. The
   multi-app `Apps` table's `User` column fills `TODO_USER`, so `Daan` in a step is both the app
@@ -27,4 +27,4 @@ settled.
 
 The user form exercises controls the Todo app had not used before. Android has not run them:
 Picker was broken there and Stepper and Slider had gaps ([the Android plan](https://github.com/exact-mobile-apps/test-tooling/blob/ec96de1f/.my/android/plan.md) A1-A3).
-Fix the gaps in Brinell's controls when the Android tests are written, never in the app.
+Fix the gaps in Bruinell's controls when the Android tests are written, never in the app.

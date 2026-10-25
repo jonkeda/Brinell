@@ -1,7 +1,7 @@
 # Run The Native Android UI Tests
 
-`testsnew/Brinell.NativeAndroid.UITests` drives the gallery app
-(`samples/Brinell.Samples.NativeAndroid.App`) on an Android emulator through Appium. It holds the
+`testsnew/Bruinell.NativeAndroid.UITests` drives the gallery app
+(`samples/Bruinell.Samples.NativeAndroid.App`) on an Android emulator through Appium. It holds the
 UI tests and the platform's UAT suite. CI does not run it: it needs a device.
 
 ## Once
@@ -13,7 +13,7 @@ UI tests and the platform's UAT suite. CI does not run it: it needs a device.
 
 ## Each time
 
-From the Brinell root:
+From the Bruinell root:
 
 ```powershell
 # The emulator. Software rendering: with the host GPU, screenshots and recordings came out black.
@@ -23,12 +23,12 @@ From the Brinell root:
 appium --address 127.0.0.1 --port 4723
 
 # The gallery APK. Rebuild it whenever anything under samples/ changed: the fixture installs it.
-dotnet build samples\Brinell.Samples.NativeAndroid.App -v:minimal
+dotnet build samples\Bruinell.Samples.NativeAndroid.App -v:minimal
 
 # The tests: one class, the UAT suite, or everything.
-dotnet test testsnew\Brinell.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"
-dotnet test testsnew\Brinell.NativeAndroid.UITests --filter "Category=UAT"
-dotnet test testsnew\Brinell.NativeAndroid.UITests
+dotnet test testsnew\Bruinell.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"
+dotnet test testsnew\Bruinell.NativeAndroid.UITests --filter "Category=UAT"
+dotnet test testsnew\Bruinell.NativeAndroid.UITests
 ```
 
 The fixture opens one Appium session for the whole run and installs the APK it finds under the
@@ -43,8 +43,8 @@ restart it when runs slow down.
 ## Recording
 
 ```powershell
-$env:BRINELL_RECORD = "1"; $env:BRINELL_RECORD_DIR = "TestResults\recordings"
-dotnet test testsnew\Brinell.NativeAndroid.UITests --filter "Category=UAT"
+$env:BRUINELL_RECORD = "1"; $env:BRUINELL_RECORD_DIR = "TestResults\recordings"
+dotnet test testsnew\Bruinell.NativeAndroid.UITests --filter "Category=UAT"
 ```
 
 Each scenario is recorded with `adb screenrecord`, with its taps and typing in the timeline.

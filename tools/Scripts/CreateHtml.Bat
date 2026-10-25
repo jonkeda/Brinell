@@ -2,14 +2,14 @@
 setlocal
 
 rem Generates .gen.cs files from every .tpl.cs file under the Html and Blazor Controls folders
-rem (Brinell.Html and Brinell.Blazor) using the Brinell ControlObject generator.
+rem (Bruinell.Html and Bruinell.Blazor) using the Bruinell ControlObject generator.
 
 set "SCRIPT_DIR=%~dp0"
-set "CLI_PROJECT=%SCRIPT_DIR%..\Brinell.Cli\Brinell.Cli.csproj"
-set "CLI_EXE=%SCRIPT_DIR%..\Brinell.Cli\bin\Release\net10.0\brinell.exe"
-set "INPUT=%SCRIPT_DIR%..\..\srcnew\Brinell.Html\Controls;%SCRIPT_DIR%..\..\srcnew\Brinell.Blazor\Controls"
+set "CLI_PROJECT=%SCRIPT_DIR%..\Bruinell.Cli\Bruinell.Cli.csproj"
+set "CLI_EXE=%SCRIPT_DIR%..\Bruinell.Cli\bin\Release\net10.0\bruinell.exe"
+set "INPUT=%SCRIPT_DIR%..\..\srcnew\Bruinell.Html\Controls;%SCRIPT_DIR%..\..\srcnew\Bruinell.Blazor\Controls"
 
-echo Building brinell...
+echo Building bruinell...
 dotnet build "%CLI_PROJECT%" -c Release -v:minimal /nr:false
 if errorlevel 1 (
     echo Build failed.

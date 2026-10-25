@@ -1,0 +1,277 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.11-manage-users.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.11 Manage users</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinell.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Users</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.11</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>team</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, users</td>
+</tr>
+<tr>
+<td>Using</td>
+<td>Users</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="15"><span class="uat-tag">@TOD.11.1</span> <span class="uat-tag">@TOD.11.6</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="16" data-scenario="TOD.11.1 Users lists available users first, each with its role and state"><span class="uat-kw">Scenario</span> TOD.11.1 Users lists available users first, each with its role and state</h2>
+<ol class="uat-steps" data-line="18">
+<li class="uat-step" data-line="19"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="20"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="21"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="22"><span class="uat-kw">And</span><span class="uat-text">the users should be listed as <span class="uat-value">&quot;Daan&quot;</span>, <span class="uat-value">&quot;Eva&quot;</span>, <span class="uat-value">&quot;Finn&quot;</span>, <span class="uat-value">&quot;Gus&quot;</span> and <span class="uat-value">&quot;Hana&quot;</span></span>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Daan&quot;</span> should show role <span class="uat-value">&quot;Lead&quot;</span></span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Eva&quot;</span> should show no state</span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Finn&quot;</span> should show state <span class="uat-value">&quot;Expired&quot;</span></span>
+</li>
+<li class="uat-step" data-line="26"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Gus&quot;</span> should show state <span class="uat-value">&quot;Inactive&quot;</span></span>
+</li>
+<li class="uat-step" data-line="27"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Hana&quot;</span> should show state <span class="uat-value">&quot;On leave&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="30"><span class="uat-tag">@TOD.11.2</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="31" data-scenario="TOD.11.2 A user added with every field shows in the list, and the server has each value"><span class="uat-kw">Scenario</span> TOD.11.2 A user added with every field shows in the list, and the server has each value</h2>
+<ol class="uat-steps" data-line="33">
+<li class="uat-step" data-line="34"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="35"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="36"><span class="uat-kw">And</span><span class="uat-text">I tap Add</span>
+</li>
+<li class="uat-step" data-line="37"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User Edit page</span>
+</li>
+<li class="uat-step" data-line="38"><span class="uat-kw">When</span><span class="uat-text">I set Name to <span class="uat-value">&quot;Ivo&quot;</span></span>
+</li>
+<li class="uat-step" data-line="39"><span class="uat-kw">And</span><span class="uat-text">I set Email to <span class="uat-value">&quot;ivo@example.com&quot;</span></span>
+</li>
+<li class="uat-step" data-line="40"><span class="uat-kw">And</span><span class="uat-text">I select <span class="uat-value">&quot;Lead&quot;</span> from Role</span>
+</li>
+<li class="uat-step" data-line="41"><span class="uat-kw">And</span><span class="uat-text">I set the hours per week to 32</span>
+</li>
+<li class="uat-step" data-line="42"><span class="uat-kw">And</span><span class="uat-text">I set Rate to <span class="uat-value">&quot;1,250.75&quot;</span></span>
+</li>
+<li class="uat-step" data-line="43"><span class="uat-kw">And</span><span class="uat-text">I set the start of day to 08:30</span>
+</li>
+<li class="uat-step" data-line="44"><span class="uat-kw">And</span><span class="uat-text">I uncheck Reminders</span>
+</li>
+<li class="uat-step" data-line="45"><span class="uat-kw">And</span><span class="uat-text">I set the workload to 35 %</span>
+</li>
+<li class="uat-step" data-line="46"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="47"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="48"><span class="uat-kw">And</span><span class="uat-text">Users should have user <span class="uat-value">&quot;Ivo&quot;</span></span>
+</li>
+<li class="uat-step" data-line="49"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Ivo&quot;</span> should show role <span class="uat-value">&quot;Lead&quot;</span></span>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">And</span><span class="uat-text">the server should have users</span>
+<table class="uat-table" data-line="51">
+<thead><tr><th>Name</th><th>Role</th><th>Hours Per Week</th><th>Hourly Rate</th><th>Start Of Day</th><th>Receives Reminders</th><th>Workload</th></tr></thead>
+<tbody>
+<tr data-line="53"><td>Ivo</td><td>Lead</td><td>32</td><td>1,250.75</td><td>08:30</td><td>off</td><td>35</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="56"><span class="uat-tag">@TOD.11.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="57" data-scenario="TOD.11.3 Bad values show an error on each field, and the form stays"><span class="uat-kw">Scenario</span> TOD.11.3 Bad values show an error on each field, and the form stays</h2>
+<ol class="uat-steps" data-line="59">
+<li class="uat-step" data-line="60"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="61"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="62"><span class="uat-kw">And</span><span class="uat-text">I tap Add</span>
+</li>
+<li class="uat-step" data-line="63"><span class="uat-kw">And</span><span class="uat-text">I set Email to <span class="uat-value">&quot;eva@&quot;</span></span>
+</li>
+<li class="uat-step" data-line="64"><span class="uat-kw">And</span><span class="uat-text">I set Rate to <span class="uat-value">&quot;1,5&quot;</span></span>
+</li>
+<li class="uat-step" data-line="65"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="66"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User Edit page</span>
+</li>
+<li class="uat-step" data-line="67"><span class="uat-kw">And</span><span class="uat-text">Name Error should equal <span class="uat-value">&quot;Name is required&quot;</span></span>
+</li>
+<li class="uat-step" data-line="68"><span class="uat-kw">And</span><span class="uat-text">Email Error should equal <span class="uat-value">&quot;Enter an email address such as eva@example.com&quot;</span></span>
+</li>
+<li class="uat-step" data-line="69"><span class="uat-kw">And</span><span class="uat-text">Rate Error should equal <span class="uat-value">&quot;Enter a rate such as 1,250.75&quot;</span></span>
+</li>
+<li class="uat-step" data-line="70"><span class="uat-kw">When</span><span class="uat-text">I set Name to <span class="uat-value">&quot;Eva&quot;</span></span>
+</li>
+<li class="uat-step" data-line="71"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="72"><span class="uat-kw">Then</span><span class="uat-text">Name Error should equal <span class="uat-value">&quot;Another user already has this name&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="75"><span class="uat-tag">@TOD.11.4</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="76" data-scenario="TOD.11.4 Editing a user changes what the list shows"><span class="uat-kw">Scenario</span> TOD.11.4 Editing a user changes what the list shows</h2>
+<ol class="uat-steps" data-line="78">
+<li class="uat-step" data-line="79"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="80"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="81"><span class="uat-kw">And</span><span class="uat-text">I open the user <span class="uat-value">&quot;Hana&quot;</span></span>
+</li>
+<li class="uat-step" data-line="82"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User Edit page</span>
+</li>
+<li class="uat-step" data-line="83"><span class="uat-kw">And</span><span class="uat-text">the status should be <span class="uat-value">&quot;On leave&quot;</span></span>
+</li>
+<li class="uat-step" data-line="84"><span class="uat-kw">When</span><span class="uat-text">I select <span class="uat-value">&quot;Lead&quot;</span> from Role</span>
+</li>
+<li class="uat-step" data-line="85"><span class="uat-kw">And</span><span class="uat-text">I set the status to <span class="uat-value">&quot;Active&quot;</span></span>
+</li>
+<li class="uat-step" data-line="86"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="87"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="88"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Hana&quot;</span> should show role <span class="uat-value">&quot;Lead&quot;</span></span>
+</li>
+<li class="uat-step" data-line="89"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Hana&quot;</span> should show no state</span>
+</li>
+<li class="uat-step" data-line="90"><span class="uat-kw">And</span><span class="uat-text">the server should have users</span>
+<table class="uat-table" data-line="91">
+<thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead>
+<tbody>
+<tr data-line="93"><td>Hana</td><td>Lead</td><td>Active</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="96"><span class="uat-tag">@TOD.11.5</span> <span class="uat-tag">@TOD.11.6</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="97" data-scenario="TOD.11.5 An end date is set only when checked; a past one shows Expired"><span class="uat-kw">Scenario</span> TOD.11.5 An end date is set only when checked; a past one shows Expired</h2>
+<ol class="uat-steps" data-line="99">
+<li class="uat-step" data-line="100"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="101"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="102"><span class="uat-kw">And</span><span class="uat-text">I tap Add</span>
+</li>
+<li class="uat-step" data-line="103"><span class="uat-kw">And</span><span class="uat-text">I set Name to <span class="uat-value">&quot;Kees&quot;</span></span>
+</li>
+<li class="uat-step" data-line="104"><span class="uat-kw">Then</span><span class="uat-text">Allowed Until should be disabled</span>
+</li>
+<li class="uat-step" data-line="105"><span class="uat-kw">When</span><span class="uat-text">I set the end date to 09-Mar-2026</span>
+</li>
+<li class="uat-step" data-line="106"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="107"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="108"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Kees&quot;</span> should show state <span class="uat-value">&quot;Expired&quot;</span></span>
+</li>
+<li class="uat-step" data-line="109"><span class="uat-kw">And</span><span class="uat-text">the server should have users</span>
+<table class="uat-table" data-line="110">
+<thead><tr><th>Name</th><th>Allowed Until</th></tr></thead>
+<tbody>
+<tr data-line="112"><td>Kees</td><td>09-Mar-2026</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="115"><span class="uat-tag">@TOD.11.7</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="116" data-scenario="TOD.11.7 An inactive user stays listed, and their name can be used again"><span class="uat-kw">Scenario</span> TOD.11.7 An inactive user stays listed, and their name can be used again</h2>
+<ol class="uat-steps" data-line="118">
+<li class="uat-step" data-line="119"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="120"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="121"><span class="uat-kw">And</span><span class="uat-text">I add a user <span class="uat-value">&quot;Mo&quot;</span></span>
+</li>
+<li class="uat-step" data-line="122"><span class="uat-kw">And</span><span class="uat-text">I open the user <span class="uat-value">&quot;Mo&quot;</span></span>
+</li>
+<li class="uat-step" data-line="123"><span class="uat-kw">And</span><span class="uat-text">I set the status to <span class="uat-value">&quot;Inactive&quot;</span></span>
+</li>
+<li class="uat-step" data-line="124"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="125"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="126"><span class="uat-kw">And</span><span class="uat-text">the user <span class="uat-value">&quot;Mo&quot;</span> should show state <span class="uat-value">&quot;Inactive&quot;</span></span>
+</li>
+<li class="uat-step" data-line="127"><span class="uat-kw">When</span><span class="uat-text">I add a user <span class="uat-value">&quot;Mo&quot;</span></span>
+</li>
+<li class="uat-step" data-line="128"><span class="uat-kw">Then</span><span class="uat-text">the server should have users</span>
+<table class="uat-table" data-line="129">
+<thead><tr><th>Name</th><th>Status</th></tr></thead>
+<tbody>
+<tr data-line="131"><td>Mo</td><td>Inactive</td></tr>
+<tr data-line="132"><td>Mo</td><td>Active</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="135"><span class="uat-tag">@TOD.11.8</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="136" data-scenario="TOD.11.8 Offline, the list still shows, Add is disabled and the page says why"><span class="uat-kw">Scenario</span> TOD.11.8 Offline, the list still shows, Add is disabled and the page says why</h2>
+<ol class="uat-steps" data-line="138">
+<li class="uat-step" data-line="139"><span class="uat-kw">Given</span><span class="uat-text">the device is offline</span>
+</li>
+<li class="uat-step" data-line="140"><span class="uat-kw">And</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="141"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="142"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="143"><span class="uat-kw">And</span><span class="uat-text">Offline Notice should equal <span class="uat-value">&quot;You are offline. Users can be viewed, but not changed.&quot;</span></span>
+</li>
+<li class="uat-step" data-line="144"><span class="uat-kw">And</span><span class="uat-text">Add should be disabled</span>
+</li>
+<li class="uat-step" data-line="145"><span class="uat-kw">And</span><span class="uat-text">Users should have user <span class="uat-value">&quot;Eva&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="148"><span class="uat-tag">@TOD.11.9</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@users</span></p>
+<h2 class="uat-scenario" data-line="149" data-scenario="TOD.11.9 A user added on another device shows after a sync"><span class="uat-kw">Scenario</span> TOD.11.9 A user added on another device shows after a sync</h2>
+<ol class="uat-steps" data-line="151">
+<li class="uat-step" data-line="152"><span class="uat-kw">Given</span><span class="uat-text">the server also has a user <span class="uat-value">&quot;Noor&quot;</span></span>
+</li>
+<li class="uat-step" data-line="153"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="154">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="156"><td>Welcome Noor</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="157"><span class="uat-kw">And</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="158"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="159"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Welcome Noor&quot;</span></span>
+</li>
+<li class="uat-step" data-line="160"><span class="uat-kw">When</span><span class="uat-text">I tap Users</span>
+</li>
+<li class="uat-step" data-line="161"><span class="uat-kw">Then</span><span class="uat-text">I should be on the User List page</span>
+</li>
+<li class="uat-step" data-line="162"><span class="uat-kw">And</span><span class="uat-text">Users should have user <span class="uat-value">&quot;Noor&quot;</span></span>
+</li>
+</ol>
+</article>

@@ -6,17 +6,17 @@ plan and the guide disagree, note it as a finding. Earlier, broader plan (Blazor
 [manual-test-plan.md](manual-test-plan.md).
 
 Tick a task when it passes. When one fails, write **FAIL** and a note under it. Also take a
-screenshot, copy the message under the header and the output from Output > "Brinell BDD", and
+screenshot, copy the message under the header and the output from Output > "Bruinell BDD", and
 log an issue in [issues/](issues/).
 
 ## Before you start
 
 - [x] Bouw7 **acceptance** web app URL known: `<fill in URL>`. Never production. Sign-in goes through `login-acc.bouw7.nl`.
 - [x] A Bouw7 acc test account. You sign in yourself in the Scraper's browser; the Scraper never types credentials.
-- [x] Chromium installed. From the Brinell root:
-  - [x] `dotnet build testsnew\Brinell.Html.UITests`
-  - [x] `pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`
-- [x] Extension running. Either open `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx` and press **Ctrl+F5**, or install the `.vsix`. In the instance, open `srcnew\Brinell.sln`.
+- [x] Chromium installed. From the Bruinell root:
+  - [x] `dotnet build testsnew\Bruinell.Html.UITests`
+  - [x] `pwsh testsnew\Bruinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`
+- [x] Extension running. Either open `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx` and press **Ctrl+F5**, or install the `.vsix`. In the instance, open `srcnew\Bruinell.sln`.
 - [x] `.playwright\node\win32_x64\node.exe` exists under the extension's `Server\` folder.
 - [x] Remember: acc holds realistic contacts and projects. Do not commit `Recordings/` or `.scraper-state.json`.
 
@@ -101,7 +101,7 @@ log an issue in [issues/](issues/).
 - [ ] **X-1** Cut the network (or set a wrong Start URL), then **Check the app**.
   A readable message that stays until the check passes or another step opens.
 - [ ] **X-2** Close the Visual Studio instance in the middle of Explore, then reopen it.
-  - [ ] No Chromium or `brinell` process is left running.
+  - [ ] No Chromium or `bruinell` process is left running.
   - [ ] The view opens on the step to do next.
 
 ## After

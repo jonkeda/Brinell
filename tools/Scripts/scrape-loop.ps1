@@ -12,7 +12,7 @@
       2. Explore  scrape explore --headless --yes, with the profile's guards
       3. Guards   the test site's counters: what Explore was allowed to do, and no more
       4. Draft    scrape draft: page objects that build, or put back
-      5. Agent    Copilot CLI or Claude Code, with only the Brinell MCP server's tools (skipped for none)
+      5. Agent    Copilot CLI or Claude Code, with only the Bruinell MCP server's tools (skipped for none)
       6. Verify   scrape verify: every member found once in the running app
       7. Report   loop-report.md and loop-report.json, written even when a stage fails
 
@@ -96,10 +96,10 @@ if ($Target -eq 'sites') {
 $targets = @{
     'test-site'     = @{ Project = 'Site.UITests'; Start = 'index.html'; MinPages = 4; Counters = $true; Blazor = $false }
     'blazor-sample' = @{ Project = 'BlazorSample.UITests'; Start = ''; MinPages = 3; Counters = $false; Blazor = $true }
-    'plain'         = @{ Project = 'Brinell.Html.Plain'; Site = $true; MinCaptures = 1 }
-    'react'         = @{ Project = 'Brinell.Html.React'; Site = $true; MinCaptures = 2 }
-    'vue2'          = @{ Project = 'Brinell.Html.Vue2'; Site = $true; MinCaptures = 2 }
-    'blazor'        = @{ Project = 'Brinell.Html.Blazor'; Site = $true; MinCaptures = 2; Blazor = $true }
+    'plain'         = @{ Project = 'Bruinell.Html.Plain'; Site = $true; MinCaptures = 1 }
+    'react'         = @{ Project = 'Bruinell.Html.React'; Site = $true; MinCaptures = 2 }
+    'vue2'          = @{ Project = 'Bruinell.Html.Vue2'; Site = $true; MinCaptures = 2 }
+    'blazor'        = @{ Project = 'Bruinell.Html.Blazor'; Site = $true; MinCaptures = 2; Blazor = $true }
 }
 $spec = $targets[$Target]
 
@@ -126,7 +126,7 @@ function Start-App {
         return @{ Process = $null; Url = $url; Down = ($status -lt 200 -or $status -ge 400); Status = $status }
     }
     if ($Target -eq 'test-site') {
-        $dll = Join-Path $root 'testsnew/Brinell.Scraper.TestSite/bin/Debug/net10.0/Brinell.Scraper.TestSite.dll'
+        $dll = Join-Path $root 'testsnew/Bruinell.Scraper.TestSite/bin/Debug/net10.0/Bruinell.Scraper.TestSite.dll'
         $info = [System.Diagnostics.ProcessStartInfo]::new('dotnet', "`"$dll`"")
         $info.RedirectStandardInput = $true; $info.RedirectStandardOutput = $true; $info.UseShellExecute = $false
         $process = [System.Diagnostics.Process]::Start($info)
@@ -136,7 +136,7 @@ function Start-App {
     }
     $port = Get-FreePort
     $url = "http://localhost:$port/"
-    $app = Join-Path $root 'samples/Brinell.Samples.Blazor.App'
+    $app = Join-Path $root 'samples/Bruinell.Samples.Blazor.App'
     $info = [System.Diagnostics.ProcessStartInfo]::new('dotnet', "run --no-build --project `"$app`" --urls $url")
     $info.RedirectStandardInput = $true; $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true; $info.UseShellExecute = $false
     $process = [System.Diagnostics.Process]::Start($info)
@@ -170,20 +170,20 @@ function Write-Project([string]$project, [string[]]$references) {
 "@ | Set-Content (Join-Path $project "$($spec.Project).csproj")
 }
 
-# A new UI test project for the target in the run's folder, restored from nuget.org as Brinell is.
+# A new UI test project for the target in the run's folder, restored from nuget.org as Bruinell is.
 function New-TargetProject([string]$folder, [string]$url) {
     $project = Join-Path $folder 'tests' $spec.Project
     New-Item -ItemType Directory -Force $project | Out-Null
     Copy-Item (Join-Path $root 'nuget.config') (Join-Path $folder 'nuget.config')
-    $references = @("<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Html/Brinell.Html.csproj')`" />")
+    $references = @("<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinell.Html/Bruinell.Html.csproj')`" />")
     if ($spec.Site) {
         # The site's own config, as committed: the loop's copy changes nothing in Scraper.Sites.
-        if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Blazor/Brinell.Blazor.csproj')`" />" }
+        if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinell.Blazor/Bruinell.Blazor.csproj')`" />" }
         Write-Project $project $references
         Copy-Item (Join-Path $root 'Scraper.Sites' $spec.Project 'scraper.config.md') (Join-Path $project 'scraper.config.md')
         return $project
     }
-    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Brinell.Blazor/Brinell.Blazor.csproj')`" />" }
+    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinell.Blazor/Bruinell.Blazor.csproj')`" />" }
     Write-Project $project $references
 
     $explore = @('| DelayMs | 50 |')
@@ -223,7 +223,7 @@ $($sections -join "`n`n")
     return $project
 }
 
-# brinell scrape; its exit code and its JSON.
+# bruinell scrape; its exit code and its JSON.
 function Invoke-Scrape([string[]]$arguments) {
     $out = & dotnet $server scrape @arguments --json 2>$null
     $text = $out -join "`n"
@@ -234,16 +234,16 @@ function Invoke-Scrape([string[]]$arguments) {
 
 function Invoke-Agent([string]$solution, [string]$project, [string]$logFile) {
     $minutes = if ($AgentMinutes -gt 0) { $AgentMinutes } else { 10 }
-    $prompt = "Use only the brinell-bdd MCP tools. In the scraped project $($spec.Project), follow the scrape-pages workflow on the drafted page objects (the *.scraped.cs files): detect_patterns, and for each repeated pattern write a control with write_code; give members better names where the draft's are poor; then check_code until it passes. Do not start or stop recordings, and do not explore."
-    $mcp = @{ mcpServers = @{ 'brinell-bdd' = @{ type = 'local'; command = 'dotnet'; args = @($server, 'mcp', '--solution', $solution); tools = @('*') } } } | ConvertTo-Json -Depth 5 -Compress
+    $prompt = "Use only the bruinell-bdd MCP tools. In the scraped project $($spec.Project), follow the scrape-pages workflow on the drafted page objects (the *.scraped.cs files): detect_patterns, and for each repeated pattern write a control with write_code; give members better names where the draft's are poor; then check_code until it passes. Do not start or stop recordings, and do not explore."
+    $mcp = @{ mcpServers = @{ 'bruinell-bdd' = @{ type = 'local'; command = 'dotnet'; args = @($server, 'mcp', '--solution', $solution); tools = @('*') } } } | ConvertTo-Json -Depth 5 -Compress
     if ($Agent -eq 'copilot') {
         $command = 'copilot'
-        $arguments = @('-p', $prompt, '--additional-mcp-config', $mcp, '--allow-tool', 'brinell-bdd', '--deny-tool', 'shell', '--deny-tool', 'write')
+        $arguments = @('-p', $prompt, '--additional-mcp-config', $mcp, '--allow-tool', 'bruinell-bdd', '--deny-tool', 'shell', '--deny-tool', 'write')
     } else {
         $config = Join-Path $solution 'mcp.json'
         $mcp.Replace('"type":"local"', '"type":"stdio"') | Set-Content $config
         $command = 'claude'
-        $arguments = @('-p', $prompt, '--mcp-config', $config, '--strict-mcp-config', '--allowed-tools', 'mcp__brinell-bdd', '--output-format', 'json')
+        $arguments = @('-p', $prompt, '--mcp-config', $config, '--strict-mcp-config', '--allowed-tools', 'mcp__bruinell-bdd', '--output-format', 'json')
     }
     $job = Start-Job -ScriptBlock { param($c, $a, $d) Set-Location $d; & $c @a 2>&1 } -ArgumentList $command, $arguments, $root
     if (-not (Wait-Job $job -Timeout ($minutes * 60))) {
@@ -264,10 +264,10 @@ function Get-Files([string]$folder) {
 }
 
 Write-Host "scrape-loop: $Target, agent $Agent, profile $Profile, $Repeat run(s) into $OutDir"
-Invoke-Build 'tools/Brinell.Cli/Brinell.Cli.csproj'
-if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Brinell.Scraper.TestSite/Brinell.Scraper.TestSite.csproj' }
-elseif (-not $spec.Site) { Invoke-Build 'samples/Brinell.Samples.Blazor.App/Brinell.Samples.Blazor.App.csproj' }
-$server = Join-Path $root 'tools/Brinell.Cli/bin/Debug/net10.0/brinell.dll'
+Invoke-Build 'tools/Bruinell.Cli/Bruinell.Cli.csproj'
+if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Bruinell.Scraper.TestSite/Bruinell.Scraper.TestSite.csproj' }
+elseif (-not $spec.Site) { Invoke-Build 'samples/Bruinell.Samples.Blazor.App/Bruinell.Samples.Blazor.App.csproj' }
+$server = Join-Path $root 'tools/Bruinell.Cli/bin/Debug/net10.0/bruinell.dll'
 $repoBefore = & git -C $root status --porcelain
 
 $runs = @()

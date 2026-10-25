@@ -1,4 +1,4 @@
-# Brinell Framework Versioning Strategy
+# Bruinell Framework Versioning Strategy
 
 **Version:** 1.0  
 **Status:** Active  
@@ -9,7 +9,7 @@
 
 ## Overview
 
-This document defines the versioning strategy for all Brinell framework packages (Core, MAUI, Blazor, etc.). All packages follow semantic versioning (SemVer) with extensions for pre-release stability.
+This document defines the versioning strategy for all Bruinell framework packages (Core, MAUI, Blazor, etc.). All packages follow semantic versioning (SemVer) with extensions for pre-release stability.
 
 ---
 
@@ -275,9 +275,9 @@ v3.0.0: Old Entry removed entirely
 
 ### Package Structure
 ```
-Brinell.Maui.Controls.1.0.0.nupkg
-Brinell.Maui.Controls.1.0.0-beta.1.nupkg
-Brinell.Maui.Controls.2.0.0-rc.1.nupkg
+Bruinell.Maui.Controls.1.0.0.nupkg
+Bruinell.Maui.Controls.1.0.0-beta.1.nupkg
+Bruinell.Maui.Controls.2.0.0-rc.1.nupkg
 ```
 
 ### Package Metadata
@@ -384,7 +384,7 @@ Brinell.Maui.Controls.2.0.0-rc.1.nupkg
 ### Version Checking
 ```powershell
 # Check current version
-dotnet package-info Brinell.Maui.Controls
+dotnet package-info Bruinell.Maui.Controls
 
 # Compare versions
 [version]"2.0.0" -gt [version]"1.5.0"  # Returns True
@@ -393,7 +393,7 @@ dotnet package-info Brinell.Maui.Controls
 ### Version Bumping
 ```powershell
 # Manual (before commit)
-# Edit src/Brinell.Maui.Controls/Brinell.Maui.Controls.csproj
+# Edit src/Bruinell.Maui.Controls/Bruinell.Maui.Controls.csproj
 # Change <Version>1.0.0</Version> to <Version>1.0.1</Version>
 
 # Build to verify
@@ -425,7 +425,7 @@ A: Yes, 1.0.100+ is valid. But if you have many patches, consider MINOR instead.
 
 **Last Reviewed:** January 3, 2026  
 **Next Review:** April 3, 2026  
-**Owner:** Brinell Team  
+**Owner:** Bruinell Team  
 **Status:** Active & Enforced
 
 Changes to this document require team consensus before implementation.
@@ -435,4 +435,4 @@ Changes to this document require team consensus before implementation.
 See also:
 - [PLAN-011: MAUI Implementation](plan/PLAN-011-MAUI-Detailed-Implementation.md) - Version targets per phase
 - [CHANGELOG.md](CHANGELOG.md) - Version history
-- [PACKAGE-README.md](src/Brinell.Maui.Controls/PACKAGE-README.md) - NuGet package info
+- [PACKAGE-README.md](src/Bruinell.Maui.Controls/PACKAGE-README.md) - NuGet package info

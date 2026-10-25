@@ -1,19 +1,19 @@
 # Native Android Platform Guide
 
-`Brinell.NativeAndroid` tests Android apps that are not MAUI apps (Views, AndroidX, Material),
+`Bruinell.NativeAndroid` tests Android apps that are not MAUI apps (Views, AndroidX, Material),
 through Appium and UiAutomator2. It has the shape of the MAUI and Html stacks: page objects,
 generated ControlObjects with the same members and UAT verbs, one call model (act once, confirm,
 wait for state), scope readiness and collections with item keys.
 
 ## Projects
 
-- `srcnew/Brinell.NativeAndroid`: interfaces, the Appium adapter, pages, containers, collections,
+- `srcnew/Bruinell.NativeAndroid`: interfaces, the Appium adapter, pages, containers, collections,
   controls.
-- `srcnew/Brinell.Appium`: what the Appium stacks share (Appium's error mapping, `AndroidHost`,
+- `srcnew/Bruinell.Appium`: what the Appium stacks share (Appium's error mapping, `AndroidHost`,
   `AndroidRecorder`).
-- `testsnew/Brinell.NativeAndroid.Tests`: unit tests over a mocked app (CI runs them).
-- `testsnew/Brinell.NativeAndroid.UITests`: UI tests and the UAT suite against the gallery app.
-- `samples/Brinell.Samples.NativeAndroid.App`: the gallery app (.NET for Android).
+- `testsnew/Bruinell.NativeAndroid.Tests`: unit tests over a mocked app (CI runs them).
+- `testsnew/Bruinell.NativeAndroid.UITests`: UI tests and the UAT suite against the gallery app.
+- `samples/Bruinell.Samples.NativeAndroid.App`: the gallery app (.NET for Android).
 
 ## A session
 
@@ -62,7 +62,7 @@ the whole screen.
 
 **Readiness** is asked on every attempt of every call, outermost first: the app in front (a system
 dialog or another app is a not-ready reason that names itself), the page's activity and ready view,
-then the busy signal. **The busy signal:** an app shows a view with resource id `brinell_busy` while
+then the busy signal. **The busy signal:** an app shows a view with resource id `bruinell_busy` while
 it works; while it is shown the page is busy and calls wait. A page can name more busy views
 (`BusyIndicators`). This costs about half a second per attempt on the emulator, in Appium round
 trips.
@@ -98,15 +98,15 @@ What is Android's own:
 ## Evidence and recording
 
 `NativeAndroidEvidenceCapture` saves the screen and the view hierarchy. The context is
-`IRecordable`: `BRINELL_RECORD` records scenarios with `adb screenrecord`, and every tap, long
+`IRecordable`: `BRUINELL_RECORD` records scenarios with `adb screenrecord`, and every tap, long
 press, swipe and typed text is a touch mark on the video (AD-024).
 
 ## Tests
 
-Unit tests (no device), from the Brinell root:
+Unit tests (no device), from the Bruinell root:
 
 ```powershell
-dotnet test testsnew\Brinell.NativeAndroid.Tests\Brinell.NativeAndroid.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.NativeAndroid.Tests\Bruinell.NativeAndroid.Tests.csproj -v:minimal /nr:false
 ```
 
 UI tests and UAT need the emulator and Appium: [run/native-android.md](../run/native-android.md).

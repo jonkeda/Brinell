@@ -2,7 +2,7 @@
 
 Status: Guidance / discussion draft. [01](01-multi-user.md) was trimmed 2026-09-27: several apps and named users are built.
 Date: 2026-09-20
-Area: `srcnew/Brinell.Uat`, `srcnew/Brinell.Mocking`
+Area: `srcnew/Bruinell.Uat`, `srcnew/Bruinell.Mocking`
 
 Built-in phrases drive one screen and one control at a time — tap, enter,
 assert visible. Real systems are more than that: two users touching the same
@@ -33,14 +33,14 @@ And I should see "Buy milk"                                 # built-in
 And the database should hold 1 todo                        # custom: assert persistence
 ```
 
-The custom phrases are backed by the infrastructure Brinell already ships:
+The custom phrases are backed by the infrastructure Bruinell already ships:
 
 | Need | Backing type | Doc |
 | --- | --- | --- |
-| Simulate a second user / seed the backend | [MockApiServer](../../../srcnew/Brinell.Mocking/MockApiServer.cs) | [01-multi-user.md](01-multi-user.md) |
-| Assert the app called the service correctly | [MockApiServer.WaitForRequest](../../../srcnew/Brinell.Mocking/MockApiServer.cs), [RecordedRequest](../../../srcnew/Brinell.Mocking/RecordedRequest.cs) | [02-service-validations.md](02-service-validations.md) |
+| Simulate a second user / seed the backend | [MockApiServer](../../../srcnew/Bruinell.Mocking/MockApiServer.cs) | [01-multi-user.md](01-multi-user.md) |
+| Assert the app called the service correctly | [MockApiServer.WaitForRequest](../../../srcnew/Bruinell.Mocking/MockApiServer.cs), [RecordedRequest](../../../srcnew/Bruinell.Mocking/RecordedRequest.cs) | [02-service-validations.md](02-service-validations.md) |
 | Assert what was actually persisted | the app's `DatabasePath`, a read-only connection | [03-database-checks.md](03-database-checks.md) |
-| Offline, time, concurrency, retries, data-driven, artifacts | [NetworkStateFile](../../../srcnew/Brinell.Mocking/NetworkStateFile.cs), pinned clock, Scenario Outline | [04-other-complex-tests.md](04-other-complex-tests.md) |
+| Offline, time, concurrency, retries, data-driven, artifacts | [NetworkStateFile](../../../srcnew/Bruinell.Mocking/NetworkStateFile.cs), pinned clock, Scenario Outline | [04-other-complex-tests.md](04-other-complex-tests.md) |
 
 ---
 
@@ -51,7 +51,7 @@ puts each behaviour at the **lowest tier that gives confidence**. Most "complex"
 logic — merge rules, validation matrices, sync ordering, idempotence, conflict
 resolution — belongs in **Unit** or **Integration** tests, which are faster and
 more direct than driving a screen. The
-[integration host](../../../samples/Todo/tests/Brinell.Samples.Todo.IntegrationTests/TodoHost.cs)
+[integration host](../../../samples/Todo/tests/Bruinell.Samples.Todo.IntegrationTests/TodoHost.cs)
 exercises the real composition, real SQLite and a WireMock backend with **no UI**
 and is the right home for a wire-order or tombstone check.
 

@@ -1,7 +1,7 @@
 # iOS: the fixes and the runs
 
 Section 6 of [the 2026-10-21 plan](../reviews/2026-10-21-plan.md) (I1, I2), on its own, checked
-against the code at 8df76015. Status: **P1-P5 written**, 2026-10-22, not committed: unit tests green on a Mac (`Brinell.Maui.Tests` 209 of 211, the one failure the known `FindItem_ReturnsNullWhenNoMatch` timing; `Brinell.Appium.Tests` 24 of 24); R1-R5 open. The fixes are written on Windows; the
+against the code at 8df76015. Status: **P1-P5 written**, 2026-10-22, not committed: unit tests green on a Mac (`Bruinell.Maui.Tests` 209 of 211, the one failure the known `FindItem_ReturnsNullWhenNoMatch` timing; `Bruinell.Appium.Tests` 24 of 24); R1-R5 open. The fixes are written on Windows; the
 runs need a Mac. [README.md](README.md) is the run's reference (routes, commands, tree dumps).
 
 Each item says who: **Claude** (code, docs, unit tests on Windows) or **a person** (a Mac).
@@ -21,8 +21,8 @@ Found while checking: M3 made the scroll routine budgeted on Android only. `Scro
 M7's iOS answers (`IosShellChrome`, the page indicator, the `./*` child paths) are new since the
 README and are not run either (R3).
 
-There is no fake `IWebDriver` for `AppiumMauiDriver` in `Brinell.Appium.Tests` or
-`Brinell.Maui.Tests`. So the locators themselves are proved only on a simulator. Unit tests on
+There is no fake `IWebDriver` for `AppiumMauiDriver` in `Bruinell.Appium.Tests` or
+`Bruinell.Maui.Tests`. So the locators themselves are proved only on a simulator. Unit tests on
 Windows cover each fix's pure part: the decision from names and values, and the budget
 arithmetic.
 
@@ -30,14 +30,14 @@ arithmetic.
 
 | # | Item | Who | Contents | Done when |
 | --- | --- | --- | --- | --- |
-| P1 | **The root by the navigation bar's back button** | Claude | iOS: at the root when the `XCUIElementTypeNavigationBar` has no back button. Its back button is its first `XCUIElementTypeButton`, named after the previous page's title or `Back`. It is not the back button when its name is one of the flyout opener's (`OK`, `Menu`, `FlyoutIcon`, as `OpenFlyout` knows them). No navigation bar at all counts as the root, since `GoBack` already swipes from the edge when the bar is hidden. The decision (bar present, first button's name) goes into a static helper with unit tests; the remark "not yet run on a simulator" stays | Unit tests: no bar, a bar with no buttons, a bar whose first button is `Back` or a page title, a bar whose first button is the flyout opener; `Brinell.Maui.Tests` green |
+| P1 | **The root by the navigation bar's back button** | Claude | iOS: at the root when the `XCUIElementTypeNavigationBar` has no back button. Its back button is its first `XCUIElementTypeButton`, named after the previous page's title or `Back`. It is not the back button when its name is one of the flyout opener's (`OK`, `Menu`, `FlyoutIcon`, as `OpenFlyout` knows them). No navigation bar at all counts as the root, since `GoBack` already swipes from the edge when the bar is hidden. The decision (bar present, first button's name) goes into a static helper with unit tests; the remark "not yet run on a simulator" stays | Unit tests: no bar, a bar with no buttons, a bar whose first button is `Back` or a page title, a bar whose first button is the flyout opener; `Bruinell.Maui.Tests` green |
 | P2 | **The flyout by `visible`** | Claude | iOS: open when the flyout host is found **and** its `visible` attribute is `true`. Android keeps presence. A host found with `visible="false"` is shut. One `GetAttribute` on the host, inside the `Settle.Until` poll that already exists | A unit test over the helper reading `"true"`, `"false"` and null; Android's path unchanged |
 | P3 | **`TurnToIndex` under the budget** | Claude | Every step gated by `CallBudget.RemainingOr(...)`. When the budget runs out, a `ElementNotReadyException` names the row reached instead of a silent stop at `MaxWheelRows`. `TurnToIndex` serves only `Picker.SelectIndex` (dates and times are sent as text), and a picker's wheel names its row, not its index, so it still rewinds to the first row; the steps are a pure function (`TurnWheel`) with unit tests | Unit tests: steps from value to index both ways; a spent budget throws with the row reached; no loop without a deadline in `Wheels.cs` |
 | P4 | **The runbook's defaults** | Claude | `iPhone 17 Pro Max` and `26.5` in `MauiDriverFactory` and `MauiTestFixtureBase`, as one pair of constants both read, so they cannot drift again | A unit test: an iOS configuration with no device name or version gets the runbook's; `docs/run/maui-ios.md` unchanged |
 | P5 | **iOS scroll-into-view under the budget** | Claude | `ScrollIntoViewiOS` takes `ScrollIntoView`'s timeout as Android's does. `scrollToElement`, then `scroll toVisible`, and the blind swipe down only while budget remains. No empty catches: a refused script is `TryScript`'s false, with a comment, and the next way is tried; `ScrollIntoView` reports nothing itself, the caller's poll sees whether the element came into view | `grep` finds no empty `catch` in `ScrollIntoViewiOS`; a unit test that a 0 ms budget runs only the first strategy |
 
 One commit per item, on the checked-out branch (the owner pushes). After all five:
-`dotnet build Brinell.sln`, `Brinell.Maui.Tests` and `Brinell.Appium.Tests` green, and the
+`dotnet build Bruinell.sln`, `Bruinell.Maui.Tests` and `Bruinell.Appium.Tests` green, and the
 Windows MAUI head's tier 2 (`Tests.Container|Tests.Collection`) to show the shared code did not
 move. [README.md](README.md)'s table is updated for P1 and P2, and a row is added for P5.
 

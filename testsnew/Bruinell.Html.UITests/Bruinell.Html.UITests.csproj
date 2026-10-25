@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Html.UITests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Core\Bruinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html\Bruinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html.Bunit\Bruinell.Html.Bunit.csproj" />
+  </ItemGroup>
+
+  <!-- Built with the tests and started by them on the browser head (TestBase/BlazorSample); referenced for the bUnit head, which renders its Routes (TestBase/BlazorSampleBunit). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\samples\Bruinell.Samples.Blazor.App\Bruinell.Samples.Blazor.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- The UAT suite: uat.config.md, Features/ and Uat/ (the fixture and the scenario test class). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Uat\Bruinell.Uat.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinell.Bdd" />
+  </ItemGroup>
+
+</Project>

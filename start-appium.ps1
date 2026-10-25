@@ -1,4 +1,4 @@
-# Start Appium Server for Brinell MAUI Tests
+# Start Appium Server for Bruinell MAUI Tests
 # Keep this terminal open while running tests
 
 Write-Host "Starting Appium Server..." -ForegroundColor Cyan

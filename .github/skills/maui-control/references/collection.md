@@ -2,7 +2,7 @@
 
 Repeating rows whose children are controls. Two types: the collection,
 `CollectionObjectBase<TParent, TSelf, TItem>`, and its row, `ItemObjectBase<TCollection, TSelf>`,
-both in `srcnew/Brinell.Maui/Containers/`. A collection is a container, so
+both in `srcnew/Bruinell.Maui/Containers/`. A collection is a container, so
 [container.md](container.md) applies to it too.
 
 Options that are only text (a Picker's items) are not a collection: use `SelectorControlBase`.
@@ -13,7 +13,7 @@ The framework does not ship concrete rows. It ships an abstract, self-referencin
 with protected constructors, and shows the derivation in its remarks:
 
 ```csharp
-namespace Brinell.Maui.Controls.Collection;
+namespace Bruinell.Maui.Controls.Collection;
 
 /// <summary>MAUI CollectionView: a scrollable collection that hands out typed, scoped rows.</summary>
 /// <remarks>
@@ -152,6 +152,6 @@ public ProductRow ByName(string name) => ItemWhere(row => row.Name.GetText() == 
 
 ## Examples to read
 
-`srcnew/Brinell.Maui/Controls/Collection/CollectionView.tpl.cs`,
-`srcnew/Brinell.Maui/Controls/Navigation/TabItem.tpl.cs`,
-`testsnew/Brinell.Maui.UITests/Containers/ProductCollection.cs` and `ProductRow.cs`.
+`srcnew/Bruinell.Maui/Controls/Collection/CollectionView.tpl.cs`,
+`srcnew/Bruinell.Maui/Controls/Navigation/TabItem.tpl.cs`,
+`testsnew/Bruinell.Maui.UITests/Containers/ProductCollection.cs` and `ProductRow.cs`.

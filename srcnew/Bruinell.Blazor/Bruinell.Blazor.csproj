@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Blazor</RootNamespace>
+    <Description>Blazor UI testing automation using Playwright. Provides controls and page objects for Blazor Server and WebAssembly application testing.</Description>
+    <PackageId>Bruinell.Blazor</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Html\Bruinell.Html.csproj" />
+    <ProjectReference Include="..\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,5 @@
+<Solution>
+  <!-- The Visual Studio extension only: it needs Visual Studio's MSBuild, so Bruinell.sln lists it but does not build it. -->
+  <Project Path="Bruinell.Bdd.VisualStudio.csproj" />
+  <Project Path="../Bruinell.Bdd.VisualStudio.CodeLens/Bruinell.Bdd.VisualStudio.CodeLens.csproj" />
+</Solution>

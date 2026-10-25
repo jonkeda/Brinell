@@ -1,6 +1,6 @@
 # Framework Overview
 
-Brinell gives tests a consistent page-object and control-object model across
+Bruinell gives tests a consistent page-object and control-object model across
 desktop, web, MAUI, Stride, native Android, UAT markdown scenarios, and the
 Presenter shell.
 
@@ -9,8 +9,8 @@ Presenter shell.
 ```text
 Tests and UAT scenarios
   Page objects and fixture/runtime glue
-    Brinell controls and platform contexts
-      Brinell.Core interfaces, locators, waits, artifacts
+    Bruinell controls and platform contexts
+      Bruinell.Core interfaces, locators, waits, artifacts
         Platform drivers: FlaUI, Playwright, Selenium, Appium, Stride, Android
 ```
 
@@ -18,27 +18,27 @@ Tests and UAT scenarios
 
 | Family | Purpose |
 | --- | --- |
-| `Brinell.Core` | Shared interfaces, locators, artifacts, wait helpers, assertions |
-| `Brinell.Maui` | MAUI page objects and controls |
-| `Brinell.Maui.Appium` | Appium driver adapter for MAUI/mobile |
-| `Brinell.Maui.FlaUI` | Windows/FlaUI driver adapter for MAUI desktop |
-| `Brinell.Wpf` | WPF automation through FlaUI |
-| `Brinell.WinForms` | WinForms automation through FlaUI |
-| `Brinell.Html` | HTML/web abstractions, control objects, pages, containers and collections |
-| `Brinell.Html.Playwright` | Playwright-backed web driver |
-| `Brinell.Blazor` | Blazor-focused web testing helpers |
-| `Brinell.Stride` and `Brinell.Stride.Automation` | Stride UI automation and in-game hooks |
-| `Brinell.Mocking` | WireMock and mock sensor helpers |
-| `Brinell.NativeAndroid` | Native Android automation helpers |
-| `Brinell.Uat` | Markdown-driven UAT scenario runtime |
-| `Brinell.Presenter` | Desktop presenter for UAT workspaces |
+| `Bruinell.Core` | Shared interfaces, locators, artifacts, wait helpers, assertions |
+| `Bruinell.Maui` | MAUI page objects and controls |
+| `Bruinell.Maui.Appium` | Appium driver adapter for MAUI/mobile |
+| `Bruinell.Maui.FlaUI` | Windows/FlaUI driver adapter for MAUI desktop |
+| `Bruinell.Wpf` | WPF automation through FlaUI |
+| `Bruinell.WinForms` | WinForms automation through FlaUI |
+| `Bruinell.Html` | HTML/web abstractions, control objects, pages, containers and collections |
+| `Bruinell.Html.Playwright` | Playwright-backed web driver |
+| `Bruinell.Blazor` | Blazor-focused web testing helpers |
+| `Bruinell.Stride` and `Bruinell.Stride.Automation` | Stride UI automation and in-game hooks |
+| `Bruinell.Mocking` | WireMock and mock sensor helpers |
+| `Bruinell.NativeAndroid` | Native Android automation helpers |
+| `Bruinell.Uat` | Markdown-driven UAT scenario runtime |
+| `Bruinell.Presenter` | Desktop presenter for UAT workspaces |
 
 ## Design Principles
 
 - Tests express user intent.
 - Page objects own screen structure.
 - Controls own repeated interaction behavior.
-- Platform drivers stay behind Brinell abstractions.
+- Platform drivers stay behind Bruinell abstractions.
 - Synchronization waits for observable state.
 - Test artifacts use the shared `TestResults/<run-id>/...` layout.
 - Test settings load from `TestSettings/*.json` with default, local, scenario,

@@ -8,7 +8,7 @@ Start here.
 | [design.md](design.md) | The new interfaces, the calls layer, the exceptions, using **`ICore*`** names throughout | **what to build** |
 | [naming.md](naming.md) | The full rename table (existing Core name -> new `ICore*` name; per-stack aliases) | **what things are called** |
 | [migration.md](migration.md) | Per-stack playbook: MAUI, Html, WPF, WinForms, NativeAndroid, Stride | **how each stack moves** |
-| [coexistence.md](coexistence.md) | How the existing `Brinell.Core.Interfaces.IElement<T>` and the new `ICoreElement` live in the same solution while stacks migrate | **the migration invariants** |
+| [coexistence.md](coexistence.md) | How the existing `Bruinell.Core.Interfaces.IElement<T>` and the new `ICoreElement` live in the same solution while stacks migrate | **the migration invariants** |
 
 ## Origin
 
@@ -22,8 +22,8 @@ The rest of the move-down draft still holds: MAUI passed its steps 0-9 on its ow
 planned slice in [`../html/`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/) that will land on its own `IHtml*` interfaces; the other
 stacks (NativeAndroid, WPF, WinForms, Stride) still use Core's old interfaces.
 
-**The new names let the two layers coexist.** The old `Brinell.Core.Interfaces.IElement<T>`
-stays on disk while `Brinell.Core.Automation.ICoreElement` grows next to it. A stack moves when
+**The new names let the two layers coexist.** The old `Bruinell.Core.Interfaces.IElement<T>`
+stays on disk while `Bruinell.Core.Automation.ICoreElement` grows next to it. A stack moves when
 its own project switches from the old set to the new set. The old set is deleted when the last
 stack has moved.
 
@@ -36,7 +36,7 @@ One shape for every stack:
 - one scope (`ICoreScope`, with `ICorePage`, `ICoreContainer`, `ICoreCollection`, `ICoreItem`
   extending it);
 - one test context (`ICoreTestContext`);
-- one calls layer (`Brinell.Core.Automation.Calls/*`);
+- one calls layer (`Bruinell.Core.Automation.Calls/*`);
 - one exception set (`CoreStaleElementException`, `CoreElementNotReadyException`,
   `CoreScopeNotReadyException`, `CoreAppUnavailableException`);
 - one readiness model (`CoreScopeReadiness`).
@@ -47,12 +47,12 @@ stack redefines what an element or a scope *is*.
 
 ## Scope
 
-- **In:** `srcnew/Brinell.Core` (new namespace `Brinell.Core.Automation`), the per-stack
+- **In:** `srcnew/Bruinell.Core` (new namespace `Bruinell.Core.Automation`), the per-stack
   interface projects that switch over, and the docs.
 - **Out:** behaviour changes. The new layer is the shape MAUI proved (rules R0-R9 in
   `../stale-readiness/design.md`). Anything that changes what a call *does* belongs in a
   separate project, tracked next to this one.
-- **Out:** deleting the old `Brinell.Core.Interfaces.IElement<T>` and friends. That happens
+- **Out:** deleting the old `Bruinell.Core.Interfaces.IElement<T>` and friends. That happens
   with the **last** stack, in a follow-up whose only job is the delete.
 
 ## Not decided yet

@@ -11,7 +11,7 @@ new headless `TodoHost` per scenario.
   folder does not show another head's cases as skipped.
 - **No screen on `service`.** A step that binds to a page step, a control verb or a page phrase is a
   bind error there, **UATB013**, before anything runs. The service suite still binds against the UI
-  step patterns to recognise them, which is why it runs on `Brinell.Uat`'s test base (AD-021).
+  step patterns to recognise them, which is why it runs on `Bruinell.Uat`'s test base (AD-021).
 - **Service step definitions use the UI heads' words** where the same thing happens
   (`I restart the app`, `I create a todo {title}`). Steps that reach past the screen (backend,
   device, stored data) are one set for every head, behind the fixture's arrangement interface.

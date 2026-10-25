@@ -1,15 +1,15 @@
 # MAUI Platform Guide
 
-Brinell supports MAUI through shared MAUI controls plus driver adapters.
+Bruinell supports MAUI through shared MAUI controls plus driver adapters.
 
 ## Projects
 
-- `srcnew/Brinell.Maui`
-- `srcnew/Brinell.Maui.Appium`
-- `srcnew/Brinell.Maui.FlaUI`
-- `srcnew/Brinell.Maui.CommunityToolkit`
-- `testsnew/Brinell.Maui.Tests`
-- `testsnew/Brinell.Maui.UITests` (the UI tests and the UAT suite)
+- `srcnew/Bruinell.Maui`
+- `srcnew/Bruinell.Maui.Appium`
+- `srcnew/Bruinell.Maui.FlaUI`
+- `srcnew/Bruinell.Maui.CommunityToolkit`
+- `testsnew/Bruinell.Maui.Tests`
+- `testsnew/Bruinell.Maui.UITests` (the UI tests and the UAT suite)
 
 ## Driver Choices
 
@@ -37,7 +37,7 @@ That is not a setting; there is no other mode. Three things make it true:
 - **No physical input.** The Windows driver has no code that clicks, types, writes the
   clipboard or takes the foreground. An action with no UI Automation pattern and no
   bridge verb throws `NotSupportedException`, naming the route the app would have to
-  offer. `BRINELL_BACKGROUND_MODE` has no effect on MAUI - see
+  offer. `BRUINELL_BACKGROUND_MODE` has no effect on MAUI - see
   [AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md).
 - **The window cannot be activated.** Invoking a WinUI button through
   `InvokePattern` activates its window, which is not physical input. The driver marks
@@ -48,7 +48,7 @@ That is not a setting; there is no other mode. Three things make it true:
   milliseconds. `ForegroundWatchdogTests` fails if navigating the app takes the
   foreground.
 
-**Do not move the window off-screen to get the same effect.** `BRINELL_AUT_PLACE=offscreen`
+**Do not move the window off-screen to get the same effect.** `BRUINELL_AUT_PLACE=offscreen`
 exists, but UI Automation's `IsOffscreen` counts the monitor, so controls plainly inside
 their page report themselves invisible and "scroll into view" waits time out.
 
@@ -64,10 +64,10 @@ typing. For these the app under test publishes a **gesture bridge** - see
 patterns work - invoke, toggle, select, value, range, expand/collapse, scroll, and reads -
 and everything else throws.
 
-In the app, with `Brinell.Maui.AppSupport`:
+In the app, with `Bruinell.Maui.AppSupport`:
 
 ```csharp
-builder.UseBrinellGestureBridge();   // in MauiProgram, before the first page loads
+builder.UseBruinellGestureBridge();   // in MauiProgram, before the first page loads
 ```
 
 ```xml
@@ -147,7 +147,7 @@ Besides screenshots and logs, a Windows UI run writes to
 | `accessibility-audit.md` | Instrumented elements and what each offers without a pointer |
 | `test-timings.md` | Every test class with count, total, mean and slowest test, against `timing-baseline.json`; classes that have become markedly slower are marked |
 | `test-timings.csv` | The raw per-test durations, written as the run goes |
-| `test-timings-baseline-candidate.json` | Copy over `testsnew/Brinell.Maui.UITests/timing-baseline.json` to refresh the baseline from a good run |
+| `test-timings-baseline-candidate.json` | Copy over `testsnew/Bruinell.Maui.UITests/timing-baseline.json` to refresh the baseline from a good run |
 
 ## Run
 

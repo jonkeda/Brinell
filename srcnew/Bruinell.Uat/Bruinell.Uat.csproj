@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Uat</RootNamespace>
+    <Description>Markdown-driven UAT parsing and execution core for Bruinell.</Description>
+    <PackageId>Bruinell.Uat</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- A library with an entry point: a host starts a suite's copy of this assembly as the runner
+         process (Runner/, AD-025). No app host: it is only ever started through dotnet exec. -->
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <StartupObject>Bruinell.Uat.Runner.BddRunnerProgram</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <ProjectReference Include="..\Bruinell.Bdd\Bruinell.Bdd.csproj" />
+    <ProjectReference Include="..\Bruinell.Core\Bruinell.Core.csproj" />
+    <!-- BRUINELL_RECORD: a run records its scenes (the narrator). -->
+    <ProjectReference Include="..\Bruinell.Narrator\Bruinell.Narrator.csproj" />
+    <!-- [UatScenarioTheory]: a suite runs under xUnit, which brings both. -->
+    <PackageReference Include="xunit.extensibility.core" PrivateAssets="all" />
+    <PackageReference Include="xunit.extensibility.execution" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

@@ -1,33 +1,33 @@
 # Quick Start
 
-This page gets a Brinell developer from a clean checkout to a compiled framework
+This page gets a Bruinell developer from a clean checkout to a compiled framework
 and a first page-object style test.
 
 ## Build The Framework
 
-Working directory: Brinell root.
+Working directory: Bruinell root.
 
 ```powershell
-dotnet build Brinell.sln -v:minimal /nr:false
+dotnet build Bruinell.sln -v:minimal /nr:false
 ```
 
-`Brinell.sln` holds every project in the repository, in folders by area. The two
+`Bruinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
-MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
+MSBuild, and build from `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx`.
 
 ## Add Packages
 
 For package consumers:
 
 ```powershell
-dotnet add package Brinell.Core
-dotnet add package Brinell.Maui
-dotnet add package Brinell.Maui.FlaUI
-dotnet add package Brinell.Html.Playwright
-dotnet add package Brinell.Wpf
-dotnet add package Brinell.WinForms
-dotnet add package Brinell.Mocking
-dotnet add package Brinell.Uat
+dotnet add package Bruinell.Core
+dotnet add package Bruinell.Maui
+dotnet add package Bruinell.Maui.FlaUI
+dotnet add package Bruinell.Html.Playwright
+dotnet add package Bruinell.Wpf
+dotnet add package Bruinell.WinForms
+dotnet add package Bruinell.Mocking
+dotnet add package Bruinell.Uat
 ```
 
 For repo-local tests, prefer project references to `srcnew/*` projects.
@@ -37,9 +37,9 @@ For repo-local tests, prefer project references to `srcnew/*` projects.
 Page objects should expose user intent and hide locator plumbing.
 
 ```csharp
-using Brinell.Core.Locators;
-using Brinell.Maui.Controls.Text;
-using Brinell.Maui.Pages;
+using Bruinell.Core.Locators;
+using Bruinell.Maui.Controls.Text;
+using Bruinell.Maui.Pages;
 
 public sealed class LoginPage : PageObjectBase<LoginPage>
 {
@@ -62,7 +62,7 @@ public sealed class LoginPage : PageObjectBase<LoginPage>
 ```
 
 Use the concrete platform page-object base and controls that match the test
-project you are writing. Keep repeated interaction behavior in Brinell controls,
+project you are writing. Keep repeated interaction behavior in Bruinell controls,
 not in test methods.
 
 ## First Test Shape

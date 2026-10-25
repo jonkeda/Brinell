@@ -42,7 +42,7 @@ jobs:
           "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore srcnew/Bruinell.Maui.CommunityToolkit/Bruinell.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh
@@ -98,27 +98,27 @@ jobs:
         shell: pwsh
         run: |
           $version = '${{ steps.version.outputs.value }}'
-          $manifest = 'tools/Brinell.Bdd.VisualStudio/source.extension.vsixmanifest'
+          $manifest = 'tools/Bruinell.Bdd.VisualStudio/source.extension.vsixmanifest'
           (Get-Content $manifest -Raw) -replace '(<Identity [^>]*Version=")[^"]*', "`${1}$version" | Set-Content $manifest -NoNewline
-          Push-Location tools/Brinell.Bdd.VsCode
+          Push-Location tools/Bruinell.Bdd.VsCode
           npm version $version --no-git-tag-version --allow-same-version
           Pop-Location
 
       - name: Visual Studio extension
         shell: pwsh
         run: |
-          msbuild tools/Brinell.Bdd.VisualStudio/Brinell.Bdd.VisualStudio.slnx -restore -p:Configuration=Release -p:DeployExtension=false -v:minimal
+          msbuild tools/Bruinell.Bdd.VisualStudio/Bruinell.Bdd.VisualStudio.slnx -restore -p:Configuration=Release -p:DeployExtension=false -v:minimal
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          Copy-Item tools/Brinell.Bdd.VisualStudio/bin/Release/net48/Brinell.Bdd.VisualStudio.vsix "artifacts/Brinell.Bdd.VisualStudio-${{ steps.version.outputs.value }}.vsix"
+          Copy-Item tools/Bruinell.Bdd.VisualStudio/bin/Release/net48/Bruinell.Bdd.VisualStudio.vsix "artifacts/Bruinell.Bdd.VisualStudio-${{ steps.version.outputs.value }}.vsix"
 
       - name: VS Code extension
         shell: pwsh
         run: |
-          dotnet publish tools/Brinell.Cli -c Release -o tools/Brinell.Bdd.VsCode/server --nologo -v:q
-          Push-Location tools/Brinell.Bdd.VsCode
+          dotnet publish tools/Bruinell.Cli -c Release -o tools/Bruinell.Bdd.VsCode/server --nologo -v:q
+          Push-Location tools/Bruinell.Bdd.VsCode
           npm ci
           npm run compile
-          npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/brinell-bdd-vscode-${{ steps.version.outputs.value }}.vsix"
+          npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/bruinell-bdd-vscode-${{ steps.version.outputs.value }}.vsix"
           Pop-Location
 
       - name: Attach the extensions to the release

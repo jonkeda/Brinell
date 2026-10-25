@@ -4,7 +4,7 @@
 import json, subprocess, sys, threading, queue, http.server
 
 solution, port = sys.argv[1], int(sys.argv[2])
-dll = r"E:\repos\MainConstruction2\construction\Brinell\tools\Brinell.Bdd.LanguageServer\bin\Debug\net10.0\Brinell.Bdd.LanguageServer.dll"
+dll = r"E:\repos\MainConstruction2\construction\Bruinell\tools\Bruinell.Bdd.LanguageServer\bin\Debug\net10.0\Bruinell.Bdd.LanguageServer.dll"
 server = subprocess.Popen(["dotnet", dll], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 pending, events, lock, next_id = {}, [], threading.Lock(), [100]
 
@@ -26,7 +26,7 @@ def reader():
         if "id" in message and ("result" in message or "error" in message):
             q = pending.pop(message["id"], None)
             if q: q.put(message)
-        elif message.get("method") == "brinell/scraper/changed":
+        elif message.get("method") == "bruinell/scraper/changed":
             with lock: events.append(message["params"])
         elif "id" in message:  # a request from the server (workspace/configuration etc.)
             send({"jsonrpc": "2.0", "id": message["id"], "result": None})
@@ -45,7 +45,7 @@ def request(method, params):
 
 request("initialize", {"processId": None, "rootUri": None, "capabilities": {}, "initializationOptions": {"solutionDir": solution}})
 send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
-page = request("brinell/scraper/host", {})["html"]
+page = request("bruinell/scraper/host", {})["html"]
 shim = """<script>
 window.acquireVsCodeApi = () => ({ postMessage: async (m) => {
   if (m.type === "call") {

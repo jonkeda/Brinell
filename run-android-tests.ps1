@@ -1,10 +1,10 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Run Brinell MAUI UI tests on Android emulator/device.
+    Run Bruinell MAUI UI tests on Android emulator/device.
 
 .DESCRIPTION
-    This script sets up the environment and runs the Brinell MAUI UI tests
+    This script sets up the environment and runs the Bruinell MAUI UI tests
     against an Android device or emulator using Appium with UiAutomator2.
 
 .PARAMETER Filter
@@ -47,17 +47,17 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = $PSScriptRoot
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Brinell Android UI Test Runner" -ForegroundColor Cyan
+Write-Host "  Bruinell Android UI Test Runner" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Paths
-$SampleAppDir = Join-Path $ScriptDir "samples\Brinell.Samples.Maui.App"
-# The mobile head, not testsnew\Brinell.Maui.UITests: that project targets net10.0-windows
+$SampleAppDir = Join-Path $ScriptDir "samples\Bruinell.Samples.Maui.App"
+# The mobile head, not testsnew\Bruinell.Maui.UITests: that project targets net10.0-windows
 # and references the FlaUI driver, so it cannot host an Android run. The mobile head links
 # the same test sources and references Appium instead.
-$TestProjectDir = Join-Path $ScriptDir "testsnew\Brinell.Maui.UITests.Mobile"
-$ApkPath = Join-Path $SampleAppDir "bin\Debug\net10.0-android\com.brinell.samples.maui-Signed.apk"
+$TestProjectDir = Join-Path $ScriptDir "testsnew\Bruinell.Maui.UITests.Mobile"
+$ApkPath = Join-Path $SampleAppDir "bin\Debug\net10.0-android\com.bruinell.samples.maui-Signed.apk"
 
 # Check prerequisites
 Write-Host "[1/6] Checking prerequisites..." -ForegroundColor Yellow

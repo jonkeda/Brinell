@@ -1,8 +1,8 @@
-# Brinell Documentation
+# Bruinell Documentation
 
-Brinell is a multi-platform .NET UI test automation framework. These docs are
-the active, curated set: guides for someone *using* Brinell. The decisions and
-invariants behind it - what must stay true when *changing* Brinell - are in
+Bruinell is a multi-platform .NET UI test automation framework. These docs are
+the active, curated set: guides for someone *using* Bruinell. The decisions and
+invariants behind it - what must stay true when *changing* Bruinell - are in
 [`.docs`](../.docs/README.md).
 
 ## Start Here
@@ -44,21 +44,21 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
   runs without a screen, its suite and step definitions
 - [The bUnit Head](guides/bunit.md) - a Blazor suite's page objects and scenarios without a browser
-  (`BRINELL_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
-- [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
+  (`BRUINELL_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
+- [BDD Glossary](guides/bdd-glossary.md) - Bruinell's words beside Cucumber's and Reqnroll's
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
   files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario
-- [Brinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
+- [Bruinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
   preview, Test Explorer on the scenarios' addresses
 - [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
-  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRINELL_RECORD`
+  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRUINELL_RECORD`
 - [The Scraper](guides/scraper.md) - record or explore an app's pages into a UI test project,
   draft page objects from them, and have an agent make controls; from VS Code, Visual Studio, the
   command line or MCP, and unattended with the loop
 - [Adding Controls For A New Control Library](../.guides/control-library.md) - the
   `control-source-builder` agent, step by step: survey, groundwork, probe, build, closeout
-- [Test Data](guides/test-data.md) - test sets, `brinell data`, `TestData` in UAT
-  files, typed mock bodies (`BRINELL001`)
+- [Test Data](guides/test-data.md) - test sets, `bruinell data`, `TestData` in UAT
+  files, typed mock bodies (`BRUINELL001`)
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
 - [Migration Notes](guides/migration.md)
@@ -77,7 +77,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Run Guides
 
 - [Build And Test](run/build-and-test.md)
-- [The `brinell` Command Line](run/cli.md) - install it, and every command
+- [The `bruinell` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
 - [Native Android](run/native-android.md)
@@ -95,7 +95,7 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Maintenance Rules
 
 - Keep links relative and valid.
-- Use `Brinell.*` namespaces only.
+- Use `Bruinell.*` namespaces only.
 - Mark every command with its working directory.
 - Keep guides here; keep decisions and invariants in `.docs/`.
 - Do not add generated test artifacts under `docs/` or `.my/`; they belong under `TestResults/`.

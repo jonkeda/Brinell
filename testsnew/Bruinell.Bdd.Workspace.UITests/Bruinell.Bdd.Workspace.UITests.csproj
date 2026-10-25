@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Scenario Preview page in Chromium, driven through Bruinell.Html page objects, with the IDE
+       played by TestBase/PreviewIde. Needs Playwright's Chromium, as the Html UI tests do. -->
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Bdd.Workspace.UITests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Core\Bruinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Bdd.Workspace\Bruinell.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html\Bruinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

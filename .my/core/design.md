@@ -19,7 +19,7 @@ Same as `../stale-readiness/design.md` section 2. R0-R9 apply verbatim.
 ## 3. The layers
 
 ```text
-Brinell.Core                (namespace: Brinell.Core.Automation - ?C1)
+Bruinell.Core                (namespace: Bruinell.Core.Automation - ?C1)
     Interfaces              ICoreElement · ICoreDriver · ICoreScope · ICorePage
                             ICoreTestContext · ICoreContainer · ICoreCollection<TItem>
                             ICoreItem<TCollection>
@@ -37,7 +37,7 @@ Brinell.Core                (namespace: Brinell.Core.Automation - ?C1)
     Controls                CoreViewBase<TScope> · Run* helpers · Confirm
     Helpers                 CoreElementExtensions · CoreScopeExtensions
 
-Brinell.Maui                (namespace: Brinell.Maui.Interfaces, unchanged)
+Bruinell.Maui                (namespace: Bruinell.Maui.Interfaces, unchanged)
     IMauiElement : ICoreElement           adds Platform, ShellChrome, TryFindByScrolling,
                                           bridge verbs, gesture verbs
     IMauiDriver : ICoreDriver             adds MauiPlatform, ShellChromeLocators, ResetAppState
@@ -45,7 +45,7 @@ Brinell.Maui                (namespace: Brinell.Maui.Interfaces, unchanged)
     IMauiPage : ICorePage                 (empty extension for typing)
     IMauiTestContext : ICoreTestContext   adds MauiPlatform, AppElement, ShellChrome
 
-Brinell.Html                (namespace: Brinell.Html.Interfaces)
+Bruinell.Html                (namespace: Bruinell.Html.Interfaces)
     IHtmlElement : ICoreElement           adds Fill, SelectOption, Check/Uncheck, Focus/Blur,
                                           Evaluate, GetDom*, InnerHtml, OuterHtml
     IHtmlDriver : ICoreDriver             adds CurrentUrl, PageTitle, IsIdle, GoBack/GoForward
@@ -53,7 +53,7 @@ Brinell.Html                (namespace: Brinell.Html.Interfaces)
     IHtmlPage : ICorePage                 adds Url
     IHtmlTestContext : ICoreTestContext   adds CurrentUrl, PageTitle, frame accessors
 
-Brinell.Wpf / .WinForms / .NativeAndroid / .Stride
+Bruinell.Wpf / .WinForms / .NativeAndroid / .Stride
     Same pattern: I<Stack>Element : ICoreElement, and so on, adding only what is stack-unique
 ```
 
@@ -71,7 +71,7 @@ Every public member of a scope or control still follows the MAUI flow
 Signatures modelled on MAUI's `../stale-readiness/design.md` 4.2. Only the names differ.
 
 ```csharp
-namespace Brinell.Core.Automation;
+namespace Bruinell.Core.Automation;
 
 /// A UI element, shape shared by every stack.
 public interface ICoreElement
@@ -252,25 +252,25 @@ convention-based discovery keeps working (?C2).
 
 ## 6. Exceptions
 
-Under `Brinell.Core.Automation.Exceptions`:
+Under `Bruinell.Core.Automation.Exceptions`:
 
 ```csharp
 /// The element a handle referred to is no longer in the UI tree.
-public class CoreStaleElementException(Locator? locator, Exception? platformError = null) : BrinellException;
+public class CoreStaleElementException(Locator? locator, Exception? platformError = null) : BruinellException;
 
 /// Found, but not ready for what the call wants.
-public class CoreElementNotReadyException(Locator locator, CoreNotReadyReason reason, string? detail = null) : BrinellException;
+public class CoreElementNotReadyException(Locator locator, CoreNotReadyReason reason, string? detail = null) : BruinellException;
 public enum CoreNotReadyReason { NotVisible, Disabled, Other }
 
 /// A scope in the chain did not become ready.
-public class CoreScopeNotReadyException(CoreScopeReadiness readiness, int budgetMs) : BrinellException;
+public class CoreScopeNotReadyException(CoreScopeReadiness readiness, int budgetMs) : BruinellException;
 
 /// The app under test is gone. Never retried.
-public class CoreAppUnavailableException(string detail, Exception? platformError = null) : BrinellException;
+public class CoreAppUnavailableException(string detail, Exception? platformError = null) : BruinellException;
 ```
 
-**`BrinellException`, `ElementNotFoundException`, `AssertionException`, `WaitTimeoutException`
-stay in `Brinell.Core.Exceptions`.** They are shared by every stack today and did not need
+**`BruinellException`, `ElementNotFoundException`, `AssertionException`, `WaitTimeoutException`
+stay in `Bruinell.Core.Exceptions`.** They are shared by every stack today and did not need
 renaming.
 
 **`PageLoadException`** is deprecated in step 4 (?C8): every stack's `PageObjectBase` throws
@@ -283,7 +283,7 @@ no code raises it.
 `PageReadinessState`. Same shape as MAUI's `../stale-readiness/design.md` 7.1:
 
 ```csharp
-namespace Brinell.Core.Automation;
+namespace Bruinell.Core.Automation;
 
 public enum CoreScopeReadinessState
 {
@@ -308,10 +308,10 @@ dialogs set `AsksParent => false`.
 ## 8. Calls
 
 Copied from MAUI's 6.1-6.5, retyped on `ICoreTestContext`. The types live under
-`Brinell.Core.Automation.Calls`:
+`Bruinell.Core.Automation.Calls`:
 
 ```csharp
-namespace Brinell.Core.Automation.Calls;
+namespace Bruinell.Core.Automation.Calls;
 
 internal enum ObservationKind { Done, ScopeNotReady, Missing, NotReady, Stale, ItemChanged, Mismatch, Pending, Failed }
 internal readonly record struct Observation(...);
@@ -325,11 +325,11 @@ public enum ConfirmationResult { Confirmed, NotConfirmed, Replaced }
 ```
 
 The type names themselves keep their MAUI-side names because the namespace disambiguates. A
-per-stack call site imports `using Brinell.Core.Automation.Calls;` and uses `ControlCall`,
+per-stack call site imports `using Bruinell.Core.Automation.Calls;` and uses `ControlCall`,
 `Poller` etc. as normal. This is the one place `Core` is not prefixed - the types are internal
 implementation, not the public shape.
 
-**Sharing is the point.** MAUI's `Brinell.Maui/Calls/*` is deleted in step 4 and its callers
+**Sharing is the point.** MAUI's `Bruinell.Maui/Calls/*` is deleted in step 4 and its callers
 `using` this namespace instead. Html and the other stacks never grow their own copies.
 
 ## 9. Controls: `CoreViewBase<TScope>`

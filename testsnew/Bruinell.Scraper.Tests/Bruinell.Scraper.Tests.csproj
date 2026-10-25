@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Scraper.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Scraper\Bruinell.Scraper.csproj" />
+    <!-- The site the Html source is tested on, served by TestSiteServer; its files come along. -->
+    <ProjectReference Include="..\Bruinell.Scraper.TestSite\Bruinell.Scraper.TestSite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

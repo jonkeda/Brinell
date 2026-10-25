@@ -1,9 +1,9 @@
 {
   "servers": {
-    "brinell-bdd": {
+    "bruinell-bdd": {
       "type": "stdio",
       "command": "dotnet",
-      "args": ["run", "--project", "tools/Brinell.Cli", "--", "mcp", "--solution", "."]
+      "args": ["run", "--project", "tools/Bruinell.Cli", "--", "mcp", "--solution", "."]
     }
   }
 }

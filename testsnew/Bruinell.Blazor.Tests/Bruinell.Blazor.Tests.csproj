@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Blazor.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Core\Bruinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html\Bruinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Blazor\Bruinell.Blazor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

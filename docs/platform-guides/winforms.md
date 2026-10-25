@@ -1,13 +1,13 @@
 # WinForms Platform Guide
 
-Brinell automates WinForms through FlaUI.
+Bruinell automates WinForms through FlaUI.
 
 ## Projects
 
-- `srcnew/Brinell.WinForms`
-- `testsnew/Brinell.WinForms.Tests`
-- `testsnew/Brinell.WinForms.UITests` (the UI tests and the UAT suite)
-- `samples/Brinell.Samples.WinForms.App`
+- `srcnew/Bruinell.WinForms`
+- `testsnew/Bruinell.WinForms.Tests`
+- `testsnew/Bruinell.WinForms.UITests` (the UI tests and the UAT suite)
+- `samples/Bruinell.Samples.WinForms.App`
 
 ## Rules
 

@@ -5,7 +5,7 @@ repo** (`E:\repos\MainConstruction\construction`). The two host projects already
 Todos and later modules only add folders and files under them.
 
 ```text
-Exact.Core.Construction.UITest/              # ControlObject library (Brinell-Construction bridge) - EXISTS
+Exact.Core.Construction.UITest/              # ControlObject library (Bruinell-Construction bridge) - EXISTS
   Exact.Core.Construction.UITest.csproj
   Controls/
     Search/            PageSearchControl.tpl.cs + .gen.cs          # seed, exists
@@ -34,14 +34,14 @@ Exact.Core.Construction.UITest/              # ControlObject library (Brinell-Co
 
 Exact.Construction.UITests/                  # single xUnit test host - EXISTS
   Exact.Construction.UITests.csproj          # references Exact.Core.Construction.UITest;
-                                             # Brinell via eng/brinell/Brinell.references.props
+                                             # Bruinell via eng/bruinell/Bruinell.references.props
   GlobalUsings.cs
   ConstructionFixture.cs                     # exists - base fixture (login, app launch)
   ConstructionTestBase.cs                    # exists
   ConstructionCollection.cs                  # exists
   SetupFailedException.cs
   TestConstants.cs
-  brinell.maui.config.json                   # exists - resolves the app path
+  bruinell.maui.config.json                   # exists - resolves the app path
   construction.maui.config.json              # exists
   Auth/                                       # exists - REUSE for login
     ConstructionAuthenticationManager.cs
@@ -86,12 +86,12 @@ it needs:
 
 - `..\Exact.Core.Construction.UITest\Exact.Core.Construction.UITest.csproj` (ControlObjects,
   page-pattern bases).
-- Brinell packages via `<Import Project="..\eng\brinell\Brinell.references.props" />` plus
-  the `IncludeBrinellHtml` / `IncludeBrinellCommunityToolkit` / `IncludeBrinellFlaUI` flags.
+- Bruinell packages via `<Import Project="..\eng\bruinell\Bruinell.references.props" />` plus
+  the `IncludeBruinellHtml` / `IncludeBruinellCommunityToolkit` / `IncludeBruinellFlaUI` flags.
 
 No new projects are created for modules. A module is a folder under `Modules/`.
 
-`Exact.Core.Construction.UITest` (the library) references only Brinell packages. It has
+`Exact.Core.Construction.UITest` (the library) references only Bruinell packages. It has
 **no** reference to the test host project.
 
 ## Solution wiring
@@ -102,7 +102,7 @@ change. Adding a new file to an SDK-style project needs no `.csproj` edit either
 ## The Construction app itself
 
 Built from source in the same repo. The tests launch it via the existing
-`brinell.maui.config.json` / `construction.maui.config.json`. Rebuild the app when
+`bruinell.maui.config.json` / `construction.maui.config.json`. Rebuild the app when
 `Exact.Construction` changed:
 
 ```powershell

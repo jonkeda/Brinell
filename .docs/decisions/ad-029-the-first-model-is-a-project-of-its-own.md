@@ -1,7 +1,7 @@
 # AD-029: The First Model Is A Project Of Its Own
 
-`Brinell.Core` describes the call model alone. The interfaces and waits of Brinell's first model,
-where every lookup waits on a budget of its own, are `Brinell.Core.Legacy`, which only the WPF,
+`Bruinell.Core` describes the call model alone. The interfaces and waits of Bruinell's first model,
+where every lookup waits on a budget of its own, are `Bruinell.Core.Legacy`, which only the WPF,
 WinForms and Stride stacks reference: `IDriver`, `IElement`, `IElementScope`, `IPageObject`,
 `IContainerControl`, `IContainerObject`, `IPagedScope`, `IRangePatternElement`, the generic
 `ITestContext<T>`, `PageReadinessSnapshot`, the old `ControlObjectBase`, the geometry over
@@ -11,7 +11,7 @@ so those stacks only gained a reference.
 What stays in Core because the call-model stacks use it: the non-generic `ITestContext` (every
 stack's context implements it), `BusySignalPolicy` (MAUI's pages), `IDiagnosticDriver`,
 `ElementGeometryExtensions.CenterOf`, `WaitHelper.Pause`, and the control-object interfaces.
-A wait below a call is `Brinell.Core.Calls.Settle.Until`: one confirmation, bounded by the
+A wait below a call is `Bruinell.Core.Calls.Settle.Until`: one confirmation, bounded by the
 running call (`CallBudget.Within`). Composition and UAT still find a first-model page, by the
 interface's name (`TestPages.IsFirstModelPage`), so neither references the old project.
 
@@ -28,5 +28,5 @@ build without.
   has asked for, and this split does not wait on it.
 
 **Broken when:** a call-model project (Html, Blazor, MAUI and its heads, native Android, Appium,
-UAT, Bdd) references `Brinell.Core.Legacy` (`SolutionTests.NoCallModelStack_ReferencesTheFirstModel`);
+UAT, Bdd) references `Bruinell.Core.Legacy` (`SolutionTests.NoCallModelStack_ReferencesTheFirstModel`);
 a first-model type is added to Core again; or a call-model stack waits with `LegacyWaitHelper`.

@@ -1,6 +1,6 @@
 # Adding Controls For A New Control Library
 
-How to give a third-party MAUI control library (a vendor suite, a toolkit) its own Brinell
+How to give a third-party MAUI control library (a vendor suite, a toolkit) its own Bruinell
 ControlObjects. [CommunityToolkit.Maui](../docs/controls/community-toolkit.md) was done this way.
 
 The work is done by the `control-source-builder` agent
@@ -11,7 +11,7 @@ read what it wrote and decide what comes next.
 ## Before You Start
 
 - **One library, one package.** The controls go in their own project,
-  `srcnew/Brinell.Maui.<Library>`, so a suite that does not use the library does not get it
+  `srcnew/Bruinell.Maui.<Library>`, so a suite that does not use the library does not get it
   ([AD-026](../.docs/decisions/ad-026-a-project-earns-its-place.md)). The project wraps
   automation elements; it does not reference the library itself. Only the sample app does.
 - **A clean working tree.** The agent stops when it finds changes it did not make. It never
@@ -29,8 +29,8 @@ Ask for the agent by name, with the step and the folder, for example
 
 | # | Step | What the agent does | What you do after |
 | --- | --- | --- | --- |
-| 1 | `survey .my/<library>` | Finds the package and the version for the repo's target framework, lists its views, and writes `.my/<library>/plan.md`: current state, an inventory (Brinell name, base class, likely route, priority) and the phases. Changes no code. | Review the plan. Drop controls, change priorities, mark what is out of scope (hardware, OS dialogs, things that are not views). |
-| 2 | `groundwork .my/<library>` | Phase 0: the package version, the project in `Brinell.sln`, the generator's input folders, an empty sample page and test page. | Check that the solution builds. Commit. |
+| 1 | `survey .my/<library>` | Finds the package and the version for the repo's target framework, lists its views, and writes `.my/<library>/plan.md`: current state, an inventory (Bruinell name, base class, likely route, priority) and the phases. Changes no code. | Review the plan. Drop controls, change priorities, mark what is out of scope (hardware, OS dialogs, things that are not views). |
+| 2 | `groundwork .my/<library>` | Phase 0: the package version, the project in `Bruinell.sln`, the generator's input folders, an empty sample page and test page. | Check that the solution builds. Commit. |
 | 3 | `probe .my/<library>` | Puts every P1-P2 control on the sample page and records what UI Automation sees for each one in `.my/<library>/probe.md`. Corrects the plan's "likely route" column. Builds no controls. | Read the probe. This is where the plan changes most: it decides which controls have a real pattern and which would need a bridge verb. |
 | 4 | `build .my/<library> <Control>` | One control: sample, page object, tests, `.tpl.cs`, generate, build, run that control's tests. Fills in its progress row. | Read the row and the generated API. Commit. Repeat for the next control. |
 | 5 | `closeout .my/<library>` | The full UI suite, `docs/controls/<library>.md` linked from the docs index, a CHANGELOG entry. | Close the `.my/<library>/` topic: anything a user needs is now in `docs/`. |

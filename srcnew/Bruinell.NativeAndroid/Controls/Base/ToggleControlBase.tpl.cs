@@ -1,0 +1,71 @@
+using Bruinell.Core.Interfaces;
+using Bruinell.Core.Locators;
+using Bruinell.NativeAndroid.Interfaces;
+
+namespace Bruinell.NativeAndroid.Controls;
+
+/// <summary>
+/// Base class for native Android controls with a checked state (a check box, a switch, a radio
+/// button, a chip): Toggle, Check, Uncheck, SetChecked. Each taps once and confirms the state took.
+/// </summary>
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<TScope>, IToggleControlObject<TScope>
+    where TScope : INativeAndroidScope<TScope>
+{
+    protected ToggleControlBase(INativeAndroidScope<TScope> scope, Locator locator)
+        : base(scope, locator)
+    {
+    }
+
+    protected ToggleControlBase(INativeAndroidScope<TScope> scope, string resourceIdOrXPath)
+        : base(scope, resourceIdOrXPath)
+    {
+    }
+
+    #region Core Methods
+
+    /// <summary>Whether the control is checked; null when it is not there or cannot be checked.</summary>
+    /// <param name="element">The pre-found view.</param>
+    protected virtual bool? IsCheckedCore(INativeAndroidElement? element) => element?.Checked;
+
+    /// <summary>
+    /// Sets the checked state with one tap, and confirms it took. Does nothing when it is already
+    /// in that state.
+    /// </summary>
+    /// <param name="element">The pre-found view.</param>
+    /// <param name="checked">The state to set; null skips.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SetCheckedCore(INativeAndroidElement element, bool? @checked, int? timeoutMs = null)
+    {
+        if (@checked is not { } value || IsCheckedCore(element) == value)
+        {
+            return;
+        }
+
+        ActAndConfirm(
+            value ? "Check" : "Uncheck",
+            element.Click,
+            () => IsCheckedCore(element), isChecked => isChecked == value,
+            value ? "checked" : "unchecked", timeoutMs);
+    }
+
+    /// <summary>Flips the checked state with one tap, and confirms it changed.</summary>
+    /// <param name="element">The pre-found view.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void ToggleCore(INativeAndroidElement element, int? timeoutMs = null)
+    {
+        SetCheckedCore(element, IsCheckedCore(element) != true, timeoutMs);
+    }
+
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    /// <summary>Checks the control. An alias for <c>SetChecked(true)</c>.</summary>
+    public TScope Check(int? timeoutMs = null) => SetChecked(true, timeoutMs);
+
+    /// <summary>Unchecks the control. An alias for <c>SetChecked(false)</c>.</summary>
+    public TScope Uncheck(int? timeoutMs = null) => SetChecked(false, timeoutMs);
+
+    #endregion
+}

@@ -1,0 +1,15 @@
+global using Bruinell.Core.Exceptions;
+global using Bruinell.Core.Interfaces;
+global using Bruinell.Core.Locators;
+global using Bruinell.Maui.Containers;
+global using Bruinell.Maui.Context;
+global using Bruinell.Maui.Controls.Buttons;
+global using Bruinell.Maui.Controls.DateTimes;
+global using Bruinell.Maui.Controls.Dialogs;
+global using Bruinell.Maui.Controls.Display;
+global using Bruinell.Maui.Controls.Selection;
+global using Bruinell.Maui.Controls.Text;
+global using Bruinell.Maui.Controls.Toggle;
+global using Bruinell.Maui.Interfaces;
+global using Bruinell.Maui.Pages;
+global using Xunit;

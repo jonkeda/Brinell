@@ -1,5 +1,5 @@
-# Packs the Brinell library projects that are part of Brinell.sln, and the brinell tool.
-# Working directory: Brinell root.
+# Packs the Bruinell library projects that are part of Bruinell.sln, and the bruinell tool.
+# Working directory: Bruinell root.
 #
 #   ./tools/Scripts/pack.ps1 -Version 0.2.0 -Output artifacts
 #
@@ -14,20 +14,20 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $libraries = @(
-    'Brinell.Core',
-    'Brinell.Stride.Automation',
-    'Brinell.Mocking',
-    'Brinell.Uat',
-    'Brinell.Wpf',
-    'Brinell.WinForms',
-    'Brinell.Blazor',
-    'Brinell.Html',
-    'Brinell.Html.Playwright',
-    'Brinell.Stride',
-    'Brinell.Maui',
-    'Brinell.Maui.CommunityToolkit',
-    'Brinell.Maui.FlaUI',
-    'Brinell.Uia.Contracts'
+    'Bruinell.Core',
+    'Bruinell.Stride.Automation',
+    'Bruinell.Mocking',
+    'Bruinell.Uat',
+    'Bruinell.Wpf',
+    'Bruinell.WinForms',
+    'Bruinell.Blazor',
+    'Bruinell.Html',
+    'Bruinell.Html.Playwright',
+    'Bruinell.Stride',
+    'Bruinell.Maui',
+    'Bruinell.Maui.CommunityToolkit',
+    'Bruinell.Maui.FlaUI',
+    'Bruinell.Uia.Contracts'
 )
 
 foreach ($name in $libraries) {
@@ -35,6 +35,6 @@ foreach ($name in $libraries) {
     if ($LASTEXITCODE -ne 0) { throw "Pack failed: $name" }
 }
 
-# brinell, the command line (AD-028): a dotnet tool, versioned with the libraries.
-dotnet pack 'tools/Brinell.Cli/Brinell.Cli.csproj' -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version"
-if ($LASTEXITCODE -ne 0) { throw 'Pack failed: Brinell.Cli' }
+# bruinell, the command line (AD-028): a dotnet tool, versioned with the libraries.
+dotnet pack 'tools/Bruinell.Cli/Bruinell.Cli.csproj' -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version"
+if ($LASTEXITCODE -ne 0) { throw 'Pack failed: Bruinell.Cli' }

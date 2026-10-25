@@ -1,10 +1,10 @@
 # SQL replay: a database stand-in recorded from the real one
 
 A proposal, 2026-10-25: revised after an architecture review, and again after the spike (step 0 of
-[plan.md](plan.md), results in [spike-results.md](spike-results.md)). `Brinell.Mocking` stands in
+[plan.md](plan.md), results in [spike-results.md](spike-results.md)). `Bruinell.Mocking` stands in
 for an HTTP backend with WireMock; nothing like it exists for a database. This records what a test
 sends to the real database and what comes back, then replays it with no database. It is built in
-Brinell and its samples first. The system it is meant for is about 20 years old, with some 2000
+Bruinell and its samples first. The system it is meant for is about 20 years old, with some 2000
 tables.
 
 ## Outcome
@@ -132,8 +132,8 @@ The spike (step 0) is done. The rest, in order:
 1. **The log**, for ADO.NET and EF: commands per test with their time and the objects they touch.
    Its first use is measuring the legacy system: the database's share of a test, and how many
    tests a typical change reaches.
-2. **The package**, from the spike's code: `Brinell.Mocking.Data` (core, ADO.NET adapter, SqlClient
-   rules) and `Brinell.Mocking.Data.EntityFrameworkCore`; matching, binding, errors, the miss
+2. **The package**, from the spike's code: `Bruinell.Mocking.Data` (core, ADO.NET adapter, SqlClient
+   rules) and `Bruinell.Mocking.Data.EntityFrameworkCore`; matching, binding, errors, the miss
    message.
 3. **The schema snapshot** as a command of its own, the stamp per object, the gaps above.
 4. **The heads**: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs.
@@ -147,7 +147,7 @@ A trial on the legacy system follows once step 1 has measured it, by the owner's
 ## Open questions, with proposals
 
 - **One package or two?** Proposal: two, so raw ADO.NET users don't pull in EF (AD-026).
-- **Should the spike app stay as a sample?** Proposal: yes; it is Brinell's only sample on EF Core
+- **Should the spike app stay as a sample?** Proposal: yes; it is Bruinell's only sample on EF Core
   and SQL Server, and it now has a view and a procedure.
 - **Build replay if the log shows a small database share?** Proposal: decide from step 1 on the
   legacy system, counting the reset and the seeding, not only the queries.

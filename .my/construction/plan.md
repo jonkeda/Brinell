@@ -3,8 +3,8 @@
 Goal: grow the UI test suite that already lives in the **Construction** repo
 (`E:\repos\MainConstruction\construction`) into full per-module coverage, backed by
 generatable ControlObjects for every custom Construction control the tests touch. Everything
-stays in the Construction repo; **Brinell is referenced as a NuGet package set**
-(`eng/brinell/Brinell.references.props` + the `IncludeBrinell*` flags), never copied. The
+stays in the Construction repo; **Bruinell is referenced as a NuGet package set**
+(`eng/bruinell/Bruinell.references.props` + the `IncludeBruinell*` flags), never copied. The
 `Todos` module is the PoC: it lands first, end-to-end, and locks the pattern the other
 modules follow.
 
@@ -23,10 +23,10 @@ state → inventory → phases with progress.
 Related references:
 
 - [.my/TodoApp/plan.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/TodoApp/plan.md) - showcase test pyramid the module suites mirror.
-- Brinell rules (this repo, referenced from Construction): [AGENTS.md](../../AGENTS.md),
+- Bruinell rules (this repo, referenced from Construction): [AGENTS.md](../../AGENTS.md),
   `.github/copilot-instructions.md`, `docs/architecture/decisions.md` (AD-004 platform
   neutrality, AD-005 no physical input on MAUI Windows, AD-008 bridge admission).
-- Skills (in `Brinell/.github/skills/`): [maui-control](../../.github/skills/maui-control/SKILL.md),
+- Skills (in `Bruinell/.github/skills/`): [maui-control](../../.github/skills/maui-control/SKILL.md),
   [maui-ui-test](../../.github/skills/maui-ui-test/SKILL.md),
   [convert-control](../../.github/skills/convert-control/SKILL.md).
 
@@ -45,26 +45,26 @@ and `OverviewPagePatternObject`. No Todos ControlObjects, page objects, or tests
 | Construction app | `Exact.Construction/` | MAUI app. 25 modules under `Modules/`. |
 | Custom control library | `Exact.Core.Construction/Controls/` | Search, Loading, Messaging, HeaderActions, TitleBar, FormInputs, FormSections, Lists, Favorites, FilterSheet, Cells, Collections, DisplayFields, QuickActions, RichContent, RichEditor, Settings. |
 | Page pattern library | `Exact.Core.Construction/PagePatterns/` | `OverviewPagePattern`, `DetailPagePattern`, `EditPagePattern`. |
-| **ControlObject library** | `Exact.Core.Construction.UITest/` | **Exists.** `Controls/` holds the 8 seed controls; `PagePatterns/OverviewPagePatternObject.cs` is done. References Brinell via the shared props. |
-| **Test host project** | `Exact.Construction.UITests/` | **Exists.** xUnit + Brinell: `ConstructionFixture`, `ConstructionTestBase`, `ConstructionCollection`, `Auth/`, `MockBackend/` (WireMock), `Diagnostics/`, `Configuration/`, `TestData/`, `TestSettings/`. Brinell pulled in through `eng/brinell/Brinell.references.props`. |
+| **ControlObject library** | `Exact.Core.Construction.UITest/` | **Exists.** `Controls/` holds the 8 seed controls; `PagePatterns/OverviewPagePatternObject.cs` is done. References Bruinell via the shared props. |
+| **Test host project** | `Exact.Construction.UITests/` | **Exists.** xUnit + Bruinell: `ConstructionFixture`, `ConstructionTestBase`, `ConstructionCollection`, `Auth/`, `MockBackend/` (WireMock), `Diagnostics/`, `Configuration/`, `TestData/`, `TestSettings/`. Bruinell pulled in through `eng/bruinell/Bruinell.references.props`. |
 | Loose test-only controls | `Exact.Construction.UITests/Controls/` | `RoundButtonControl`, `SearchOverlay`, `TabMenuItemControl`, `ToggleRow` - hand-written, need conversion. |
 | Test modules present | `Exact.Construction.UITests/Modules/` | Authentication, Contacts (List + Add), Dashboard, Startup. **No Todos tests today.** |
 
-### How Brinell is consumed
+### How Bruinell is consumed
 
-Construction references Brinell through NuGet packages, wired by
+Construction references Bruinell through NuGet packages, wired by
 `Exact.Construction.UITests.csproj`:
 
 ```xml
-<IncludeBrinellHtml>true</IncludeBrinellHtml>
-<IncludeBrinellCommunityToolkit>true</IncludeBrinellCommunityToolkit>
-<IncludeBrinellFlaUI>true</IncludeBrinellFlaUI>
+<IncludeBruinellHtml>true</IncludeBruinellHtml>
+<IncludeBruinellCommunityToolkit>true</IncludeBruinellCommunityToolkit>
+<IncludeBruinellFlaUI>true</IncludeBruinellFlaUI>
 ...
-<Import Project="..\eng\brinell\Brinell.references.props" />
+<Import Project="..\eng\bruinell\Bruinell.references.props" />
 ```
 
-Nothing from Brinell is copied into Construction, and nothing Construction-specific is added
-to the Brinell repo. Work in the Construction repo; treat Brinell as a package dependency.
+Nothing from Bruinell is copied into Construction, and nothing Construction-specific is added
+to the Bruinell repo. Work in the Construction repo; treat Bruinell as a package dependency.
 
 ### Gaps
 
@@ -148,7 +148,7 @@ dotnet build Exact.Construction\Exact.Construction.csproj -f net10.0-windows10.0
 Track here; do not block phase 0 on them.
 
 1. **Where do the Construction app binaries live for the tests to launch?** Resolved by the
-   existing `brinell.maui.config.json` / `construction.maui.config.json` in the test project.
+   existing `bruinell.maui.config.json` / `construction.maui.config.json` in the test project.
    No change needed.
 2. **Does a Construction-flavoured `EditPagePattern` need an app-side test host?** The XAML
    is a `ContentView` deriving from `EditPagePattern`; a page-object base is enough.

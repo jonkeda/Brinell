@@ -1,6 +1,6 @@
-# Contributing to Brinell
+# Contributing to Bruinell
 
-Thank you for your interest in contributing to Brinell! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Bruinell! This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -41,8 +41,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 ### Building
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Brinell.git
-cd Brinell
+git clone https://github.com/YOUR_USERNAME/Bruinell.git
+cd Bruinell
 dotnet restore
 dotnet build
 ```
@@ -64,13 +64,13 @@ dotnet test
 ## Project Structure
 
 ```
-Brinell/
+Bruinell/
 ├── src/
-│   ├── Brinell.Core/       # Core abstractions
-│   ├── Brinell.Wpf/        # WPF automation
-│   ├── Brinell.Html/       # Web automation
-│   ├── Brinell.Maui/       # Mobile automation
-│   └── Brinell.Mocking/    # API mocking
+│   ├── Bruinell.Core/       # Core abstractions
+│   ├── Bruinell.Wpf/        # WPF automation
+│   ├── Bruinell.Html/       # Web automation
+│   ├── Bruinell.Maui/       # Mobile automation
+│   └── Bruinell.Mocking/    # API mocking
 ├── tests/
 │   └── ...                 # Test projects
 ├── samples/

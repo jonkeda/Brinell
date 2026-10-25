@@ -1,6 +1,6 @@
 ---
 name: html-ui-test
-description: Write or fix Brinell Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in testsnew/Brinell.Html.UITests, testsnew/Brinell.Blazor.UITests or samples/Todo/tests/Brinell.Samples.Todo.Web.UITests, or a control unit test in testsnew/Brinell.Html.Tests; also when a web test must run on the bUnit head (BRINELL_HEAD=bunit) or be marked BrowserFact or @browser, or when picking which web tests a change reaches (tools/Scripts/select-tests.ps1, brinell tests affected).
+description: Write or fix Bruinell Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in testsnew/Bruinell.Html.UITests, testsnew/Bruinell.Blazor.UITests or samples/Todo/tests/Bruinell.Samples.Todo.Web.UITests, or a control unit test in testsnew/Bruinell.Html.Tests; also when a web test must run on the bUnit head (BRUINELL_HEAD=bunit) or be marked BrowserFact or @browser, or when picking which web tests a change reaches (tools/Scripts/select-tests.ps1, bruinell tests affected).
 ---
 
 # Write Html UI tests
@@ -15,17 +15,17 @@ something they do not offer, add it there first; never reach past them.
    derives from `BlazorPageObjectBase<T>`, a plain web page from `HtmlPageObjectBase<T>`. If a
    control member is missing, add it with the `html-control` skill first.
 2. **Write the test** with page-object members only (shape below).
-3. **If the sample lacks what the test needs**, add it to `samples/Brinell.Samples.Blazor.App`
+3. **If the sample lacks what the test needs**, add it to `samples/Bruinell.Samples.Blazor.App`
    with `data-testid`s and a visible effect (a status line). The test project references the
    sample's project: the browser head starts it, the bUnit head renders its `Routes`.
-4. **Run the smallest filter that can fail on the bUnit head first**, from the Brinell root:
-   `$env:BRINELL_HEAD = "bunit"; dotnet test testsnew\Brinell.Html.UITests --filter "FullyQualifiedName~LoginPageTests"`.
+4. **Run the smallest filter that can fail on the bUnit head first**, from the Bruinell root:
+   `$env:BRUINELL_HEAD = "bunit"; dotnet test testsnew\Bruinell.Html.UITests --filter "FullyQualifiedName~LoginPageTests"`.
    It runs in about a second, without a browser. To get that filter from the change, run
-   `pwsh tools/Scripts/select-tests.ps1` (`brinell tests affected`): it prints the tests and scenarios the working
+   `pwsh tools/Scripts/select-tests.ps1` (`bruinell tests affected`): it prints the tests and scenarios the working
    tree's change reaches, each with why, and one `--filter`, and says when shared code (`srcnew/`, the test base, the
    sample's layout) runs the suite whole. `-Run` runs them, `-Head playwright` in the browser. A new page object or test
    is not in the suite's `touch-map.json` until `-WriteMap` after a full run: name it in the filter yourself.
-5. **Then once in the browser** (`Remove-Item Env:BRINELL_HEAD`, the same filter) before calling
+5. **Then once in the browser** (`Remove-Item Env:BRUINELL_HEAD`, the same filter) before calling
    it done: the browser judges. One UI test process at a time. Nothing needs to be running: the
    fixture starts the app on a free port (`WebAppHost`). `BLAZOR_APP_URL` points it at a running
    one instead.
@@ -69,7 +69,7 @@ public sealed class FramesPageTests : BlazorSampleTestBase
 
 ## Two heads: browser and bUnit
 
-`Brinell.Html.UITests` and `Brinell.Blazor.UITests` run on both heads unchanged ([the guide](../../../docs/guides/bunit.md),
+`Bruinell.Html.UITests` and `Bruinell.Blazor.UITests` run on both heads unchanged ([the guide](../../../docs/guides/bunit.md),
 AD-030); the Todo web suites have no bUnit head yet. Write every web test so it can.
 
 - **A test that needs a browser** says so: `[BrowserFact("an iframe is its own document")]`
@@ -82,7 +82,7 @@ AD-030); the Todo web suites have no bUnit head yet. Write every web test so it 
   through a style sheet still reads as visible. A test about CSS hiding is a `BrowserFact`.
 - **Never change what a test checks to make it pass on one head.** A test that passes in the
   browser and fails on bUnit is a driver gap or a browser-only test: mark it, or fix the driver
-  in `srcnew/Brinell.Html.Bunit`.
+  in `srcnew/Bruinell.Html.Bunit`.
 
 ## Never in tests, page objects' public members or test helpers
 

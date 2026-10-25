@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.NativeAndroid</RootNamespace>
+    <Description>Page objects, controls and the Appium driver for native Android apps (UiAutomator2), in the shape of Bruinell's MAUI and Html stacks.</Description>
+    <PackageId>Bruinell.NativeAndroid</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Core\Bruinell.Core.csproj" />
+    <ProjectReference Include="..\Bruinell.Appium\Bruinell.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+</Project>

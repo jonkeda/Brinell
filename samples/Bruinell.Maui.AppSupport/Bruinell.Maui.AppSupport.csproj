@@ -1,0 +1,126 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Decides whether this build contains the bridge. Read it: it is a security gate, and it
+    is imported from the contracts project so that both ends of the wire cannot disagree
+    about whether the provider exists.
+
+    Copying this project into an app means copying that file too, or defining
+    BRUINELL_UIA_BRIDGE some other way. Doing neither gives an app with no bridge, which is
+    the right way for a gate to fail.
+  -->
+  <Import Project="..\..\srcnew\Bruinell.Uia.Contracts\Bruinell.Uia.Bridge.props" />
+
+  <PropertyGroup>
+    <!--
+      Multi-targeted so an app under test can reference this from any platform head.
+      The automation peers themselves are WinUI-only (see the Compile Remove below):
+      MAUI layouts lack an AutomationPeer on Windows, which is the problem this project
+      exists to solve. Android and iOS expose AutomationId natively and need nothing.
+    -->
+    <!-- net10.0: the MUnit head compiles the sample app's views without a platform (.my/mUnit). -->
+    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios;net10.0</TargetFrameworks>
+    <RootNamespace>Bruinell.Maui.AppSupport</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Match the sample app: this repo's Directory.Build.props turns warnings into
+         errors, which is inappropriate for code that is meant to be copied out. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+  </PropertyGroup>
+
+  <!--
+    DELIBERATELY NO ProjectReference TO ANYTHING IN THIS REPO.
+
+    This project is designed to be copied, not only referenced. An app under test is
+    often one Bruinell cannot add a dependency to - third-party, legacy, or otherwise
+    outside our control - and dropping these source files in must remain a viable
+    route. A reference to Bruinell.Core or Bruinell.Maui would break that silently.
+
+    Microsoft.Maui.* only. Keep it that way.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+  </ItemGroup>
+
+  <!--
+    The handlers reference Microsoft.UI.Xaml directly, so they compile only for Windows.
+    Excluded by file rather than wrapped in #if WINDOWS: these files are meant to be copied
+    into an app under test, and a reader should not have to mentally strip preprocessor
+    directives to see what the peer does.
+  -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'windows'">
+    <Compile Remove="Handlers\**" />
+  </ItemGroup>
+
+  <!--
+    Uia\ is NOT excluded off Windows, unlike Handlers\.
+
+    The attached property that declares an element's verbs is written in shared XAML, so the
+    type has to exist on every platform the app builds for or the Android and iOS heads stop
+    compiling. Everything under Uia\ is therefore ordinary MAUI code, with two files - the two
+    that reach into WinUI - carrying a #if for their platform half. Off Windows they report no
+    window, nothing is published, and the bridge is inert. That is the right answer rather than
+    a stub: Android and iOS drive gestures with real touch input, which needs no bridge.
+  -->
+
+  <!--
+    The UI Automation contract, LINKED rather than referenced.
+
+    Both ends of the bridge have to compile the same GUIDs, the same verb numbers and the same
+    method table, or they do not speak to each other. The test assembly gets them from the
+    Bruinell.Uia.Contracts project; the app under test gets them from here.
+
+    Linked, because a ProjectReference would break the property the whole project exists to
+    have: that an app Bruinell cannot add a dependency to - third-party, legacy, or otherwise
+    outside our control - can still carry the bridge by copying source files in. Copying this
+    project means copying srcnew\Bruinell.Uia.Contracts alongside it and adjusting the path
+    below; nothing else.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\srcnew\Bruinell.Uia.Contracts\**\*.cs"
+             Exclude="..\..\srcnew\Bruinell.Uia.Contracts\bin\**;..\..\srcnew\Bruinell.Uia.Contracts\obj\**"
+             Link="Uia\Contract\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!--
+    Step 27: what an uninstrumented build does not contain.
+
+    Removed by file rather than wrapped in #if, following the Handlers precedent above -
+    these are files an app author reads and copies, and eight of them under preprocessor
+    directives would be worse to read than a list of what is in the build.
+
+    Two groups, and the difference between them is the point:
+
+      REMOVED - the provider, and everything that only exists to serve it. The dispatcher
+      and MauiCapabilities are here even though neither touches UI Automation: they are a
+      thousand lines whose whole purpose is to drive the app's own controls from outside,
+      and code like that has no business in a shipping binary just because nothing calls
+      it today.
+
+      KEPT - GestureAutomation, because its attached property is named in shared XAML and
+      the app stops compiling without it; BruinellAlerts, because the app's own pages call
+      it; IBruinellGestureSink, because an app implements it; BridgeDiagnostics and
+      WindowHandles, which say and find things rather than doing any. What remains is a
+      declaration that nothing reads and a log nobody writes to.
+
+    BruinellBridgeHost is the seam between the two and is the one file carrying an #if.
+  -->
+  <ItemGroup Condition="'$(BruinellUiaBridge)' != 'true'">
+    <Compile Remove="Uia\Contract\Provider\**" />
+    <Compile Remove="..\..\srcnew\Bruinell.Uia.Contracts\Provider\**" />
+    <Compile Remove="Uia\ElementBounds.cs" />
+    <Compile Remove="Uia\MauiCapabilities.cs" />
+    <Compile Remove="Uia\MauiVerbDispatcher.cs" />
+    <Compile Remove="Uia\MauiVerbTarget.cs" />
+    <Compile Remove="Uia\VerbBinding.cs" />
+    <Compile Remove="Uia\VerbBindings.cs" />
+    <Compile Remove="Uia\VerbPlan.cs" />
+  </ItemGroup>
+
+</Project>

@@ -23,7 +23,7 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "/^Stop-Process -Name \"Brinell\\*\" -Force -ErrorAction SilentlyContinue; taskkill /f /im \"Brinell\\.Samples\\.Maui\\.App\\.exe\" 2>\\$null; \"Cleaned up\"$/": {
+        "/^Stop-Process -Name \"Bruinell\\*\" -Force -ErrorAction SilentlyContinue; taskkill /f /im \"Bruinell\\.Samples\\.Maui\\.App\\.exe\" 2>\\$null; \"Cleaned up\"$/": {
             "approve": true,
             "matchCommandLine": true
         },
@@ -45,7 +45,7 @@
         }
     },
     "cSpell.words": [
-        "Brinell"
+        "Bruinell"
     ],
     "hveCore.artifacts.initialized": true,
     "spxCode.artifacts.initialized": true,

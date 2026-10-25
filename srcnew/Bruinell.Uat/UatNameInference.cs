@@ -1,0 +1,23 @@
+using System.Reflection;
+using Bruinell.Core.Testing;
+
+namespace Bruinell.Uat;
+
+public static class UatNameInference
+{
+    public static string FromType(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return FromIdentifier(type.Name);
+    }
+
+    public static string FromMember(MemberInfo member)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        return FromIdentifier(member.Name);
+    }
+
+    public static string FromIdentifier(string identifier) => StepNames.FromIdentifier(identifier);
+
+    public static bool HasKnownSuffix(string identifier) => StepNames.HasKnownSuffix(identifier);
+}

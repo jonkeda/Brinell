@@ -1,10 +1,10 @@
 # UAT Step Definitions And Flows
 
-Brinell UAT scenarios are markdown files whose steps bind to a command catalog.
+Bruinell UAT scenarios are markdown files whose steps bind to a command catalog.
 There is no separate flow-file format. In current code, a flow is the ordered
 execution of parsed and bound steps.
 
-Every step is declared with one of three attributes from `Brinell.Core.Testing`:
+Every step is declared with one of three attributes from `Bruinell.Core.Testing`:
 `[BddGiven]`, `[BddWhen]` or `[BddThen]`. What the step becomes depends on the
 method the attribute sits on:
 
@@ -214,7 +214,7 @@ loads, and a step that binds to it fails naming the method:
 | `UATA012` | takes two parameters from under the step |
 | `UATA013` | has two empty attributes of one keyword, a name prefix that is not its keyword, an empty attribute on a control verb, or a control-verb property (`CommandId`, `Literal`) on a phrase method |
 
-`brinell data phrases` lists the broken ones as warnings.
+`bruinell data phrases` lists the broken ones as warnings.
 
 ## Callable Phrases
 
@@ -261,7 +261,7 @@ Given the synced list has todos
   | due       | date | 12-May-2026 |
   ```
 
-  Types are written as `brinell data phrases` shows them: `text`, `whole number`, `number`,
+  Types are written as `bruinell data phrases` shows them: `text`, `whole number`, `number`,
   `true/false`, `date`, `date and time`, `time`, `duration`, `user`, `list of ...`, `table`, or
   the C# name of a type a phrase already takes (`TodoStatus`). A declared type must agree with
   the steps the value goes to.
@@ -320,7 +320,7 @@ What the text alone shows is a parse error: `<table>` outside a phrase section (
 (`UAT028`). Phrase files hold no prose, as scenario files do not.
 
 A body step that binds to nothing is not a broken callable: it may bind where it is called (in
-another app). The call reports it. `brinell data validate` reports broken callables as warnings,
+another app). The call reports it. `bruinell data validate` reports broken callables as warnings,
 and `phrases` lists callables with their types.
 
 ## Built-In Phrases
@@ -328,7 +328,7 @@ and `phrases` lists callables with their types.
 The 18 built-in phrases have two sources. Three page verbs are registered
 directly by `UatReflectionRuntime.CreateCommandCatalog()` and
 `UatSpecCommandCatalog.RegisterDefault()`, since they do not bind to control
-methods. The other fifteen are `[BddWhen]` / `[BddThen]` attributes on `Brinell.Core` control
+methods. The other fifteen are `[BddWhen]` / `[BddThen]` attributes on `Bruinell.Core` control
 interfaces. `UatCatalogBuilder` discovers them for the runtime catalog, the
 spec catalog and the Presenter's preview, so the phrase and its method cannot
 drift apart. To add a control verb, annotate its method rather than registering
@@ -349,7 +349,7 @@ A fourth is registered only when the fixture hosts several apps (`IBddSessionHos
 See [Several Apps In One Scenario](uat-template-guide.md#several-apps-in-one-scenario).
 
 Everything else is discovered. The built-in set is 15 phrases over 13 methods on
-six interfaces in `Brinell.Core/Interfaces/`:
+six interfaces in `Bruinell.Core/Interfaces/`:
 
 | Keyword | Phrase | Declared on | Method called |
 | --- | --- | --- | --- |
@@ -384,15 +384,15 @@ Given I am on the Main page
 ## Custom Control Verbs
 
 To add a verb, put a `[BddWhen]` or `[BddThen]` on the control method that
-performs it. The attribute lives in `Brinell.Core.Testing`, so a control project needs no
-reference to `Brinell.Uat` to declare one. Do **not** add a
+performs it. The attribute lives in `Bruinell.Core.Testing`, so a control project needs no
+reference to `Bruinell.Uat` to declare one. Do **not** add a
 `catalog.Register(...)` call for a control verb - that is the hand-written table
 AD-011 removed.
 
 From the Todo sample's `TodoStatus` component:
 
 ```csharp
-using Brinell.Core.Testing;
+using Bruinell.Core.Testing;
 
 [BddWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
@@ -460,11 +460,11 @@ Rules for a control verb:
 **Reach.** The Core interfaces are always scanned. An app control type is scanned
 only when the runtime met it during page discovery - that is, when it is the type
 of a control property on a discovered page object - together with its base classes,
-so a verb declared on a Brinell base (`StateContainer`) reaches an app's subclass. A
+so a verb declared on a Bruinell base (`StateContainer`) reaches an app's subclass. A
 step on a control no page exposes is never registered, and its steps fail to bind
 with `UATB001`.
 
-**Brinell's own control verbs**, beyond the Core interfaces:
+**Bruinell's own control verbs**, beyond the Core interfaces:
 
 | Control | Verbs |
 | --- | --- |
@@ -626,11 +626,11 @@ the file sees; when it sees two, the step is ambiguous and names it with its nam
 
 - A failure report names each step's scope: `Passed: file:12: [Invoicing] ...AddLine: When I add
   a line "Rent"`, or `[page Todo List]` for a page phrase.
-- `brinell data phrases <file>` lists only the phrases that file sees, grouped by where they come
+- `bruinell data phrases <file>` lists only the phrases that file sees, grouped by where they come
   from (`## This file`, `## Invoicing`, `## Backend (Using)`, `## Every scenario`, a page's own):
   what an editor would offer at a step there. Without a file it lists every phrase, with
   `in Invoicing` on a namespaced one.
-- `brinell data references Accounts` lists the config and the files that use a namespace.
+- `bruinell data references Accounts` lists the config and the files that use a namespace.
 ## Page And Control Names
 
 Page and control names come from the runtime model, not from the markdown file.
@@ -918,24 +918,24 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 
 ## Source Files
 
-- `srcnew/Brinell.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
-- `srcnew/Brinell.Core/Interfaces/*.cs` — the built-in control-verb declarations
-- `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
-- `srcnew/Brinell.Uat/BddMarkdownParser.cs`
-- `srcnew/Brinell.Uat/BddCommandCatalog.cs`
-- `srcnew/Brinell.Uat/BddBinder.cs` — binding, subjects, the current app, and expanding calls
-- `srcnew/Brinell.Uat/UatCallables.cs`, `BddPreparedCallables.cs` — callable phrases, their types and problems
-- `srcnew/Brinell.Uat/BddScenarioFiles.cs` — loading a scenario file with the phrase files it sees
-- `srcnew/Brinell.Uat/BddCatalogSet.cs` — the catalogs per head, and what a step can see
-- `srcnew/Brinell.Uat/BddValues.cs` — how every scenario value is read and written
-- `srcnew/Brinell.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
-- `srcnew/Brinell.Uat/BddArguments.cs` — the bind-time check and the run-time read
-- `srcnew/Brinell.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
-- `srcnew/Brinell.Uat/UatScenarioCheck.cs` — checking files without running them (`brinell data`)
-- `srcnew/Brinell.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
-- `srcnew/Brinell.Uat/UatExecution.cs`
-- `srcnew/Brinell.Uat/UatCatalogBuilder.cs`
-- `srcnew/Brinell.Uat/UatReflectionRuntime.cs`
-- `srcnew/Brinell.Uat/UatScenarioTestBase.cs`
-- `srcnew/Brinell.Uat/UatSpecCommandCatalog.cs`
-- `srcnew/Brinell.Uat/UatAttributes.cs`
+- `srcnew/Bruinell.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
+- `srcnew/Bruinell.Core/Interfaces/*.cs` — the built-in control-verb declarations
+- `srcnew/Bruinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
+- `srcnew/Bruinell.Uat/BddMarkdownParser.cs`
+- `srcnew/Bruinell.Uat/BddCommandCatalog.cs`
+- `srcnew/Bruinell.Uat/BddBinder.cs` — binding, subjects, the current app, and expanding calls
+- `srcnew/Bruinell.Uat/UatCallables.cs`, `BddPreparedCallables.cs` — callable phrases, their types and problems
+- `srcnew/Bruinell.Uat/BddScenarioFiles.cs` — loading a scenario file with the phrase files it sees
+- `srcnew/Bruinell.Uat/BddCatalogSet.cs` — the catalogs per head, and what a step can see
+- `srcnew/Bruinell.Uat/BddValues.cs` — how every scenario value is read and written
+- `srcnew/Bruinell.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
+- `srcnew/Bruinell.Uat/BddArguments.cs` — the bind-time check and the run-time read
+- `srcnew/Bruinell.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
+- `srcnew/Bruinell.Uat/UatScenarioCheck.cs` — checking files without running them (`bruinell data`)
+- `srcnew/Bruinell.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
+- `srcnew/Bruinell.Uat/UatExecution.cs`
+- `srcnew/Bruinell.Uat/UatCatalogBuilder.cs`
+- `srcnew/Bruinell.Uat/UatReflectionRuntime.cs`
+- `srcnew/Bruinell.Uat/UatScenarioTestBase.cs`
+- `srcnew/Bruinell.Uat/UatSpecCommandCatalog.cs`
+- `srcnew/Bruinell.Uat/UatAttributes.cs`

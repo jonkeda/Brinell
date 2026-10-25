@@ -1,11 +1,11 @@
 # UAT Template Guide
 
-Brinell UAT tests execute markdown scenarios using a `uat.config.md` file and
+Bruinell UAT tests execute markdown scenarios using a `uat.config.md` file and
 one or more `.feature.md` scenario files. A small C# project ties them to a running
 app.
 
 A complete working example is
-[`samples/Todo/tests/Brinell.Samples.Todo.Uat`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat):
+[`samples/Todo/tests/Bruinell.Samples.Todo.Uat`](../../samples/Todo/tests/Bruinell.Samples.Todo.Uat):
 four scenarios against the hermetic Todo app on Windows, walked through step by
 step in [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 
@@ -15,7 +15,7 @@ The UAT suite lives in the platform's UI test project, beside the page objects i
 name: a scenario is only as good as those, and a page object changes for both.
 
 ```text
-testsnew/Brinell.<Platform>.UITests/
+testsnew/Bruinell.<Platform>.UITests/
   uat.config.md
   Features/
     scenario-name.feature.md
@@ -47,7 +47,7 @@ the output folder.
 Three small pieces. The **fixture** launches the app and exposes the page graph:
 
 ```csharp
-[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
+[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Bruinell.Samples.Todo.UITests.Pages")]
 public sealed class TodoUatFixture : TodoAppFixture
 {
     public TodoUatFixture()
@@ -149,8 +149,8 @@ feature file is the project's own, the case's source is the scenario's line in i
 | Kind | Assembly |
 | --- | --- |
 | Pages | ../…UITests/bin/Debug/net10.0-windows/…UITests.dll |
-| Controls | ../../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
-| Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
+| Controls | ../../../../srcnew/Bruinell.Maui/bin/Debug/net10.0/Bruinell.Maui.dll |
+| Commands | ../../../../srcnew/Bruinell.Uat/bin/Debug/net10.0/Bruinell.Uat.dll |
 
 ## Discovery
 
@@ -163,7 +163,7 @@ feature file is the project's own, the case's source is the scenario's line in i
 
 | Field | Value |
 | --- | --- |
-| OutputDirectory | $(BrinellTestResults)/uat |
+| OutputDirectory | $(BruinellTestResults)/uat |
 | ScreenshotOnFailure | true |
 | IncludeRuntimeTrace | true |
 
@@ -180,18 +180,18 @@ feature file is the project's own, the case's source is the scenario's line in i
 
 | Tag | EnvironmentVariable |
 | --- | --- |
-| hardware | BRINELL_UAT_HARDWARE |
-| live-api | BRINELL_UAT_LIVE_API |
+| hardware | BRUINELL_UAT_HARDWARE |
+| live-api | BRUINELL_UAT_LIVE_API |
 ```
 
-`$(BrinellTestResults)` resolves through the shared Brinell artifact provider.
+`$(BruinellTestResults)` resolves through the shared Bruinell artifact provider.
 If `OutputDirectory` is omitted, UAT should use the suite `uat/` folder.
 
 What each section carries:
 
 | Section | Field | Meaning |
 | --- | --- | --- |
-| Runtime | `Target` | The platform: `MAUI`, `HTML`, `BLAZOR`, `WPF`, `WINFORMS`, `STRIDE`. Derived from the fixture's base class when it has a Brinell one (`BlazorTestFixtureBase` is `BLAZOR`); otherwise this row. Checked against `RuntimeValidation`. |
+| Runtime | `Target` | The platform: `MAUI`, `HTML`, `BLAZOR`, `WPF`, `WINFORMS`, `STRIDE`. Derived from the fixture's base class when it has a Bruinell one (`BlazorTestFixtureBase` is `BLAZOR`); otherwise this row. Checked against `RuntimeValidation`. |
 | Runtime | `Fixture` | The fixture type, or for MAUI the driver: `FlaUI` for the Windows head, `Appium` for Android. |
 | Runtime | `Head` | Optional: the head this suite drives (`maui`, `web`). A scenario tagged `@maui` or `@web` runs only on its head. See [Heads](#heads-one-scenario-file-several-apps). |
 | Runtime | `DefaultTestData` | The test set for a scenario file whose metadata names none. |
@@ -199,7 +199,7 @@ What each section carries:
 | Runtime | `WorkingDirectory` | The base the relative paths resolve against. |
 | Assemblies | `Pages` | The assembly holding the page objects - the source of control names. |
 | Assemblies | `Controls` | The ControlObject assembly for the platform. |
-| Assemblies | `Commands` | `Brinell.Uat`, which carries the engine's own verbs. |
+| Assemblies | `Commands` | `Bruinell.Uat`, which carries the engine's own verbs. |
 | Using | `Namespace` | Optional: namespaces every scenario uses, such as the subjects outside the screen (`Backend`). See [Where Phrases Live](uat-step-definitions.md#where-phrases-live). |
 | Apps | `Name` (+ the fixture's columns) | Optional: the apps a scenario can switch between with `{app} uses the app`. See [Several Apps In One Scenario](#several-apps-in-one-scenario). |
 | Discovery | `AllowNameInference` | `true` lets `AddButton` be **Add** without `[UatName]`. |
@@ -220,7 +220,7 @@ The formal grammar, with every parser diagnostic, is in [UAT Scenario Grammar](.
 
 | Field | Value |
 | --- | --- |
-| App | Brinell.Samples.Maui.App |
+| App | Bruinell.Samples.Maui.App |
 | Area | Main Page |
 | Target | MAUI |
 | Tags | smoke, maui, greeting |
@@ -275,7 +275,7 @@ can keep executable specs in module folders such as
 `Target`, `Tags`, `Mode`, `Requires`, `Owner`, `Priority`, `Evidence`. The table
 is a plain `Field`/`Value` table, so a project can add rows of its own. The Todo
 sample adds `Journey`, which ties each scenario to a subtask id in its
-[journey checklist](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md):
+[journey checklist](../../samples/Todo/tests/Bruinell.Samples.Todo.Uat/todo-user-journeys.md):
 
 ```markdown
 | Journey | TOD.02 |
@@ -311,7 +311,7 @@ And Title Error should not exist
 ````
 
 The Todo sample's
-[`TOD.02-create-a-todo.feature.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
+[`TOD.02-create-a-todo.feature.md`](../../samples/Todo/tests/Bruinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
 is a complete one.
 
 For how step text binds to executable commands, see
@@ -396,14 +396,14 @@ the build output, so the project copies phrase files as it copies scenarios:
 <None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
 ```
 
-A suite that links another suite's scenarios links its phrase files too. `brinell data validate`
+A suite that links another suite's scenarios links its phrase files too. `bruinell data validate`
 warns when a project has phrase files it does not copy.
 
 ## Authoring Rules
 
 - Use stable user-facing intent in steps.
 - Keep locator names in commands or page objects, not prose.
-- Put repeated command behavior in Brinell commands or controls.
+- Put repeated command behavior in Bruinell commands or controls.
 - Keep expected failures in `ExpectedFailures/` with a clear reason.
 - Keep generated output under `TestResults/`, not under source folders.
 
@@ -448,7 +448,7 @@ enabled with `1`, `true`, `yes`, or `on`.
 ## Heads: one scenario file, several apps
 
 One set of scenario files can run on two heads of the same app: the Todo sample's MAUI suite
-and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the same
+and its web suite (`samples/Todo/tests/Bruinell.Samples.Todo.Web.Uat`) run the same
 `TOD.*.feature.md` files, the web project linking them from the MAUI one.
 
 - `Head` in the config's `Runtime` names the head a suite drives: `maui`, `web`, or `mixed` for
@@ -509,5 +509,5 @@ web suite's `TodoWebUatFixture` is the one-head example.
 **Apps of several heads.** A suite with `Head | mixed` runs only scenarios tagged `@mixed`. Each
 app's `Head` column picks the page objects it binds against: `IUatAppsHost.ModulesFor(app)` names
 that head's modules, and the engine builds one catalog per head. The Todo sample's
-`Brinell.Samples.Todo.Mixed.Uat` runs Windows and web apps in one scenario, reading the same
+`Bruinell.Samples.Todo.Mixed.Uat` runs Windows and web apps in one scenario, reading the same
 `apps.md` as its mixed UI tests.

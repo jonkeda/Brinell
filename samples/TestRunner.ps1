@@ -1,7 +1,7 @@
 # Simple test script to verify app and pipe communication
 $ErrorActionPreference = "Stop"
 
-$appPath = "E:\repos\Private\Iosk\Oravey\Brinell\samples\Brinell.Samples.Stride.App\bin\Debug\net10.0-windows\Brinell.Samples.Stride.App.exe"
+$appPath = "E:\repos\Private\Iosk\Oravey\Bruinell\samples\Bruinell.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinell.Samples.Stride.App.exe"
 
 Write-Host "=== Simple Stride App Test ===" -ForegroundColor Cyan
 Write-Host "App path: $appPath"
@@ -12,7 +12,7 @@ if (-not (Test-Path $appPath)) {
 }
 
 # Kill any existing instances
-Get-Process -Name "Brinell.Samples.Stride.App" -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name "Bruinell.Samples.Stride.App" -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 500
 
 Write-Host "`n1. Starting app..." -ForegroundColor Yellow
@@ -29,7 +29,7 @@ if ($process.HasExited) {
 Write-Host "   App is running" -ForegroundColor Green
 
 Write-Host "`n3. Checking for pipe..." -ForegroundColor Yellow
-$pipePath = "\\.\pipe\Brinell.Stride.Automation"
+$pipePath = "\\.\pipe\Bruinell.Stride.Automation"
 $pipeExists = Test-Path $pipePath
 Write-Host "   Pipe exists: $pipeExists"
 
@@ -41,7 +41,7 @@ if (-not $pipeExists) {
 
 Write-Host "`n4. Connecting to pipe..." -ForegroundColor Yellow
 try {
-    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(".", "Brinell.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut, [System.IO.Pipes.PipeOptions]::Asynchronous)
+    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(".", "Bruinell.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut, [System.IO.Pipes.PipeOptions]::Asynchronous)
     $pipe.Connect(5000)
     Write-Host "   Connected!" -ForegroundColor Green
 } catch {

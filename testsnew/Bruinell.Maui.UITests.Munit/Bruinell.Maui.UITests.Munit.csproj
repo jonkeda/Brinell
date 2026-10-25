@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The MAUI device suite on the MUnit head (.my/mUnit): its fixture, tests, containers and page
+    objects LINKED from Bruinell.Maui.UITests unchanged, against the sample app compiled headless
+    (Bruinell.Samples.Maui.App.Headless). Only HeadSetup.cs is this project's own: it points
+    MauiTestFixtureBase.InMemoryHead at MUnit, so the fixture renders the app instead of launching it.
+  -->
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Maui.UITests</RootNamespace>
+    <!-- The suite's own framework and references: some of its tests read the Windows clipboard or
+         ask the FlaUI driver itself; on this head those fail, and are counted device-only. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- The suite's own code, warnings and all, as Bruinell.Maui.UITests builds it. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Suite>..\Bruinell.Maui.UITests\</Suite>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Maui.Munit\Bruinell.Maui.Munit.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Maui.CommunityToolkit\Bruinell.Maui.CommunityToolkit.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Maui.FlaUI\Bruinell.Maui.FlaUI.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Uat\Bruinell.Uat.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinell.Samples.Maui.App.Headless\Bruinell.Samples.Maui.App.Headless.csproj" />
+  </ItemGroup>
+
+  <!-- FlaUIErrorsTests unit-tests the Windows driver's internals, visible to Bruinell.Maui.UITests only. -->
+  <ItemGroup>
+    <Compile Include="$(Suite)**\*.cs"
+             Exclude="$(Suite)bin\**;$(Suite)obj\**;$(Suite)TestResults\**;$(Suite)Tests\Diagnostics\FlaUIErrorsTests.cs"
+             Link="Suite\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="$(Suite)uat.config.md" Link="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(Suite)Features\**\*.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(Suite)ExpectedFailures\**\*.md" Link="ExpectedFailures\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(Suite)TestSettings\**\*.json" Link="TestSettings\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinell.Bdd" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A native Android app (AndroidX and Material views, no MAUI): the gallery that
+       Bruinell.NativeAndroid.UITests drives. Every view has a resource id. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Bruinell.Samples.NativeAndroid.App</RootNamespace>
+    <ApplicationId>com.bruinell.samples.nativeandroid</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <IsPackable>false</IsPackable>
+    <!-- One APK the tests install, built for the emulator's ABI and the device's. -->
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-x64;android-arm64</RuntimeIdentifiers>
+    <!-- The tests install the APK themselves (adb, Appium's app capability): a Debug build's
+         Fast Deployment leaves the assemblies out of it and the app exits at start. -->
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <!-- Android bindings carry obsolete members the platform still uses. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" />
+    <PackageReference Include="Xamarin.AndroidX.RecyclerView" />
+    <PackageReference Include="Xamarin.AndroidX.SwipeRefreshLayout" />
+    <PackageReference Include="Xamarin.Google.Android.Material" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Samples.Todo.UnitTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Core only: a unit test that needs SQLite, HTTP or MAUI belongs in another tier. -->
+    <ProjectReference Include="..\..\src\Bruinell.Samples.Todo.Core\Bruinell.Samples.Todo.Core.csproj" />
+  </ItemGroup>
+
+</Project>

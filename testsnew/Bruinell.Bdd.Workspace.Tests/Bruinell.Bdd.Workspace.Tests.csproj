@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Bdd.Workspace.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The suite loader and the preview; the preview's tests load the Todo suites' catalogs as the language server does. -->
+    <ProjectReference Include="..\..\srcnew\Bruinell.Bdd.Workspace\Bruinell.Bdd.Workspace.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinell.Bdd" />
+    <Using Include="Bruinell.Uat" />
+  </ItemGroup>
+
+</Project>

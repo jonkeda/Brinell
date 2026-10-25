@@ -1,13 +1,13 @@
 ---
 name: narrated-review
-description: Finish a Brinell feature with a review a person can watch - write or update its UAT scenarios, run and record them on video with a voice-over (record_video), and hand over the review page (review_page). Use when a feature or fix in a Brinell suite is done and should be shown, or when asked for a video, a recording, a narrated demo or a review of what was built.
+description: Finish a Bruinell feature with a review a person can watch - write or update its UAT scenarios, run and record them on video with a voice-over (record_video), and hand over the review page (review_page). Use when a feature or fix in a Bruinell suite is done and should be shown, or when asked for a video, a recording, a narrated demo or a review of what was built.
 ---
 
 # Hand over a narrated review
 
 A feature is done when someone can see it work. The scenarios are the proof and the script: the
 suite runs them, the narrator records the app while they run, and a video script says what is
-said at each step. The Brinell MCP server does the recording and writes the page.
+said at each step. The Bruinell MCP server does the recording and writes the page.
 
 ## Workflow
 
@@ -17,7 +17,7 @@ said at each step. The Brinell MCP server does the recording and writes the page
    per scenario you want in the video. `validate_scenario` checks it like a feature file: an
    address or a `Say` row that finds nothing is an error (`VID0xx`).
 3. **Record.** Call `record_video` with the script's path. It builds the suite and runs the
-   scenes with `BRINELL_RECORD`; it takes as long as the scenarios plus their speech. It
+   scenes with `BRUINELL_RECORD`; it takes as long as the scenarios plus their speech. It
    returns the video, its captions and its timeline, and whether every scene passed.
    - No ffmpeg: it says so and how to install it. Tell the person; do not install it yourself.
    - A failed scene is still recorded: the video shows where, and the page marks it.

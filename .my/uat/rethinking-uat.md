@@ -8,14 +8,14 @@ Related:
 - [Specification formats discussion](../testpyramide/specification-formats-discussion.md)
 - [Test pyramid discussion](../testpyramide/test-pyramid-discussion.md)
 - [Contacts journey backbone](../testpyramide/Contacts/03-journey-backbone.md)
-- [Brinell UAT template guide](../../Brinell/docs/guides/uat-template-guide.md)
+- [Bruinell UAT template guide](../../Bruinell/docs/guides/uat-template-guide.md)
 
 ---
 
 ## 0. TL;DR
 
 Your instinct in step 5 is right, but with one correction: **we already have a
-Markdown-executed UAT engine** (Brinell parses `*.uat.md` scenarios and runs
+Markdown-executed UAT engine** (Bruinell parses `*.uat.md` scenarios and runs
 them — no `.cs` needed). So the interesting question is not "MD or code?" but
 **"where does the LLM add leverage, and what is the source of truth?"**
 
@@ -24,7 +24,7 @@ Recommended pipeline:
 ```mermaid
 flowchart LR
     UJ[User Journeys\nMarkdown checklist\nCON.01.1 ...] -->|LLM draft| GK[Gherkin scenarios\n*.uat.md\nGiven/When/Then]
-    GK -->|Brinell runtime| RUN[Executed on device\nMAUI / Android]
+    GK -->|Bruinell runtime| RUN[Executed on device\nMAUI / Android]
     GK -.->|LLM transpile\noptional escape hatch| CS[.cs page-object test]
 ```
 
@@ -32,7 +32,7 @@ flowchart LR
   human-readable, both are versioned, both are reviewable by non-developers.
 - **LLM step 1** (Journeys → Gherkin): high value, drafts the tedious part.
 - **LLM step 2** (Gherkin → `.cs`): keep as an *optional* escape hatch, not the
-  default. Brinell already executes the Markdown directly, so transpiling to
+  default. Bruinell already executes the Markdown directly, so transpiling to
   `.cs` is only needed when a scenario outgrows the phrase vocabulary.
 
 The rest of this doc explains why.
@@ -50,13 +50,13 @@ design:
 2. **The 3-tier specification** — Journeys (Tier 1) → Rule Tables (Tier 2) →
    Gherkin (Tier 3), already argued in the
    [specification formats discussion](../testpyramide/specification-formats-discussion.md).
-3. **Brinell's Markdown UAT runner** — `*.uat.md` files with
+3. **Bruinell's Markdown UAT runner** — `*.uat.md` files with
    `Given/When/Then` steps are parsed and executed against the running app via
    page objects, with screenshots on failure, tags, scenario outlines, and
-   example tables. See the [UAT template guide](../../Brinell/docs/guides/uat-template-guide.md).
+   example tables. See the [UAT template guide](../../Bruinell/docs/guides/uat-template-guide.md).
 
 **Implication:** idea #4 ("test cases written in MD and then executed") is not a
-future wish — it is the current Brinell design. The rethink is about the
+future wish — it is the current Bruinell design. The rethink is about the
 *authoring pipeline that feeds it*, not the runner.
 
 ---
@@ -77,7 +77,7 @@ fills.
 
 Gherkin (`Given/When/Then`) is the sweet spot between prose and code:
 
-- Concrete enough to execute (Brinell already runs it).
+- Concrete enough to execute (Bruinell already runs it).
 - Readable enough for a Product Owner to sign off.
 - Traceable: one journey → 1–2 key scenarios (happy path + critical edge).
 
@@ -91,7 +91,7 @@ existing pyramid guidance — reuse it, don't fight it.
 | Approach | What it is | Verdict for us |
 |---|---|---|
 | **Decision / rule tables** | Compact input→outcome matrices | ✅ Already Tier 2. Best for rights, validation, state. Not a *UAT* format — it belongs in unit tests. |
-| **Keyword-driven (Robot Framework style)** | Steps map to reusable keywords | ➖ Brinell phrases already give us this; no need for a second engine. |
+| **Keyword-driven (Robot Framework style)** | Steps map to reusable keywords | ➖ Bruinell phrases already give us this; no need for a second engine. |
 | **Screenshot / visual snapshot** | Golden-image diffing | ➖ Brittle on MAUI across DPI/themes; use targeted screenshots as *evidence*, not the assertion. |
 | **Property-based / model-based** | Generate flows from a state model | 🔬 Powerful for async screen states (Loading/Empty/Error), but high skill cost. Park it. |
 | **Pure exploratory + charter** | Human-led, time-boxed sessions | ✅ Keep for genuinely new features; automation can't replace discovery. |
@@ -99,11 +99,11 @@ existing pyramid guidance — reuse it, don't fight it.
 Nothing here beats "Journeys → Gherkin" as the *backbone*. They are
 complements, not replacements.
 
-### #4 — MD test cases, executed ✅ already real via Brinell
+### #4 — MD test cases, executed ✅ already real via Bruinell
 
 Two ways to "execute Markdown". This is the core architectural fork:
 
-**Model A — Interpret MD at runtime (current Brinell).**
+**Model A — Interpret MD at runtime (current Bruinell).**
 The `*.uat.md` file *is* the test. A parser reads steps and dispatches to page
 objects. No generated code.
 
@@ -116,7 +116,7 @@ They are not equivalent — see §3.
 ### #5 — Journeys → Gherkin → code, two LLM steps 🟡 right shape, wrong default
 
 The pipeline shape is correct. The correction: **don't make "→ code" the
-default output.** Because Brinell already executes the Gherkin, generating `.cs`
+default output.** Because Bruinell already executes the Gherkin, generating `.cs`
 adds a compile step, a second artifact that can drift from the Markdown, and a
 review burden — for no runtime benefit in the common case.
 
@@ -130,7 +130,7 @@ Make `.cs` generation the **escape hatch**, used only when:
 
 ## 3. The key decision: interpret vs. transpile
 
-| Dimension | Model A: Interpret MD (Brinell today) | Model B: LLM transpile MD → `.cs` |
+| Dimension | Model A: Interpret MD (Bruinell today) | Model B: LLM transpile MD → `.cs` |
 |---|---|---|
 | **Source of truth** | The `.uat.md` file (single artifact) | Ambiguous: MD *or* the generated `.cs`? Drift risk. |
 | **Who can author** | PO / QA / dev (plain Markdown) | Author in MD, but the runnable thing is code |
@@ -176,7 +176,7 @@ flowchart TD
         C[Selected .cs page-object tests\nonly when MD is insufficient]
     end
     J -->|LLM drafts, human edits| G
-    G -->|Brinell runs directly| DEV[(Device / Emulator)]
+    G -->|Bruinell runs directly| DEV[(Device / Emulator)]
     G -.->|LLM transpiles on demand| C
     C --> DEV
 ```
@@ -190,8 +190,8 @@ the LLM draft `*.uat.md` scenarios. Human edits and commits. The LLM is a
 
 Guardrails:
 - Every generated scenario must carry a `Traces: CON.03.x` metadata field.
-- The LLM may only use phrases from the Brinell vocabulary
-  ([uat-step-definitions.md](../../Brinell/docs/guides/uat-step-definitions.md));
+- The LLM may only use phrases from the Bruinell vocabulary
+  ([uat-step-definitions.md](../../Bruinell/docs/guides/uat-step-definitions.md));
   if it needs a new phrase, that's a signal to add a phrase, not to hand-roll code.
 - Prefer one happy path + the critical edge per journey; push permutations to
   Tier-2 tables/unit tests.
@@ -233,21 +233,21 @@ Keep the human-readable, deterministic Markdown as the master. Use the LLM to
 ## 6. Open questions
 
 - **Phrase vocabulary coverage** — how many Construction journeys are already
-  expressible with existing Brinell phrases? A gap analysis would tell us how
+  expressible with existing Bruinell phrases? A gap analysis would tell us how
   often the `.cs` escape hatch is really needed.
 - **Where do Tier-2 rule tables execute?** — likely unit/integration, not UAT.
   Confirm the boundary so UAT stays thin.
 - **Data setup** — do scenarios seed via WireMock / fixtures, or against a real
   backend? (See the
-  [WireMock vs real backend proposal](../uitests/brinell-wiremock-and-real-backend-proposal.md).)
+  [WireMock vs real backend proposal](../uitests/bruinell-wiremock-and-real-backend-proposal.md).)
 - **Coverage reporting** — do we build the journey→scenario traceability report
-  as a Brinell artifact?
+  as a Bruinell artifact?
 
 ---
 
 ## 7. Recommendation in one line
 
 Keep **User Journeys** as intent and **Markdown Gherkin** as the executable,
-deterministic source of truth that Brinell runs directly; use an **LLM to draft
+deterministic source of truth that Bruinell runs directly; use an **LLM to draft
 the Gherkin** from journeys; and treat **LLM-generated `.cs` as a reviewed
 escape hatch**, never as the default and never inside CI.

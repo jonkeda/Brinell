@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The same gate the app under test uses, so that building this host without the bridge
+    produces the same kind of binary a shipping app would be - which is the only reason
+    step 27's test can prove anything with it. DefineConstants do not travel across a
+    project reference, so importing here is what keeps this project and the contracts it
+    references agreeing about whether the provider exists.
+  -->
+  <Import Project="..\..\srcnew\Bruinell.Uia.Contracts\Bruinell.Uia.Bridge.props" />
+
+  <PropertyGroup>
+    <!--
+      A window and a message loop, and nothing else. The bridge spikes measure the UI
+      Automation mechanism; running them through MAUI would add a minute of build time
+      and a second explanation for every negative result.
+    -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFrameworks></TargetFrameworks>
+    <RootNamespace>Bruinell.Uia.TestHost</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+
+    <!-- A console attached to a WinExe, so the harness can read what this reports. -->
+    <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Uia.Contracts\Bruinell.Uia.Contracts.csproj" />
+  </ItemGroup>
+
+  <!--
+    The target implements IBruinellVerbTarget, which is part of the provider and therefore
+    absent from an uninstrumented build. Removed by file for the same reason the provider
+    is: nothing is left disabled. HostTargets stays, because the ids it names are what the
+    gating test asks the tree for and then does not find.
+  -->
+  <ItemGroup Condition="'$(BruinellUiaBridge)' != 'true'">
+    <Compile Remove="RecordingTarget.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Not a test project: the shared test props add xunit and a test SDK to everything here. -->
+    <PackageReference Remove="Microsoft.NET.Test.Sdk" />
+    <PackageReference Remove="xunit" />
+    <PackageReference Remove="xunit.runner.visualstudio" />
+    <PackageReference Remove="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

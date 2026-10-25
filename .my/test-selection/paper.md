@@ -1,4 +1,4 @@
-# Testing less during development: test selection for Brinell UI suites
+# Testing less during development: test selection for Bruinell UI suites
 
 A research paper, 2026-10-24. The question: UI suites are slow and get run in full again and
 again during development. How do we run only the tests a change can break, and keep the full set
@@ -6,15 +6,15 @@ for the gates?
 
 ## Outcome
 
-Run the full UI suite only at gates, and let Brinell pick the rest. Brinell already knows, per
+Run the full UI suite only at gates, and let Bruinell pick the rest. Bruinell already knows, per
 test, which page objects and controls it touched (every public call logs its page and control,
 `ControlCall`). Record that once per full run as a **touch map**. Join it with the git diff and a
-map from page objects to source files, and Brinell can answer "which tests does this change
+map from page objects to source files, and Bruinell can answer "which tests does this change
 reach?" as a `--filter` expression. Anything the map cannot place (shared code, a migration, a
 changed fixture) widens the selection, up to the full suite. The full run at the gate is the
 safety net that catches what selection missed, and it refreshes the map.
 
-The rest of this paper is the problem, what the field has learned, the options for Brinell, and
+The rest of this paper is the problem, what the field has learned, the options for Bruinell, and
 a proposed order of work.
 
 ## The problem
@@ -63,9 +63,9 @@ The tools developers know do the same at smaller scale: Jest's `--onlyChanged`, 
 
 Unit-test RTS follows code coverage: the test calls the code. A UI test reaches the code through
 a browser, a server and a database, so coverage of the test assembly says nothing. Three things
-make it tractable for Brinell all the same:
+make it tractable for Bruinell all the same:
 
-- **Brinell sees the UI side.** Every call goes through `ControlCall` with a page name and a
+- **Bruinell sees the UI side.** Every call goes through `ControlCall` with a page name and a
   control id, so "test T used `QuestPage.Accept` and `HomePage.Survivor`" is already in the log.
 - **Tomorrow's app runs in process.** Blazor Interactive Server, hosted by the test fixture, means
   server-side coverage per test is collectable with the .NET coverage tools, unlike a remote app.
@@ -76,7 +76,7 @@ What stays hard: shared layout and CSS reach every page; a change in a game rule
 only through data; tests in one xUnit collection share state, so selecting one may need its
 setup partners.
 
-## Options for Brinell
+## Options for Bruinell
 
 Five mechanisms, from cheapest to most work. They combine; none replaces the gate.
 
@@ -89,14 +89,14 @@ Five mechanisms, from cheapest to most work. They combine; none replaces the gat
 | E. Learned selection | A model on history | Needs long history; later |
 
 **A. Naming and tags.** Make the convention a rule: every test and scenario carries its feature
-ID, and `brinell` can turn a list of IDs into a filter. This alone removes the guesswork about
+ID, and `bruinell` can turn a list of IDs into a filter. This alone removes the guesswork about
 filter syntax, not about which IDs.
 
 **B. The touch map.** During a full run, a `TouchRecorder` (an `ITestLogger` beside the existing
 ones) writes `test → {page object, control}` to `TestResults/touch-map.json`. A second, static
 map comes from the source: page object `QuestPage` → its route → the Razor component and its
 code-behind and child components. A changed file maps to page objects, page objects to tests.
-This is the Brinell-shaped answer and works for every stack Brinell drives, not only Blazor.
+This is the Bruinell-shaped answer and works for every stack Bruinell drives, not only Blazor.
 
 **C. The coverage map.** For an in-process app, collect file-level coverage per test during the
 full run (Ekstazi's lesson: files, not lines). Map each changed `.cs` or `.razor` to the tests
@@ -132,16 +132,16 @@ Selection is only worth it if people trust it. The rules that make it safe:
 | Build check, per task | Smoke plus selected, widened by the rules | About a minute |
 | Gate (review of shared code, checkpoint, run end) | Full suite; maps refreshed; misses recorded | As today |
 
-For an agent this is one call: `brinell affected --since game~1` prints the filter, or the MCP
-`run_test` tool takes `affected: true`. The agent no longer chooses; it runs what Brinell picks.
+For an agent this is one call: `bruinell affected --since game~1` prints the filter, or the MCP
+`run_test` tool takes `affected: true`. The agent no longer chooses; it runs what Bruinell picks.
 
 ## Proposed order of work
 
-1. **D first:** last-failed order, fail fast and rerun-failed in Brinell's runner and CLI. No risk,
+1. **D first:** last-failed order, fail fast and rerun-failed in Bruinell's runner and CLI. No risk,
    immediate saving.
 2. **A:** feature IDs as a checked convention (an architecture test in Tomorrow), and
-   `brinell filter <ids>`.
-3. **B:** the `TouchRecorder`, the page-to-source map for Blazor and Html, `brinell affected`
+   `bruinell filter <ids>`.
+3. **B:** the `TouchRecorder`, the page-to-source map for Blazor and Html, `bruinell affected`
    with the widening config and the explanation; the MCP tool option.
 4. **Miss tracking** at the gate, so the next decision is made on numbers.
 5. **C** only if misses show B is not enough; **E** when the history is long.

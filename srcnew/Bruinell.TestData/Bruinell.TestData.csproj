@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Schema export and strict constructor-parameter handling need System.Text.Json 9+. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinell.TestData</RootNamespace>
+    <Description>Typed, strictly validated test data for Bruinell tests: test-set definitions, rules, diagnostics with file and line, and JSON schema export.</Description>
+    <PackageId>Bruinell.TestData</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

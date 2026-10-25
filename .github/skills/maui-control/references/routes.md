@@ -31,7 +31,7 @@ label, a bound value), record the evidence in the member's remarks, and go on to
 
 Where UI Automation has no pattern for the action, the app publishes a gesture bridge
 (AD-008): verbs declared per element in markup with `GestureAutomation.Verbs` from
-`Brinell.Maui.AppSupport`.
+`Bruinell.Maui.AppSupport`.
 
 | Need | Member |
 | --- | --- |
@@ -48,7 +48,7 @@ Where UI Automation has no pattern for the action, the app publishes a gesture b
   the tree lacks but the bridge's `GetState` can read is published; add the member.
 - **Extending the bridge for an existing verb** - binding it for another view type (a
   `VerbBindings` row) or adding a state property to the `GetState` dispatcher in
-  `samples/Brinell.Maui.AppSupport/Uia/` - is not a new verb, but it is still an app-side
+  `samples/Bruinell.Maui.AppSupport/Uia/` - is not a new verb, but it is still an app-side
   change. Answer AD-008's three tests for it in the plan or PR (or, when there is none, in the
   control's class remarks), and run tier 2b.
 
@@ -61,7 +61,7 @@ Answer each in writing, in the plan or the PR, before adding a verb:
 2. **Is the physical path the thing under test?** A test that asserts typing fires
    `TextChanged` must type; that test runs on the mobile head only.
 3. **Does it stay a UI test?** Read what the user can see. If the assertion needs the view
-   model, the coverage belongs in `Brinell.Maui.Tests`.
+   model, the coverage belongs in `Bruinell.Maui.Tests`.
 
 A verb that fails any test is not added. The member throws instead (below).
 
@@ -96,8 +96,8 @@ Routes differ per platform. Every claim in `<remarks>` is measured, not assumed:
 
 - **Windows** (FlaUI, UI Automation): the control type, the patterns, the children, the
   AutomationId. Layouts with no automation peer (`ContentView`, `Border`) publish nothing
-  until the app registers the Brinell automation handlers from
-  `samples/Brinell.Maui.AppSupport`.
+  until the app registers the Bruinell automation handlers from
+  `samples/Bruinell.Maui.AppSupport`.
 - **Android** (Appium, UiAutomator2): the class, `resource-id`, `content-desc`, what touch
   does. Physical input is allowed here, injected by Appium inside the device.
 

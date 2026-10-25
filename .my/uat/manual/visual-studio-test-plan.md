@@ -1,4 +1,4 @@
-# Manual test plan: the Brinell BDD extension for Visual Studio
+# Manual test plan: the Bruinell BDD extension for Visual Studio
 
 Status: **ready to run**, not run yet. Date: 2026-09-28.
 For: a person at a Windows machine with Visual Studio. About 2 hours for everything; section 3
@@ -20,7 +20,7 @@ plan and the guide disagree, note it as a finding.
 - Each check has an ID, what to do, and what you should see. Mark it **Pass**, **Fail** or
   **Blocked** (you couldn't get to it), and write a note for anything not a plain pass.
 - When something fails, carry on with the next check if you can. Take a screenshot, and copy the
-  **Brinell BDD** Output pane (View > Output, "Show output from: Brinell BDD").
+  **Bruinell BDD** Output pane (View > Output, "Show output from: Bruinell BDD").
 - Record the results in the table in section 14, or copy this file and tick the boxes.
 
 ## 1. What you need
@@ -29,7 +29,7 @@ plan and the guide disagree, note it as a finding.
 | --- | --- |
 | Visual Studio | 2022 17.10 or later, or 2026, with the **Visual Studio extension development** workload |
 | .NET | the .NET 10 SDK (`dotnet --version` shows 10.x) |
-| Repository | the Brinell repository, branch `move`, at or after commit `4c4955e` |
+| Repository | the Bruinell repository, branch `move`, at or after commit `4c4955e` |
 | Time | about 2 hours; section 3 alone is about 30 minutes |
 
 Close every other Visual Studio window before you start. The UI test runs in section 5 start the
@@ -40,12 +40,12 @@ goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| S-1 | From the Brinell root, run `dotnet build samples\Todo\Brinell.Samples.Todo.slnx`. | The build succeeds. | ☐ |
-| S-2 | Open `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
-| S-3 | In the experimental instance, open `samples\Todo\Brinell.Samples.Todo.slnx`, then **Build > Build Solution**. | The Todo solution builds. | ☐ |
-| S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell BDD" is listed and enabled, and no "Brinell UAT". If you see "Brinell UAT", the experimental instance and the build hold the extension from before the rename: close the experimental instance, delete `tools\Brinell.Bdd.VisualStudio\bin` and `obj` (and the CodeLens project's), run **Reset the Visual Studio 2026 Experimental Instance** from the Start menu, and F5 again. | ☐ |
+| S-1 | From the Bruinell root, run `dotnet build samples\Todo\Bruinell.Samples.Todo.slnx`. | The build succeeds. | ☐ |
+| S-2 | Open `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
+| S-3 | In the experimental instance, open `samples\Todo\Bruinell.Samples.Todo.slnx`, then **Build > Build Solution**. | The Todo solution builds. | ☐ |
+| S-4 | **Extensions > Manage Extensions > Installed**. | "Bruinell BDD" is listed and enabled, and no "Bruinell UAT". If you see "Bruinell UAT", the experimental instance and the build hold the extension from before the rename: close the experimental instance, delete `tools\Bruinell.Bdd.VisualStudio\bin` and `obj` (and the CodeLens project's), run **Reset the Visual Studio 2026 Experimental Instance** from the Start menu, and F5 again. | ☐ |
 
-The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\`:
+The files used below are all under `samples\Todo\tests\Bruinell.Samples.Todo.Uat\`:
 - `Features\TOD.01-see-my-todos.feature.md`, called **TOD.01** from here on;
 - `Features\Todo.steps.md`, called **the step file**;
 - `ExpectedFailures\TOD.11-without-using.feature.md`, called **the failing file**;
@@ -69,13 +69,13 @@ The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\
 | P-12 | Turn on Windows high contrast (**Left Alt + Left Shift + Print Screen**), look, and turn it off again. | The preview stays readable in high contrast. | ☐ |
 | P-13 | Drag the preview window out to float, then dock it again. | It keeps working after each move (this is S6). | ☐ |
 | P-14 | Click in the preview, and try **Ctrl+F**, **Escape** and **Ctrl+C** on some selected text. | Note what each does. Nothing should hang or lose focus (S6). | ☐ |
-| P-15 | Open `samples\Todo\tests\Brinell.Samples.Todo.Web.Uat` in Solution Explorer, and open one of its linked feature files (it shows TOD.01 again). | The preview's bar has a suite picker offering the MAUI and web suites. Picking web binds the file in the web suite. | ☐ |
+| P-15 | Open `samples\Todo\tests\Bruinell.Samples.Todo.Web.Uat` in Solution Explorer, and open one of its linked feature files (it shows TOD.01 again). | The preview's bar has a suite picker offering the MAUI and web suites. Picking web binds the file in the web suite. | ☐ |
 
 **Before a build** (optional, 10 minutes):
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| P-16 | Close the experimental instance. Delete `samples\Todo\tests\Brinell.Samples.Todo.Uat\bin`. Start the experimental instance again (S-2) and open TOD.01 without building. | The preview shows the steps, and the bar says **Parsed only**, with the reason (build the project first). | ☐ |
+| P-16 | Close the experimental instance. Delete `samples\Todo\tests\Bruinell.Samples.Todo.Uat\bin`. Start the experimental instance again (S-2) and open TOD.01 without building. | The preview shows the steps, and the bar says **Parsed only**, with the reason (build the project first). | ☐ |
 | P-17 | Build the solution. | The preview binds by itself after the build. | ☐ |
 
 ## 4. Diagnostics and the Error List
@@ -93,14 +93,14 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▷ Run as test**. | The suite's project builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
+| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▷ Run as test**. | The suite's project builds first. Then the **Bruinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
 | R-2 | Wait for the run to end. | The preview shows each step's status (a pass mark per step), and the scenario's result and duration. | ☐ |
 | R-3 | Click **▷ Run file as test** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
 | R-12 | Click **▶ Run** on TOD.01.3. | No `dotnet test`: the Output pane says "Running 'TOD.01.3 ...' on the runner", the app opens, the scenario runs past any step breakpoint, and the pane lists its result. The preview shows it. | ☐ |
 | R-13 | Change a step's text in TOD.01.3 to another valid phrase (or only add a blank line), save, and click **▶ Run** again. | The Output pane says "Nothing but scenario files changed ... not built again"; the run starts within seconds and runs the text as it is now. Undo the change. | ☐ |
 | R-14 | Click **▶ Run file**, then **Cancel run** while it goes. | The file's scenarios run one after another on the runner; Cancel ends it, the app closes, and the pane says the run ended canceled. | ☐ |
-| R-15 | Close and reopen TOD.01, wait ten seconds, then click **▶ Run** on TOD.01.1. With it done, **Build > Rebuild** `Brinell.Samples.Todo.Uat`. | The run starts at once (the app opens within a second or two: the runner was ready). The rebuild succeeds while the runner waits (Task Manager shows a `dotnet` runner from `%TEMP%\Brinell\runners`). The next Run starts at once again. | ☐ |
-| R-16 | **Tools > Options > Brinell BDD > General**: set **Warm runner** to False; reopen the solution, then Run TOD.01.1. | The run still works, a little slower to start; no runner stays after it. | ☐ |
+| R-15 | Close and reopen TOD.01, wait ten seconds, then click **▶ Run** on TOD.01.1. With it done, **Build > Rebuild** `Bruinell.Samples.Todo.Uat`. | The run starts at once (the app opens within a second or two: the runner was ready). The rebuild succeeds while the runner waits (Task Manager shows a `dotnet` runner from `%TEMP%\Bruinell\runners`). The next Run starts at once again. | ☐ |
+| R-16 | **Tools > Options > Bruinell BDD > General**: set **Warm runner** to False; reopen the solution, then Run TOD.01.1. | The run still works, a little slower to start; no runner stays after it. | ☐ |
 | R-4 | While a run goes, click **Run** again on another scenario. | The second run is refused, with a message (in the status bar and the Output pane). | ☐ |
 | R-5 | While a run goes, start **Build > Build Solution**. | The build is cancelled, and the Output pane says why. | ☐ |
 | R-6 | While a run goes, click **Cancel run** in the preview's bar. | The test process stops and the Todo app closes. | ☐ |
@@ -121,13 +121,13 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-5 | Add two empty lines above line 54. | The dot moves down with its step. | ☐ |
 | B-6 | With the dot on `When I tap Sync`, click **● Debug** on TOD.01.3's heading. | The run starts, Visual Studio's debugger attaches (the title bar shows it is debugging), and the run stops **before** that step. You are in `BddStepExecutionSession.RunNextAsync`. | ☐ |
 | B-7 | At that stop, look in **Locals**. | A local `stepBreak` shows the step's text, its arguments, the app, the page (Todo List) and the call chain. | ☐ |
-| B-8 | Press **F11** until you are in the step's code. | You reach the control verb's code for tapping (in Brinell). | ☐ |
+| B-8 | Press **F11** until you are in the step's code. | You reach the control verb's code for tapping (in Bruinell). | ☐ |
 | B-9 | Note whether the debugger stopped anywhere **before** your breakpoint, in the test host's own code (S4). | It shouldn't have. If it did, press F5, and note it: `VSTEST_DEBUG_NOBP` did not work here. | ☐ |
 | B-10 | Press **F5** to continue. | The run ends normally, and the preview shows the results. | ☐ |
 | B-11 | Open the step file. Set a breakpoint on a step inside `## Step: the synced list has todos` (for example its `When I tap Sync`). Debug TOD.01.2. | The run stops at that step each time the scenario calls the `## Step:`. | ☐ |
 | B-12 | With a breakpoint set, run TOD.01.3 with **Debug** from **Test Explorer** (right-click the test > Debug), not from the preview. | It stops at the same breakpoint. | ☐ |
-| B-13 | Set an ordinary C# breakpoint (F9) in `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`, on the `SyncButton` line (22). Debug TOD.01.3. | Visual Studio stops there as usual. | ☐ |
-| B-14 | Set an ordinary C# breakpoint in the Todo **app's** code: `samples\Todo\src\Brinell.Samples.Todo.App\Pages\TodoListPage.xaml.cs`, in a handler the Sync tap reaches. Debug TOD.01.3. | The Output pane says "The debugger is attached to the app too". Visual Studio stops in the app's code. The Debug Location toolbar lists two processes (testhost and the app). | ☐ |
+| B-13 | Set an ordinary C# breakpoint (F9) in `samples\Todo\tests\Bruinell.Samples.Todo.UITests\Pages\TodoListPage.cs`, on the `SyncButton` line (22). Debug TOD.01.3. | Visual Studio stops there as usual. | ☐ |
+| B-14 | Set an ordinary C# breakpoint in the Todo **app's** code: `samples\Todo\src\Bruinell.Samples.Todo.App\Pages\TodoListPage.xaml.cs`, in a handler the Sync tap reaches. Debug TOD.01.3. | The Output pane says "The debugger is attached to the app too". Visual Studio stops in the app's code. The Debug Location toolbar lists two processes (testhost and the app). | ☐ |
 | B-16 | Set a step breakpoint on TOD.01.2's first step (`Given I am on the Todo List page`). Debug TOD.01.2. | The run stops there. The preview shows a yellow bar "Paused before: …" with Continue, Step over, Step into (disabled), Step out (disabled) and Stop; the step is outlined with a ▶. | ☐ |
 | B-17 | Press **Alt+Shift+F10** (Step over). | The run stops at the next step, `Given the synced list has todos` (line 34), "Paused at the call"; Step into is enabled now. | ☐ |
 | B-18 | Press **Alt+Shift+F11** (Step into). | The step file opens at the call's first step, "Paused before: …", without the app having done anything; Step out is enabled. | ☐ |
@@ -140,7 +140,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-25 | Step through TOD.01.1 again, to the breakpoint at line 24; click **🐞 Debug from here** in the bar. | Visual Studio attaches (the title says Debugging) and breaks in `BddInvoker.InvokeDefinition`; Locals show `stepBreak` (the step, its arguments, page). Press **F11** two or three times: you are in the control's `Click`. | ☐ |
 | B-26 | Press **F5** (the debugger's Continue), then **Stop** in the bar. | The run pauses at line 25; Stop ends the run, and the debugging session ends with it. | ☐ |
 | B-27 | In the Presenter, pause TOD.01.1 before `When I tap Sync`; right-click that row > **Debug from here**, and pick the open Visual Studio in the dialog Windows shows. | Visual Studio attaches to the runner and breaks just before the step's definition; F11 goes into `Click`. | ☐ |
-| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it), and no `next`. | ☐ |
+| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it), and no `next`. | ☐ |
 
 ## 7. Editing help
 
@@ -196,17 +196,17 @@ Open the config (`uat.config.md`). Undo every change afterwards.
 | C-5 | Remove the `Fixture` row. | An error `UATG003`: the Runtime table names no Fixture. | ☐ |
 | C-6 | In an empty value cell of the Runtime table's `Head` row, press **Ctrl+Space**. | The heads: maui, web, mixed, service. | ☐ |
 | C-7 | Hover over the word `Fixture`. | A tooltip saying what the field is for. | ☐ |
-| C-8 | Open `samples\Todo\tests\Brinell.Samples.Todo.TestSupport\TestData\testdata.schema.json` and add a space somewhere, save, then look at the config. | A warning `UATG009` on the `TestData` row: the schema is out of date. **Ctrl+.** on it offers to regenerate it, and doing so clears the warning. Check with `git diff` that the schema is back as it was. | ☐ |
+| C-8 | Open `samples\Todo\tests\Bruinell.Samples.Todo.TestSupport\TestData\testdata.schema.json` and add a space somewhere, save, then look at the config. | A warning `UATG009` on the `TestData` row: the schema is out of date. **Ctrl+.** on it offers to regenerate it, and doing so clears the warning. Check with `git diff` that the schema is back as it was. | ☐ |
 
 ## 10. CodeLens in C#
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| L-1 | Open `samples\Todo\tests\Brinell.Samples.Todo.TestSupport\Uat\BackendPhrases.cs`. Wait a few seconds. | Above the method at line 40, CodeLens says "used in N BDD steps · M scenarios". | ☐ |
+| L-1 | Open `samples\Todo\tests\Bruinell.Samples.Todo.TestSupport\Uat\BackendPhrases.cs`. Wait a few seconds. | Above the method at line 40, CodeLens says "used in N BDD steps · M scenarios". | ☐ |
 | L-2 | Click it. | A table lists each step: file, line, step text, scenario. | ☐ |
-| L-3 | Open `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`. | Above `SyncButton`, CodeLens counts the tap steps on the Todo List page. | ☐ |
+| L-3 | Open `samples\Todo\tests\Bruinell.Samples.Todo.UITests\Pages\TodoListPage.cs`. | Above `SyncButton`, CodeLens counts the tap steps on the Todo List page. | ☐ |
 | L-4 | Find a method no step uses (any private helper). | No BDD CodeLens above it. | ☐ |
-| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No BDD CodeLens, and no `dotnet` process running `Brinell.Bdd.LanguageServer.dll` is started for it. | ☐ |
+| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No BDD CodeLens, and no `dotnet` process running `Bruinell.Bdd.LanguageServer.dll` is started for it. | ☐ |
 
 ## 11. BDD Explorer
 
@@ -227,8 +227,8 @@ Only with GitHub Copilot, Visual Studio 17.14 or later.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| M-1 | Add the `.mcp.json` from the guide's "Copilot And Other Agents" section to the Brinell root, and reopen the solution. | Copilot Chat's tools list has **brinell-bdd** with six tools. | ☐ |
-| M-2 | In agent mode, ask: "Using brinell-bdd, list the steps with 'tap' in the Todo MAUI suite." | It calls `list_steps` and shows `I tap {control}` among them. | ☐ |
+| M-1 | Add the `.mcp.json` from the guide's "Copilot And Other Agents" section to the Bruinell root, and reopen the solution. | Copilot Chat's tools list has **bruinell-bdd** with six tools. | ☐ |
+| M-2 | In agent mode, ask: "Using bruinell-bdd, list the steps with 'tap' in the Todo MAUI suite." | It calls `list_steps` and shows `I tap {control}` among them. | ☐ |
 | M-3 | Ask it to write a scenario "the user adds a todo called Buy milk" for the Todo MAUI suite, and validate it. | It uses only existing steps, calls `validate_scenario`, and fixes what it reports. Remove `.mcp.json` afterwards. | ☐ |
 
 ## 13. Observations for the spike questions

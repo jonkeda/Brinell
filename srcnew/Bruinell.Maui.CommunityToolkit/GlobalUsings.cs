@@ -1,0 +1,10 @@
+global using System.Diagnostics;
+global using System.Globalization;
+global using Bruinell.Core.Configuration;
+global using Bruinell.Core.Exceptions;
+global using Bruinell.Core.Interfaces;
+global using Bruinell.Core.Locators;
+global using Bruinell.Core.Logging;
+global using Bruinell.Maui.Controls;
+global using Bruinell.Maui.Enums;
+global using Bruinell.Maui.Interfaces;

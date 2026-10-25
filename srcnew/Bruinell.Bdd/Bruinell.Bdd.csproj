@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Bdd</RootNamespace>
+    <Description>Markdown feature files for Bruinell: parse, bind, values, tables, callable steps, namespaces and run, with no UI.</Description>
+    <PackageId>Bruinell.Bdd</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <ProjectReference Include="..\Bruinell.Core\Bruinell.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinell.Uat" />
+  </ItemGroup>
+
+</Project>

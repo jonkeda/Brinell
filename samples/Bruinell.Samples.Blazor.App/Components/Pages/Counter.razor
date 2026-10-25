@@ -1,0 +1,31 @@
+@page "/counter"
+
+<PageTitle>Counter - Bruinell Blazor Sample</PageTitle>
+
+<h1 data-testid="counter-title">Counter</h1>
+
+<p role="status" data-testid="count-display">Current count: @_currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount" data-testid="increment-btn">
+    Click me
+</button>
+
+<div class="mt-3">
+    <button class="btn btn-secondary" @onclick="ResetCount" data-testid="reset-btn">
+        Reset
+    </button>
+</div>
+
+@code {
+    private int _currentCount = 0;
+
+    private void IncrementCount()
+    {
+        _currentCount++;
+    }
+
+    private void ResetCount()
+    {
+        _currentCount = 0;
+    }
+}

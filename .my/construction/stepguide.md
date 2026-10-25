@@ -6,17 +6,17 @@ PowerShell terminals.
 
 Everything is added inside the two projects that already exist:
 
-- `Exact.Core.Construction.UITest/` - the ControlObject library (Brinell-Construction bridge).
+- `Exact.Core.Construction.UITest/` - the ControlObject library (Bruinell-Construction bridge).
 - `Exact.Construction.UITests/` - the single xUnit test host (fixtures, Auth, mock backend,
   and one `Modules/<Module>/` folder per module). **No per-module `.csproj`.**
 
-Brinell is a referenced NuGet package set (`eng/brinell/Brinell.references.props` +
-`IncludeBrinell*` flags in the test project). Never copy Brinell sources in.
+Bruinell is a referenced NuGet package set (`eng/bruinell/Bruinell.references.props` +
+`IncludeBruinell*` flags in the test project). Never copy Bruinell sources in.
 
 Prerequisites once, up front:
 
 - Construction repo builds today: `dotnet build Construction.sln -v:minimal /nr:false` clean.
-- The Brinell skills used below live in `Brinell/.github/skills/` in the sibling repo.
+- The Bruinell skills used below live in `Bruinell/.github/skills/` in the sibling repo.
 
 Reference:
 
@@ -133,7 +133,7 @@ project, wherever the existing seed-control tests live). Green = **Phase 1 done.
 
 All Todos test artefacts go into the **existing** `Exact.Construction.UITests` project under
 `Modules/Todos/`. No new project, no new solution entry. Blueprint: the existing
-`Modules/Contacts/` folder and `samples/Todo/tests/Brinell.Samples.Todo.UITests` in Brinell.
+`Modules/Contacts/` folder and `samples/Todo/tests/Bruinell.Samples.Todo.UITests` in Bruinell.
 
 ### Step 2.1 - Create the module folder + collection/fixture
 
@@ -294,8 +294,8 @@ Windows-first through phases 0-6. Android is triggered when:
 - The Todos suite on Windows is stable for one week.
 
 Then enable Todos on Android first (the test project already multi-targets through the
-Brinell Appium references), the way
-[samples/Todo/tests/Brinell.Samples.Todo.UITests.Mobile](../../samples/Todo/tests/Brinell.Samples.Todo.UITests.Mobile)
+Bruinell Appium references), the way
+[samples/Todo/tests/Bruinell.Samples.Todo.UITests.Mobile](../../samples/Todo/tests/Bruinell.Samples.Todo.UITests.Mobile)
 does today.
 
 ---

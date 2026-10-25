@@ -1,11 +1,11 @@
 # One Todo UAT, end to end
 
 This walks through **a single UAT** from
-[tests/Brinell.Samples.Todo.Uat](tests/Brinell.Samples.Todo.Uat) so you can see how a
-plain-Markdown scenario becomes something Brinell actually runs against the app.
+[tests/Bruinell.Samples.Todo.Uat](tests/Bruinell.Samples.Todo.Uat) so you can see how a
+plain-Markdown scenario becomes something Bruinell actually runs against the app.
 
 The scenario we follow is **TOD.02.3 — "A todo needs a title"** from
-[todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md). In words:
+[todo-user-journeys.md](tests/Bruinell.Samples.Todo.Uat/todo-user-journeys.md). In words:
 adding a todo with a blank title must show *"Title is required"* and must not save.
 
 ---
@@ -21,7 +21,7 @@ running app:
 | `Features/*.feature.md` | The executable scenarios themselves, in `Given / When / Then`. |
 | `Runtime/*.cs` | The fixture, the xUnit collection and the scenario test class. Written once. |
 
-Brinell reads the scenario, matches each line to a **phrase**, and calls the matching
+Bruinell reads the scenario, matches each line to a **phrase**, and calls the matching
 **page object** method against the running app. Nothing is generated to `.cs`; the
 Markdown *is* the test.
 
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 2. The scenario file
 
-One file per journey. [`Features/TOD.02-create-a-todo.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
+One file per journey. [`Features/TOD.02-create-a-todo.feature.md`](tests/Bruinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
 holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
 ````markdown
@@ -49,7 +49,7 @@ holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
 | Field | Value |
 | --- | --- |
-| App | Brinell.Samples.Todo.App |
+| App | Bruinell.Samples.Todo.App |
 | Area | Create |
 | Target | MAUI |
 | Journey | TOD.02 |
@@ -118,7 +118,7 @@ Every step matches exactly one phrase. The phrase decides which page object meth
 | `And Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 
 Those control phrases are not a list someone maintains. Each is a `[BddWhen]` or `[BddThen]` attribute on
-the `Brinell.Core` interface method it calls — `I clear {control}` sits on
+the `Bruinell.Core` interface method it calls — `I clear {control}` sits on
 `IEditableTextControlObject.Clear`, `{control} should be visible` on
 `IElementObject.AssertVisible` — and the engine discovers them by reflection
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). Only the
@@ -128,7 +128,7 @@ engine's own.
 The important idea: **"Add", "Title", "Save", "Title Error"** are not string lookups
 against the screen. They are *names of members on the page object*. The runtime has a
 `TodoListPage` and a `TodoEditPage` (in
-[tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)), and
+[tests/Bruinell.Samples.Todo.UITests/Pages](tests/Bruinell.Samples.Todo.UITests/Pages)), and
 their members provide the names:
 
 ```csharp
@@ -160,7 +160,7 @@ So the chain for one step is:
 ```
 
 The AutomationIds (`TodoEdit_Title`, `TodoEdit_TitleError`) come from the app XAML in
-[src/Brinell.Samples.Todo.App/Pages/TodoEditPage.xaml](src/Brinell.Samples.Todo.App/Pages/TodoEditPage.xaml).
+[src/Bruinell.Samples.Todo.App/Pages/TodoEditPage.xaml](src/Bruinell.Samples.Todo.App/Pages/TodoEditPage.xaml).
 That is the anchor that survives rebuilds — the page object binds to the id, the scenario
 binds to the page object's name.
 
@@ -170,7 +170,7 @@ binds to the page object's name.
 
 Cycling the status with **Next** is Todo's own behaviour, so Todo declares its own verb: a
 `[BddWhen]` on the method of the ControlObject that performs it
-([`TodoStatus.tpl.cs`](tests/Brinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
+([`TodoStatus.tpl.cs`](tests/Bruinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
 
 ```csharp
 [BddWhen("I advance {control} to {value}")]
@@ -181,7 +181,7 @@ public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
 No registration, no catalog edit: the attribute *is* the registration, and
-[`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.05-change-status.feature.md)
+[`TOD.05-change-status.feature.md`](tests/Bruinell.Samples.Todo.Uat/Features/TOD.05-change-status.feature.md)
 reads
 
 ```gherkin
@@ -196,7 +196,7 @@ produces `Then Todos should have todo "Write the report"`.
 
 ## 5. The config that points at the Todo app
 
-[`uat.config.md`](tests/Brinell.Samples.Todo.Uat/uat.config.md):
+[`uat.config.md`](tests/Bruinell.Samples.Todo.Uat/uat.config.md):
 
 ```markdown
 ## Runtime
@@ -205,16 +205,16 @@ produces `Then Todos should have todo "Write the report"`.
 | --- | --- |
 | Target | MAUI |
 | Fixture | FlaUI |
-| AppPath | ../../src/Brinell.Samples.Todo.App/bin/Debug/net10.0-windows10.0.19041.0/win10-x64/Brinell.Samples.Todo.App.exe |
+| AppPath | ../../src/Bruinell.Samples.Todo.App/bin/Debug/net10.0-windows10.0.19041.0/win10-x64/Bruinell.Samples.Todo.App.exe |
 | WorkingDirectory | ../../../.. |
 
 ## Assemblies
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | ../Brinell.Samples.Todo.UITests/bin/Debug/net10.0-windows/Brinell.Samples.Todo.UITests.dll |
-| Controls | ../../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
-| Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
+| Pages | ../Bruinell.Samples.Todo.UITests/bin/Debug/net10.0-windows/Bruinell.Samples.Todo.UITests.dll |
+| Controls | ../../../../srcnew/Bruinell.Maui/bin/Debug/net10.0/Bruinell.Maui.dll |
+| Commands | ../../../../srcnew/Bruinell.Uat/bin/Debug/net10.0/Bruinell.Uat.dll |
 
 ## Discovery
 
@@ -235,11 +235,11 @@ produces `Then Todos should have todo "Write the report"`.
 ## 6. The fixture: the same hermetic app the UI tier uses
 
 The UAT project reuses tier 3's fixture rather than standing up its own app.
-[`TodoUatFixture`](tests/Brinell.Samples.Todo.Uat/Runtime/TodoUatFixture.cs) adds the two
+[`TodoUatFixture`](tests/Bruinell.Samples.Todo.Uat/Runtime/TodoUatFixture.cs) adds the two
 things the UAT runtime needs:
 
 ```csharp
-[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
+[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Bruinell.Samples.Todo.UITests.Pages")]
 public sealed class TodoUatFixture : TodoAppFixture
 {
     public TodoUatFixture()
@@ -259,7 +259,7 @@ backend is WireMock and the database is seeded with the `three-todos` scenario, 
 in tier 3 — a UAT here is hermetic, not a smoke test against a real server.
 
 Scenarios share one app process, so
-[`TodoUatScenarioTests`](tests/Brinell.Samples.Todo.Uat/Runtime/TodoUatScenarioTests.cs)
+[`TodoUatScenarioTests`](tests/Bruinell.Samples.Todo.Uat/Runtime/TodoUatScenarioTests.cs)
 resets it between them:
 
 ```csharp
@@ -273,7 +273,7 @@ scenarios independent of order and of each other's edits.
 
 ## 7. What happens when it runs
 
-1. The collection fixture launches `Brinell.Samples.Todo.App.exe` and the WireMock backend.
+1. The collection fixture launches `Bruinell.Samples.Todo.App.exe` and the WireMock backend.
 2. `BeforeScenario` resets the app to the seeded list.
 3. `Given I am on the Todo List page` waits for the list to be on screen (the page object's
    own readiness gate), not a fixed sleep.
@@ -294,8 +294,8 @@ From `samples/Todo`, with no other UI or UAT process running:
 
 ```bash
 # The UAT project launches the app, so build the app first.
-dotnet build src/Brinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
-dotnet test tests/Brinell.Samples.Todo.Uat
+dotnet build src/Bruinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
+dotnet test tests/Bruinell.Samples.Todo.Uat
 ```
 
 ---
@@ -324,17 +324,17 @@ When Finn taps Sync
 Then Todos should have todo "Pack for the trip"
 ```
 
-See `tests/Brinell.Samples.Todo.Mixed.Uat/Features/TOD.07-mixed.feature.md` and
+See `tests/Bruinell.Samples.Todo.Mixed.Uat/Features/TOD.07-mixed.feature.md` and
 [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
 
 ---
 
 ## Reference
 
-- Journey checklist: [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md)
+- Journey checklist: [todo-user-journeys.md](tests/Bruinell.Samples.Todo.Uat/todo-user-journeys.md)
 - Pyramid backbone: [journeys.md](journeys.md)
 - Config and file shape: [docs/guides/uat-template-guide.md](../../docs/guides/uat-template-guide.md)
 - Phrase catalog and binding: [docs/guides/uat-step-definitions.md](../../docs/guides/uat-step-definitions.md)
 - Why the vocabulary is attribute-declared: [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - Several apps in one scenario: [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)
-- Todo page objects: [tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)
+- Todo page objects: [tests/Bruinell.Samples.Todo.UITests/Pages](tests/Bruinell.Samples.Todo.UITests/Pages)

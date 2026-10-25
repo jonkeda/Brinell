@@ -1,0 +1,222 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Bruinell.Samples.Maui.App</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- Disable TreatWarningsAsErrors inherited from Directory.Build.props -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    
+    <!-- Windows Package Type -->
+    <WindowsPackageType>None</WindowsPackageType>
+    
+    <!-- Include Windows App SDK in output (no separate runtime install needed) -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+
+    <!-- Display name -->
+    <ApplicationTitle>Bruinell MAUI Sample</ApplicationTitle>
+
+    <!-- App Identifier -->
+    <ApplicationId>com.bruinell.samples.maui</ApplicationId>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <!-- Windows -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+    <!-- Mobile -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+
+    <!--
+      Embed the managed assemblies in the APK even in Debug.
+
+      Android Debug builds default to Fast Deployment, which leaves the assemblies out of the
+      APK for `dotnet run` to push separately. A UI test installs only the APK, so the app
+      aborts at startup with "No assemblies found ... Assuming this is part of Fast
+      Deployment" - a crash before any test code runs, reported by Appium only as "app never
+      started".
+    -->
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <PackageReference Include="CommunityToolkit.Maui" />
+    <PackageReference Include="CommunityToolkit.Maui.MediaElement" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Samples.Shared\Bruinell.Samples.Shared.csproj" />
+    <!--
+      Demonstrates the "reference the project" route for the Bruinell automation
+      handlers. The other supported route is copying AppSupport's sources into the
+      app under test - see BruinellAutomationSupport for why both exist.
+    -->
+    <ProjectReference Include="..\Bruinell.Maui.AppSupport\Bruinell.Maui.AppSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App Icon -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+
+    <!-- Images. Without this the app shipped no images at all, so the Image demo's
+         Source="appicon.png" resolved to nothing: the control rendered at zero size and
+         reported no bounding rectangle, which is why its visibility test could never pass. -->
+    <MauiImage Include="Resources\Images\**" />
+
+    <!-- Raw Assets -->
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\**" />
+    <Compile Remove="Platforms\Windows\Controls\**" />
+    <Compile Remove="TestViews\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <EmbeddedResource Remove="Platforms\Windows\Controls\**" />
+    <EmbeddedResource Remove="TestViews\**" />
+    <MauiCss Remove="Models\**" />
+    <MauiCss Remove="Platforms\Windows\Controls\**" />
+    <MauiCss Remove="TestViews\**" />
+    <MauiXaml Remove="Models\**" />
+    <MauiXaml Remove="Platforms\Windows\Controls\**" />
+    <MauiXaml Remove="TestViews\**" />
+    <None Remove="Models\**" />
+    <None Remove="Platforms\Windows\Controls\**" />
+    <None Remove="TestViews\**" />
+    <Page Remove="Platforms\Windows\Controls\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiXaml Update="Pages\HubPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\ButtonsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\RangePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\SelectionPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\DisplayPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\TogglePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\GridCollectionPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\GridCollectionDemoView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\AutomationProbePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\AutomationProbeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\NavigationDemoPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\NavigationDemoView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\ContainerPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ContainerView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\CollectionModulePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\CollectionModuleView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\ShapesPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ShapesView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\DialogsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\DialogsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ButtonsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ButtonsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\DateTimeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\DisplayView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\RangeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\SelectionView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\TextView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ToggleView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="Platforms\Windows\Controls\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".my\maui-control-coverage-analysis.md" />
+    <None Include=".my\test-pages-design.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Pages\RangePage.xaml.cs">
+      <DependentUpon>RangePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Pages\DisplayPage.xaml.cs">
+      <DependentUpon>DisplayPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ButtonsView.xaml.cs">
+      <DependentUpon>ButtonsView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="TestViews\**" />
+  </ItemGroup>
+
+</Project>

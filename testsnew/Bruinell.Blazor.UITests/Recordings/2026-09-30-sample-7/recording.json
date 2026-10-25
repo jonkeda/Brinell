@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:07.1703008+00:00",
+      "location": "http://localhost:5180/frames",
+      "page": "/frames",
+      "title": "Frames - Bruinell Blazor Sample",
+      "snapshot": "001-frames-bruinell-blazor-sample.nodes.jsonl",
+      "nodes": 48,
+      "displayName": "Frames - Bruinell Blazor Sample"
+    }
+  ]
+}

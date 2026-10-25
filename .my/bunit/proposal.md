@@ -1,16 +1,16 @@
-# A bUnit head for Brinell: the same page objects and scenarios, without a browser
+# A bUnit head for Bruinell: the same page objects and scenarios, without a browser
 
 A proposal, 2026-10-25. bUnit renders a Blazor component inside a unit test: no browser, no
-server, milliseconds per test. Brinell's page objects, controls and BDD scenarios today need a
+server, milliseconds per test. Bruinell's page objects, controls and BDD scenarios today need a
 browser through Playwright. This proposes a second Html driver over bUnit, so the same page
 objects and the same feature files run on either, and asks what that would take.
 
 ## Outcome
 
-It fits Brinell's shape well. `Brinell.Html` already keeps the driver behind its own interfaces
-(`IHtmlDriver`, `IHtmlElement`, `IHtmlTestContext`), and `Brinell.Html.Playwright` is one
+It fits Bruinell's shape well. `Bruinell.Html` already keeps the driver behind its own interfaces
+(`IHtmlDriver`, `IHtmlElement`, `IHtmlTestContext`), and `Bruinell.Html.Playwright` is one
 implementation of about 1,000 lines. Page objects take an `IHtmlTestContext` and nothing else
-(Tomorrow's `AboutAiPage(IHtmlTestContext context)`). So a `Brinell.Html.Bunit` driver of similar
+(Tomorrow's `AboutAiPage(IHtmlTestContext context)`). So a `Bruinell.Html.Bunit` driver of similar
 size would run every page object, control, collection and UAT phrase unchanged; only the fixture
 chooses the head.
 
@@ -24,7 +24,7 @@ for pages with heavy logic, but they are no longer the price of a faster suite.
 bUnit renders into an AngleSharp DOM and fires Blazor's own event handlers. Each member of
 `IHtmlElement` either has a direct counterpart or is browser-only:
 
-| Brinell member | On bUnit | Fidelity |
+| Bruinell member | On bUnit | Fidelity |
 | --- | --- | --- |
 | `FindElements` by test id, id, CSS, class, tag, text | `FindAll(css)`; text as a filter on `TextContent` | Same; XPath not supported |
 | `Click`, `DoubleClick`, `Submit` | bUnit's `Click()`, `DoubleClick()`, `Submit()` events | Handler runs; no hit-testing |
@@ -54,7 +54,7 @@ a test that needs the browser says so at once rather than passing wrongly.
   instead (Tomorrow's `Put*` arrangement already does this in process).
 - **JavaScript.** bUnit's JS interop in loose mode, with planned answers per module where a page
   needs one; the board's canvas stays browser-only.
-- **Readiness.** Brinell's poll and budgets stay as they are. A page is idle when bUnit's renderer
+- **Readiness.** Bruinell's poll and budgets stay as they are. A page is idle when bUnit's renderer
   has no pending render and the body carries no `data-busy`, so `BlazorPageObjectBase`'s busy signal
   works unchanged.
 
@@ -82,9 +82,9 @@ canvas and its keys, phone layout, sign-in and lockout, the circuit's pushes fro
 prerendering, recorded and narrated videos. The browser head also stays the judge at every gate,
 because the bUnit head can pass a page that a style sheet hides.
 
-## What Brinell gets besides Tomorrow
+## What Bruinell gets besides Tomorrow
 
-- **Unit tests for Brinell's own Blazor controls** without starting the sample app: `Brinell.Blazor.Tests`
+- **Unit tests for Bruinell's own Blazor controls** without starting the sample app: `Bruinell.Blazor.Tests`
   could render the sample's components and drive them through the real control objects.
 - **A cheap first check for the Scraper's drafted page objects**: render the page, verify the ids
   resolve, before the browser run.
@@ -94,20 +94,20 @@ because the bUnit head can pass a page that a style sheet hides.
 
 - **False passes.** A page hidden by CSS, or a handler bound in JavaScript, works on bUnit and not
   in the browser. The gate's browser run catches it; the `Visible` rule and `@browser` keep it rare.
-- **Async.** Brinell's poll runs on the test thread while bUnit's renderer runs on its dispatcher;
-  whether a handler's awaits finish while Brinell polls needs a spike, not an assumption.
+- **Async.** Bruinell's poll runs on the test thread while bUnit's renderer runs on its dispatcher;
+  whether a handler's awaits finish while Bruinell polls needs a spike, not an assumption.
 - **The host.** Tomorrow's pages inject use cases built over SQL Server and the fake Foundry; the
   bUnit context has to compose them as the in-process host does, without Kestrel.
-- **bUnit's own releases.** Its API was renamed between major versions; Brinell pins one version in
+- **bUnit's own releases.** Its API was renamed between major versions; Bruinell pins one version in
   `Directory.Packages.props` and wraps it in one project.
 
 ## Proposed steps
 
-1. **Spike** on `Brinell.Blazor.UITests`: a `BunitHtmlDriver` with find, click, fill, text and
+1. **Spike** on `Bruinell.Blazor.UITests`: a `BunitHtmlDriver` with find, click, fill, text and
    attributes; run the existing suite on it and count what passes, what is browser-only, what
    breaks. Settle the async question here.
 2. **The driver in full**: every member mapped or browser-only, navigation through the router,
-   readiness, test authorization, JS in loose mode; `Brinell.Html.Bunit` with its unit tests.
+   readiness, test authorization, JS in loose mode; `Bruinell.Html.Bunit` with its unit tests.
 3. **Heads in the fixtures**: `HtmlTestFixtureBase` and the UAT fixture take a head; `@browser`
    honoured; the head in the run's report.
 4. **Tomorrow's studio first**: the fights bench (PLT.35, 16 scenarios) on the bUnit head, timed
@@ -117,7 +117,7 @@ because the bUnit head can pass a page that a style sheet hides.
 
 ## What is unknown
 
-- How many of Brinell's Blazor scenarios and Tomorrow's pass on bUnit unchanged; the spike gives
+- How many of Bruinell's Blazor scenarios and Tomorrow's pass on bUnit unchanged; the spike gives
   the number.
 - What a bUnit test costs in Tomorrow with the real use cases and database behind it: likely tens of
   milliseconds rather than one, still a hundredfold under the browser.

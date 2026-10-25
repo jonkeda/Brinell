@@ -1,22 +1,22 @@
 # Run HTML Tests
 
-Working directory: Brinell root.
+Working directory: Bruinell root.
 
 ## Build
 
 ```powershell
-dotnet build srcnew\Brinell.Html\Brinell.Html.csproj -v:minimal /nr:false
-dotnet build srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj -v:minimal /nr:false
+dotnet build srcnew\Bruinell.Html\Bruinell.Html.csproj -v:minimal /nr:false
+dotnet build srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj -v:minimal /nr:false
 ```
 
 ## Unit Coverage
 
 ```powershell
-dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.Tests\Bruinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.Tests\Bruinell.Blazor.Tests.csproj -v:minimal /nr:false
 ```
 
-`Brinell.Html.Tests` holds the call-model tests: calls, scope readiness, confirmations,
+`Bruinell.Html.Tests` holds the call-model tests: calls, scope readiness, confirmations,
 collections, and the Playwright error mapping.
 
 ## Generate Controls
@@ -30,31 +30,31 @@ tools\Scripts\CreateHtml.Bat
 
 ## UI Tests
 
-Install Playwright's Chromium once (after a build, from the Brinell root):
+Install Playwright's Chromium once (after a build, from the Bruinell root):
 
 ```powershell
-pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium
+pwsh testsnew\Bruinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium
 ```
 
 Then:
 
 ```powershell
-dotnet test testsnew\Brinell.Html.UITests\Brinell.Html.UITests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.UITests\Brinell.Blazor.UITests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.UITests\Bruinell.Html.UITests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.UITests\Bruinell.Blazor.UITests.csproj -v:minimal /nr:false
 ```
 
 Nothing needs to be running: the tests build the Blazor sample and start it on a free port
-(`Brinell.Html.Testing.WebAppHost`). Set `BLAZOR_APP_URL` to use a sample that is already
+(`Bruinell.Html.Testing.WebAppHost`). Set `BLAZOR_APP_URL` to use a sample that is already
 running instead. The Todo web head has its own UI tests:
-`dotnet test samples\Todo\tests\Brinell.Samples.Todo.Web.UITests` (hermetic; add
-`BRINELL_UAT_LIVE_API=1` for the live tier).
+`dotnet test samples\Todo\tests\Bruinell.Samples.Todo.Web.UITests` (hermetic; add
+`BRUINELL_UAT_LIVE_API=1` for the live tier).
 
 ## UAT
 
 ```powershell
-dotnet test testsnew\Brinell.Html.UITests\Brinell.Html.UITests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.UITests\Brinell.Blazor.UITests.csproj -v:minimal /nr:false
-dotnet test samples\Todo\tests\Brinell.Samples.Todo.Web.Uat -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.UITests\Bruinell.Html.UITests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.UITests\Bruinell.Blazor.UITests.csproj -v:minimal /nr:false
+dotnet test samples\Todo\tests\Bruinell.Samples.Todo.Web.Uat -v:minimal /nr:false
 ```
 
 The first two start the Blazor sample themselves. The third runs the Todo scenario files tagged

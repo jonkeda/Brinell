@@ -1,0 +1,106 @@
+@page "/"
+@page "/todos"
+@using System.Collections.Specialized
+@inherits ViewModelPage<TodoListViewModel>
+@inject TodoListViewModel Model
+
+@*
+    The list. Test ids are the MAUI AutomationIds (TodoListPage.xaml), so both heads share one
+    contract with their page objects. TodoList_State holds exactly one of Loading, Empty, Error or
+    the rows, as the MAUI StateContainer does; each carries its own id.
+*@
+<PageTitle>Todos</PageTitle>
+
+<div class="page" data-testid="TodoListPage">
+    <div class="toolbar">
+        <h1>Todos</h1>
+        <CommandButton Command="Model.SyncCommand" AutomationId="TodoList_Sync">Sync</CommandButton>
+        <CommandButton Command="Model.AddCommand" AutomationId="TodoList_Add">Add</CommandButton>
+    </div>
+
+    <div class="list-header">
+        <label>
+            Show
+            <select data-testid="TodoList_Filter" @bind="Model.FilterIndex">
+                @for (var index = 0; index < Model.FilterNames.Count; index++)
+                {
+                    <option value="@index">@Model.FilterNames[index]</option>
+                }
+            </select>
+        </label>
+        <span data-testid="TodoList_LastSync">@Model.SyncLine</span>
+    </div>
+
+    <div data-testid="TodoList_State" data-state="@Model.State">
+        @switch (Model.State)
+        {
+            case ListState.Loading:
+                <div data-testid="TodoList_Loading" class="state" role="status">
+                    <span class="spinner" aria-hidden="true"></span>
+                    Loading…
+                </div>
+                break;
+
+            case ListState.Empty:
+                <div data-testid="TodoList_Empty" class="state">
+                    <span data-testid="TodoList_EmptyLabel">Nothing to do</span>
+                </div>
+                break;
+
+            case ListState.Error:
+                <div data-testid="TodoList_Error" class="state" role="alert">
+                    <span data-testid="TodoList_ErrorLabel">@Model.ErrorMessage</span>
+                    <CommandButton Command="Model.RetryCommand" AutomationId="TodoList_Retry">Retry</CommandButton>
+                </div>
+                break;
+
+            default:
+                @* Every row uses the same ids; item scoping keeps them apart. data-item-key is the
+                   row's identity for Bruinell (html design 7.6). *@
+                <ul data-testid="TodoList_Items" class="rows">
+                    @foreach (var row in Model.Items)
+                    {
+                        <li data-testid="TodoRow"
+                            data-item-key="@row.Id"
+                            role="button"
+                            tabindex="0"
+                            @onclick="() => Model.OpenCommand.ExecuteAsync(row)"
+                            @onkeydown="args => OpenOnEnterAsync(args, row)">
+                            <span data-testid="TodoRow_Title" class="title">@row.Title</span>
+                            @if (row.HasDueDate)
+                            {
+                                <span data-testid="TodoRow_Due">@row.DueText</span>
+                            }
+                            <TodoStatusView AutomationId="TodoRow_Status" Status="row.Status" IsPastDue="row.IsPastDue" IsReadOnly="true" />
+                            @if (row.IsPending)
+                            {
+                                <span data-testid="TodoRow_Pending" class="pending" title="Not synced yet" aria-label="Not synced yet">●</span>
+                            }
+                        </li>
+                    }
+                </ul>
+                break;
+        }
+    </div>
+</div>
+
+@code {
+    protected override TodoListViewModel ViewModel => Model;
+
+    protected override void OnInitialized()
+    {
+        Model.Items.CollectionChanged += OnItemsChanged;
+        base.OnInitialized();
+    }
+
+    public override void Dispose()
+    {
+        Model.Items.CollectionChanged -= OnItemsChanged;
+        base.Dispose();
+    }
+
+    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) => Refresh();
+
+    private Task OpenOnEnterAsync(KeyboardEventArgs args, TodoRowViewModel row)
+        => args.Key is "Enter" or " " ? Model.OpenCommand.ExecuteAsync(row) : Task.CompletedTask;
+}

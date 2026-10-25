@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:03.9268299+00:00",
+      "location": "http://localhost:5180/datatable",
+      "page": "/datatable",
+      "title": "Data Table - Bruinell Blazor Sample",
+      "snapshot": "001-data-table-bruinell-blazor-sample.nodes.jsonl",
+      "nodes": 252,
+      "displayName": "Data Table - Bruinell Blazor Sample"
+    }
+  ]
+}

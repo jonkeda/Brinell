@@ -7,7 +7,7 @@ Start with diagnostics. Do not add sleeps or longer timeouts as the first fix.
 Run:
 
 ```powershell
-dotnet build Brinell.sln -v:minimal /nr:false
+dotnet build Bruinell.sln -v:minimal /nr:false
 ```
 
 ## Test Cannot Find Element
@@ -71,9 +71,9 @@ An action with no UI Automation pattern and no bridge verb throws `NotSupportedE
   the Android head, where Appium injects input inside the device.
 
 There is no environment variable that turns physical input back on for MAUI.
-`BRINELL_BACKGROUND_MODE` and `BRINELL_PHYSICAL_INPUT_LOG` apply to WPF and WinForms only (see
+`BRUINELL_BACKGROUND_MODE` and `BRUINELL_PHYSICAL_INPUT_LOG` apply to WPF and WinForms only (see
 [AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md)).
-`BRINELL_ALLOW_POINTER_INPUT` no longer does anything, and has not for some time.
+`BRUINELL_ALLOW_POINTER_INPUT` no longer does anything, and has not for some time.
 
 ## Gesture Bridge Problems
 
@@ -81,14 +81,14 @@ There is no environment variable that turns physical input back on for MAUI.
 identically from a test:
 
 - **The app was built without the bridge.** It is compiled in only in Debug, or with
-  `-p:BrinellUiaBridge=true`. A Release build contains no bridge at all, by design.
+  `-p:BruinellUiaBridge=true`. A Release build contains no bridge at all, by design.
 - **The app never turned it on.** Every app under test must call
-  `builder.UseBrinellGestureBridge()` in `MauiProgram`, before its first page loads.
+  `builder.UseBruinellGestureBridge()` in `MauiProgram`, before its first page loads.
 - **The element never declared the verb**, or has no `AutomationId`.
 - **The page had not published yet.** Pages publish on `Loaded`, after they appear in
   the tree; the driver waits through that, so a persistent failure is one of the above.
 
-Set `BRINELL_UIA_LOG` to a file and rerun: the app records whether the bridge is on,
+Set `BRUINELL_UIA_LOG` to a file and rerun: the app records whether the bridge is on,
 what it published, and every call it answered. `FlaUIMauiDriver.DescribeGestureBridge()`
 prints the raw tree under the window.
 

@@ -28,7 +28,7 @@ each app providing the mechanism behind a small interface.
 
 | Subject | Phrases | Bound to | Mechanism | Generic? |
 | --- | --- | --- | --- | --- |
-| Device | the device is offline / back online | `ITodoArrangement.Network` | `NetworkStateFile` (Brinell.Mocking) | yes |
+| Device | the device is offline / back online | `ITodoArrangement.Network` | `NetworkStateFile` (Bruinell.Mocking) | yes |
 | App lifecycle | I restart the app; ... with the server unreachable | `TodoUatFixture`, `TodoWebUatFixture` (one class each) | the fixture's `Restart`, `RestartWith(ApiBaseUrl)`, and a DI rescope on MAUI | yes; "unreachable" is an app setting |
 | Backend faults | the server fails with status {n}; fails once; answers after {n} seconds; recovers | `ITodoArrangement.Backend` | `MockApiServer` at priority 1 on `TodoApi.TodosPath` | the fault is; the endpoint and the reply are Todo's |
 | Backend data | the server also has todos; should have todos; should have received the todo ... from {user} | `TodoServerStub` | Todo's stateful fake | no: domain |
@@ -40,9 +40,9 @@ Other facts that shape the design:
 | Fact | Consequence |
 | --- | --- |
 | `TestComposition.ForFixture` registers the fixture under every interface it implements, and phrase classes are built from the scenario's DI scope. | A promoted phrase class can take `IUatNetwork` in its constructor; any fixture that implements it gets the phrases. No registration code. |
-| `Brinell.Uat` depends on `Brinell.Core` only, with no MAUI or mocking reference. | Interfaces and phrases can live there; implementations over `MockApiServer` or `NetworkStateFile` cannot. |
-| `Brinell.Mocking` has `NetworkStateFile`, `MockApiServer` and `ApiStubBuilder` (`Fails`, `FailsFirst`, `WithDelay`, `AtPriority`). `FailsFirst` needs a reply for after the failures, and there is no way to drop only the fault stubs. | "Fails once" and "recovers" cannot be written generically yet: Brinell.Mocking needs to fall through to the normal stub, and to remove overrides. |
-| Construction's UI tests use raw WireMock (`MockBackendHostManager`, static), their own network-state file (`NetworkStateOverride`), and `ConstructionFixture.RestartApp`. Its integration tests have `ConstructionBackend`. | Construction can implement the interfaces over what it has; moving to `Brinell.Mocking` is a separate choice. |
+| `Bruinell.Uat` depends on `Bruinell.Core` only, with no MAUI or mocking reference. | Interfaces and phrases can live there; implementations over `MockApiServer` or `NetworkStateFile` cannot. |
+| `Bruinell.Mocking` has `NetworkStateFile`, `MockApiServer` and `ApiStubBuilder` (`Fails`, `FailsFirst`, `WithDelay`, `AtPriority`). `FailsFirst` needs a reply for after the failures, and there is no way to drop only the fault stubs. | "Fails once" and "recovers" cannot be written generically yet: Bruinell.Mocking needs to fall through to the normal stub, and to remove overrides. |
+| Construction's UI tests use raw WireMock (`MockBackendHostManager`, static), their own network-state file (`NetworkStateOverride`), and `ConstructionFixture.RestartApp`. Its integration tests have `ConstructionBackend`. | Construction can implement the interfaces over what it has; moving to `Bruinell.Mocking` is a separate choice. |
 | Phrases are namespaced, and the global scope is kept small (AD-019). | Promoted phrases keep their namespaces (`Device`, `AppLifecycle`, `Backend`); a suite opts in with `## Using`. |
 | Mixed suites run several apps (AD-015); each app's steps resolve in that app's session scope. | A per-app `IUatNetwork` works if each session registers its own. The `{user}` forms are new phrases. |
 
@@ -98,18 +98,18 @@ public interface IUatBackend
 - **`Recover` drops faults and delays only**, never the data the server holds. Todo's
   "recovers" re-stores its todos today because resetting the mock drops everything.
 
-### S3. Interfaces and phrases in Brinell.Uat; implementations in a small bridge
+### S3. Interfaces and phrases in Bruinell.Uat; implementations in a small bridge
 
 | Where | What | Depends on |
 | --- | --- | --- |
-| `Brinell.Uat` (folder `Subjects/`) | `IUatNetwork`, `IUatRestartable`, `IUatBackend`; `DevicePhrases`, `AppLifecyclePhrases`, `BackendFaultPhrases` | Brinell.Core (as now) |
-| `Brinell.Uat.Mocking` (new, small) | `NetworkStateFileNetwork : IUatNetwork`; `MockApiBackend : IUatBackend` over `MockApiServer`, with endpoints registered as (name, method, path) | Brinell.Uat, Brinell.Mocking |
+| `Bruinell.Uat` (folder `Subjects/`) | `IUatNetwork`, `IUatRestartable`, `IUatBackend`; `DevicePhrases`, `AppLifecyclePhrases`, `BackendFaultPhrases` | Bruinell.Core (as now) |
+| `Bruinell.Uat.Mocking` (new, small) | `NetworkStateFileNetwork : IUatNetwork`; `MockApiBackend : IUatBackend` over `MockApiServer`, with endpoints registered as (name, method, path) | Bruinell.Uat, Bruinell.Mocking |
 | the app's test support | the fixture implementing the interfaces, directly or through the bridge's classes | its own |
 
-Rejected: **a `Brinell.Uat.Subjects` package** for interfaces and phrases alone (a package for
+Rejected: **a `Bruinell.Uat.Subjects` package** for interfaces and phrases alone (a package for
 three interfaces, and the phrases are UAT vocabulary like the built-ins); **adapters inside
-Brinell.Mocking** (Mocking serves non-UAT tests and should not reference the UAT engine);
-**interfaces in Brinell.Core** (Core has no UAT types and should not gain them).
+Bruinell.Mocking** (Mocking serves non-UAT tests and should not reference the UAT engine);
+**interfaces in Bruinell.Core** (Core has no UAT types and should not gain them).
 
 This answers the phrases plan's open question "Which package owns the shared subjects".
 
@@ -128,7 +128,7 @@ offline", "{user} restarts the app". Each resolves in that user's app session, w
 `IUatNetwork` or `IUatRestartable` is that app's. A mixed fixture that shares one network for all
 apps says so by registering one instance.
 
-### S6. Brinell.Mocking learns to fall through and to recover
+### S6. Bruinell.Mocking learns to fall through and to recover
 
 - `FailsFirst(times, status)` with no reply falls through to the normal stub once it has failed
   that many times (a WireMock scenario state), so "fails once" needs no copy of the app's data.
@@ -142,8 +142,8 @@ apps says so by registering one instance.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | **Interfaces and phrases** in `Brinell.Uat/Subjects`, with the `{user}` forms. Unit tests with fake implementations: each phrase calls its interface; a fixture without the interface fails binding, not running; `DefaultEndpoint` and a named endpoint. | `Brinell.Uat.Tests` green; no consumer yet. |
-| 2 | **Brinell.Mocking**: fall-through `FailsFirst`, delay (or the reply fallback, S6), `ResetOverrides`. **`Brinell.Uat.Mocking`**: `NetworkStateFileNetwork`, `MockApiBackend`. | `Brinell.Mocking.Tests` and new bridge tests green, against a real `MockApiServer`. |
+| 1 | **Interfaces and phrases** in `Bruinell.Uat/Subjects`, with the `{user}` forms. Unit tests with fake implementations: each phrase calls its interface; a fixture without the interface fails binding, not running; `DefaultEndpoint` and a named endpoint. | `Bruinell.Uat.Tests` green; no consumer yet. |
+| 2 | **Bruinell.Mocking**: fall-through `FailsFirst`, delay (or the reply fallback, S6), `ResetOverrides`. **`Bruinell.Uat.Mocking`**: `NetworkStateFileNetwork`, `MockApiBackend`. | `Bruinell.Mocking.Tests` and new bridge tests green, against a real `MockApiServer`. |
 | 3 | **Todo moves over**: `TodoAppFixture` and `TodoWebUatFixture` implement the three interfaces (the backend through `MockApiBackend` with endpoint `todos`); the UAT fixtures scan the promoted classes. Delete Todo's `DevicePhrases`, both `AppLifecyclePhrases`, and the fault phrases of `BackendPhrases`. | No scenario file changes. Todo MAUI UAT 41, web UAT 33, mixed 4, UI 44 (+3 skipped), the validator clean. `AppLifecycle` phrases exist once. |
 | 4 | **Docs**: a "Shared subjects" section in `uat-step-definitions.md` (the interfaces, how a fixture gets the phrases, `## Using`); an AD for S1-S3 (AD-020: promote the mechanism, not the domain); CHANGELOG. | Links valid. |
 | 5 | **Construction adopts them**, as a step of [construction/plan.md](../../construction/plan.md): `ConstructionFixture` implements `IUatRestartable` (it has `RestartApp`), `IUatNetwork` (over `NetworkStateFile`, replacing `NetworkStateOverride`), and `IUatBackend` over its WireMock server, with endpoints per module. | Construction's first scenario says "the device is offline" and binds. |
@@ -158,6 +158,6 @@ commit.
 | Endpoint names | Free text the fixture chooses, or the module names (`Hours`, `Projects`) so they match namespaces? Start free; revisit with Construction's modules. |
 | "With the server unreachable" | Needs a launch setting for the backend address. Todo has `ApiBaseUrl`; Construction's is in its app settings. If an app cannot change it without a rebuild, it does not implement that member: split it into `IUatRestartable` and an optional `IUatBackendAddress`? |
 | A pinned clock | "the date is 12-May-2026" would restart the app with another `FixedNow`: app-specific like the backend address. Not promoted until a second app pins its clock. |
-| Stored data | A generic "the {table} table should have rows" reads SQLite by table and column, but ties Brinell.Uat to SQLite and to column names testers should not see. Keep it in the app (S1). |
-| Construction on Brinell.Mocking | Step 5 can implement `IUatBackend` over raw WireMock. Moving `MockBackendHostManager` onto `MockApiServer` is Construction's migration, not this plan's. |
+| Stored data | A generic "the {table} table should have rows" reads SQLite by table and column, but ties Bruinell.Uat to SQLite and to column names testers should not see. Keep it in the app (S1). |
+| Construction on Bruinell.Mocking | Step 5 can implement `IUatBackend` over raw WireMock. Moving `MockBackendHostManager` onto `MockApiServer` is Construction's migration, not this plan's. |
 | Per-app network in mixed suites | Todo's mixed suite shares one network file. Is one device offline while the other is online a scenario anyone needs? If so, the mixed fixture gives each session its own `NetworkStateFile`. |

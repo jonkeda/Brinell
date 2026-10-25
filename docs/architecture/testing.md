@@ -1,11 +1,11 @@
 # Testing
 
-Working directory for commands in this document: Brinell root.
+Working directory for commands in this document: Bruinell root.
 
 ## Build
 
 ```powershell
-dotnet build Brinell.sln -v:minimal /nr:false
+dotnet build Bruinell.sln -v:minimal /nr:false
 ```
 
 ## Unit Tests
@@ -13,9 +13,9 @@ dotnet build Brinell.sln -v:minimal /nr:false
 Run focused unit tests by project:
 
 ```powershell
-dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Uat.Tests\Brinell.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Core.Tests\Bruinell.Core.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Maui.Tests\Bruinell.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Uat.Tests\Bruinell.Uat.Tests.csproj -v:minimal /nr:false
 ```
 
 ## UI Tests
@@ -38,7 +38,7 @@ UAT test projects combine:
 - a fixture, an xUnit collection and a `UatScenarioTestBase<TFixture>` class.
 
 A scenario step binds to a phrase, and the built-in phrases are `[BddWhen]` / `[BddThen]` attributes on the
-`Brinell.Core` control interfaces, discovered by the engine rather than listed anywhere
+`Bruinell.Core` control interfaces, discovered by the engine rather than listed anywhere
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). An app adds
 verbs of its own the same way.
 
@@ -55,7 +55,7 @@ app it runs on by its user: `Daan taps Save`
 
 ## Several Apps In One Test
 
-`TestAppSet` (`Brinell.Core.Testing`) holds the apps of a fixture, as rows of an `Apps` table
+`TestAppSet` (`Bruinell.Core.Testing`) holds the apps of a fixture, as rows of an `Apps` table
 (`TestAppDefinition`): each app starts the first time a test asks for it, the started ones are
 reset between tests (`ResetStartedAsync`), and they stop together. A test finds an app by its
 name or its user's (`Get`, `Get<TApp>`), and `CaptureAll` takes a screenshot of every started app,
@@ -63,9 +63,9 @@ one folder each. An app is an `ITestApp`: a device of the app under test with it
 context, named after the app in the call log.
 
 The UAT engine uses the same set (`IUatAppsHost`), so a mixed UAT suite and mixed UI tests can
-read one `apps.md`. The Todo sample's `Brinell.Samples.Todo.Mixed.UITests` drives two Windows
+read one `apps.md`. The Todo sample's `Bruinell.Samples.Todo.Mixed.UITests` drives two Windows
 apps side by side (`MauiDriverOptions.Placement`: `left-half`, `right-half`) and a browser on one
-fake backend; its Android test runs only with `BRINELL_ANDROID=1`.
+fake backend; its Android test runs only with `BRUINELL_ANDROID=1`.
 
 See [UAT Template Guide](../guides/uat-template-guide.md),
 [UAT Phrases And Flows](../guides/uat-step-definitions.md), and the worked example in
@@ -73,7 +73,7 @@ See [UAT Template Guide](../guides/uat-template-guide.md),
 
 ## Artifact Layout
 
-Brinell artifacts should use:
+Bruinell artifacts should use:
 
 ```text
 TestResults/<run-id>/suites/<suite-name>/

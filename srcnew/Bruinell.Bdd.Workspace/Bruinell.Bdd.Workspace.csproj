@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinell.Bdd.Workspace</RootNamespace>
+    <Description>What every Bruinell tool shares: a suite loaded one way (its config, its catalogs from a shadow copy that can be unloaded), and a feature, step or video file rendered as the preview shows it (what the gate sees, the last run's results, as HTML with a themable stylesheet).</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Uat\Bruinell.Uat.csproj" />
+    <ProjectReference Include="..\Bruinell.TestData\Bruinell.TestData.csproj" />
+    <!-- Video scripts: the preview and the language server show their check like a feature file's. -->
+    <ProjectReference Include="..\Bruinell.Narrator\Bruinell.Narrator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The preview (Bruinell.Bdd.Preview): its stylesheet and host script, by their names in that namespace. -->
+    <EmbeddedResource Include="Preview\preview.css" LogicalName="Bruinell.Bdd.Preview.preview.css" />
+    <EmbeddedResource Include="Preview\preview-host.js" LogicalName="Bruinell.Bdd.Preview.preview-host.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinell.Bdd.Workspace.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinell.Bdd" />
+    <Using Include="Bruinell.Uat" />
+  </ItemGroup>
+
+</Project>

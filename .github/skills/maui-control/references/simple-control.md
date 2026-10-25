@@ -5,7 +5,7 @@ One element to the test. Parts the platform draws separately are implementation 
 ## Shape
 
 ```csharp
-namespace Brinell.Maui.Controls.Toggle;
+namespace Bruinell.Maui.Controls.Toggle;
 
 /// <summary>MAUI Switch: an on/off toggle.</summary>
 /// <remarks>Windows: TogglePattern. Android: checkable; touch toggles it.</remarks>
@@ -30,7 +30,7 @@ Every generated member returns `TScope`, so a chain returns to the page:
 
 ## Pick the base by capability, lowest that fits
 
-All in `srcnew/Brinell.Maui/Controls/Base/`. Each base already implements its interface.
+All in `srcnew/Bruinell.Maui/Controls/Base/`. Each base already implements its interface.
 
 | Base | Adds | Interface |
 | --- | --- | --- |
@@ -87,7 +87,7 @@ protected virtual void SetPlayingCore(IMauiElement element, bool? playing, int? 
 
 ## Examples to read
 
-`srcnew/Brinell.Maui/Controls/Toggle/Switch.tpl.cs` (aliases), `srcnew/Brinell.Maui/Controls/Range/Stepper.tpl.cs` (private parts, bridge state),
-`srcnew/Brinell.Maui.CommunityToolkit/Controls/Views/Expander.tpl.cs` (bridge verb, confirmed effect),
-`srcnew/Brinell.Maui.CommunityToolkit/Controls/Media/MediaPlayPauseButton.tpl.cs` (derived from `Button`, verified
+`srcnew/Bruinell.Maui/Controls/Toggle/Switch.tpl.cs` (aliases), `srcnew/Bruinell.Maui/Controls/Range/Stepper.tpl.cs` (private parts, bridge state),
+`srcnew/Bruinell.Maui.CommunityToolkit/Controls/Views/Expander.tpl.cs` (bridge verb, confirmed effect),
+`srcnew/Bruinell.Maui.CommunityToolkit/Controls/Media/MediaPlayPauseButton.tpl.cs` (derived from `Button`, verified
 setter).

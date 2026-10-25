@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Appium</RootNamespace>
+    <Description>What the Appium stacks share: Appium's error mapping, the emulator's host address and adb reverse, and the Android screen recorder.</Description>
+    <PackageId>Bruinell.Appium</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Core\Bruinell.Core.csproj" />
+    <!-- AndroidRecorder: a device recorded with adb screenrecord (the narrator). -->
+    <ProjectReference Include="..\Bruinell.Recording\Bruinell.Recording.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinell.Recording.Tests" />
+  </ItemGroup>
+
+</Project>

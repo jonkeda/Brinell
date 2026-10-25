@@ -7,18 +7,18 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | Project | Path | TFM | References |
 | --- | --- | --- | --- |
 | `MUnit` (PackageId `MUnit.Maui`) | `srcnew/MUnit` | net10.0 | `Microsoft.Maui.Controls` 10.0.110, `Microsoft.Extensions.DependencyInjection` |
-| `Brinell.Maui.Munit` | `srcnew/Brinell.Maui.Munit` | net10.0 | `Brinell.Maui`, `MUnit` |
+| `Bruinell.Maui.Munit` | `srcnew/Bruinell.Maui.Munit` | net10.0 | `Bruinell.Maui`, `MUnit` |
 | `MUnit.Samples.App` | `samples/MUnit.Samples.App` | net10.0, `UseMaui` | `Microsoft.Maui.Controls` |
 | `MUnit.Tests` | `testsnew/MUnit.Tests` | net10.0, xUnit 2.9.3 | `MUnit`, samples |
 | `MUnit.Tests.NUnit` | `testsnew/MUnit.Tests.NUnit` | NUnit 4.3.2 + adapter 5.0.0 | `MUnit`, samples |
 | `MUnit.Tests.MSTest` | `testsnew/MUnit.Tests.MSTest` | MSTest 3.9.3 | `MUnit`, samples |
-| `Brinell.Maui.Munit.Tests` | `testsnew/Brinell.Maui.Munit.Tests` | net10.0, `UseMaui`, xUnit | head, `Brinell.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
+| `Bruinell.Maui.Munit.Tests` | `testsnew/Bruinell.Maui.Munit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinell.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
 
 ## Dependency analysis
 
-- **MUnit:** MAUI Controls (plain net10.0 assemblies: Controls.Core, Maui.Core, Essentials, Graphics, Controls.Xaml) and MS DI. No test framework, no AI SDK, no Brinell.
-- **Brinell.Maui.Munit:** Brinell.Maui, which brings Appium.WebDriver and xunit.extensibility.core (an existing Brinell.Maui cost, not the head's), plus MUnit.
-- **An app's test project:** MUnit, its framework of choice, and a MAUI class library of the app's pages, view models and services on `net10.0`. A platform-only app project cannot be referenced; its pages move to a library, or are linked as `Brinell.Maui.Munit.Tests` does.
+- **MUnit:** MAUI Controls (plain net10.0 assemblies: Controls.Core, Maui.Core, Essentials, Graphics, Controls.Xaml) and MS DI. No test framework, no AI SDK, no Bruinell.
+- **Bruinell.Maui.Munit:** Bruinell.Maui, which brings Appium.WebDriver and xunit.extensibility.core (an existing Bruinell.Maui cost, not the head's), plus MUnit.
+- **An app's test project:** MUnit, its framework of choice, and a MAUI class library of the app's pages, view models and services on `net10.0`. A platform-only app project cannot be referenced; its pages move to a library, or are linked as `Bruinell.Maui.Munit.Tests` does.
 - **Packages added to the root `Directory.Packages.props`:** `NUnit`, `NUnit3TestAdapter`, `MSTest.TestFramework`, `MSTest.TestAdapter`.
 
 ## Namespaces and types
@@ -33,7 +33,7 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MUnit.Assertions` | `ShouldExtensions`, `ElementAssertions<T>`, `MUnitAssertionException` | |
 | `MUnit.Snapshots` | `TreeSnapshot`, `SnapshotOptions` | |
 | `MUnit.Internals` | | `MauiInternals` |
-| `Brinell.Maui.Munit` | `MunitMauiDriver`, `MunitMauiElement`, `MunitHead`, `DeviceOnlyException` | `MunitLocators` |
+| `Bruinell.Maui.Munit` | `MunitMauiDriver`, `MunitMauiElement`, `MunitHead`, `DeviceOnlyException` | `MunitLocators` |
 
 ## Public API
 
@@ -82,8 +82,8 @@ el.Should().HaveText(s).And.ContainText(s).BeVisible().NotBeVisible().BeEnabled(
    .HaveAutomationId(s).HaveBindingContext<TVm>(pred?).BeBoundTo(Label.TextProperty, "Path").Satisfy(pred, "why")
 switch.Should().BeOn()/BeOff()   checkBox.Should().BeChecked()/NotBeChecked()   items.Should().HaveItemCount(n)
 
-// Brinell head
-IMauiTestContext ctx2 = ctx.Render<ButtonsPage>().AsBrinellContext(timeouts?);
+// Bruinell head
+IMauiTestContext ctx2 = ctx.Render<ButtonsPage>().AsBruinellContext(timeouts?);
 new ButtonsTestPage(ctx2).TestButton.Click();
 ```
 
@@ -97,7 +97,7 @@ new ButtonsTestPage(ctx2).TestButton.Click();
 | MAUI's `IDispatcherProvider` | Process-wide; returns the running context's dispatcher | `TestDispatcherProvider` |
 | MAUI's `IPreferences`, `ISecureStorage` | Essentials storage | `InMemoryPreferences`, `InMemorySecureStorage` |
 | MAUI's `IViewHandler`, `IMauiContext` | Carry services to Shell and the application; map nothing | `HeadlessHandler`, `HeadlessMauiContext` |
-| Brinell's `IMauiDriver`, `IMauiElement` | The head | `MunitMauiDriver`, `MunitMauiElement` |
+| Bruinell's `IMauiDriver`, `IMauiElement` | The head | `MunitMauiDriver`, `MunitMauiElement` |
 
 ## Render sequence
 
@@ -119,7 +119,7 @@ new ButtonsTestPage(ctx2).TestButton.Click();
 - `AdvanceTime(by)` runs scheduled entries in (due, sequence) order, draining after each.
 - `WaitFor(cond, timeout)` drains and checks inside the scope, then waits on the signal outside it.
 
-## Brinell head mapping
+## Bruinell head mapping
 
 | `IMauiElement` member | On MUnit |
 | --- | --- |
@@ -234,4 +234,4 @@ internal sealed class HeadlessViewHandler(IHeadlessSizer sizer) : ViewHandler<IV
 | `MUnit.Tests/Framework/TreeTests.cs` | Snapshot text; effective state; miss message; ambiguity; hidden input refused; assertion message; MaxLength; tap command |
 | `MUnit.Tests.NUnit/SettingsPageTests.cs` | Save through SetUp and TearDown; MUnit failure message under NUnit |
 | `MUnit.Tests.MSTest/GreetingAndShellTests.cs` | Click; Shell help route; method-level parallel |
-| `Brinell.Maui.Munit.Tests/SamplePagesOnMunitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |
+| `Bruinell.Maui.Munit.Tests/SamplePagesOnMunitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |

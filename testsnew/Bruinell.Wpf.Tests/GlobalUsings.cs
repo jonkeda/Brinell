@@ -1,0 +1,9 @@
+global using Xunit;
+global using Moq;
+global using Bruinell.Core.Abstractions;
+global using Bruinell.Core.Interfaces;
+global using Bruinell.Core.Locators;
+global using Bruinell.Wpf.Context;
+global using Bruinell.Wpf.Controls;
+global using Bruinell.Wpf.Interfaces;
+global using Bruinell.Wpf.Pages;

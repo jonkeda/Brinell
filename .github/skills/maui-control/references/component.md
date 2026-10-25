@@ -11,7 +11,7 @@ part's own single unit of work.
 ## Shape
 
 ```csharp
-namespace Brinell.Maui.CommunityToolkit.Controls.Media;
+namespace Bruinell.Maui.CommunityToolkit.Controls.Media;
 
 /// <summary>CommunityToolkit.Maui <c>MediaElement</c>: playback with platform transport controls.</summary>
 /// <remarks>...route per platform, why it reads what it reads, limits...</remarks>
@@ -168,6 +168,6 @@ Null-skip and idempotence still hold for hand-written members: `SetPlaying(null)
 
 ## Examples to read
 
-`srcnew/Brinell.Maui.CommunityToolkit/Controls/Media/MediaElement.tpl.cs` with `MediaPlayPauseButton.tpl.cs` and
-`MediaTimeLabel.tpl.cs`; `srcnew/Brinell.Maui.CommunityToolkit/Controls/Views/AvatarView.tpl.cs` with
+`srcnew/Bruinell.Maui.CommunityToolkit/Controls/Media/MediaElement.tpl.cs` with `MediaPlayPauseButton.tpl.cs` and
+`MediaTimeLabel.tpl.cs`; `srcnew/Bruinell.Maui.CommunityToolkit/Controls/Views/AvatarView.tpl.cs` with
 `AvatarInitials.tpl.cs` and `AvatarImage.tpl.cs`.

@@ -38,14 +38,14 @@ jobs:
           java-version: '17'
 
       - name: Restore workloads
-        run: dotnet workload restore Brinell.sln
+        run: dotnet workload restore Bruinell.sln
 
       # Debug on purpose: the UI Automation bridge only compiles in Debug
-      # (srcnew/Brinell.Uia.Contracts/Brinell.Uia.Bridge.props), and Debug is what the
+      # (srcnew/Bruinell.Uia.Contracts/Bruinell.Uia.Bridge.props), and Debug is what the
       # test suites are written against.
       # Every project in the repository but the two VSIX projects (see ide-extensions).
       - name: Build
-        run: dotnet build Brinell.sln -v:minimal /nr:false
+        run: dotnet build Bruinell.sln -v:minimal /nr:false
 
       # Unit tests only. The *.UITests projects (UI tests and UAT suites) launch real apps and
       # stay local; see AGENTS.md "Match the test scope to the change".
@@ -53,19 +53,19 @@ jobs:
         shell: pwsh
         run: |
           $projects = @(
-            'Brinell.Core.Tests',
-            'Brinell.Maui.Tests',
-            'Brinell.Wpf.Tests',
-            'Brinell.WinForms.Tests',
-            'Brinell.Blazor.Tests',
-            'Brinell.Html.Tests',
-            'Brinell.Stride.Automation.Tests',
-            'Brinell.Mocking.Tests',
-            'Brinell.Uat.Tests',
-            'Brinell.TestData.Tests',
-            'Brinell.Appium.Tests',
-            'Brinell.NativeAndroid.Tests',
-            'Brinell.Cli.Tests'
+            'Bruinell.Core.Tests',
+            'Bruinell.Maui.Tests',
+            'Bruinell.Wpf.Tests',
+            'Bruinell.WinForms.Tests',
+            'Bruinell.Blazor.Tests',
+            'Bruinell.Html.Tests',
+            'Bruinell.Stride.Automation.Tests',
+            'Bruinell.Mocking.Tests',
+            'Bruinell.Uat.Tests',
+            'Bruinell.TestData.Tests',
+            'Bruinell.Appium.Tests',
+            'Bruinell.NativeAndroid.Tests',
+            'Bruinell.Cli.Tests'
           )
           $failed = @()
           foreach ($p in $projects) {
@@ -100,7 +100,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore srcnew/Bruinell.Maui.CommunityToolkit/Bruinell.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh
@@ -114,9 +114,9 @@ jobs:
             artifacts/*.nupkg
             artifacts/*.snupkg
 
-  # The IDE extensions build: the VSIX needs Visual Studio's MSBuild, so Brinell.sln holds its two
+  # The IDE extensions build: the VSIX needs Visual Studio's MSBuild, so Bruinell.sln holds its two
   # projects with Build unticked, and they are built here from their own .slnx.
-  # Their tests (Brinell.Bdd.*.Tests) need the Todo sample built and stay local, like the UI tests.
+  # Their tests (Bruinell.Bdd.*.Tests) need the Todo sample built and stay local, like the UI tests.
   ide-extensions:
     name: IDE extensions
     runs-on: windows-latest
@@ -140,11 +140,11 @@ jobs:
           node-version: '22'
 
       - name: Visual Studio extension
-        run: msbuild tools/Brinell.Bdd.VisualStudio/Brinell.Bdd.VisualStudio.slnx -restore -p:DeployExtension=false -v:minimal
+        run: msbuild tools/Bruinell.Bdd.VisualStudio/Bruinell.Bdd.VisualStudio.slnx -restore -p:DeployExtension=false -v:minimal
 
       - name: VS Code extension
         shell: pwsh
-        working-directory: tools/Brinell.Bdd.VsCode
+        working-directory: tools/Bruinell.Bdd.VsCode
         run: |
           npm ci
           npm run compile
@@ -153,4 +153,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-studio-extension
-          path: tools/Brinell.Bdd.VisualStudio/bin/Debug/net48/Brinell.Bdd.VisualStudio.vsix
+          path: tools/Bruinell.Bdd.VisualStudio/bin/Debug/net48/Bruinell.Bdd.VisualStudio.vsix

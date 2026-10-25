@@ -36,7 +36,7 @@ away and back can replace a detached page instance.
 
 ## Interface Rules
 
-- Add shared capability contracts to `Brinell.Core`.
+- Add shared capability contracts to `Bruinell.Core`.
 - Keep platform element types out of core interfaces.
 - Prefer small capability interfaces over one large control API.
 - Keep nullable and timeout behavior explicit.

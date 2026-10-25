@@ -2,7 +2,7 @@
 
 A region whose content the app chooses. It scopes the controls inside it, and may read or
 act on its own root. Base: `ContainerObjectBase<TParent, TSelf>` in
-`srcnew/Brinell.Maui/Containers/ContainerObjectBase.cs`.
+`srcnew/Bruinell.Maui/Containers/ContainerObjectBase.cs`.
 
 ## Shape (framework container)
 
@@ -11,7 +11,7 @@ callers that need no subclass. Popup declares a Core method, so it is a `.tpl.cs
 classes are `partial`.
 
 ```csharp
-namespace Brinell.Maui.CommunityToolkit.Controls.Views;
+namespace Bruinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>CommunityToolkit.Maui <c>Popup</c>: a view shown modally over the page.</summary>
 /// <remarks>...route, root lookup, app-side requirements...</remarks>
@@ -110,8 +110,8 @@ Each with a `<remarks>` giving the reason.
 ## Windows
 
 Layout views with no automation peer (`ContentView`, `Border`, and the layouts a toolkit
-container hosts) are invisible to UI Automation until the app registers the Brinell automation
-handlers from `samples/Brinell.Maui.AppSupport`. Say so in the class remarks and check the
+container hosts) are invisible to UI Automation until the app registers the Bruinell automation
+handlers from `samples/Bruinell.Maui.AppSupport`. Say so in the class remarks and check the
 sample app registers it. `Border` needs its own registration.
 
 ## App-specific containers (test projects)
@@ -143,7 +143,7 @@ public class ProductFormContainer : ContainerObjectBase<GridCollectionDemoPage, 
 
 ## Examples to read
 
-`srcnew/Brinell.Maui/Controls/Container/Border.tpl.cs` (no behaviour, handler note), `ScrollView.tpl.cs`
+`srcnew/Bruinell.Maui/Controls/Container/Border.tpl.cs` (no behaviour, handler note), `ScrollView.tpl.cs`
 (`ScrollingRoot`, Core methods on the root), `RefreshView.tpl.cs` (capability interface),
-`srcnew/Brinell.Maui.CommunityToolkit/Controls/Views/Popup.tpl.cs` (root outside the page, across-parts member),
-`srcnew/Brinell.Maui.CommunityToolkit/Controls/Layouts/StateContainer.tpl.cs` (uncached root, parameterised read).
+`srcnew/Bruinell.Maui.CommunityToolkit/Controls/Views/Popup.tpl.cs` (root outside the page, across-parts member),
+`srcnew/Bruinell.Maui.CommunityToolkit/Controls/Layouts/StateContainer.tpl.cs` (uncached root, parameterised read).

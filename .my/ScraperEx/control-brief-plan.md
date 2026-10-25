@@ -43,7 +43,7 @@ agent read around the repository, and the html-control skill allows a control wi
 | Where | What |
 | --- | --- |
 | `PatternDetector` | Patterns by `NodeSignature` (type, role, stable classes, child types). Kinds: `Form`, `Table`, `List`, `Navigation`, `Dialog`, `Frame` by tag or role; else `Repeated`. A name per pattern. |
-| `ControlAdvisor` | A page member per element, with the Brinell control that fits: `input` → `TextInputControl`, `select` → `SelectControl`, checkbox → `CheckBoxControl`, `table` → `TableControl`, `ul`/`ol` → `ListControl`, `role=tablist` → `TabContainerControl`, … |
+| `ControlAdvisor` | A page member per element, with the Bruinell control that fits: `input` → `TextInputControl`, `select` → `SelectControl`, checkbox → `CheckBoxControl`, `table` → `TableControl`, `ul`/`ol` → `ListControl`, `role=tablist` → `TabContainerControl`, … |
 | `ControlChecker` | For a made control: each part's locator, found in how many of the pattern's occurrences. |
 | Explore's log | What each click did: a page change, a new capture, a dialog, nothing. |
 | MCP | `get_page_snapshot`, `find_similar_elements`, `suggest_controls`, `scraped_header`, `check_code`. |
@@ -81,7 +81,7 @@ seen: the model decides from those.
 
 ### 3.2 The kind
 
-| Kind | Brinell base | From the core and structure |
+| Kind | Bruinell base | From the core and structure |
 | --- | --- | --- |
 | **Simple control** | the family of its one core: `TextInputControl`, `SelectorControlBase`, `ToggleControlBase`, `RangeControlBase`, `DateInputControl`, `ClickableControlBase` | exactly **one** interactive core, plus readables that belong to it (its label, hint, error, icon) |
 | **Component** (container with parts) | `ContainerBase<TParent, TSelf>` | **two or more** cores or readables, each found by the same relative locator in every occurrence: a card with a title and buttons, a toolbar |
@@ -150,7 +150,7 @@ lists them with "a bare wrapper" or "layout only", and a brief can be asked for 
 
 ## 4. The brief
 
-The server writes a brief per pattern (`brinell/scraper/controlBrief`, and an MCP tool
+The server writes a brief per pattern (`bruinell/scraper/controlBrief`, and an MCP tool
 `control_brief`). It is in three parts:
 
 - **Task**: where to write, what to read, and nothing else to look for.
@@ -169,12 +169,12 @@ node numbers, the part counts, the texts, the list's options and the Explore lin
 ## VSelect (216× on 4 pages)
 
 ### Task
-Write:      E:\…\Scraper.Sites\Brinell.Html.Bouw7\Controls\VSelect.tpl.cs   (new file; the generator writes VSelect.gen.cs)
-Namespace:  Brinell.Html.Bouw7.Controls
-First line: // <scraped control="…" from="…" page="/department#" node=138 project="Brinell.Html.Bouw7">
+Write:      E:\…\Scraper.Sites\Bruinell.Html.Bouw7\Controls\VSelect.tpl.cs   (new file; the generator writes VSelect.gen.cs)
+Namespace:  Bruinell.Html.Bouw7.Controls
+First line: // <scraped control="…" from="…" page="/department#" node=138 project="Bruinell.Html.Bouw7">
 Read only:  .github/skills/html-control/SKILL.md
-            srcnew/Brinell.Html/Controls/SelectorControlBase.tpl.cs   (the hinted base: its *Core methods)
-            srcnew/Brinell.Html/Controls/Selection/SelectControl.tpl.cs   (a control of the hinted kind)
+            srcnew/Bruinell.Html/Controls/SelectorControlBase.tpl.cs   (the hinted base: its *Core methods)
+            srcnew/Bruinell.Html/Controls/Selection/SelectControl.tpl.cs   (a control of the hinted kind)
 Check:      check_code (it runs the generator over Controls, then builds)
 
 ### Facts
@@ -260,16 +260,16 @@ Per control, the brief, and these instructions in place of the one line now:
 
 | Step | What | Where |
 | --- | --- | --- |
-| 1 | The generator over a scraped project: `check_code` and the draft step run `brinell controls generate --input <project>\Controls` before they build | `ScraperService` (check), `ProjectCode`; the generator itself takes any folder already |
-| 2 | The brief: task, facts (variants, outlines with the parent, attributes, parts with counts, the owned list, Explore's clicks), hints | `Brinell.Scraper/Code/ControlBrief.cs`, `brinell/scraper/controlBrief`, MCP `control_brief` |
+| 1 | The generator over a scraped project: `check_code` and the draft step run `bruinell controls generate --input <project>\Controls` before they build | `ScraperService` (check), `ProjectCode`; the generator itself takes any folder already |
+| 2 | The brief: task, facts (variants, outlines with the parent, attributes, parts with counts, the owned list, Explore's clicks), hints | `Bruinell.Scraper/Code/ControlBrief.cs`, `bruinell/scraper/controlBrief`, MCP `control_brief` |
 | 3 | The prompt: the briefs and the instructions of section 5, at most 5 controls per prompt (4.1); the `scrape-pages` skill's step 4 to match | `ScraperPage.cs` (`makeControls`, **Fix with the agent**), `.github/skills/scrape-pages/SKILL.md` |
-| 4 | The hints: core and kind (3.1, 3.2) as one classifier, used by the brief and by `ControlAdvisor` | `Brinell.Scraper/Code/ControlKind.cs` |
+| 4 | The hints: core and kind (3.1, 3.2) as one classifier, used by the brief and by `ControlAdvisor` | `Bruinell.Scraper/Code/ControlKind.cs` |
 | 5 | The root by structure (3.3); variants (3.4) with generic names | `PatternDetector`, `NodeSignature` |
 | 6 | Collections (3.2): siblings of one signature as a collection with its row and key | `PatternDetector` (a `Collection` kind) |
 | 7 | Behaviour: Explore's clicks as facts (what changed: `aria-expanded`, a new list, a dialog) | the explore report, `ControlBrief` |
 | 8 | Owned lists: follow `aria-owns`/`aria-controls` to the list outside the control, and its options | `ControlBrief`, `ControlKind` |
 | 9 | `## Components` in the config (3.6); bare wrappers listed with a hint (3.7) | `ScraperConfig`, `PatternDetector` |
-| 10 | The agent and the model (7a): a `brinell-scraper.agent.md`, the choice in the header, sent with each prompt; `chatDone` refreshes the step | `.github/agents/`, `ScraperPage.cs`, `scraper.ts`, `ScraperController.cs`, `CopilotChatSender.cs` |
+| 10 | The agent and the model (7a): a `bruinell-scraper.agent.md`, the choice in the header, sent with each prompt; `chatDone` refreshes the step | `.github/agents/`, `ScraperPage.cs`, `scraper.ts`, `ScraperController.cs`, `CopilotChatSender.cs` |
 
 Steps 1 to 3 would have given the agent the place, the facts and a generated control for Bouw7.
 Steps 4 to 9 sharpen the hints and what the view offers, so they follow once 1 to 3 are tried.
@@ -300,16 +300,16 @@ The person chooses the chat agent (or mode) and the model the Scraper's prompts 
 | Send, not only type | `workbench.action.chat.open` with `isPartialQuery: false` | the session's `SendRequestAsync` (done, see the Bouw7 feedback issue) |
 | Agent or mode | `mode`: `agent`, `ask`, `edit`, or a custom agent's name (`.github/agents/*.agent.md`) | `CopilotRequest.DirectedResponders`: a responder from the session's `GetRespondersAsync`. Whether Visual Studio's custom agents are responders is not known yet |
 | Model | `modelSelector: { vendor, family, id }` (an error when none matches) | `CopilotRequest.Model = new CopilotModelRequest(family)`, with `ReasoningEffort`; the list from the session's `GetDefaultModelsAsync` |
-| Tools | `toolsInclude: [...]`: only the Brinell MCP server's | not per request |
+| Tools | `toolsInclude: [...]`: only the Bruinell MCP server's | not per request |
 | Know when it is done | `blockOnResponse: true`: the command returns when the answer is complete | the request's task completes |
 
-**A Brinell agent.** `.github/agents/brinell-scraper.agent.md`: the `brinell-bdd` tools only, and as
+**A Bruinell agent.** `.github/agents/bruinell-scraper.agent.md`: the `bruinell-bdd` tools only, and as
 its instructions the `scrape-pages` skill's rules and section 5's. The prompt then needs only the
-brief. In VS Code it is chosen with `mode: "brinell-scraper"`. In Visual Studio it is used when it
+brief. In VS Code it is chosen with `mode: "bruinell-scraper"`. In Visual Studio it is used when it
 shows up as a responder; otherwise the request goes to the default agent with the same instructions
 in the prompt.
 
-**Choosing.** In the view's header, by **Next**: **Agent** (Brinell scraper, Agent, Ask) and
+**Choosing.** In the view's header, by **Next**: **Agent** (Bruinell scraper, Agent, Ask) and
 **Model**. The IDE gives the list of models it has (VS Code `vscode.lm.selectChatModels()`, Visual
 Studio `GetDefaultModelsAsync`). The choice is remembered per person in `.scraper-state.json` (not
 committed). `scraper.config.md` may set a default for the project:
@@ -319,7 +319,7 @@ committed). `scraper.config.md` may set a default for the project:
 
 | Field | Value |
 | --- | --- |
-| Agent | brinell-scraper |
+| Agent | bruinell-scraper |
 | Model | claude-sonnet-4.5 |
 ```
 

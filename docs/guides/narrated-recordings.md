@@ -8,7 +8,7 @@ Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test
 
 ## You Need
 
-- **ffmpeg**, on `PATH` or named by `BRINELL_FFMPEG`: it encodes the video, lays in the voice and
+- **ffmpeg**, on `PATH` or named by `BRUINELL_FFMPEG`: it encodes the video, lays in the voice and
   joins the scenes. Windows: `winget install Gyan.FFmpeg.Essentials`, then a new terminal. Record
   checks for it first and says so when it is missing.
 - **A voice**: a Windows voice (Settings, Time and language, Speech), or a cloud voice
@@ -59,7 +59,7 @@ The preview shows the script as it will play: every step of each scene, with its
 *silent*. It is checked like a feature file: an address or a `Say` row that finds nothing is an
 error (`VID011`-`VID013`), a row out of step order a warning (`VID014`).
 
-Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Features/how-todo-works.video.md).
+Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/tests/Bruinell.Samples.Todo.Uat/Features/how-todo-works.video.md).
 
 ## Record
 
@@ -73,27 +73,27 @@ Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/
 
 ```powershell
 # From the suite's project folder
-$env:BRINELL_RECORD = "Features\how-todo-works.video.md"
-$env:BRINELL_RECORDERS = "..\..\..\..\tools\Brinell.Cli\bin\Debug\net10.0\recorders"
+$env:BRUINELL_RECORD = "Features\how-todo-works.video.md"
+$env:BRUINELL_RECORDERS = "..\..\..\..\tools\Bruinell.Cli\bin\Debug\net10.0\recorders"
 dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01.1"
 ```
 
 | Variable | Says |
 | --- | --- |
-| `BRINELL_RECORD` | a video script (full, or relative to the suite's folder) records its scenes; `1` records every scenario, silently |
-| `BRINELL_RECORD_DIR` | the Recordings folder; `TestResults\<run>` when not set (the IDEs and Presenter: `TestResults\recordings`) |
-| `BRINELL_RECORD_OUT` | the scenes folder, for a host that names the video |
-| `BRINELL_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
-| `BRINELL_VOICE`, `BRINELL_BEAT` | the voice and the beat (ms), when the script does not say |
-| `BRINELL_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
-| `BRINELL_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
-| `BRINELL_VOICE_KEY`, `BRINELL_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
-| `BRINELL_RECORDERS` | a folder with `Brinell.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
-| `BRINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
+| `BRUINELL_RECORD` | a video script (full, or relative to the suite's folder) records its scenes; `1` records every scenario, silently |
+| `BRUINELL_RECORD_DIR` | the Recordings folder; `TestResults\<run>` when not set (the IDEs and Presenter: `TestResults\recordings`) |
+| `BRUINELL_RECORD_OUT` | the scenes folder, for a host that names the video |
+| `BRUINELL_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
+| `BRUINELL_VOICE`, `BRUINELL_BEAT` | the voice and the beat (ms), when the script does not say |
+| `BRUINELL_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
+| `BRUINELL_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
+| `BRUINELL_VOICE_KEY`, `BRUINELL_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
+| `BRUINELL_RECORDERS` | a folder with `Bruinell.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
+| `BRUINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
 
 ## Cloud Voice
 
-Azure OpenAI's text to speech (`gpt-4o-mini-tts`), or an audio chat model such as `gpt-audio`, speaks the lines when a script, `BRINELL_VOICE`
+Azure OpenAI's text to speech (`gpt-4o-mini-tts`), or an audio chat model such as `gpt-audio`, speaks the lines when a script, `BRUINELL_VOICE`
 or the IDEs' Voice setting names `azure:<voice>` (`azure:coral`, `azure:alloy`, `azure:sage`, ...),
 or names no voice while a cloud voice is set up. It sounds the same on every machine and works for
 every platform's runs. A script can set its tone:
@@ -134,19 +134,19 @@ read as written, text to speech is the surer voice. Its voices are those of the 
 
 The first of these that has an endpoint and a key is used:
 
-1. `BRINELL_VOICE_KEY`, `BRINELL_VOICE_ENDPOINT` (and `BRINELL_VOICE_DEPLOYMENT`,
-   `BRINELL_VOICE_API_VERSION`): for a build agent, from its secret store; they override the file.
+1. `BRUINELL_VOICE_KEY`, `BRUINELL_VOICE_ENDPOINT` (and `BRUINELL_VOICE_DEPLOYMENT`,
+   `BRUINELL_VOICE_API_VERSION`): for a build agent, from its secret store; they override the file.
 2. `voice.secrets.json` beside the suite's `uat.config.md`, or in a folder above it up to the
    repository's root.
-3. `%USERPROFILE%\.brinell\voice.secrets.json`: one key for every repository, outside them all. The
-   place to start with. (A repository other than Brinell ignores the file only if its own
+3. `%USERPROFILE%\.bruinell\voice.secrets.json`: one key for every repository, outside them all. The
+   place to start with. (A repository other than Bruinell ignores the file only if its own
    `.gitignore` says so: `**/voice.secrets.json`.)
 
 The key goes only into the request's `api-key` header; it is never in a log, a timeline or a
-message. A line is asked for once: clips are kept in `%LOCALAPPDATA%\Brinell\speech-cache` by
+message. A line is asked for once: clips are kept in `%LOCALAPPDATA%\Bruinell\speech-cache` by
 their voice, instructions and text, so recording a scene again costs nothing. A recording that
 names a cloud voice fails when none is set up, or when the service refuses (the message says
-why); it never falls back to another voice. `BRINELL_VOICE_INSTRUCTIONS` gives the tone when the
+why); it never falls back to another voice. `BRUINELL_VOICE_INSTRUCTIONS` gives the tone when the
 script does not.
 
 ## Touch Marks
@@ -166,7 +166,7 @@ what is about to be pressed.
 | text set or cleared | the field is outlined, with a keyboard chip (the text itself shows in the app) |
 | Enter, Back, the flyout menu | a chip in the bottom-right corner: `⏎ Enter`, `← Back`, `☰ Menu` |
 
-Each mark is the colour (`TouchColor`, the settings, `BRINELL_TOUCH_COLOR`, else Exact red
+Each mark is the colour (`TouchColor`, the settings, `BRUINELL_TOUCH_COLOR`, else Exact red
 `#E8111E`) over a white stroke and a dark halo, so it reads on light and dark pages, and is sized
 from the video's height. `Touches | outline-only` draws only the outlines and chips; `off` none.
 
@@ -189,7 +189,7 @@ In the Recordings folder, for a script `how-todo-works.video.md`:
 The video is made when the last scene of the script has run; a failed scene is recorded as it
 happened and marked in the timeline. A scenario recorded on its own is named after it.
 
-Kept scenes (Narrator mode, or `BRINELL_RECORD_KEEP`) stay in `<script>.scenes\scene-NN`: the
+Kept scenes (Narrator mode, or `BRUINELL_RECORD_KEEP`) stay in `<script>.scenes\scene-NN`: the
 scene's `video.mp4`, its spoken lines and its `timeline.json`, which holds what the scene was
 recorded from. A scene whose lines, steps, voice or beat changed since is out of date.
 

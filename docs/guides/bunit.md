@@ -1,13 +1,13 @@
 # The bUnit Head
 
 A Blazor suite can run its page objects, controls and feature files without a browser: bUnit
-renders the app's components in the test process, and Brinell drives them through the same
-`IHtmlTestContext`. A run picks its head with `BRINELL_HEAD`; the browser stays the judge at every
+renders the app's components in the test process, and Bruinell drives them through the same
+`IHtmlTestContext`. A run picks its head with `BRUINELL_HEAD`; the browser stays the judge at every
 gate. The decision is [AD-030](../../.docs/decisions/ad-030-a-blazor-suite-runs-without-a-browser.md).
 
 ## When To Use It
 
-During development, to run the tests a change reaches in seconds. Brinell's Blazor suite takes
+During development, to run the tests a change reaches in seconds. Bruinell's Blazor suite takes
 2 s on bUnit and 39 s in a browser, with the same 35 tests; a call costs about 0.2 ms instead of
 about 40 ms.
 
@@ -17,14 +17,14 @@ style sheet hides, or a handler bound in JavaScript, can pass on bUnit and fail 
 ## Running It
 
 ```bash
-BRINELL_HEAD=bunit dotnet test testsnew/Brinell.Blazor.UITests
+BRUINELL_HEAD=bunit dotnet test testsnew/Bruinell.Blazor.UITests
 ```
 
-Unset, or any value but `bunit`, is the browser. In PowerShell: `$env:BRINELL_HEAD = 'bunit'`.
+Unset, or any value but `bunit`, is the browser. In PowerShell: `$env:BRUINELL_HEAD = 'bunit'`.
 
 ## Giving A Suite A bUnit Head
 
-1. Reference `Brinell.Html.Bunit` and the app's project (its assembly, not only its build).
+1. Reference `Bruinell.Html.Bunit` and the app's project (its assembly, not only its build).
 2. Make the context where the suite makes its browser context, by `WebHeads.IsBunit`:
 
 ```csharp
@@ -57,7 +57,7 @@ scenarios need no change. Addresses are under `http://localhost`.
 
 - **Sign-in:** the test authorization replaces the app's own provider, so arrange the account rather
   than signing in; Identity's sign-in pages are Razor Pages and do not render.
-- **Readiness:** the context reads the layout's `brinellBusy.set` calls, so `BlazorPageObjectBase`'s
+- **Readiness:** the context reads the layout's `bruinellBusy.set` calls, so `BlazorPageObjectBase`'s
   busy signal works as in a browser.
 - **A "screenshot"** on this head is the rendered markup, saved as `.html`.
 - **Results:** a scenario's `__result.json` says `"head": "bunit"`; the call log is `calls-bunit-….csv`.

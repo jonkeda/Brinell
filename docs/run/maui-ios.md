@@ -1,6 +1,6 @@
 # Run MAUI iOS Tests
 
-Working directory: Brinell root. Host: macOS with Xcode and a booted iOS simulator.
+Working directory: Bruinell root. Host: macOS with Xcode and a booted iOS simulator.
 
 ## Prerequisites
 
@@ -11,14 +11,14 @@ Working directory: Brinell root. Host: macOS with Xcode and a booted iOS simulat
 ## Build App
 
 ```bash
-dotnet build samples/Brinell.Samples.Maui.App/Brinell.Samples.Maui.App.csproj -f net10.0-ios -c Debug \
+dotnet build samples/Bruinell.Samples.Maui.App/Bruinell.Samples.Maui.App.csproj -f net10.0-ios -c Debug \
   -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableWindowsTargeting=true -v:minimal /nr:false
 ```
 
 Build the Shell app the same way: the Shell fixture installs its own app.
 
 ```bash
-dotnet build samples/Brinell.Samples.Maui.ShellApp/Brinell.Samples.Maui.ShellApp.csproj -f net10.0-ios -c Debug   -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableWindowsTargeting=true -v:minimal /nr:false
+dotnet build samples/Bruinell.Samples.Maui.ShellApp/Bruinell.Samples.Maui.ShellApp.csproj -f net10.0-ios -c Debug   -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableWindowsTargeting=true -v:minimal /nr:false
 ```
 
 - `EnableWindowsTargeting=true` lets restore pass for the project's Windows TFM on macOS.
@@ -40,7 +40,7 @@ export APPIUM_UDID=<simulator udid>          # xcrun simctl list devices booted
 Use the mobile head (plain net10.0, Appium driver). Start with one test:
 
 ```bash
-dotnet test testsnew/Brinell.Maui.UITests.Mobile \
+dotnet test testsnew/Bruinell.Maui.UITests.Mobile \
   --filter "FullyQualifiedName~ButtonTests.Button_IsExists_ReturnsTrue"
 ```
 
@@ -55,5 +55,5 @@ not reach the app.
 - A view with `SemanticProperties.Description` becomes one accessibility element on iOS.
   XCUITest hides its children and reports the description as the element's label. A
   ControlObject that reads a child of such a view must fall back to the element's `Name`,
-  which Brinell reads from the iOS `label`.
+  which Bruinell reads from the iOS `label`.
 - Zero-size elements are missing from the tree. An empty `Label` measures 0 high on iOS.

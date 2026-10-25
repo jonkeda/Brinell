@@ -1,0 +1,194 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.04-edit-a-todo.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.04 Edit a todo</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinell.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Edit</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.04</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>one-todo</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, edit</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.04.1</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@edit</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.04.1 Edit opens the form filled with the current values"><span class="uat-kw">Scenario</span> TOD.04.1 Edit opens the form filled with the current values</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step" data-line="18"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="19"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="20">
+<thead><tr><th>Title</th><th>Status</th><th>DueDate</th></tr></thead>
+<tbody>
+<tr data-line="22"><td>Renew insurance</td><td>InProgress</td><td>+20d</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Renew insurance&quot;</span></span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Renew insurance&quot;</span></span>
+</li>
+<li class="uat-step" data-line="26"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="27"><span class="uat-kw">When</span><span class="uat-text">I tap Edit</span>
+</li>
+<li class="uat-step" data-line="28"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="29"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Renew insurance&quot;</span></span>
+</li>
+<li class="uat-step" data-line="30"><span class="uat-kw">And</span><span class="uat-text">Status should show status <span class="uat-value">&quot;In progress&quot;</span></span>
+</li>
+<li class="uat-step" data-line="31"><span class="uat-kw">And</span><span class="uat-text">Has Due Date should be checked</span>
+</li>
+<li class="uat-step" data-line="32"><span class="uat-kw">And</span><span class="uat-text">Due Date should be enabled</span>
+</li>
+<li class="uat-step" data-line="33"><span class="uat-kw">When</span><span class="uat-text">I tap Cancel</span>
+</li>
+<li class="uat-step" data-line="34"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="37"><span class="uat-tag">@TOD.04.2</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@edit</span></p>
+<h2 class="uat-scenario" data-line="38" data-scenario="TOD.04.2 Saving updates the detail and the list and marks the todo pending"><span class="uat-kw">Scenario</span> TOD.04.2 Saving updates the detail and the list and marks the todo pending</h2>
+<ol class="uat-steps" data-line="40">
+<li class="uat-step" data-line="41"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="42"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="43">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="45"><td>Call mum</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="46"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="47"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Call mum&quot;</span></span>
+</li>
+<li class="uat-step" data-line="48"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Call mum&quot;</span></span>
+</li>
+<li class="uat-step" data-line="49"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">When</span><span class="uat-text">I tap Edit</span>
+</li>
+<li class="uat-step" data-line="51"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="52"><span class="uat-kw">When</span><span class="uat-text">I set Title to <span class="uat-value">&quot;Call dad&quot;</span></span>
+</li>
+<li class="uat-step" data-line="53"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+</li>
+<li class="uat-step" data-line="54"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="55"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Call dad&quot;</span></span>
+</li>
+<li class="uat-step" data-line="56"><span class="uat-kw">And</span><span class="uat-text">Sync State should equal <span class="uat-value">&quot;Waiting to sync&quot;</span></span>
+</li>
+<li class="uat-step" data-line="57"><span class="uat-kw">When</span><span class="uat-text">I tap Back</span>
+</li>
+<li class="uat-step" data-line="58"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="59"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Call dad&quot;</span></span>
+</li>
+<li class="uat-step" data-line="60"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Call mum&quot;</span></span>
+</li>
+<li class="uat-step" data-line="61"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Call dad&quot;</span> should be waiting to sync</span>
+</li>
+<li class="uat-step" data-line="62"><span class="uat-kw">And</span><span class="uat-text">the database should have todos</span>
+<table class="uat-table" data-line="63">
+<thead><tr><th>Title</th><th>SyncState</th></tr></thead>
+<tbody>
+<tr data-line="65"><td>Call dad</td><td>Pending</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="68"><span class="uat-tag">@TOD.04.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@navigation</span></p>
+<h2 class="uat-scenario" data-line="69" data-scenario="TOD.04.3 Cancel on an unchanged form leaves without asking"><span class="uat-kw">Scenario</span> TOD.04.3 Cancel on an unchanged form leaves without asking</h2>
+<ol class="uat-steps" data-line="71">
+<li class="uat-step" data-line="72"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="73"><span class="uat-kw">When</span><span class="uat-text">I tap Add</span>
+</li>
+<li class="uat-step" data-line="74"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="75"><span class="uat-kw">When</span><span class="uat-text">I tap Cancel</span>
+</li>
+<li class="uat-step" data-line="76"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="79"><span class="uat-tag">@TOD.04.4</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@edit</span></p>
+<h2 class="uat-scenario" data-line="80" data-scenario="TOD.04.4 Cancel on a changed form asks; Keep editing stays, Discard leaves it unchanged"><span class="uat-kw">Scenario</span> TOD.04.4 Cancel on a changed form asks; Keep editing stays, Discard leaves it unchanged</h2>
+<ol class="uat-steps" data-line="82">
+<li class="uat-step" data-line="83"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="84"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="85">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="87"><td>Book flights</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="88"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="89"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Book flights&quot;</span></span>
+</li>
+<li class="uat-step" data-line="90"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Book flights&quot;</span></span>
+</li>
+<li class="uat-step" data-line="91"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="92"><span class="uat-kw">When</span><span class="uat-text">I tap Edit</span>
+</li>
+<li class="uat-step" data-line="93"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="94"><span class="uat-kw">When</span><span class="uat-text">I set Title to <span class="uat-value">&quot;Something else&quot;</span></span>
+</li>
+<li class="uat-step" data-line="95"><span class="uat-kw">And</span><span class="uat-text">I tap Cancel</span>
+</li>
+<li class="uat-step" data-line="96"><span class="uat-kw">Then</span><span class="uat-text">the dialog should ask <span class="uat-value">&quot;Discard changes?&quot;</span></span>
+</li>
+<li class="uat-step" data-line="97"><span class="uat-kw">When</span><span class="uat-text">I choose <span class="uat-value">&quot;Keep editing&quot;</span> in the dialog</span>
+</li>
+<li class="uat-step" data-line="98"><span class="uat-kw">Then</span><span class="uat-text">no dialog should be shown</span>
+</li>
+<li class="uat-step" data-line="99"><span class="uat-kw">And</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="100"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Something else&quot;</span></span>
+</li>
+<li class="uat-step" data-line="101"><span class="uat-kw">When</span><span class="uat-text">I tap Cancel</span>
+</li>
+<li class="uat-step" data-line="102"><span class="uat-kw">Then</span><span class="uat-text">the dialog should ask <span class="uat-value">&quot;Discard changes?&quot;</span></span>
+</li>
+<li class="uat-step" data-line="103"><span class="uat-kw">When</span><span class="uat-text">I choose <span class="uat-value">&quot;Discard&quot;</span> in the dialog</span>
+</li>
+<li class="uat-step" data-line="104"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="105"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Book flights&quot;</span></span>
+</li>
+</ol>
+</article>

@@ -1,14 +1,14 @@
-# Brinell WinForms Sample Application
+# Bruinell WinForms Sample Application
 
 > **Looking for a complete example?** [Todo](Todo/README.md) is a MAUI app tested at every tier:
-> unit, integration against WireMock and SQLite, hermetic and live UI tests with Brinell on
+> unit, integration against WireMock and SQLite, hermetic and live UI tests with Bruinell on
 > Windows and Android, and manual charters, all traced to user journeys.
 
-This directory contains a sample WinForms application demonstrating the Brinell UI testing framework for Windows Forms.
+This directory contains a sample WinForms application demonstrating the Bruinell UI testing framework for Windows Forms.
 
 ## Projects
 
-### Brinell.Samples.WinForms.App
+### Bruinell.Samples.WinForms.App
 A simple Windows Forms application showcasing various UI controls:
 
 **Features:**
@@ -29,8 +29,8 @@ A simple Windows Forms application showcasing various UI controls:
 - `lblStatus` - Status message label
 - `lstItems` - Sample items listbox
 
-### Brinell.Samples.WinForms.UITests
-Comprehensive UI test suite demonstrating the Brinell framework capabilities.
+### Bruinell.Samples.WinForms.UITests
+Comprehensive UI test suite demonstrating the Bruinell framework capabilities.
 
 **Test Classes:**
 
@@ -54,7 +54,7 @@ Comprehensive UI test suite demonstrating the Brinell framework capabilities.
 ### Running the Sample App
 
 ```bash
-dotnet run --project Brinell.Samples.WinForms.App/Brinell.Samples.WinForms.App.csproj
+dotnet run --project Bruinell.Samples.WinForms.App/Bruinell.Samples.WinForms.App.csproj
 ```
 
 The application will launch a simple login form for manual testing or as a target for automated tests.
@@ -65,12 +65,12 @@ To run the tests against a running instance of the sample application:
 
 1. **First**, launch the sample application:
    ```bash
-   dotnet run --project Brinell.Samples.WinForms.App/Brinell.Samples.WinForms.App.csproj
+   dotnet run --project Bruinell.Samples.WinForms.App/Bruinell.Samples.WinForms.App.csproj
    ```
 
 2. **Then**, in another terminal, run the tests:
    ```bash
-   dotnet test Brinell.Samples.WinForms.UITests/Brinell.Samples.WinForms.UITests.csproj
+   dotnet test Bruinell.Samples.WinForms.UITests/Bruinell.Samples.WinForms.UITests.csproj
    ```
 
 **Note:** Tests are currently marked with `[Skip]` because they require a running application instance. To use these tests:
@@ -244,7 +244,7 @@ public class LoginPage : PageBase
 
 ## Related Documentation
 
-- [Brinell Framework Guide](../../docs/)
+- [Bruinell Framework Guide](../../docs/)
 - [WinForms Testing Architecture](../../Architecture/20_WorldToolsArchitecture.md)
 - [FlaUI Documentation](https://github.com/Roemer/FlaUI)
 
@@ -260,4 +260,4 @@ To add new test examples:
 
 ## License
 
-This sample is part of the Brinell project.
+This sample is part of the Bruinell project.

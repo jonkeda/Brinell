@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="css/todo.css" />
+    <HeadOutlet @rendermode="Interactive" />
+</head>
+
+@* data-busy is the page's busy signal for Bruinell (html plan, design 7.2): pages set it from
+   their view model's IsBusy through todo.js, first when they render interactively. It is not set
+   here, so its presence also says "interactive". *@
+<body>
+    <Routes @rendermode="Interactive" />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="js/todo.js"></script>
+</body>
+
+</html>
+
+@code {
+    // No prerendering: the list view model is a singleton, and a prerender would run its first
+    // appearance (and so the sync on start) a second time.
+    private static readonly IComponentRenderMode Interactive = new InteractiveServerRenderMode(prerender: false);
+}

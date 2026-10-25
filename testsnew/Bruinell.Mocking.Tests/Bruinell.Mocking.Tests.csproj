@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Mocking.Tests</RootNamespace>
+    <!-- These tests exercise the mock server itself with throwaway bodies, not an API's contract (AD-012). -->
+    <NoWarn>$(NoWarn);BRUINELL001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" />
+    <!-- The analyzer tests compile snippets against Bruinell.Mocking. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinell.Core\Bruinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking\Bruinell.Mocking.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Analyzers\Bruinell.Mocking.Analyzers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ContractSamples\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

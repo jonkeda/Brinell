@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:09.1343035+00:00",
+      "location": "http://localhost:5180/login",
+      "page": "/login",
+      "title": "Login - Bruinell Blazor Sample",
+      "snapshot": "001-login-bruinell-blazor-sample.nodes.jsonl",
+      "nodes": 62,
+      "displayName": "Login - Bruinell Blazor Sample"
+    }
+  ]
+}

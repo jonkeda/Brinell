@@ -1,9 +1,9 @@
 # AD-013: Html Controls Have MAUI's Shape
 
 Html and Blazor control objects are made the way MAUI's are: a `.tpl.cs` template with `*Core`
-methods, and a `.gen.cs` that `brinell controls generate` writes from it (`tools/Scripts/CreateHtml.Bat`).
+methods, and a `.gen.cs` that `bruinell controls generate` writes from it (`tools/Scripts/CreateHtml.Bat`).
 Html's `ControlBase` has MAUI's `Run*` helpers, name for name and signature for signature (R8),
-so one generator serves both. The Html capability bases implement the same `Brinell.Core`
+so one generator serves both. The Html capability bases implement the same `Bruinell.Core`
 control interfaces as MAUI's, so a member a MAUI test or a UAT phrase uses has the same name,
 parameters and meaning on Html. Every member is one synchronous call.
 

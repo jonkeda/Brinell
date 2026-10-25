@@ -1,0 +1,21 @@
+using Bruinell.Core.Exceptions;
+using Bruinell.Core.Locators;
+
+namespace Bruinell.Html.Interfaces;
+
+/// <summary>
+/// Helpers over <see cref="IHtmlElement"/>.
+/// </summary>
+public static class HtmlElementExtensions
+{
+    // An extension, not an interface member, so a mocked element needs only TryFindElement set up
+    // (the same choice as MauiElementExtensions.FindElement).
+
+    /// <summary>The first matching descendant. One attempt; never waits.</summary>
+    /// <exception cref="ElementNotFoundException">Nothing matches.</exception>
+    public static IHtmlElement FindElement(this IHtmlElement element, Locator locator)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.TryFindElement(locator) ?? throw new ElementNotFoundException(locator);
+    }
+}

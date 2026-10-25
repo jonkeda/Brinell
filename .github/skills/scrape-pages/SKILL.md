@@ -1,12 +1,12 @@
 ---
 name: scrape-pages
-description: Make Brinell Html or Blazor page objects and controls from an app's recorded pages - record the pages with the Scraper into a UI test project, find the repeated parts, write controls first and pages second, and build until it passes. Use when asked to scrape, record or crawl an app or site for page objects, to generate page objects or controls from a web app, or to update them after the app changed.
+description: Make Bruinell Html or Blazor page objects and controls from an app's recorded pages - record the pages with the Scraper into a UI test project, find the repeated parts, write controls first and pages second, and build until it passes. Use when asked to scrape, record or crawl an app or site for page objects, to generate page objects or controls from a web app, or to update them after the app changed.
 ---
 
 # Page objects from recorded pages
 
 The Scraper records an app's pages into a UI test project (`Recordings/`, beside the code) and
-answers questions about them through the Brinell MCP server. It calls no model: you do the
+answers questions about them through the Bruinell MCP server. It calls no model: you do the
 writing, it holds the pages, finds patterns and runs the gate. The conventions are the
 [html-control](../html-control/SKILL.md) and [html-ui-test](../html-ui-test/SKILL.md) skills:
 read them first.
@@ -37,10 +37,10 @@ read them first.
    offer, show the code, then `write_code`.
 5. **Pages second.** One page object per recorded page the user wants, in the `Pages` folder:
    `HtmlPageObjectBase<TSelf>`, or `BlazorPageObjectBase<TSelf>` for a Blazor app that sets
-   Brinell's busy signal (`data-busy` on `<body>`, as the Blazor sample does): it waits until the
+   Bruinell's busy signal (`data-busy` on `<body>`, as the Blazor sample does): it waits until the
    app is interactive. A Blazor app without it (a third party's) takes `HtmlPageObjectBase`. It uses the controls (`match_controls` says which occur on the
    page). Its first line is `scraped_header` for the page. `suggest_controls` gives a member per
-   thing a test acts on or reads, with the control that fits (the `Brinell.Blazor.Controls` one in
+   thing a test acts on or reads, with the control that fits (the `Bruinell.Blazor.Controls` one in
    a Blazor project) and a locator: start from it, rename for what the user sees, drop what the
    page object does not need. A member with a `scope` is in a frame: declare it on that frame's
    member, `TextInputControl<FrameScope<CatalogPage>> CustomerId => new(ProfileFrame, …)`.

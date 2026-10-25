@@ -1,13 +1,13 @@
 # BDD Glossary
 
-Brinell uses the words Cucumber and Reqnroll users know where the idea is the same one, and keeps
+Bruinell uses the words Cucumber and Reqnroll users know where the idea is the same one, and keeps
 its own words where Cucumber has no equivalent.
 
-| Brinell | Cucumber / Reqnroll | Notes |
+| Bruinell | Cucumber / Reqnroll | Notes |
 | --- | --- | --- |
 | feature, scenario, scenario outline, background, examples, tags | the same | same idea, same word |
 | step | step | a line of a scenario |
-| step definition | step definition | a declared step text plus the method it runs: `[BddGiven]`, `[BddWhen]`, `[BddThen]` from `Brinell.Core.Testing` |
+| step definition | step definition | a declared step text plus the method it runs: `[BddGiven]`, `[BddWhen]`, `[BddThen]` from `Bruinell.Core.Testing` |
 | step-definition class | binding class | a class with `[BddStepDefinitions]` or deriving from `BddStepDefinitionsBase`; discovered from the fixture's `TestComposition` scan |
 | step text, `{placeholder}` | step text, Cucumber expression | a strict subset: no optional text, no alternatives (AD-016) |
 | fixture | (context injection, `ScenarioContext`) | xUnit's word |

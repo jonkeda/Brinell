@@ -112,10 +112,10 @@ therefore `[Fact(Skip=…)]`.
    clicks there are consumed by window-drag rather than delivered to the control.
    The bottom tabs work because they are far from the title bar and are hosted in
    a native `GridView`. A coordinate-independent `Invoke()` would bypass the drag
-   region — but the **committed Brinell binary bundle** (`lib/brinell/0.1.0-construction.1`)
+   region — but the **committed Bruinell binary bundle** (`lib/bruinell/0.1.0-construction.1`)
    exposes **no** `Invoke()`/`Focus()`/keyboard verb on `IMauiElement`; only
-   physical `Click`/`DoubleClick`. (Brinell `srcnew` *does* have `Invoke()`, but
-   building `-p:UseBrinellSource=true` fails today because
+   physical `Click`/`DoubleClick`. (Bruinell `srcnew` *does* have `Invoke()`, but
+   building `-p:UseBruinellSource=true` fails today because
    `Exact.Core.Construction.UITest/Controls/Collection/PageableCollectionControl.cs`
    was written against the bundle's older `IMauiItemContainer<,>` API, which
    changed in srcnew — `CS0246` / `CS0311`.)
@@ -133,17 +133,17 @@ is fine — Construction re-registers it in
 would navigate **if** its tap actually fired.
 
 **Options to unblock (need a decision):**
-- **(A)** Refresh the committed Brinell bundle from `srcnew` so `IMauiElement`
+- **(A)** Refresh the committed Bruinell bundle from `srcnew` so `IMauiElement`
   gains `Invoke()` (UIA InvokePattern — confirmed implemented in
-  `Brinell.Maui.FlaUI/FlaUIMauiElement.cs`, and exactly the route that bypasses
+  `Bruinell.Maui.FlaUI/FlaUIMauiElement.cs`, and exactly the route that bypasses
   the drag region). **This is a full-suite migration, not a one-file reconcile.**
   The committed bundle (commit `aadfbbd`) is many commits behind `srcnew` HEAD
   (`69b4e20`), and `Invoke()` landed entangled with a large breaking refactor
   ("refactored maui flow", "deleted old controls", "First removal of Support
   properties", "refactor of keyboard/mouse/Focus"). Building
-  `Exact.Construction.UITests -p:UseBrinellSource=true` produces ~30+ errors
+  `Exact.Construction.UITests -p:UseBruinellSource=true` produces ~30+ errors
   across **every** module (Contacts, Hours, Dashboard, Todos, Projects, Settings):
-  `Brinell.Maui.Extensions` namespace removed; `ItemContainerBase<,>` removed/
+  `Bruinell.Maui.Extensions` namespace removed; `ItemContainerBase<,>` removed/
   renamed; `INavigablePage.IsLoaded(int?)`/`PageObjectBase.IsLoaded` signature
   changed; `IMauiScope<>` container-scoping conversion changed; control types
   `RoundButton<>`/`EditableField<>`/`GenericBrowser<>` missing/renamed;
@@ -168,8 +168,8 @@ and ready; only the More→Settings hop is blocked.
 ### UPDATE — Option A executed; `Invoke()` does **not** unblock Settings (root cause is app-side)
 
 The full-suite migration to `srcnew` (Option A) was completed on a branch
-(`uitests/brinell-srcnew-migration`) and the host now builds and runs in source
-mode (`-p:UseBrinellSource=true`) with the previously-green suites all green
+(`uitests/bruinell-srcnew-migration`) and the host now builds and runs in source
+mode (`-p:UseBruinellSource=true`) with the previously-green suites all green
 (Login 2/2, Dashboard 3/3, Hours 2/2). `IMauiElement.Invoke()` (UIA InvokePattern)
 is available. **But driving the Settings gear/row with `Invoke()` still does not
 navigate.** Verified empirically (source mode, live app + WireMock), after opening
@@ -218,8 +218,8 @@ Two corrections to the analysis above:
    entirely. This is the same route the bottom tabs use. The gear's real blocker is
    **downstream of activation**: the command runs but navigation to `SettingsView`
    still does not occur — a deeper app-side issue, still unresolved.
-2. **A gesture-bridge experiment (`BrinellClickableContainerGestures`) was removed.**
-   Publishing a `Tap` verb via the Brinell UIA bridge routed to the *same*
+2. **A gesture-bridge experiment (`BruinellClickableContainerGestures`) was removed.**
+   Publishing a `Tap` verb via the Bruinell UIA bridge routed to the *same*
    `container.Command.Execute` the peer already calls — fully redundant. Per the
    Option-A decision the bridge sink (`ClickableContainerTapSink`) and its
    `MauiProgram` wiring were deleted; the `LayoutAutomationPeer` `IInvokeProvider`
@@ -227,9 +227,9 @@ Two corrections to the analysis above:
    drives the gear via `Invoke()` first, `Select()` fallback.
 
 **Binary mode restored.** The committed bundle was rebaked to
-`lib/brinell/0.1.0-construction.2` (Brinell commit `919790f`, `dirtySource:false`),
+`lib/bruinell/0.1.0-construction.2` (Bruinell commit `919790f`, `dirtySource:false`),
 which carries the srcnew `IMauiElement.Invoke()`/`Swipe()` verbs and the
-`IMauiItemObject<,>` collection API. `-p:UseBrinellSource=false` (the CI default)
+`IMauiItemObject<,>` collection API. `-p:UseBruinellSource=false` (the CI default)
 now builds and runs green (Dashboard 3/3). The Option-A source-mode branch note
 above is superseded — the suite runs on the binary bundle again.
 

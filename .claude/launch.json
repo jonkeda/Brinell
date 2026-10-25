@@ -4,19 +4,19 @@
     {
       "name": "todo-api",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "samples/Todo/src/Brinell.Samples.Todo.Api", "--urls", "http://localhost:5080"],
+      "runtimeArgs": ["run", "--project", "samples/Todo/src/Bruinell.Samples.Todo.Api", "--urls", "http://localhost:5080"],
       "port": 5080
     },
     {
       "name": "todo-web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "samples/Todo/src/Brinell.Samples.Todo.Web", "--urls", "http://localhost:5090"],
+      "runtimeArgs": ["run", "--project", "samples/Todo/src/Bruinell.Samples.Todo.Web", "--urls", "http://localhost:5090"],
       "port": 5090
     },
     {
       "name": "blazor-sample",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "samples/Brinell.Samples.Blazor.App", "--urls", "http://localhost:5180"],
+      "runtimeArgs": ["run", "--project", "samples/Bruinell.Samples.Blazor.App", "--urls", "http://localhost:5180"],
       "port": 5180
     }
   ]

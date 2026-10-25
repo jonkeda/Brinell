@@ -1,0 +1,92 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.10-look-and-accessibility.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.10 Look and accessibility</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinell.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Screens</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.10</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>one-todo</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, screens</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.10.1</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@screens</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.10.1 Every screen loads and its key controls exist"><span class="uat-kw">Scenario</span> TOD.10.1 Every screen loads and its key controls exist</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step uat-bound" data-line="18" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="19" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo List" title="binds to Builtin.Control.AssertExists &#183; page Todo List"><span class="uat-kw">Then</span><span class="uat-text">Add should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="20" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo List" title="binds to Builtin.Control.AssertExists &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Sync should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="21" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo List" title="binds to Builtin.Control.AssertExists &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Filter should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="22" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo List" title="binds to Builtin.Control.AssertExists &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Last Sync should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="23" data-binds="binds to Builtin.AssertRow &#183; page Todo List" title="binds to Builtin.AssertRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Buy milk&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="24" data-binds="binds to Builtin.Open &#183; page Todo List" title="binds to Builtin.Open &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Buy milk&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="25" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step uat-bound" data-line="26" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Title should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="27" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Status should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="28" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Due should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="29" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Sync State should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="30" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Edit should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="31" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Detail" title="binds to Builtin.Control.AssertExists &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Delete should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="32" data-binds="binds to Builtin.Control.Tap &#183; page Todo Detail" title="binds to Builtin.Control.Tap &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I tap Edit</span>
+</li>
+<li class="uat-step uat-bound" data-line="33" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Edit page</span>
+</li>
+<li class="uat-step uat-bound" data-line="34" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Title should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="35" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Notes should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="36" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Has Due Date should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="37" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Due Date should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="38" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Status should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="39" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Save should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="40" data-binds="binds to Builtin.Control.AssertExists &#183; page Todo Edit" title="binds to Builtin.Control.AssertExists &#183; page Todo Edit"><span class="uat-kw">And</span><span class="uat-text">Cancel should exist</span>
+</li>
+<li class="uat-step uat-bound" data-line="41" data-binds="binds to Builtin.Control.Tap &#183; page Todo Edit" title="binds to Builtin.Control.Tap &#183; page Todo Edit"><span class="uat-kw">When</span><span class="uat-text">I tap Cancel</span>
+</li>
+<li class="uat-step uat-bound" data-line="42" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+</ol>
+</article>

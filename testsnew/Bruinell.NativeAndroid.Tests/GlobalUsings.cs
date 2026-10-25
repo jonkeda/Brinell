@@ -1,0 +1,11 @@
+global using Bruinell.Core.Configuration;
+global using Bruinell.Core.Exceptions;
+global using Bruinell.Core.Locators;
+global using Bruinell.Core.Logging;
+global using Bruinell.NativeAndroid;
+global using Bruinell.NativeAndroid.Appium;
+global using Bruinell.NativeAndroid.Interfaces;
+global using Bruinell.NativeAndroid.Pages;
+global using Moq;
+global using Xunit;
+global using Bruinell.Core;

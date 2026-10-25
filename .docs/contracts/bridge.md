@@ -2,16 +2,16 @@
 
 When a MAUI app has an action that plain UI Automation cannot express, the app under
 test publishes a **gesture bridge**. This is the contract an app author must implement so
-`Brinell.Maui.FlaUI` can drive it. Decision:
+`Bruinell.Maui.FlaUI` can drive it. Decision:
 [AD-008](../decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md).
 
 ## What the app publishes
 
-- A reference to `Brinell.Maui.AppSupport` and a call to `UseBrinellGestureBridge()` in
+- A reference to `Bruinell.Maui.AppSupport` and a call to `UseBruinellGestureBridge()` in
   app startup.
 - Per element, in markup, the verbs it answers: `GestureAutomation.Verbs="..."`.
-- The provider is compiled in only under `BRINELL_UIA_BRIDGE` (Debug) and active only
-  when the launcher sets `BRINELL_UIA_BRIDGE=1`. It is **absent from shipping builds** -
+- The provider is compiled in only under `BRUINELL_UIA_BRIDGE` (Debug) and active only
+  when the launcher sets `BRUINELL_UIA_BRIDGE=1`. It is **absent from shipping builds** -
   UI Automation has no per-caller authentication.
 
 ## How a verb behaves
@@ -22,7 +22,7 @@ test publishes a **gesture bridge**. This is the contract an app author must imp
   element actions.
 - **Outcomes in values or failure codes, never `S_FALSE`.** Every success HRESULT reaches
   the client as `S_OK`. A refusal that must explain itself returns `S_OK` with the reason
-  in the payload; a refusal that needs no explanation returns `BRINELL_E_DECLINED`. A
+  in the payload; a refusal that needs no explanation returns `BRUINELL_E_DECLINED`. A
   failing call carries no payload.
 - **Republished per page.** An app republishes its bridge between pages, so a verb the app
   did not answer is retried by the call - it is not a missing route
@@ -41,13 +41,13 @@ test publishes a **gesture bridge**. This is the contract an app author must imp
 2. **Is the physical path the thing under test?** A test asserting typing fires
    `TextChanged` must type - on the mobile head, not the bridge.
 3. **Does it stay a UI test?** Read what the user can see; if it needs the view model, the
-   coverage belongs in `Brinell.Maui.Tests`.
+   coverage belongs in `Bruinell.Maui.Tests`.
 
 ## Broken when
 
 - A verb duplicates an existing UI Automation pattern (test 1).
 - A verb is added without a read/element-action/app-action classification.
 - The bridge provider ships in a release build.
-- A refusal is signalled with `S_FALSE` instead of a payload or `BRINELL_E_DECLINED`.
+- A refusal is signalled with `S_FALSE` instead of a payload or `BRUINELL_E_DECLINED`.
 - Registering a target replaces another element's target with the same `AutomationId`, or a
   client resolves a shared id without comparing bounds.

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinell.Samples.Todo.TestSupport</RootNamespace>
+    <Description>Test sets, the database seeder and the WireMock fake backend shared by the integration and UI tiers.</Description>
+    <!-- A library the test projects use, not a test project itself. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinell.Mocking\Bruinell.Mocking.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinell.TestData\Bruinell.TestData.csproj" />
+    <!-- The head-neutral steps (Uat/), shared by the UI suites and the service suite: no UI, so Bruinell.Bdd only. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinell.Bdd\Bruinell.Bdd.csproj" />
+    <ProjectReference Include="..\..\src\Bruinell.Samples.Todo.Contracts\Bruinell.Samples.Todo.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Bruinell.Samples.Todo.Infrastructure\Bruinell.Samples.Todo.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test sets travel inside the assembly, so every consumer reads the same files. -->
+    <EmbeddedResource Include="TestData\*.json" Exclude="TestData\*.schema.json" LogicalName="TestData.%(Filename)%(Extension)" />
+    <!-- And next to it, so the validator finds them where the source tree is not at hand (a CI build with mapped paths). -->
+    <None Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Recorded API responses, served by ReturnsSample and checked by the contract tests. -->
+    <None Include="ContractSamples\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,13 +1,13 @@
 ---
-title: Brinell Agent Instructions
-description: Local entry point for AI agents working in the Brinell submodule
+title: Bruinell Agent Instructions
+description: Local entry point for AI agents working in the Bruinell submodule
 ---
 
-# Brinell Agent Instructions
+# Bruinell Agent Instructions
 
 ## Read First
 
-For Brinell work, read:
+For Bruinell work, read:
 
 - [.github/copilot-instructions.md](.github/copilot-instructions.md)
 - [docs/README.md](docs/README.md)
@@ -25,10 +25,10 @@ archive, not the active source of truth.
 
 ## Scope
 
-- Brinell-only work stays inside `Brinell/`.
+- Bruinell-only work stays inside `Bruinell/`.
 - Parent BodyCam work follows `../.github/copilot-instructions.md`.
 - Exact.Construction, `.cnv2`, or sibling conversion references are optional and
-  task-specific; do not require missing files for normal Brinell work.
+  task-specific; do not require missing files for normal Bruinell work.
 
 ## Skills
 
@@ -77,18 +77,18 @@ for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
 
 ## Core Rules
 
-- Build tests through Brinell page objects and ControlObjects.
-- Put repeated interaction behavior in Brinell controls, not local test helpers.
+- Build tests through Bruinell page objects and ControlObjects.
+- Put repeated interaction behavior in Bruinell controls, not local test helpers.
 - Keep test methods focused on user intent and assertions.
 - Prefer semantic operations such as `Click`, `SetText`, `SelectItem`,
   `WaitReady`, and assertions over raw driver operations.
 - Prefer UI Automation patterns before pointer or coordinate strategies.
 - Do not expose direct mouse movement as a normal public test API.
 - MAUI on Windows uses no physical input (mouse, keyboard, clipboard, foreground), and
-  there is no switch to turn it on. Do not add any to `Brinell.Maui.FlaUI`: an action
+  there is no switch to turn it on. Do not add any to `Bruinell.Maui.FlaUI`: an action
   with no UI Automation pattern and no bridge verb throws, naming the route. A test of
   real input belongs on the Android head. WPF and WinForms still go through
-  `PhysicalInput` and `BRINELL_BACKGROUND_MODE`. See AD-005.
+  `PhysicalInput` and `BRUINELL_BACKGROUND_MODE`. See AD-005.
 - An action with no UI Automation route goes through the app's gesture bridge
   (`GestureAutomation.Verbs`), never through coordinates - and only after the three
   admission tests in AD-008. For MAUI on Windows the bridge is required.
@@ -108,7 +108,7 @@ for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
 - Use xUnit `Assert`; do not add FluentAssertions.
 - Do not add empty catches. Optional platform probing belongs in named `Try*`
   helpers with clear fallback behavior.
-- Keep platform element types out of `Brinell.Core`.
+- Keep platform element types out of `Bruinell.Core`.
 - Match existing project layout under `srcnew/` and `testsnew/`.
 
 ## Docs Rules
@@ -116,8 +116,8 @@ for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
 Five trees, each with one job:
 
 - **`.docs/`** - decisions, invariants and contracts: what must stay true. Read it before
-  changing Brinell. A decision is recorded **once**, here, never also in code prose.
-- `docs/` - active guides for someone *using* Brinell.
+  changing Bruinell. A decision is recorded **once**, here, never also in code prose.
+- `docs/` - active guides for someone *using* Bruinell.
 - `.my/` - plans, analyses and reviews for work in flight, indexed in `.my/README.md`.
   When the work is done: extract, then delete. Move its decisions to `.docs/` and anything a
   user needs to `docs/`, repoint the links, then delete the topic. An AD that needs the
@@ -127,7 +127,7 @@ Five trees, each with one job:
 - `docs2/` - historical archive.
 
 - Keep links valid and relative.
-- Use `Brinell.*` namespaces in examples.
+- Use `Bruinell.*` namespaces in examples.
 - Mark commands with their working directory.
 - Update `docs/README.md` when adding or moving active docs.
 
@@ -139,52 +139,52 @@ and all XML doc on private/internal members. Durable rationale goes to `.docs/`,
 
 ## Verification
 
-Commands are from the Brinell root:
+Commands are from the Bruinell root:
 
 ```powershell
-dotnet build Brinell.sln -v:minimal /nr:false
-dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
-dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Html.Bunit.Tests\Brinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
+dotnet build Bruinell.sln -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Core.Tests\Bruinell.Core.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Maui.Tests\Bruinell.Maui.Tests.csproj -v:minimal /nr:false
+dotnet build srcnew\Bruinell.Maui.FlaUI\Bruinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.Tests\Bruinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Blazor.Tests\Bruinell.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinell.Html.Bunit.Tests\Bruinell.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
-The Html and Blazor UI suites (`testsnew\Brinell.Html.UITests`, `testsnew\Brinell.Blazor.UITests`)
+The Html and Blazor UI suites (`testsnew\Bruinell.Html.UITests`, `testsnew\Bruinell.Blazor.UITests`)
 start the Blazor sample themselves on a free port and need Playwright's Chromium installed
-(`pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
-They also run without a browser, on the **bUnit head**: `$env:BRINELL_HEAD = "bunit"` renders the
+(`pwsh testsnew\Bruinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
+They also run without a browser, on the **bUnit head**: `$env:BRUINELL_HEAD = "bunit"` renders the
 sample's components in the test process (about 2 s for the Blazor suite against about 40 s in a
 browser). Tests that need a browser are `[BrowserFact]`, scenarios `@browser`, and are skipped there
 ([the guide](docs/guides/bunit.md), AD-030).
 
 ### Match the test scope to the change
 
-**Do not run the full UI suite to verify a narrow change.** `Brinell.Maui.UITests`
+**Do not run the full UI suite to verify a narrow change.** `Bruinell.Maui.UITests`
 launches a real Windows app and drives it through UI Automation; it takes minutes,
 and most of it is irrelevant to any given edit. Run the smallest tier that can
 actually falsify the change, and only widen if that tier fails or the change is
 genuinely broad.
 
-| Tier | Command (filter on `testsnew\Brinell.Maui.UITests`) | Cost |
+| Tier | Command (filter on `testsnew\Bruinell.Maui.UITests`) | Cost |
 |---|---|---|
 | 1. One area | `--filter "FullyQualifiedName~AutomationProbeTests"` | ~7 s |
 | 2. Related areas | `--filter "FullyQualifiedName~Tests.Container\|FullyQualifiedName~Tests.Collection"` | ~11 s |
 | 2b. Gesture bridge and background | `--filter "Stage=Background"` - bridge verbs, focus, text, scrolling, navigation, the foreground watchdog | ~20 s |
 | 3. Full suite | no filter | ~3 min |
-| Stress (opt-in) | `$env:BRINELL_STRESS = "1"` then `--filter "Pattern=Stress"` - reproduces UI Automation retiring the window element | 1-2 min |
+| Stress (opt-in) | `$env:BRUINELL_STRESS = "1"` then `--filter "Pattern=Stress"` - reproduces UI Automation retiring the window element | 1-2 min |
 
 Use tier 3 only when finishing a phase of work, when the change touches shared
 infrastructure (fixture, navigation, `MauiProgram`, handler registration), or when a
 narrower tier fails in a way that suggests wider breakage.
 
 For the Html and Blazor suites, the same rule with two heads: while working, run the
-narrowest filter on the bUnit head (`$env:BRINELL_HEAD = "bunit"`); before reporting the work
+narrowest filter on the bUnit head (`$env:BRUINELL_HEAD = "bunit"`); before reporting the work
 done, run that filter once in the browser (unset the variable). The browser judges: a pass on
 bUnit alone is not done, because bUnit has no layout, style sheets or script.
 
-The narrowest filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` (`brinell tests affected`,
+The narrowest filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` (`bruinell tests affected`,
 `docs/run/cli.md`) follows the working tree's changed files through each suite's `touch-map.json` to the tests and
 scenarios they reach, prints each with why and one `--filter`, and runs it with `-Run` (`-Head playwright` for the
 browser). Shared code (`srcnew/`, the test base, the sample's layout and start) runs the suite whole. After a full run,
