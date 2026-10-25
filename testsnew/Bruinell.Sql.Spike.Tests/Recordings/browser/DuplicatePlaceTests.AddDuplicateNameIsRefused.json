@@ -1,8 +1,10 @@
 {
-  "Version": 1,
+  "Version": 2,
   "Stamp": {
-    "Ef": "10.0.12",
-    "SqlClient": "6.1.6",
+    "Versions": {
+      "ef": "10.0.12",
+      "sqlclient": "6.1.6"
+    },
     "Objects": {
       "dbo.kindcounts": "06B327E49421",
       "dbo.places": "8F7F6A2F4BF9"
@@ -55,6 +57,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -243,6 +246,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -292,6 +296,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -480,6 +485,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -529,6 +535,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -717,6 +724,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -727,11 +735,11 @@
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "21eb05d6-3211-4c25-bb3d-d8833cf0a496"
+          "v": "a3089045-0b86-4792-9069-12a0be7b0995"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T20:20:19.4110763\u002B01:00"
+          "v": "2026-10-25T22:21:24.3019160\u002B01:00"
         },
         "@p2": {
           "t": "String",
@@ -757,8 +765,9 @@
       "Results": null,
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": {
-        "Type": "SqlException",
+        "Type": "Microsoft.Data.SqlClient.SqlException",
         "Number": 2601,
         "State": 1,
         "Class": 14,

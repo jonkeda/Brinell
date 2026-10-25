@@ -44,4 +44,89 @@ public static class Statements
             yield return parts.Length == 1 ? "dbo." + parts[0] : parts[parts.Length - 2] + "." + parts[parts.Length - 1];
         }
     }
+
+    private static readonly Regex Insert = new(@"INSERT INTO (?<table>\S+) \((?<columns>[^)]*)\) VALUES \((?<values>[^)]*)\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex SelectStart = new(@"^SELECT (DISTINCT )?(TOP\([^)]*\) )?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// The text's identity for replay's matching: normalized, an <c>INSERT</c>'s and a leading <c>SELECT</c>'s columns
+    /// sorted. Their order says nothing about the query (EF orders them by property name, so renaming a property
+    /// reorders them); replay gives the recorded columns back in the order the live query asks for (<see cref="Projection"/>).
+    /// </summary>
+    public static string Key(string text)
+    {
+        var normalized = Insert.Replace(Normalize(text), insert =>
+            $"INSERT INTO {insert.Groups["table"].Value} ({string.Join(", ", Split(insert.Groups["columns"].Value).OrderBy(column => column, StringComparer.Ordinal))}) VALUES (...)");
+        return Projection(normalized) is { } projection
+            ? projection.Prefix + string.Join(", ", projection.Columns.OrderBy(column => column, StringComparer.Ordinal)) + projection.Tail
+            : normalized;
+    }
+
+    /// <summary>
+    /// The parameter that fills each column of the text's <c>INSERT</c>s, by table and column: EF numbers an insert's
+    /// parameters in its column order, so replay matches a parameter by the column it fills, not its name.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> InsertParameters(string text)
+    {
+        var parameters = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (Match insert in Insert.Matches(Normalize(text)))
+        {
+            var table = insert.Groups["table"].Value;
+            var columns = Split(insert.Groups["columns"].Value).ToList();
+            var values = Split(insert.Groups["values"].Value).ToList();
+            for (var i = 0; i < Math.Min(columns.Count, values.Count); i++)
+            {
+                if (values[i].StartsWith("@", StringComparison.Ordinal))
+                {
+                    parameters[table + "." + columns[i]] = values[i];
+                }
+            }
+        }
+
+        return parameters;
+    }
+
+    /// <summary>
+    /// A leading <c>SELECT</c>'s columns: the text before them, each column as written, and the text from <c>FROM</c> on;
+    /// null for any other statement. Commas and <c>FROM</c> inside parentheses belong to a column.
+    /// </summary>
+    public static Projected? Projection(string normalized)
+    {
+        var select = SelectStart.Match(normalized);
+        if (!select.Success)
+        {
+            return null;
+        }
+
+        var columns = new List<string>();
+        var depth = 0;
+        var start = select.Length;
+        for (var i = start; i < normalized.Length; i++)
+        {
+            switch (normalized[i])
+            {
+                case '(':
+                    depth++;
+                    break;
+                case ')':
+                    depth--;
+                    break;
+                case ',' when depth == 0:
+                    columns.Add(normalized.Substring(start, i - start).Trim());
+                    start = i + 1;
+                    break;
+                case ' ' when depth == 0 && string.Compare(normalized, i, " FROM ", 0, 6, StringComparison.OrdinalIgnoreCase) == 0:
+                    columns.Add(normalized.Substring(start, i - start).Trim());
+                    return new Projected(select.Value, columns, normalized.Substring(i));
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> Split(string list)
+        => list.Split(',').Select(part => part.Trim()).Where(part => part.Length > 0);
 }
+
+/// <summary>A <c>SELECT</c>'s columns between the text before them and the text from <c>FROM</c> on.</summary>
+public sealed record Projected(string Prefix, IReadOnlyList<string> Columns, string Tail);

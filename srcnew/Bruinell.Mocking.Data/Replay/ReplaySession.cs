@@ -1,54 +1,60 @@
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Bruinell.Sql.Spike.Tests.Spike;
+namespace Bruinell.Mocking.Data.Replay;
 
-/// <summary>A command replay could not answer from the recording.</summary>
+/// <summary>A command replay could not answer from the recording, or a recording made stale by a schema change.</summary>
 public sealed class ReplayMissException(string message) : Exception(message);
 
 /// <summary>
-/// One test's recording or replay (.my/sql-replay/proposal.md, matching and value binding). In replay a command is
-/// answered by the recorded exchange with the same key and occurrence: writes in their recorded order, as barriers;
-/// the reads between two writes in any order. Volatile values are bound, recorded to live, the first time they meet,
-/// and recorded results are rewritten through the bindings.
+/// One test's recording or replay. Nothing in it is shared: tests in parallel each have their own, handed to the app
+/// through its composition or <see cref="ReplayScope"/>. In replay a command is answered by the recorded exchange with the
+/// same key: writes in their recorded order, as barriers; the reads between two writes in any order, and a read repeated
+/// more often than when recorded answered again, since between two writes it returns the same rows. Volatile values are
+/// bound, recorded to live, the first time they meet, and recorded results are rewritten through the bindings.
 /// </summary>
 public sealed class ReplaySession
 {
-    private readonly Lock _gate = new();
+    private readonly object _gate = new();
     private readonly Recording _recording;
     private readonly Recording? _previous;
+    private readonly Schema? _schema;
+    private readonly string? _stale;
     private readonly int[] _epochs;
     private readonly bool[] _used;
     private readonly Dictionary<string, JsonNode?> _bindings = new(StringComparer.Ordinal);
     private readonly List<string> _misses = [];
     private int _writes;
 
-    private readonly string? _stale;
-
-    private readonly Schema _schema;
-
-    public ReplaySession(ReplayMode mode, string path, Schema schema)
+    /// <param name="mode">Record or replay.</param>
+    /// <param name="path">The test's recording: <c>&lt;folder&gt;/&lt;head&gt;/&lt;test&gt;.json</c>, a file per test and head.</param>
+    /// <param name="schema">The schema now, for the stamp; null to record and replay without one.</param>
+    /// <param name="ignoreStamp">Replays a stale recording anyway, to see which commands a change touched.</param>
+    public ReplaySession(ReplayMode mode, string path, Schema? schema = null, bool ignoreStamp = false)
     {
+        if (mode == ReplayMode.Off)
+        {
+            throw new ArgumentException("A session records or replays; with replay off, give the app no session.", nameof(mode));
+        }
+
         Mode = mode;
         Path = path;
         _schema = schema;
         if (mode == ReplayMode.Replay)
         {
-            _recording = Recording.Load(path) ?? throw new ReplayMissException($"No recording at {path}: record the test first (BRUINELL_SQL_REPLAY=Record, twice).");
-            // BRUINELL_SQL_STAMP=ignore: replay a stale recording anyway, to see which commands a change touched.
-            var ignoreStamp = string.Equals(Environment.GetEnvironmentVariable("BRUINELL_SQL_STAMP"), "ignore", StringComparison.OrdinalIgnoreCase);
-            if (!ignoreStamp && _recording.Stamp?.Differences(schema) is { Count: > 0 } differences)
+            _recording = Recording.Load(path) ?? throw new ReplayMissException($"No recording at {path}: record the test first, twice.");
+            if (!ignoreStamp && schema is not null && _recording.Stamp?.Differences(schema) is { Count: > 0 } differences)
             {
-                _stale = $"Stale recording {System.IO.Path.GetFileName(path)}: re-record it (BRUINELL_SQL_REPLAY=Record, twice). Changed: {string.Join("; ", differences)}.";
+                _stale = $"Stale recording {System.IO.Path.GetFileName(path)}: re-record it, twice. Changed: {string.Join("; ", differences)}.";
             }
         }
         else
         {
             _recording = new Recording();
             _previous = Recording.Load(path);
-            if (_previous?.Stamp?.Differences(schema) is not { Count: 0 })
+            if (_previous is not null && schema is not null && _previous.Stamp?.Differences(schema) is not { Count: 0 })
             {
-                // Recorded against other tables or versions: not the same run, so not a source of volatile values.
+                // Recorded against other objects or versions: not the same run, so not a source of volatile values.
                 _previous = null;
             }
         }
@@ -70,6 +76,7 @@ public sealed class ReplaySession
 
     public string Path { get; }
 
+    /// <summary>The misses so far: a test checks them at its end, as a miss inside the app may have been caught there.</summary>
     public IReadOnlyList<string> Misses
     {
         get
@@ -91,7 +98,7 @@ public sealed class ReplaySession
         }
     }
 
-    /// <summary>Record mode: saves the recording, its volatile values found against the one it replaces.</summary>
+    /// <summary>Record mode: saves the recording, its volatile values found against the one it replaces, and its stamp.</summary>
     public void Finish()
     {
         if (Mode != ReplayMode.Record)
@@ -99,13 +106,16 @@ public sealed class ReplaySession
             return;
         }
 
-        if (_previous is not null)
+        lock (_gate)
         {
-            _recording.MarkVolatile(_previous);
-        }
+            if (_previous is not null)
+            {
+                _recording.MarkVolatile(_previous);
+            }
 
-        _recording.Stamp = _schema.StampFor(_recording.Exchanges.SelectMany(exchange => Statements.Objects(exchange.Text)));
-        _recording.Save(Path);
+            _recording.Stamp = _schema?.StampFor(_recording.Exchanges.SelectMany(exchange => Statements.Objects(exchange.Text)));
+            _recording.Save(Path);
+        }
     }
 
     /// <summary>Replay mode: the recorded exchange answering <paramref name="live"/>, its results rewritten through the bindings.</summary>
@@ -127,10 +137,8 @@ public sealed class ReplaySession
             Dictionary<string, JsonNode?>? bound = null;
             var index = -1;
 
-            // An unused exchange first; then, for a read, one already used: between two writes the same read returns the
-            // same rows, so a read repeated more often than when recorded (the browser's prerender, a page opened twice)
-            // is answered again rather than missed.
-            foreach (var reuse in (bool[])[false, true])
+            // An unused exchange first; then, for a read, one already used (a read repeated more often than when recorded).
+            foreach (var reuse in new[] { false, true })
             {
                 for (var i = 0; i < _recording.Exchanges.Count && index < 0; i++)
                 {
@@ -166,9 +174,9 @@ public sealed class ReplaySession
             }
 
             _used[index] = true;
-            foreach (var (recorded, value) in bound!)
+            foreach (var pair in bound!)
             {
-                _bindings[recorded] = value;
+                _bindings[pair.Key] = pair.Value;
             }
 
             if (live.IsWrite)
@@ -177,6 +185,15 @@ public sealed class ReplaySession
             }
 
             return Reorder(Rewrite(_recording.Exchanges[index]), live);
+        }
+    }
+
+    /// <summary>A recorded value through the bindings: the live value a volatile one was bound to, else itself.</summary>
+    public JsonNode? Bound(JsonNode? value)
+    {
+        lock (_gate)
+        {
+            return Values.Canonical(value) is { } canonical && _bindings.TryGetValue(canonical, out var live) ? live?.DeepClone() : value?.DeepClone();
         }
     }
 
@@ -202,17 +219,16 @@ public sealed class ReplaySession
         }
 
         var actuals = Aligned(recorded, live);
-        foreach (var (name, value) in recorded.Parameters)
+        foreach (var pair in recorded.Parameters)
         {
-            if (!actuals.TryGetValue(name, out var actual))
+            if (!actuals.TryGetValue(pair.Key, out var actual))
             {
                 return false;
             }
 
-            var canonical = Values.Canonical(value);
-            if (!recorded.Volatile.Contains(name))
+            if (!recorded.Volatile.Contains(pair.Key))
             {
-                if (!Values.Same(value, actual))
+                if (!Values.Same(pair.Value, actual))
                 {
                     return false;
                 }
@@ -221,6 +237,7 @@ public sealed class ReplaySession
             }
 
             // Bound already: the live value must be the one it was bound to. Not yet: bind it once this exchange matches.
+            var canonical = Values.Canonical(pair.Value);
             if (canonical is not null && _bindings.TryGetValue(canonical, out var binding))
             {
                 if (!Values.Same(binding, actual))
@@ -244,34 +261,32 @@ public sealed class ReplaySession
             return recorded;
         }
 
-        return new Exchange
-        {
-            Index = recorded.Index,
-            Kind = recorded.Kind,
-            Text = recorded.Text,
-            Parameters = recorded.Parameters,
-            RecordsAffected = recorded.RecordsAffected,
-            Scalar = recorded.Scalar,
-            Error = recorded.Error,
-            Results = [.. recorded.Results.Select(result => new RecordedResult(
-                result.Columns,
-                [.. result.Rows.Select(row => (IReadOnlyList<JsonNode?>)[.. row.Select(Bound)])]))],
-        };
+        return recorded.With([.. recorded.Results.Select(result => new RecordedResult(
+            result.Columns,
+            [.. result.Rows.Select(row => (IReadOnlyList<JsonNode?>)[.. row.Select(BoundUnlocked)])]))]);
     }
+
+    private JsonNode? BoundUnlocked(JsonNode? value)
+        => Values.Canonical(value) is { } canonical && _bindings.TryGetValue(canonical, out var live) ? live?.DeepClone() : value?.DeepClone();
 
     // The live parameters under the recorded names: an insert's by the column each fills, the others by their own name.
     private static Dictionary<string, JsonNode?> Aligned(Exchange recorded, Exchange live)
     {
-        var aligned = new Dictionary<string, JsonNode?>(live.Parameters, StringComparer.Ordinal);
+        var aligned = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
+        foreach (var pair in live.Parameters)
+        {
+            aligned[pair.Key] = pair.Value;
+        }
+
         var was = Statements.InsertParameters(recorded.Text);
         if (was.Count == 0)
         {
             return aligned;
         }
 
-        foreach (var (column, liveName) in Statements.InsertParameters(live.Text))
+        foreach (var pair in Statements.InsertParameters(live.Text))
         {
-            if (was.TryGetValue(column, out var recordedName) && live.Parameters.TryGetValue(liveName, out var value))
+            if (was.TryGetValue(pair.Key, out var recordedName) && live.Parameters.TryGetValue(pair.Value, out var value))
             {
                 aligned[recordedName] = value;
             }
@@ -283,36 +298,23 @@ public sealed class ReplaySession
     // The recorded columns in the order the live query asks for them: matched as a set, read by ordinal.
     private static Exchange Reorder(Exchange recorded, Exchange live)
     {
-        if (recorded.Results is not [var first, ..] results
+        if (recorded.Results is not { Count: > 0 } results
             || Statements.Projection(Statements.Normalize(recorded.Text)) is not { } was
             || Statements.Projection(Statements.Normalize(live.Text)) is not { } now
             || was.Columns.SequenceEqual(now.Columns)
-            || was.Columns.Count != first.Columns.Count)
+            || was.Columns.Count != results[0].Columns.Count)
         {
             return recorded;
         }
 
+        var first = results[0];
         var recordedColumns = was.Columns.ToList();
         var order = now.Columns.Select(column => recordedColumns.IndexOf(column)).ToArray();
         var reordered = new RecordedResult(
             [.. order.Select(i => first.Columns[i])],
             [.. first.Rows.Select(row => (IReadOnlyList<JsonNode?>)[.. order.Select(i => row[i])])]);
-        return new Exchange
-        {
-            Index = recorded.Index,
-            Kind = recorded.Kind,
-            Text = recorded.Text,
-            Parameters = recorded.Parameters,
-            Volatile = recorded.Volatile,
-            RecordsAffected = recorded.RecordsAffected,
-            Scalar = recorded.Scalar,
-            Error = recorded.Error,
-            Results = [reordered, .. results.Skip(1)],
-        };
+        return recorded.With([reordered, .. results.Skip(1)]);
     }
-
-    private JsonNode? Bound(JsonNode? value)
-        => Values.Canonical(value) is { } canonical && _bindings.TryGetValue(canonical, out var live) ? live?.DeepClone() : value?.DeepClone();
 
     private string Describe(Exchange live, string key)
     {
@@ -322,22 +324,23 @@ public sealed class ReplaySession
         if (same.Count > 0)
         {
             return text.Append("\nNearest, the same text with other values:\n  ")
-                .AppendJoin("\n  ", same.Select(exchange => $"#{exchange.Index} {(exchange.IsWrite ? "write" : "read")} with {Show(exchange.Parameters)}, volatile [{string.Join(", ", exchange.Volatile)}]"))
+                .Append(string.Join("\n  ", same.Select(exchange => $"#{exchange.Index} {(exchange.IsWrite ? "write" : "read")} with {Show(exchange.Parameters)}, volatile [{string.Join(", ", exchange.Volatile)}]")))
                 .ToString();
         }
 
         // Another text: the unused command of the same kind and place that shares the longest start, and where they part.
         var nearest = unused
             .Where(exchange => exchange.Kind == live.Kind && exchange.IsWrite == live.IsWrite && _epochs[exchange.Index] == _writes)
-            .MaxBy(exchange => Common(Statements.Key(exchange.Text), key));
+            .OrderByDescending(exchange => Common(Statements.Key(exchange.Text), key))
+            .FirstOrDefault();
         if (nearest is null)
         {
             return text.Append("\nNo recorded command is left at this point: the app sends a command it didn't send when recorded.").ToString();
         }
 
-        var recorded = Statements.Key(nearest.Text);
-        var at = Common(recorded, key);
-        return text.Append($"\nNearest, #{nearest.Index}, parts at character {at}:\n  recorded ...{Around(recorded, at)}...\n  now      ...{Around(key, at)}...").ToString();
+        var recordedKey = Statements.Key(nearest.Text);
+        var at = Common(recordedKey, key);
+        return text.Append($"\nNearest, #{nearest.Index}, parts at character {at}:\n  recorded ...{Around(recordedKey, at)}...\n  now      ...{Around(key, at)}...").ToString();
     }
 
     private static int Common(string left, string right)
@@ -359,4 +362,29 @@ public sealed class ReplaySession
 
     private static string Show(Dictionary<string, JsonNode?> parameters)
         => "{" + string.Join(", ", parameters.Select(pair => $"{pair.Key}={Values.Canonical(pair.Value) ?? "null"}")) + "}";
+}
+
+/// <summary>
+/// The session of the async flow that runs now, for code that makes its connections itself (a static factory, a
+/// <see cref="ReplayingDbProviderFactory"/>): a test enters its own, so tests in parallel never see each other's.
+/// </summary>
+public static class ReplayScope
+{
+    private static readonly AsyncLocal<ReplaySession?> Now = new();
+
+    /// <summary>The session of this flow; null outside one.</summary>
+    public static ReplaySession? Current => Now.Value;
+
+    /// <summary>Enters <paramref name="session"/> for this flow and what it starts; disposing puts back the one before.</summary>
+    public static IDisposable Enter(ReplaySession? session)
+    {
+        var before = Now.Value;
+        Now.Value = session;
+        return new Restore(before);
+    }
+
+    private sealed class Restore(ReplaySession? before) : IDisposable
+    {
+        public void Dispose() => Now.Value = before;
+    }
 }

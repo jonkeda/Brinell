@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- EF Core 10 runs on .NET 10 only. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer</RootNamespace>
+    <Description>SQL replay for EF Core on SQL Server with NetTopologySuite: spatial columns read from a replayed reader.</Description>
+    <PackageId>Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Mocking.Data.EntityFrameworkCore\Bruinell.Mocking.Data.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+  </ItemGroup>
+
+</Project>

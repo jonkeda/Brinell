@@ -1,8 +1,10 @@
 {
-  "Version": 1,
+  "Version": 2,
   "Stamp": {
-    "Ef": "10.0.12",
-    "SqlClient": "6.1.6",
+    "Versions": {
+      "ef": "10.0.12",
+      "sqlclient": "6.1.6"
+    },
     "Objects": {
       "dbo.kindcounts": "06B327E49421",
       "dbo.places": "8F7F6A2F4BF9",
@@ -57,6 +59,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -245,6 +248,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -255,11 +259,11 @@
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "d47a5344-1ff2-488d-88c1-e584a6ce6bed"
+          "v": "70d74a13-c6cc-4e78-9350-ee34d2f19369"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T20:20:00.6955856\u002B01:00"
+          "v": "2026-10-25T22:21:07.8117338\u002B01:00"
         },
         "@p2": {
           "t": "String",
@@ -290,6 +294,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": true
     },
@@ -300,7 +305,7 @@
       "Parameters": {
         "@Id": {
           "t": "Guid",
-          "v": "d47a5344-1ff2-488d-88c1-e584a6ce6bed"
+          "v": "70d74a13-c6cc-4e78-9350-ee34d2f19369"
         }
       },
       "Volatile": [
@@ -344,11 +349,11 @@
             [
               {
                 "t": "Guid",
-                "v": "d47a5344-1ff2-488d-88c1-e584a6ce6bed"
+                "v": "70d74a13-c6cc-4e78-9350-ee34d2f19369"
               },
               {
                 "t": "DateTimeOffset",
-                "v": "2026-10-25T20:20:00.6955856\u002B01:00"
+                "v": "2026-10-25T22:21:07.8117338\u002B01:00"
               },
               {
                 "t": "String",
@@ -372,6 +377,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -402,6 +408,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -416,7 +423,7 @@
         },
         "@Id": {
           "t": "Guid",
-          "v": "d47a5344-1ff2-488d-88c1-e584a6ce6bed"
+          "v": "70d74a13-c6cc-4e78-9350-ee34d2f19369"
         }
       },
       "Volatile": [
@@ -443,6 +450,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -453,7 +461,7 @@
       "Parameters": {
         "p0": {
           "t": "Guid",
-          "v": "d47a5344-1ff2-488d-88c1-e584a6ce6bed"
+          "v": "70d74a13-c6cc-4e78-9350-ee34d2f19369"
         }
       },
       "Volatile": [
@@ -480,6 +488,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     }

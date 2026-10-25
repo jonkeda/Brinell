@@ -9,10 +9,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 
-namespace Bruinell.Sql.Spike.Tests.Spike;
+namespace Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer;
 
 /// <summary>
-/// How EF reads spatial columns from a <see cref="ReplayDataReader"/>. SQL Server's geometry mapping reads with
+/// How EF reads spatial columns from a <see cref="Bruinell.Mocking.Data.Replay.ReplayDataReader"/>. SQL Server's geometry mapping reads with
 /// <c>SqlDataReader.GetSqlBytes</c>, a cast EF compiles into the query's shaper, so any other reader fails. This swaps
 /// the mapping for one that reads with <see cref="DbDataReader.GetFieldValue{T}"/> of <see cref="SqlBytes"/>; the
 /// value converter after it is SQL Server's own.

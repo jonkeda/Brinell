@@ -11,8 +11,8 @@
     <ProjectReference Include="..\..\srcnew\Bruinell.Html.Playwright\Bruinell.Html.Playwright.csproj" />
     <ProjectReference Include="..\..\srcnew\Bruinell.Blazor\Bruinell.Blazor.csproj" />
     <ProjectReference Include="..\..\srcnew\Bruinell.Html.Bunit\Bruinell.Html.Bunit.csproj" />
-    <!-- The SQL log (step 1) and the test spans its report joins by (Bruinell.Uat's TestScope). -->
-    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Data.EntityFrameworkCore\Bruinell.Mocking.Data.EntityFrameworkCore.csproj" />
+    <!-- The SQL log (step 1), replay with spatial columns (step 2) and the test spans its report joins by (Bruinell.Uat's TestScope). -->
+    <ProjectReference Include="..\..\srcnew\Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer\Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer.csproj" />
     <ProjectReference Include="..\..\srcnew\Bruinell.Uat\Bruinell.Uat.csproj" />
   </ItemGroup>
 

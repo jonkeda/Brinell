@@ -1,8 +1,10 @@
 {
-  "Version": 1,
+  "Version": 2,
   "Stamp": {
-    "Ef": "10.0.12",
-    "SqlClient": "6.1.6",
+    "Versions": {
+      "ef": "10.0.12",
+      "sqlclient": "6.1.6"
+    },
     "Objects": {
       "dbo.kindcounts": "06B327E49421",
       "dbo.places": "8F7F6A2F4BF9"
@@ -55,6 +57,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -243,6 +246,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -292,6 +296,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -480,6 +485,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -529,6 +535,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -717,6 +724,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -766,6 +774,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     },
@@ -898,6 +907,7 @@
       ],
       "RecordsAffected": -1,
       "Scalar": null,
+      "Outputs": null,
       "Error": null,
       "IsWrite": false
     }

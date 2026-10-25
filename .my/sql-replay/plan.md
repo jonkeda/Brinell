@@ -3,8 +3,9 @@
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
 legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
-step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Next: the
-owner measures the legacy system (1.7); step 2 after. Each step ends green:
+step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Step 2, replay in
+the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](replay-results.md)). Next: the
+owner measures the legacy system (1.7); step 3 after. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -237,6 +238,47 @@ step 2 and later are decided from them.
 | L4 | The report | On the spike suite: the shares within 2 points of spike-results (4.9%, 37%); the detail tests reach `dbo.visits` through `dbo.visitcount`; the fan-out table lists the five objects |
 | L5 | .NET Framework | The wrapper's `netstandard2.0` build loads in a `net48` test project over `System.Data.SqlClient` (on Windows) |
 
+## Step 2: replay in the package
+
+The spike's replay moved into `Bruinell.Mocking.Data`, with an ADO.NET adapter beside the EF one,
+and parallel runs a requirement: nothing of a test is static, and a test's session is found
+through its container, its host or its async flow.
+
+### 2.1 What moves, what is new
+
+| Part | From | Where |
+| --- | --- | --- |
+| `Recording`, `Exchange`, `Values`, `Stamp`, `Schema` | spike `Spike/Recording.cs` | `srcnew/Bruinell.Mocking.Data/Replay/` (netstandard2.0 and up) |
+| `ReplaySession` (occurrence keys, writes as barriers, reads answered again, binding, the miss message) | spike `Spike/ReplaySession.cs` | the same |
+| `ReplayDataReader` | spike | the same |
+| `Statements.Key`, `Projection`, `InsertParameters` | spike `Recording.cs` | `Statements.cs` |
+| Provider errors and UDTs (`SqlException` by reflection, `SqliteException`, `GetSqlBytes`) | spike `SqlErrors.cs` | `Replay/ProviderRules.cs`, by reflection, no provider referenced |
+| ADO.NET replay: `ReplayingDbConnection`, `ReplayingDbCommand` | new | `Replay/` |
+| Output parameters and return values, recorded and given back | new | `Exchange.Outputs` |
+| `ReplayScope` (the session of the async flow) and `ReplayingDbProviderFactory` | new | `Replay/` |
+| EF replay: `ReplayInterceptor`, `UseSqlReplay(options, session)` | spike `ReplayInterceptor.cs` | `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore` |
+| SQL Server's spatial mapping for replay: `UseSpatialReplay()` | spike `SpatialReplay.cs` | new `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer` (it references EF's NetTopologySuite plugin; AD-026: the dependency is the reason) |
+
+### 2.2 Parallel runs
+
+- **A session per test**, never static: a test makes its `ReplaySession` and hands it to the app
+  through the app's composition (bUnit's container, a host per test) or the async flow.
+- **`ReplayScope`**, an `AsyncLocal` session, for code that makes its connections itself:
+  `ReplayingDbProviderFactory` wraps a provider factory and gives each connection the session of
+  the flow that asked. Tests in parallel each enter their own scope.
+- **Recordings** are a file per test and head; the schema snapshot is read-only; recording runs
+  on a database per worker (P5).
+
+### 2.3 Checks before step 2 is done
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| R1 | ADO.NET on SQLite | Readers, scalars, non-queries, several result sets, a transaction and a `SqliteException` recorded, then replayed with the database file gone |
+| R2 | ADO.NET on SQL Server | A procedure's output parameter, return value and two result sets, a `geography` column and a `SqlException` 2627 recorded and replayed |
+| R3 | EF | On SQLite through `UseSqlReplay`; the spike app on SQL Server through the package, spatial included |
+| R4 | Parallel | 8 sessions at once through one `ReplayingDbProviderFactory`, each replaying its own recording with no cross-talk; the spike suite on the package, 20 parallel replays on each head without a miss |
+| R5 | .NET Framework | The ADO.NET replay in the net48 test over `System.Data.SqlClient` |
+
 ## Steps 1 to 6: outline
 
 From the amended proposal; each is detailed here before it is built.
@@ -244,7 +286,7 @@ From the amended proposal; each is detailed here before it is built.
 | Step | What | Projects |
 | --- | --- | --- |
 | 1 | The log: detailed above | `srcnew/Bruinell.Mocking.Data`, `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore`, their tests |
-| 2 | The package from the spike's code: core, ADO.NET adapter, SqlClient rules, EF adapter (spatial mapping, `SqlException`), matching, binding, errors, the miss message | the same |
+| 2 | Replay in the package: detailed above |  |
 | 3 | The schema snapshot as its own command, the stamp per object; dynamic procedures, triggers, reference data, default schemas | the same, a CLI command |
 | 4 | The heads: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs | the same, `Bruinell.Html.Bunit`, `Bruinell.Html.Playwright` fixtures |
 | 5 | Maintenance: the re-record summary, the check on unread re-records | the same, a build check |

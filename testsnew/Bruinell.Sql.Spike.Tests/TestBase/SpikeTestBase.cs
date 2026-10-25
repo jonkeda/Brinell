@@ -8,8 +8,9 @@ using Bruinell.Samples.Sql.App.Data;
 using Bruinell.Sql.Spike.Tests.PageObjects;
 using Bruinell.Mocking.Data;
 using Bruinell.Mocking.Data.EntityFrameworkCore;
+using Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer;
+using Bruinell.Mocking.Data.Replay;
 using Bruinell.Sql.Spike.Tests.Spike;
-using SpikeSchemaSnapshot = Bruinell.Sql.Spike.Tests.Spike.SchemaSnapshot;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,7 @@ namespace Bruinell.Sql.Spike.Tests.TestBase;
 /// The SQL Server sample with its five places written afresh before each test, on this run's head: its <c>Routes</c>
 /// rendered by bUnit (<c>BRUINELL_HEAD=bunit</c>), or a host of its own in this process behind a browser. Either way the
 /// app's data composition gets this test's SQL log (<see cref="SqlLog"/>, through <c>UseSqlLog</c>) and, with <c>BRUINELL_SQL_REPLAY</c>, its
-/// <see cref="ReplayInterceptor"/>.
+/// replay interceptor (<c>UseSqlReplay</c>).
 /// </summary>
 /// <remarks>
 /// Tests run in parallel (each class is its own collection): nothing of a test is static. Its session lives in its own
@@ -39,7 +40,10 @@ public abstract class SpikeTestBase(ITestOutputHelper output) : IAsyncLifetime
     private TimeSpan _reset;
     private long _start;
 
-    public static ReplayMode Mode => Enum.TryParse<ReplayMode>(Environment.GetEnvironmentVariable(ReplayVariable), ignoreCase: true, out var mode) ? mode : ReplayMode.Off;
+    public static ReplayMode Mode => SnapshotOnly ? ReplayMode.Off : Enum.TryParse<ReplayMode>(Environment.GetEnvironmentVariable(ReplayVariable), ignoreCase: true, out var mode) ? mode : ReplayMode.Off;
+
+    /// <summary><c>BRUINELL_SQL_REPLAY=Snapshot</c>: against the database, writing only the schema snapshot, after a schema change.</summary>
+    public static bool SnapshotOnly => string.Equals(Environment.GetEnvironmentVariable(ReplayVariable), "Snapshot", StringComparison.OrdinalIgnoreCase);
 
     protected IHtmlTestContext Context => _context ?? throw new InvalidOperationException("Context has not been initialized.");
 
@@ -71,7 +75,7 @@ public abstract class SpikeTestBase(ITestOutputHelper output) : IAsyncLifetime
             _reset = Stopwatch.GetElapsedTime(started);
         }
 
-        var schema = Mode == ReplayMode.Off ? null : Schemas.Current(Connection);
+        var schema = Mode == ReplayMode.Off && !SnapshotOnly ? null : Schemas.Current(Connection);
         var head = WebHeads.IsBunit ? "bunit" : "browser";
         var session = Mode is ReplayMode.Record or ReplayMode.Replay
             ? new ReplaySession(Mode, Path.Combine(Schemas.Recordings, head, _name + ".json"), schema!)
@@ -85,8 +89,7 @@ public abstract class SpikeTestBase(ITestOutputHelper output) : IAsyncLifetime
             options.UseSqlLog(Log);
             if (session is not null)
             {
-                var replay = new ReplayInterceptor(session);
-                options.AddInterceptors(replay, replay.Connections);
+                options.UseSqlReplay(session);
                 options.UseSpatialReplay();
             }
         }
@@ -226,18 +229,24 @@ internal static class Schemas
     private static Schema Read(string connection)
     {
         var path = Path.Combine(Recordings, "schema.json");
-        SpikeSchemaSnapshot snapshot;
-        if (SpikeTestBase.Mode is ReplayMode.Record or ReplayMode.Snapshot)
+        SchemaSnapshot snapshot;
+        if (SpikeTestBase.Mode == ReplayMode.Record || SpikeTestBase.SnapshotOnly)
         {
-            snapshot = SpikeSchemaSnapshot.ReadAsync(connection).GetAwaiter().GetResult();
+            using var sql = new Microsoft.Data.SqlClient.SqlConnection(connection);
+            sql.Open();
+            snapshot = SchemaSnapshot.ReadAsync(sql).GetAwaiter().GetResult();
             snapshot.Save(path);
         }
         else
         {
-            snapshot = SpikeSchemaSnapshot.Load(path) ?? throw new ReplayMissException($"No schema snapshot at {path}: record first (BRUINELL_SQL_REPLAY=Record).");
+            snapshot = File.Exists(path) ? SchemaSnapshot.Load(path) : throw new ReplayMissException($"No schema snapshot at {path}: record first (BRUINELL_SQL_REPLAY=Record).");
         }
 
-        return snapshot.ToSchema(Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)));
+        return snapshot.ToSchema(new Dictionary<string, string>
+        {
+            ["ef"] = Version(typeof(DbContext)),
+            ["sqlclient"] = Version(typeof(Microsoft.Data.SqlClient.SqlConnection)),
+        });
     }
 
     private static string Version(Type type)

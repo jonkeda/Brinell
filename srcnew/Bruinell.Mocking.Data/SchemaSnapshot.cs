@@ -39,6 +39,15 @@ public sealed class SchemaSnapshot
         File.WriteAllText(path, JsonSerializer.Serialize(this, Json));
     }
 
+    /// <summary>
+    /// The snapshot as replay's schema, with the versions that shape the SQL (EF Core's, the provider's): read from the
+    /// checked-in file, so a test knows its recordings' staleness without a database.
+    /// </summary>
+    public Replay.Schema ToSchema(IReadOnlyDictionary<string, string>? versions = null) => new(
+        versions ?? new Dictionary<string, string>(StringComparer.Ordinal),
+        Objects.ToDictionary(pair => pair.Key, pair => pair.Value.Hash, StringComparer.OrdinalIgnoreCase),
+        Objects.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value.References, StringComparer.OrdinalIgnoreCase));
+
     /// <summary><paramref name="named"/> and every object their bodies reference, followed through views and procedures.</summary>
     public IReadOnlyCollection<string> Expand(IEnumerable<string> named)
     {

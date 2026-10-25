@@ -3,9 +3,13 @@ using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Globalization;
 
-namespace Bruinell.Sql.Spike.Tests.Spike;
+namespace Bruinell.Mocking.Data.Replay;
 
-/// <summary>A reader over recorded result sets: what the app gets back, in record mode as in replay.</summary>
+/// <summary>
+/// A reader over recorded result sets: what the app reads, in record mode as in replay, so both read the same way. Code
+/// typed to a provider's own reader (<c>SqlDataReader</c>) can't take it; EF's SQL Server spatial mapping is the one such
+/// case handled, by its own package.
+/// </summary>
 public sealed class ReplayDataReader(IReadOnlyList<RecordedResult> results, int recordsAffected) : DbDataReader
 {
     private int _set;
@@ -76,20 +80,40 @@ public sealed class ReplayDataReader(IReadOnlyList<RecordedResult> results, int 
     public override T GetFieldValue<T>(int ordinal)
     {
         var value = GetValue(ordinal);
-        return value switch
+        if (value is T typed)
         {
-            T typed => typed,
-            byte[] bytes when typeof(T) == typeof(SqlBytes) => (T)(object)new SqlBytes(bytes),
-            SqlBytes bytes when typeof(T) == typeof(byte[]) => (T)(object)bytes.Value,
-            _ => (T)Convert.ChangeType(value, Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T), CultureInfo.InvariantCulture),
-        };
+            return typed;
+        }
+
+        if (value is byte[] bytes && typeof(T) == typeof(SqlBytes))
+        {
+            return (T)(object)new SqlBytes(bytes);
+        }
+
+        if (value is SqlBytes sqlBytes && typeof(T) == typeof(byte[]))
+        {
+            return (T)(object)sqlBytes.Value;
+        }
+
+        var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (target == typeof(Guid) && value is string guid)
+        {
+            return (T)(object)Guid.Parse(guid);
+        }
+
+        if (target == typeof(DateTimeOffset) && value is DateTime moment)
+        {
+            return (T)(object)new DateTimeOffset(moment);
+        }
+
+        return (T)Convert.ChangeType(value, target, CultureInfo.InvariantCulture);
     }
 
     public override bool GetBoolean(int ordinal) => GetFieldValue<bool>(ordinal);
 
     public override byte GetByte(int ordinal) => GetFieldValue<byte>(ordinal);
 
-    public override char GetChar(int ordinal) => GetFieldValue<char>(ordinal);
+    public override char GetChar(int ordinal) => GetFieldValue<string>(ordinal)[0];
 
     public override DateTime GetDateTime(int ordinal) => GetFieldValue<DateTime>(ordinal);
 
@@ -134,6 +158,9 @@ public sealed class ReplayDataReader(IReadOnlyList<RecordedResult> results, int 
         text.CopyTo((int)dataOffset, buffer, bufferOffset, count);
         return count;
     }
+
+    /// <summary>A spatial or other UDT value's bytes, as SqlClient's own reader gives them.</summary>
+    public SqlBytes GetSqlBytes(int ordinal) => GetFieldValue<SqlBytes>(ordinal);
 
     public override IEnumerator GetEnumerator() => new DbEnumerator(this);
 
