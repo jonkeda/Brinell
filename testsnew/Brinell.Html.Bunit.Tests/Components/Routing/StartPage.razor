@@ -1,0 +1,8 @@
+@page "/"
+@inject PageLoads Loads
+
+<h1 data-testid="start">Start</h1>
+
+@code {
+    protected override void OnInitialized() => Loads.Started++;
+}

@@ -135,6 +135,58 @@ public sealed class ContextTests
     }
 
     [Fact]
+    public void NavigateTo_RendersOnlyThatPage_NotTheStartPageFirst()
+    {
+        var loads = new PageLoads();
+        using var context = new BunitTestContext(new BunitTestContextOptions
+        {
+            RootComponent = typeof(Components.Routing.LoadRoutes),
+            ConfigureServices = services => services.AddSingleton(loads),
+        });
+        loads.Started = 0;
+
+        context.NavigateTo(Base + "/other");
+
+        Assert.NotNull(context.TryFindElement(Locator.ByDataTestId("other")));
+        Assert.Equal(0, loads.Started);
+    }
+
+    [Fact]
+    public void StartBlank_RendersNothing_UntilTheFirstNavigation()
+    {
+        var loads = new PageLoads();
+        using var context = new BunitTestContext(new BunitTestContextOptions
+        {
+            RootComponent = typeof(Components.Routing.LoadRoutes),
+            ConfigureServices = services => services.AddSingleton(loads),
+            StartBlank = true,
+        });
+
+        Assert.Null(context.TryFindElement(Locator.ByDataTestId("start")));
+        context.NavigateTo(Base + "/other");
+
+        Assert.NotNull(context.TryFindElement(Locator.ByDataTestId("other")));
+        Assert.Equal(0, loads.Started);
+    }
+
+    [Fact]
+    public void Refresh_RendersThePageAgain_NotTheStartPage()
+    {
+        var loads = new PageLoads();
+        using var context = new BunitTestContext(new BunitTestContextOptions
+        {
+            RootComponent = typeof(Components.Routing.LoadRoutes),
+            ConfigureServices = services => services.AddSingleton(loads),
+            BaseUrl = Base + "/other",
+        });
+
+        context.Refresh();
+
+        Assert.Equal(Base + "/other", context.CurrentUrl);
+        Assert.Equal(0, loads.Started);
+    }
+
+    [Fact]
     public void HistoryBack_FromThePage_GoesToTheAddressBefore()
     {
         using var context = Of<HistoryBack>();

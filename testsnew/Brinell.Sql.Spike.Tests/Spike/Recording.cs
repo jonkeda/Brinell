@@ -125,7 +125,7 @@ public sealed class Recording
         var writes = 0;
         for (var i = 0; i < exchanges.Count; i++)
         {
-            var text = $"{writes}|{Statements.Normalize(exchanges[i].Text)}";
+            var text = $"{writes}|{Statements.Key(exchanges[i].Text)}";
             var occurrence = seen[text] = seen.GetValueOrDefault(text) + 1;
             byIndex[i] = $"{text}|{occurrence}";
             keys[byIndex[i]] = i;
@@ -144,10 +144,64 @@ public static partial class Statements
 {
     public static string Normalize(string text) => Whitespace().Replace(text, " ").Trim();
 
+    /// <summary>
+    /// The text's identity for matching: normalized, and a leading <c>SELECT</c>'s columns sorted. Their order says
+    /// nothing about the query (EF orders them by property name, so renaming a property reorders them); replay gives
+    /// the recorded columns back in the order the live query asks for (<see cref="Projection"/>).
+    /// </summary>
+    public static string Key(string text)
+    {
+        var normalized = Normalize(text);
+        return Projection(normalized) is { } projection
+            ? projection.Prefix + string.Join(", ", projection.Columns.Order(StringComparer.Ordinal)) + projection.Tail
+            : normalized;
+    }
+
+    /// <summary>
+    /// A leading <c>SELECT</c>'s columns: the text before them, each column as written, and the text from <c>FROM</c>
+    /// on; null for any other statement. Commas and <c>FROM</c> inside parentheses belong to a column.
+    /// </summary>
+    public static (string Prefix, IReadOnlyList<string> Columns, string Tail)? Projection(string normalized)
+    {
+        var select = SelectStart().Match(normalized);
+        if (!select.Success)
+        {
+            return null;
+        }
+
+        var columns = new List<string>();
+        var depth = 0;
+        var start = select.Length;
+        for (var i = start; i < normalized.Length; i++)
+        {
+            switch (normalized[i])
+            {
+                case '(':
+                    depth++;
+                    break;
+                case ')':
+                    depth--;
+                    break;
+                case ',' when depth == 0:
+                    columns.Add(normalized[start..i].Trim());
+                    start = i + 1;
+                    break;
+                case ' ' when depth == 0 && normalized.AsSpan(i).StartsWith(" FROM ", StringComparison.OrdinalIgnoreCase):
+                    columns.Add(normalized[start..i].Trim());
+                    return (select.Value, columns, normalized[i..]);
+            }
+        }
+
+        return null;
+    }
+
     public static bool IsWrite(string text) => Writes().IsMatch(text);
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
+
+    [GeneratedRegex(@"^SELECT (DISTINCT )?(TOP\([^)]*\) )?", RegexOptions.IgnoreCase)]
+    private static partial Regex SelectStart();
 
     [GeneratedRegex(@"\b(INSERT|UPDATE|DELETE|MERGE)\b", RegexOptions.IgnoreCase)]
     private static partial Regex Writes();

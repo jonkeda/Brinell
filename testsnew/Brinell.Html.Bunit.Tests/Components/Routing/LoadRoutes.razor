@@ -1,0 +1,7 @@
+@* A router over the two pages below only, for what a page load renders. *@
+@using Microsoft.AspNetCore.Components.Routing
+<Router AppAssembly="typeof(LoadRoutes).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" />
+    </Found>
+</Router>

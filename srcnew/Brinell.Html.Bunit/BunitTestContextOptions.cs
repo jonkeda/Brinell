@@ -20,6 +20,13 @@ public sealed class BunitTestContextOptions : HtmlTestContextOptions
     /// <summary>The component rendered as the app: a suite's <c>Routes</c>, or one component on its own.</summary>
     public required Type RootComponent { get; init; }
 
+    /// <summary>
+    /// Opens on an empty page, as a browser context opens on <c>about:blank</c>, until the first navigation renders the root
+    /// at its address. For a suite whose tests begin by opening an address: the root's start page isn't rendered, and its
+    /// data loaded, for nothing. Without it, and without <see cref="HtmlTestContextOptions.BaseUrl"/>, the root renders at once.
+    /// </summary>
+    public bool StartBlank { get; init; }
+
     /// <summary>The app's services, registered by the suite before the root renders.</summary>
     public Action<IServiceCollection>? ConfigureServices { get; init; }
 

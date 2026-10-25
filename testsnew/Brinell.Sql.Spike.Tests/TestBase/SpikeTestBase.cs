@@ -75,6 +75,7 @@ public abstract class SpikeTestBase : IAsyncLifetime
             _context = new BunitTestContext(new BunitTestContextOptions
             {
                 RootComponent = typeof(Routes),
+                StartBlank = true,
                 ConfigureServices = services => services.AddSpikeData(SpikeData.Connection, options =>
                 {
                     options.AddInterceptors(log, log.Connections);

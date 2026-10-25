@@ -109,6 +109,7 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
         _context = new BunitTestContext(new BunitTestContextOptions
         {
             RootComponent = typeof(Web.Components.Routes),
+            StartBlank = true,
             FallbackServices = _services,
             BusyScript = "brinellTodo.setBusy",
             Name = name,

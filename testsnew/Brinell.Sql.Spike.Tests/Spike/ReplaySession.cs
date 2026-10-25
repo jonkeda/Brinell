@@ -119,13 +119,13 @@ public sealed class ReplaySession
                 throw new ReplayMissException(_stale);
             }
 
-            var key = Statements.Normalize(live.Text);
+            var key = Statements.Key(live.Text);
             Dictionary<string, JsonNode?>? bound = null;
             var index = -1;
             for (var i = 0; i < _recording.Exchanges.Count && index < 0; i++)
             {
                 var recorded = _recording.Exchanges[i];
-                if (_used[i] || recorded.Kind != live.Kind || Statements.Normalize(recorded.Text) != key)
+                if (_used[i] || recorded.Kind != live.Kind || Statements.Key(recorded.Text) != key)
                 {
                     continue;
                 }
@@ -160,7 +160,7 @@ public sealed class ReplaySession
                 _writes++;
             }
 
-            return Rewrite(_recording.Exchanges[index]);
+            return Reorder(Rewrite(_recording.Exchanges[index]), live);
         }
     }
 
@@ -242,6 +242,37 @@ public sealed class ReplaySession
         };
     }
 
+    // The recorded columns in the order the live query asks for them: matched as a set, read by ordinal.
+    private static Exchange Reorder(Exchange recorded, Exchange live)
+    {
+        if (recorded.Results is not [var first, ..] results
+            || Statements.Projection(Statements.Normalize(recorded.Text)) is not { } was
+            || Statements.Projection(Statements.Normalize(live.Text)) is not { } now
+            || was.Columns.SequenceEqual(now.Columns)
+            || was.Columns.Count != first.Columns.Count)
+        {
+            return recorded;
+        }
+
+        var recordedColumns = was.Columns.ToList();
+        var order = now.Columns.Select(column => recordedColumns.IndexOf(column)).ToArray();
+        var reordered = new RecordedResult(
+            [.. order.Select(i => first.Columns[i])],
+            [.. first.Rows.Select(row => (IReadOnlyList<JsonNode?>)[.. order.Select(i => row[i])])]);
+        return new Exchange
+        {
+            Index = recorded.Index,
+            Kind = recorded.Kind,
+            Text = recorded.Text,
+            Parameters = recorded.Parameters,
+            Volatile = recorded.Volatile,
+            RecordsAffected = recorded.RecordsAffected,
+            Scalar = recorded.Scalar,
+            Error = recorded.Error,
+            Results = [reordered, .. results.Skip(1)],
+        };
+    }
+
     private JsonNode? Bound(JsonNode? value)
         => Values.Canonical(value) is { } canonical && _bindings.TryGetValue(canonical, out var live) ? live?.DeepClone() : value?.DeepClone();
 
@@ -249,7 +280,7 @@ public sealed class ReplaySession
     {
         var text = new StringBuilder($"SQL replay miss in {System.IO.Path.GetFileName(Path)} after {_writes} writes: no recorded {live.Kind} answers\n  {key}\n  with {Show(live.Parameters)}");
         var unused = _recording.Exchanges.Where((exchange, i) => !_used[i]).ToList();
-        var same = unused.Where(exchange => Statements.Normalize(exchange.Text) == key).ToList();
+        var same = unused.Where(exchange => Statements.Key(exchange.Text) == key).ToList();
         if (same.Count > 0)
         {
             return text.Append("\nNearest, the same text with other values:\n  ")
@@ -260,13 +291,13 @@ public sealed class ReplaySession
         // Another text: the unused command of the same kind and place that shares the longest start, and where they part.
         var nearest = unused
             .Where(exchange => exchange.Kind == live.Kind && exchange.IsWrite == live.IsWrite && _epochs[exchange.Index] == _writes)
-            .MaxBy(exchange => Common(Statements.Normalize(exchange.Text), key));
+            .MaxBy(exchange => Common(Statements.Key(exchange.Text), key));
         if (nearest is null)
         {
             return text.Append("\nNo recorded command is left at this point: the app sends a command it didn't send when recorded.").ToString();
         }
 
-        var recorded = Statements.Normalize(nearest.Text);
+        var recorded = Statements.Key(nearest.Text);
         var at = Common(recorded, key);
         return text.Append($"\nNearest, #{nearest.Index}, parts at character {at}:\n  recorded ...{Around(recorded, at)}...\n  now      ...{Around(key, at)}...").ToString();
     }

@@ -129,8 +129,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         _back.Add(CurrentUrl);
         _forward.Clear();
-        Restart();
-        Go(destination);
+        Restart(destination);
     }
 
     /// <summary>A link followed inside the page: the router's navigation in the same circuit, as Blazor's script does it.</summary>
@@ -167,9 +166,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     public void Refresh()
     {
         using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(Refresh));
-        var url = CurrentUrl;
-        Restart();
-        Go(url);
+        Restart(CurrentUrl);
     }
 
     // No pixels on this head: the markup stands in, so a failure still leaves what the page showed.
@@ -298,7 +295,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
                 $"calls-bunit-{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}-{Guid.NewGuid().ToString("N")[..8]}.csv"));
     }
 
-    private void Start()
+    // The root's first render is at the address it opens on, as a browser's page load renders only that page: no start page
+    // rendered first and its data loaded for nothing.
+    private void Start(string? address = null)
     {
         _bunit = new BunitContext();
         _bunit.JSInterop.Mode = _options.JsInterop;
@@ -324,11 +323,20 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
         // As a Blazor Server circuit renders, so a component asking RendererInfo gets the answer it has in the app; after the
         // services, since it makes the renderer.
         _bunit.SetRendererInfo(new RendererInfo("Server", isInteractive: true));
+        if ((address ?? _options.BaseUrl) is { Length: > 0 } first)
+        {
+            Navigation.NavigateTo(first);
+        }
+
+        var blank = address is null && _options.StartBlank && string.IsNullOrEmpty(_options.BaseUrl);
         var root = _options.RootComponent;
         _root = _bunit.Render(builder =>
         {
-            builder.OpenComponent(0, root);
-            builder.CloseComponent();
+            if (!blank)
+            {
+                builder.OpenComponent(0, root);
+                builder.CloseComponent();
+            }
         });
         _root.OnMarkupUpdated += (_, _) => Interlocked.Increment(ref _renders);
         _history.Clear();
@@ -340,18 +348,14 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
                 _history.Add(e.Location);
             }
         };
-        if (_options.BaseUrl is { Length: > 0 } baseUrl)
-        {
-            Go(baseUrl);
-        }
     }
 
-    private void Restart()
+    private void Restart(string? address = null)
     {
         _bunit.Dispose();
         _fallbackScope?.Dispose();
         _entered.Clear();
-        Start();
+        Start(address);
     }
 
     /// <summary>
