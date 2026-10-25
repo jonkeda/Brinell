@@ -214,6 +214,16 @@ public sealed class MemberTests : IDisposable
     }
 
     [Fact]
+    public void Fill_TheNextAction_ForgetsTheEntry()
+    {
+        Id("refuse").Fill("5");
+
+        Id("wrap").Click();
+
+        Assert.Equal("20", Id("refuse").InputValue);
+    }
+
+    [Fact]
     public void Fill_AfterAReset_IsForgotten()
     {
         Id("refuse").Fill("5");

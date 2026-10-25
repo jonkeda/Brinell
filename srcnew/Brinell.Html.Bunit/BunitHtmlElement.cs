@@ -131,7 +131,7 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
         else if (node.Closest("a") is { } link && link.GetAttribute("href") is { Length: > 0 } href && !href.StartsWith('#'))
         {
-            _context.NavigateTo(href);
+            _context.Follow(href);
         }
     }
 
@@ -274,6 +274,7 @@ public sealed class BunitHtmlElement : IHtmlElement
             return;
         }
 
+        _context.ForgetEntries();
         try
         {
             node.TriggerEvent(eventName, args);

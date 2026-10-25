@@ -32,6 +32,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     private global::Bunit.TestDoubles.BunitAuthorizationContext _authorization = null!;
     private IServiceScope? _fallbackScope;
 
+    // Who is signed in, as a browser's cookie keeps it across page loads; null is signed out.
+    private (string User, string[] Roles, System.Security.Claims.Claim[] Claims)? _signedIn;
+
     // The values users entered, by element, with the value attribute they were entered over (BunitHtmlElement.InputValue).
     private readonly Dictionary<string, (string? Attribute, string Value)> _entered = new(StringComparer.Ordinal);
     private IRenderedComponent<IComponent> _root = null!;
@@ -42,6 +45,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         _options = options;
         _logger = options.Logger ?? (ITestLogger?)OpenCallLog() ?? NullTestLogger.Instance;
         _driver = new BunitHtmlDriver(this);
+        _signedIn = options.User is { } user ? (user, [.. options.Roles], []) : null;
         Start();
     }
 
@@ -113,12 +117,23 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     public IReadOnlyList<IHtmlElement> FindElements(Locator locator) => _driver.FindElements(locator);
 
+    // Opening an address is a page load, as Playwright's GoTo is: a fresh root and scope, as a new circuit has, still signed in.
+    // A link inside the page stays in its circuit (Follow).
     public void NavigateTo(string destination)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         _back.Add(CurrentUrl);
         _forward.Clear();
+        Restart();
         Go(destination);
+    }
+
+    /// <summary>A link followed inside the page: the router's navigation in the same circuit, as Blazor's script does it.</summary>
+    internal void Follow(string href)
+    {
+        _back.Add(CurrentUrl);
+        _forward.Clear();
+        Go(href);
     }
 
     public void NavigateBack()
@@ -171,6 +186,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         ArgumentException.ThrowIfNullOrWhiteSpace(user);
         string[] granted = [.. roles ?? []];
         System.Security.Claims.Claim[] extra = [.. claims ?? []];
+        _signedIn = (user, granted, extra);
         _root.InvokeAsync(() =>
         {
             _authorization.SetAuthorized(user);
@@ -181,20 +197,26 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     }
 
     /// <summary>Signs the user out; the rendered page sees it at once.</summary>
-    public void SignOut() => _root.InvokeAsync(() =>
+    public void SignOut()
     {
-        _authorization.SetNotAuthorized();
-        Authentication.TriggerUnauthenticationStateChanged();
-    }).GetAwaiter().GetResult();
+        _signedIn = null;
+        _root.InvokeAsync(() =>
+        {
+            _authorization.SetNotAuthorized();
+            Authentication.TriggerUnauthenticationStateChanged();
+        }).GetAwaiter().GetResult();
+    }
 
     // bUnit's own provider: setting the authorization context alone does not tell a rendered page.
     private global::Bunit.TestDoubles.BunitAuthenticationStateProvider Authentication
         => (global::Bunit.TestDoubles.BunitAuthenticationStateProvider)_bunit.Services.GetRequiredService<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>();
 
+    // As clearing a browser's cookies and storage: signed out, a fresh root.
     public void ResetAppState()
     {
         _back.Clear();
         _forward.Clear();
+        _signedIn = null;
         Restart();
     }
 
@@ -260,10 +282,11 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
         }
 
         _authorization = _bunit.AddAuthorization();
-        if (_options.User is { } user)
+        if (_signedIn is { } signedIn)
         {
-            _authorization.SetAuthorized(user);
-            _authorization.SetRoles([.. _options.Roles]);
+            _authorization.SetAuthorized(signedIn.User);
+            _authorization.SetRoles(signedIn.Roles);
+            _authorization.SetClaims(signedIn.Claims);
         }
 
         // As a Blazor Server circuit renders, so a component asking RendererInfo gets the answer it has in the app; after the
@@ -291,7 +314,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     /// <summary>
     /// Keeps what the user entered into the element at <paramref name="key"/> while its value attribute stays
-    /// <paramref name="attribute"/>; <paramref name="value"/> null forgets it (the render wrote the value).
+    /// <paramref name="attribute"/>, until the next action; <paramref name="value"/> null forgets it (the render wrote the value).
+    /// An element is known by its place, which cannot tell a field rendered anew from the old one, so the entry lasts only as
+    /// long as reading back what was just entered needs.
     /// </summary>
     internal void Enter(string key, string? attribute, string? value)
     {
@@ -304,6 +329,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
             _entered[key] = (attribute, value);
         }
     }
+
+    /// <summary>Forgets every entry: the next action may render the fields anew.</summary>
+    internal void ForgetEntries() => _entered.Clear();
 
     /// <summary>What the user entered at <paramref name="key"/>, while no render has changed its value attribute since; else null.</summary>
     internal string? EnteredValue(string key, string? attribute)

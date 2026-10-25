@@ -64,6 +64,40 @@ public sealed class ContextTests
         Assert.NotNull(context.TryFindElement(Locator.ByDataTestId("increment-btn")));
     }
 
+    // As Playwright's GoTo: a page load, a new circuit, the page's state gone.
+    [Fact]
+    public void Navigate_TheSameAddress_IsAPageLoad()
+    {
+        using var context = Sample("/counter");
+        context.FindElement(Locator.ByDataTestId("increment-btn")).Click();
+
+        context.NavigateTo(Base + "/counter");
+
+        Assert.Equal("Current count: 0", Text(context, "count-display"));
+    }
+
+    [Fact]
+    public void Navigate_AfterSigningIn_StaysSignedIn()
+    {
+        using var context = Of<Secret>();
+        context.SignIn("ada@example.test", ["admin"]);
+
+        context.NavigateTo(Base + "/");
+
+        Assert.Equal("ada@example.test", Text(context, "who"));
+        Assert.Equal("Admin", Text(context, "admin"));
+    }
+
+    [Fact]
+    public void Reset_AfterSigningIn_IsSignedOut()
+    {
+        using var context = Of<Secret>("ada@example.test");
+
+        context.ResetAppState();
+
+        Assert.Equal("Not signed in", Text(context, "who"));
+    }
+
     [Fact]
     public void Back_AfterTwoPages_ShowsTheFirst()
     {
