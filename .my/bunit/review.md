@@ -16,11 +16,11 @@ that would turn skipped scenarios into run ones, and nothing that watches the tw
 | Where | What happens | Proposal |
 | --- | --- | --- |
 | `BunitHtmlElement.SetChecked` | Fixed: `Check` on a radio sent `true`; it now sends the radio's `value`, "on" without one (`Check_Radio_*`, `Check_InputRadio_BindsItsValue`) | Done |
-| `BunitHtmlElement.Click` | Fixed: a link with its own `@onclick` is now followed after the handler, unless a `preventDefault` on the way stops it (`Click_Link*`). Still open: a click runs only the nearest handler, where a browser bubbles to every one | Bubble until `stopPropagation` |
-| `BunitTestContext` navigation | The app's `NavigateTo(url, forceLoad: true)` keeps the old root and scope; one to a Razor Page (`/Account/Logout`) shows the router's not-found page | Treat `forceLoad` as a page load (`Restart`); a non-component address ends the call as browser-only |
-| `BunitTestContext._history` | `replace: true` navigations are added as new entries, so the page's `history.back()` lands on a replaced one | Use bUnit's own `BunitNavigationManager.History`, which keeps the options |
-| `BunitHtmlElement.Visible`, `Enabled` | A hidden input, the content of a closed `<details>`, a `<dialog>` without `open` read visible; a control in a `<fieldset disabled>` reads enabled | Add these four cheap rules; each is markup, not style |
-| `FallbackServices` | A host service that takes `NavigationManager`, `IJSRuntime` or `AuthenticationStateProvider` gets the host's, unusable one; Tomorrow found `StudioTrail` by hand | At start, list scoped fallback services that depend on these and fail with their names, or register them again in bUnit's provider |
+| `BunitHtmlElement.Click` | Fixed: a link with its own `@onclick` is now followed after the handler, unless a `preventDefault` on the way stops it (`Click_Link*`). A click bubbling to every handler until `stopPropagation`: bUnit already does it, so that finding was wrong; two tests keep it so | Done |
+| `BunitTestContext` navigation | Fixed: the app's `forceLoad` is a page load; an address no `@page` serves ends the call with `BrowserOnlyException` (`ForceLoad_*`) | Done |
+| `BunitTestContext._history` | Fixed: a `replace: true` navigation replaces the last entry, read from bUnit's history (`HistoryBack_AfterAReplace_*`) | Done |
+| `BunitHtmlElement.Visible`, `Enabled` | Fixed: the four rules, and a click on a fold's summary opens it, which the studio's PLT.11.5 needed | Done |
+| `FallbackServices` | Fixed: such a service fails at once, named, with what to do (`CircuitServiceGuard`) | Done |
 | `ThrowIfAppFailed` | It reads only the renderer's latest unhandled exception; a stale-handler refusal after a real failure may hide it | Check bUnit's `UnhandledException` behaviour; keep the first real failure in the context |
 
 ## bUnit features not used
@@ -49,7 +49,7 @@ PLT.18.1 (the jobs page) has no visible browser need and looks like a driver gap
 
 ## Smaller points
 
-- The guide's `Fill` bullet sits under "A Whole App In Process"; it belongs under "What Behaves Differently".
+- Fixed: the guide's `Fill` bullet moved to "What Behaves Differently".
 - `bunit` is pinned in both `Directory.Packages.props` files, so they can drift; one place would do.
 - `Settle` waits up to 100 ms per event whose handler awaits work before rendering; a suite with many such clicks
   pays it each time.
@@ -61,5 +61,5 @@ PLT.18.1 (the jobs page) has no visible browser need and looks like a driver gap
 
 ## Next
 
-The radio and the link click are fixed. Next, try
+The driver gaps are fixed but one (`ThrowIfAppFailed`). Next, try
 stubs on one viewer scenario (PLT.21.3) to see how many skipped scenarios come back.
