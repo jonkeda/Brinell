@@ -9,11 +9,12 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
   </ItemGroup>
 
-  <!-- Built with the tests, not referenced: the tests start it themselves (TestBase/BlazorSample). -->
+  <!-- Built with the tests and started by them on the browser head (TestBase/BlazorSample); referenced for the bUnit head, which renders its Routes (TestBase/BlazorSampleBunit). -->
   <ItemGroup>
-    <ProjectReference Include="..\..\samples\Brinell.Samples.Blazor.App\Brinell.Samples.Blazor.App.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\samples\Brinell.Samples.Blazor.App\Brinell.Samples.Blazor.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

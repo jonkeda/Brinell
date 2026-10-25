@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <!-- One framework while the head is a spike (.my/bunit/plan.md step 1): bUnit pins the components' version. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Brinell.Html.Bunit</RootNamespace>
+    <Description>bUnit implementation for Brinell.Html: the same page objects and controls on a rendered component, without a browser.</Description>
+    <PackageId>Brinell.Html.Bunit</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Html\Brinell.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bunit" />
+  </ItemGroup>
+
+</Project>

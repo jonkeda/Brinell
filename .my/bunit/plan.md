@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: plan, not started. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: step 1 (the spike) done, go; step 2 next. Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -141,7 +141,43 @@ fights bench (PLT.35, 16 scenarios) run on both heads and timed.
 
 ## Step 1 results
 
-Not run yet.
+2026-10-25, bUnit 2.12.5, one run each on a busy machine. **Go:** `Poller` stays unchanged.
+
+| Run | Tests | Result | Time |
+| --- | --- | --- | --- |
+| `Brinell.Html.Bunit.Tests` (the spike's own) | 5 | 5 passed | 1.4 s |
+| `Brinell.Blazor.UITests` `Tests/Controls` + `Tests/Pages`, `BRINELL_HEAD=bunit` | 33 | 33 passed, none browser-only | 0.99 s (wall 2 s) |
+| The same 33 on the browser head | 33 | 33 passed | 38 s (wall 40 s) |
+| The whole Blazor suite on the browser head, after the change | 35 | 35 passed | 36 s |
+
+| Question | Answer |
+| --- | --- |
+| Does a handler's `await` finish while Brinell polls? | Yes. `Click` returned after 10 ms; `AssertText("Done")` passed at 228 ms, after the handler's 200 ms delay. bUnit's sync `Click` returns at the handler's first await, as a browser click does, and the render after it reaches the DOM while the poll runs. |
+| Does an element found before a render go stale? | bUnit's own node, held across a render, read the new text but was not the object a fresh `Find` returned. The driver finds again on every read (`BunitHtmlElement` holds a resolver, not a node), so it reads the new text either way. |
+| Do the sample's `@rendermode` attributes render? | Yes: the sample's `Routes` rendered `/counter` through its router and layout (3,025 characters of markup); every page the 33 tests open rendered. |
+| What does one call cost? | `Click` + `AssertText`: median 0.23 ms, slowest 2.13 ms, over 100. The browser head's median call is 38 ms (`.my/reviews/baseline.md`, C2), so about 150 times less. |
+
+What the spike built: `srcnew/Brinell.Html.Bunit` (`BunitTestContext`, `BunitHtmlDriver`, `BunitHtmlElement`,
+`BunitLocators`, `BunitTestContextOptions`, `BrowserOnlyException`), `testsnew/Brinell.Html.Bunit.Tests`
+(`SpikeTests`, the `Probe` component, `ProbePage`), and in `Brinell.Blazor.UITests` the head switch in
+`TestBase/BlazorSampleTestBase` with `TestBase/BlazorSampleBunit` (the sample's `Routes` and four services);
+the suite now references the sample app's assembly. Most of step 2's member table is already in
+`BunitHtmlElement`; its tests are not.
+
+Found, for the next steps:
+
+- **`BrowserOnlyException` is not fatal yet.** `Poller.IsFatal` knows `AppUnavailableException`,
+  `RouteUnavailableException` and configuration errors only, so a browser-only member polls to its budget
+  before failing. Step 2: make it fatal in `Brinell.Core.Calls` (a marker interface rather than a bUnit type).
+- **A handler that throws before its first await throws out of `Click`,** where a browser would not see
+  it; the poll could then click twice. Step 2: catch bUnit's handler exceptions in `Click` and surface them
+  as the app's error, not a retry.
+- **Links and submit buttons** are followed by `Click` itself (no Blazor script here): an `href` navigates
+  through bUnit's `NavigationManager`, a submit button without its own handler submits its form.
+- **`PageTitle` is empty:** the title renders into `App.razor`'s head, which the root does not include.
+- **The UAT scenarios did not run on bUnit:** `Uat/BlazorUatFixture` still makes a browser; step 4.
+- **The two `Directory.Packages.props`** (root, `srcnew`) both carry `bunit`; `Brinell.Html.Bunit`
+  targets `net10.0` only.
 
 ## Step 5 results
 

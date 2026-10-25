@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Html.Bunit.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
+    <!-- The spike renders the sample's own pages (.my/bunit/plan.md step 1). -->
+    <ProjectReference Include="..\..\samples\Brinell.Samples.Blazor.App\Brinell.Samples.Blazor.App.csproj" />
+  </ItemGroup>
+
+</Project>
