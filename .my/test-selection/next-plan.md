@@ -234,11 +234,16 @@ its own.
 - **The review's Html items (H1 to H6) were done already;** what costs time now is outside the calls.
 - **The sample's sign-in slept 1.5 s** (`AuthService.SimulatedDelayMs`) in seven login tests. Now 150 ms, still a wait the
   tests must make: Html in the browser 30 to 22 s, Blazor 41 to 35 s, Html on bUnit 8 to 6 s.
-- **A browser per test:** both suites' test bases make a context per test, and `PlaywrightTestContext.CreateAsync` starts
-  Playwright and launches Chromium each time, about 0.5 to 1 s. One shared browser with a new browser context per test
-  took Blazor from 41 to 26 s, but the Html suite hung (its UAT fixture creates its context with a blocking
-  `GetAwaiter().GetResult()`), and launching it on the thread pool did not cure it. Reverted; to be found with a hang dump
-  (`--blame-hang-timeout`) before it is tried again.
+- **A browser per test:** both suites' test bases make a context per test, and `PlaywrightTestContext.CreateAsync` started
+  Playwright and launched Chromium each time. Now one browser per process and per type and headless mode, a new browser
+  context per `CreateAsync` (`HtmlTestContextOptions.ShareBrowser`, on by default; a watched window keeps its own).
+- **The hang was the exit, not the sharing.** The first try closed the shared browsers from a `ProcessExit` handler, which
+  blocked there, so `WebAppHost`'s own exit handler never stopped the sample: it outlived the run, held its `bin`, and the
+  next build and run hung (a test host at 0 CPU). Shown by a run with the handler (the sample left running) against three
+  without (none left). No handler now: Playwright's driver is the test host's child and ends with it; no browser is left.
+- **After both:** Blazor in the browser 41 to 23 s, Html 30 to 23 s, Todo web 11 to 12 s; all green on both heads.
+- **Before Tomorrow:** its fixtures make a context per collection, ten parts in parallel, which would now share one
+  browser: a studio run in the browser decides whether `ShareBrowser` stays on there.
 - **AssertIdle misses its first look** on 25 of 33 page loads and sleeps the 100 ms poll: a wait inside the browser
   (`WaitForFunctionAsync`) would end as the page turns ready. Not tried yet.
 - Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.

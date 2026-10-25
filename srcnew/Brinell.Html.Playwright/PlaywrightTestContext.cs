@@ -18,6 +18,9 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
     private readonly IFrame? _frame;
     private readonly PlaywrightHtmlDriver _driver;
     private readonly bool _ownsLifecycle;
+
+    // The browser is the process's (SharedBrowsers): disposing closes this context's browser context only.
+    private bool _sharedBrowser;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
     private readonly HtmlTestContextOptions _options;
@@ -65,28 +68,13 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var playwright = await Microsoft.Playwright.Playwright.CreateAsync().ConfigureAwait(false);
-
-        var browserType = options.BrowserType.ToLowerInvariant() switch
-        {
-            "firefox" => playwright.Firefox,
-            "webkit" => playwright.Webkit,
-            _ => playwright.Chromium
-        };
-
         // Someone is watching (BRINELL_AUT_WINDOW=shown, the Presenter): a window to see, opened
         // where it will be placed, and a page that fills it.
         var shown = AutWindow.IsShown();
-        var launchOptions = new BrowserTypeLaunchOptions
-        {
-            Headless = options.Headless && !shown
-        };
-        if (shown && AutWindow.Bounds() is { } bounds && ReferenceEquals(browserType, playwright.Chromium))
-        {
-            launchOptions.Args = [$"--window-position={bounds.X},{bounds.Y}", $"--window-size={bounds.Width},{bounds.Height}"];
-        }
-
-        var browser = await browserType.LaunchAsync(launchOptions).ConfigureAwait(false);
+        var shared = options.ShareBrowser && !shown;
+        var (playwright, browser) = shared
+            ? await SharedBrowsers.GetAsync(options.BrowserType, options.Headless).ConfigureAwait(false)
+            : await LaunchAsync(options.BrowserType, options.Headless && !shown, shown).ConfigureAwait(false);
 
         var browserContext = await browser.NewContextAsync(shown ? new BrowserNewContextOptions { ViewportSize = ViewportSize.NoViewport } : null).ConfigureAwait(false);
         var page = await browserContext.NewPageAsync().ConfigureAwait(false);
@@ -96,7 +84,56 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
             await page.GotoAsync(options.BaseUrl).ConfigureAwait(false);
         }
 
-        return new PlaywrightTestContext(playwright, browser, browserContext, page, options);
+        return new PlaywrightTestContext(playwright, browser, browserContext, page, options) { _sharedBrowser = shared };
+    }
+
+    // A browser of its own: Playwright, the type, the launch.
+    private static async Task<(IPlaywright Playwright, IBrowser Browser)> LaunchAsync(string type, bool headless, bool shown)
+    {
+        var playwright = await Microsoft.Playwright.Playwright.CreateAsync().ConfigureAwait(false);
+        var browserType = type.ToLowerInvariant() switch
+        {
+            "firefox" => playwright.Firefox,
+            "webkit" => playwright.Webkit,
+            _ => playwright.Chromium
+        };
+
+        var launchOptions = new BrowserTypeLaunchOptions { Headless = headless };
+        if (shown && AutWindow.Bounds() is { } bounds && ReferenceEquals(browserType, playwright.Chromium))
+        {
+            launchOptions.Args = [$"--window-position={bounds.X},{bounds.Y}", $"--window-size={bounds.Width},{bounds.Height}"];
+        }
+
+        return (playwright, await browserType.LaunchAsync(launchOptions).ConfigureAwait(false));
+    }
+
+    // The process's shared browsers (HtmlTestContextOptions.ShareBrowser), one per type and headless mode, launched on first
+    // use and again when one has gone (crashed or closed). Never closed here: Playwright's driver is a child of this process
+    // and ends with it. Closing them from ProcessExit blocked there, so a suite's own exit handlers (WebAppHost stopping the
+    // app it started) never ran: the app outlived the run, held its bin, and the next build and run hung.
+    private static class SharedBrowsers
+    {
+        private static readonly SemaphoreSlim Gate = new(1, 1);
+        private static readonly Dictionary<(string Type, bool Headless), (IPlaywright Playwright, IBrowser Browser)> Open = [];
+
+        public static async Task<(IPlaywright Playwright, IBrowser Browser)> GetAsync(string type, bool headless)
+        {
+            var key = (type.ToLowerInvariant(), headless);
+            await Gate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (Open.TryGetValue(key, out var open) && open.Browser.IsConnected)
+                {
+                    return open;
+                }
+
+                return Open[key] = await LaunchAsync(type, headless, shown: false).ConfigureAwait(false);
+            }
+            finally
+            {
+                Gate.Release();
+            }
+        }
     }
 
     public static PlaywrightTestContext ForPage(IPage page, HtmlTestContextOptions? options = null)
@@ -300,6 +337,12 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
             }
 
             _browserContext = null;
+        }
+
+        if (_sharedBrowser)
+        {
+            _browser = null;
+            _playwright = null;
         }
 
         if (_browser != null)
