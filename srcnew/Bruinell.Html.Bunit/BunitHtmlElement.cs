@@ -107,8 +107,8 @@ public sealed class BunitHtmlElement : IHtmlElement
     #region Actions
 
     // A browser's click: the handler of the element or of the nearest one around it (the click bubbles); else a
-    // submit button submits its form and a link follows its href, which Blazor's script does in a browser and
-    // nothing does here. A disabled control gets no click, as in a browser.
+    // submit button submits its form. A link follows its href after any handler, unless a handler on the way prevents
+    // it, which Blazor's script does in a browser and nothing does here. A disabled control gets no click, as in a browser.
     public void Click()
     {
         var node = Node;
@@ -117,6 +117,11 @@ public sealed class BunitHtmlElement : IHtmlElement
         {
             return;
         }
+
+        // Read before the handler runs: its render may replace the link.
+        var href = node.Closest("a")?.GetAttribute("href") is { Length: > 0 } link && !link.StartsWith('#') && !PreventsDefault(node, "onclick")
+            ? link
+            : null;
 
         // bUnit itself submits the form after a submit button's own click handler.
         var target = handler ?? node;
@@ -128,8 +133,10 @@ public sealed class BunitHtmlElement : IHtmlElement
         else if (form is not null)
         {
             Raise(form, "onsubmit", EventArgs.Empty);
+            return;
         }
-        else if (node.Closest("a") is { } link && link.GetAttribute("href") is { Length: > 0 } href && !href.StartsWith('#'))
+
+        if (href is not null)
         {
             _context.Follow(href);
         }
@@ -255,9 +262,10 @@ public sealed class BunitHtmlElement : IHtmlElement
             return;
         }
 
+        // A checkbox's change carries whether it is checked; a radio's carries its value, "on" without one, as Blazor's script sends.
         if (Handles(node, "onchange"))
         {
-            Raise(node, "onchange", new ChangeEventArgs { Value = value });
+            Raise(node, "onchange", new ChangeEventArgs { Value = IsRadio(node) ? node.GetAttribute("value") ?? "on" : value });
         }
         else
         {
@@ -438,8 +446,24 @@ public sealed class BunitHtmlElement : IHtmlElement
     private static bool SubmitsForm(IElement node)
         => node is IHtmlButtonElement { Type: "submit" } or IHtmlInputElement { Type: "submit" };
 
+    private static bool IsRadio(IElement node) => node is IHtmlInputElement { Type: "radio" };
+
     // bUnit writes a handled event as a blazor:on… attribute on the element.
     private static bool Handles(IElement element, string eventName) => element.HasAttribute($"blazor:{eventName}");
+
+    // @on…:preventDefault on the element or one around it, which the event passes through.
+    private static bool PreventsDefault(IElement node, string eventName)
+    {
+        for (IElement? at = node; at is not null; at = at.ParentElement)
+        {
+            if (at.HasAttribute($"blazor:{eventName}:preventDefault"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     // Blazor's error banner is hidden by its style sheet and shown only by its script, which nothing runs here; a handler's
     // failure surfaces as AppUnavailableException instead.

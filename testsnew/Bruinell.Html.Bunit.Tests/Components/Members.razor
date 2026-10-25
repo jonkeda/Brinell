@@ -52,6 +52,21 @@
 <span data-testid="handled-echo">@handled</span>
 
 <a data-testid="link" href="/elsewhere">Elsewhere</a>
+<a data-testid="link-handled" href="/handled" @onclick="() => linkClicks++">Handled link</a>
+<a data-testid="link-prevented" href="/prevented" @onclick="() => linkClicks++" @onclick:preventDefault>Prevented link</a>
+<span data-testid="link-echo">@linkClicks</span>
+
+<input type="radio" name="size" data-testid="size-s" value="small" @onchange="e => size = e.Value?.ToString() ?? string.Empty" />
+<input type="radio" name="size" data-testid="size-plain" @onchange="e => size = e.Value?.ToString() ?? string.Empty" />
+<span data-testid="size-echo">@size</span>
+
+<EditForm Model="this">
+    <InputRadioGroup @bind-Value="pet">
+        <InputRadio data-testid="pet-cat" Value="@("cat")" />
+        <InputRadio data-testid="pet-dog" Value="@("dog")" />
+    </InputRadioGroup>
+</EditForm>
+<span data-testid="pet-echo">@pet</span>
 
 <button data-testid="wrap" @onclick="() => wrapped++"><span data-testid="wrap-inner">Inner</span></button>
 <span data-testid="wrap-echo">@wrapped</span>
@@ -97,6 +112,9 @@
     private List<string> added = [];
     private int number;
     private int handled;
+    private int linkClicks;
+    private string size = string.Empty;
+    private string pet = "cat";
 
     // The rules refuse every try: the value stays what it was.
     private void Refuse(ChangeEventArgs e) => refused = "20";

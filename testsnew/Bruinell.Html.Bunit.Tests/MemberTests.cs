@@ -138,6 +138,25 @@ public sealed class MemberTests : IDisposable
         Assert.Equal("http://localhost/elsewhere", _context.CurrentUrl);
     }
 
+    // As a browser: the handler runs, then the link is followed.
+    [Fact]
+    public void Click_LinkWithItsOwnHandler_RunsItAndFollowsTheHref()
+    {
+        Id("link-handled").Click();
+
+        Assert.Equal("1", Echo("link"));
+        Assert.Equal("http://localhost/handled", _context.CurrentUrl);
+    }
+
+    [Fact]
+    public void Click_LinkThatPreventsDefault_RunsItsHandlerOnly()
+    {
+        Id("link-prevented").Click();
+
+        Assert.Equal("1", Echo("link"));
+        Assert.Equal("http://localhost/", _context.CurrentUrl);
+    }
+
     [Fact]
     public void Click_DoubleAndRight_RaiseTheirEvents()
     {
@@ -281,6 +300,33 @@ public sealed class MemberTests : IDisposable
         Id("tick").Check();
 
         Assert.Equal("True", Echo("tick"));
+    }
+
+    // A browser's change event on a radio carries its value, not true.
+    [Fact]
+    public void Check_Radio_SendsItsValue()
+    {
+        Id("size-s").Check();
+
+        Assert.Equal("small", Echo("size"));
+    }
+
+    [Fact]
+    public void Check_RadioWithoutAValue_SendsOn()
+    {
+        Id("size-plain").Check();
+
+        Assert.Equal("on", Echo("size"));
+    }
+
+    [Fact]
+    public void Check_InputRadio_BindsItsValue()
+    {
+        Id("pet-dog").Check();
+
+        Assert.Equal("dog", Echo("pet"));
+        Assert.True(Id("pet-dog").IsChecked);
+        Assert.False(Id("pet-cat").IsChecked);
     }
 
     [Fact]
