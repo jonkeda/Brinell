@@ -1,0 +1,60 @@
+@page "/"
+@page "/places"
+@inject IDbContextFactory<SpikeDbContext> Data
+@inject NavigationManager Navigation
+
+<PageTitle>Places</PageTitle>
+
+<h1 data-testid="places-heading">Places</h1>
+
+<fieldset>
+    <legend>Kinds</legend>
+    @foreach (var kind in AllKinds)
+    {
+        <label>
+            <input type="checkbox" data-testid="kind-@kind" checked="@_kinds.Contains(kind)" @onchange="() => ToggleAsync(kind)" />
+            @kind
+        </label>
+    }
+</fieldset>
+
+<p>
+    <span data-testid="place-count">@_places.Count</span> places:
+    <span data-testid="place-names">@string.Join(", ", _places.Select(p => p.Name))</span>
+</p>
+
+<ul>
+    @foreach (var place in _places)
+    {
+        <li><a href="places/@place.Id">@place.Name</a> (@place.Kind)</li>
+    }
+</ul>
+
+<button type="button" data-testid="add-place" @onclick='() => Navigation.NavigateTo("places/new")'>Add a place</button>
+
+@code {
+    private static readonly string[] AllKinds = ["city", "town"];
+    private readonly List<string> _kinds = [.. AllKinds];
+    private List<Place> _places = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task ToggleAsync(string kind)
+    {
+        if (!_kinds.Remove(kind))
+        {
+            _kinds.Add(kind);
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        await using var db = await Data.CreateDbContextAsync();
+        _places = await db.Places
+            .Where(p => _kinds.Contains(p.Kind))
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+    }
+}

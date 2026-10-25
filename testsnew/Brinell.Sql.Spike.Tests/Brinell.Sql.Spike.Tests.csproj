@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Sql.Spike.Tests</RootNamespace>
+    <Description>The SQL replay spike's suite (.my/sql-replay/plan.md, step 0): the SQL Server sample on both heads, its commands logged and timed.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
+  </ItemGroup>
+
+  <!-- Started by the tests in the browser (TestBase/SqlSample); rendered by bUnit on that head. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\samples\Brinell.Samples.Sql.App\Brinell.Samples.Sql.App.csproj" />
+  </ItemGroup>
+
+</Project>

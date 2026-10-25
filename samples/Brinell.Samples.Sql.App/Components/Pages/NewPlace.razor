@@ -1,0 +1,67 @@
+@page "/places/new"
+@using Microsoft.Data.SqlClient
+@inject IDbContextFactory<SpikeDbContext> Data
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>New place</PageTitle>
+
+<h1 data-testid="new-place-heading">New place</h1>
+
+<label>Name <input data-testid="name" @bind="_name" /></label>
+<label>
+    Kind
+    <select data-testid="kind" @bind="_kind">
+        <option value="city">city</option>
+        <option value="town">town</option>
+    </select>
+</label>
+<label>Latitude <input data-testid="latitude" @bind="_latitude" /></label>
+<label>Longitude <input data-testid="longitude" @bind="_longitude" /></label>
+<label>Population <input data-testid="population" @bind="_population" /></label>
+
+@if (_error is not null)
+{
+    <p data-testid="error">@_error</p>
+}
+
+<button type="button" data-testid="save" @onclick="SaveAsync">Save</button>
+
+@code {
+    private string _name = string.Empty;
+    private string _kind = "town";
+    private string _latitude = string.Empty;
+    private string _longitude = string.Empty;
+    private string _population = string.Empty;
+    private string? _error;
+
+    private async Task SaveAsync()
+    {
+        var place = new Place
+        {
+            Id = Guid.NewGuid(),
+            Name = _name.Trim(),
+            Kind = _kind,
+            Location = SpikeData.At(Parse(_latitude), Parse(_longitude)),
+            Population = decimal.Parse(_population, System.Globalization.CultureInfo.InvariantCulture),
+            CreatedAt = Clock.GetLocalNow(),
+        };
+
+        await using var db = await Data.CreateDbContextAsync();
+        db.Places.Add(place);
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException e) when (e.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            // The unique index on Name: the error replay has to give back as SQL Server's own exception.
+            _error = "That name is taken";
+            return;
+        }
+
+        Navigation.NavigateTo($"places/{place.Id}");
+    }
+
+    private static double Parse(string value) => double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+}
