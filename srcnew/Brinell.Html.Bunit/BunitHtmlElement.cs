@@ -47,7 +47,7 @@ public sealed class BunitHtmlElement : IHtmlElement
         {
             for (var node = Node; node is not null; node = node.ParentElement)
             {
-                if (node.HasAttribute("hidden") || HidesItself(node.GetAttribute("style")))
+                if (node.HasAttribute("hidden") || HidesItself(node.GetAttribute("style")) || IsBlazorErrorUi(node))
                 {
                     return false;
                 }
@@ -277,7 +277,19 @@ public sealed class BunitHtmlElement : IHtmlElement
         _context.ForgetEntries();
         try
         {
-            node.TriggerEvent(eventName, args);
+            // Raised as a browser does: returns when the handler awaits, a refusal seen here rather than by the renderer later.
+            var raised = node.TriggerEventAsync(eventName, args);
+            raised.Wait(DispatchWaitMs);
+        }
+        catch (AggregateException error) when (error.InnerExceptions.Count == 1)
+        {
+            var inner = error.InnerExceptions[0];
+            if (GoneHandler(inner))
+            {
+                throw new StaleElementException(_locator, inner, $"Its {eventName} handler was rendered anew.");
+            }
+
+            throw inner is BrinellException ? inner : BunitTestContext.HandlerFailed(eventName, inner);
         }
         catch (Exception error) when (GoneHandler(error))
         {
@@ -338,8 +350,11 @@ public sealed class BunitHtmlElement : IHtmlElement
         return null;
     }
 
+    // How long an event is waited for before the call goes on: a handler that awaits longer runs on, as in a browser.
+    private const int DispatchWaitMs = 100;
+
     // Blazor's renderer refuses an event whose handler id a newer render dropped.
-    private static bool GoneHandler(Exception error)
+    internal static bool GoneHandler(Exception error)
     {
         for (Exception? at = error; at is not null; at = at is AggregateException many ? many.InnerExceptions.FirstOrDefault() : at.InnerException)
         {
@@ -358,6 +373,10 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     // bUnit writes a handled event as a blazor:on… attribute on the element.
     private static bool Handles(IElement element, string eventName) => element.HasAttribute($"blazor:{eventName}");
+
+    // Blazor's error banner is hidden by its style sheet and shown only by its script, which nothing runs here; a handler's
+    // failure surfaces as AppUnavailableException instead.
+    private static bool IsBlazorErrorUi(IElement node) => string.Equals(node.Id, "blazor-error-ui", StringComparison.Ordinal);
 
     private static bool HidesItself(string? style)
     {

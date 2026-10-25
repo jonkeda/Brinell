@@ -160,7 +160,7 @@ public sealed class MemberTests : IDisposable
     public void Click_HandlerThrowsAfterItsAwait_TheNextLookReportsIt()
     {
         Id("throws-later").Click();
-        Thread.Sleep(200);
+        Thread.Sleep(600);
 
         var error = Assert.Throws<AppUnavailableException>(() => Id("name"));
         Assert.Contains("the handler broke later", error.Message, StringComparison.Ordinal);
@@ -359,6 +359,7 @@ public sealed class MemberTests : IDisposable
         Assert.False(Id("hidden").Visible);
         Assert.False(Id("hidden-child").Visible);
         Assert.False(Id("invisible").Visible);
+        Assert.False(Id("error-ui").Visible);
     }
 
     [Fact]

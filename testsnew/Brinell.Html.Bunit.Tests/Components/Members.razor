@@ -67,6 +67,7 @@
 <input data-testid="number" @bind="number" />
 
 <div data-testid="hidden" hidden>Hidden</div>
+<div id="blazor-error-ui" data-testid="error-ui">An unhandled error has occurred.</div>
 <div style="display: none"><span data-testid="hidden-child">Hidden child</span></div>
 <div data-testid="invisible" style="visibility:hidden">Invisible</div>
 
@@ -117,7 +118,7 @@
 
     private async Task ThrowsLater()
     {
-        await Task.Delay(50);
+        await Task.Delay(300);
         throw new InvalidOperationException("the handler broke later");
     }
 }

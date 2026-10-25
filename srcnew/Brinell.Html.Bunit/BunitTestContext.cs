@@ -232,7 +232,8 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     // the next look at the page reports it.
     internal void ThrowIfAppFailed()
     {
-        if (_bunit.Renderer.UnhandledException is { IsCompleted: true } failed)
+        // An event refused for a handler a newer render dropped was the call's stale element, not the app failing.
+        if (_bunit.Renderer.UnhandledException is { IsCompleted: true } failed && !BunitHtmlElement.GoneHandler(failed.Result))
         {
             throw HandlerFailed("a handler", failed.Result);
         }
