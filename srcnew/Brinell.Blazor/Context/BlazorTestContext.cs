@@ -10,7 +10,7 @@ using Microsoft.Playwright;
 
 namespace Brinell.Blazor.Context;
 
-public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable, Brinell.Core.Recording.IRecordable
+public sealed class BlazorTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly PlaywrightTestContext _inner;
 
@@ -34,6 +34,11 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable, Brin
     public string PageTitle => _inner.PageTitle;
 
     public ScopeReadiness ProbeReadiness() => _inner.ProbeReadiness();
+
+    // The page's probe in one trip, and its wait in the browser, as the Playwright context answers them.
+    public PageProbe ProbePage(string busyAttribute) => _inner.ProbePage(busyAttribute);
+    public PageProbe ProbePageWhenReady(string busyAttribute, Brinell.Html.Scopes.BusySignal signal, int timeoutMs)
+        => _inner.ProbePageWhenReady(busyAttribute, signal, timeoutMs);
     public bool WaitReady(int? timeoutMs = null) => _inner.WaitReady(timeoutMs);
     public IHtmlElement? TryFindElement(Locator locator) => _inner.TryFindElement(locator);
     public IHtmlElement FindElement(Locator locator) => _inner.FindElement(locator);

@@ -24,4 +24,12 @@ public interface IHtmlPageProbe
 {
     /// <summary>The document's load state and the body's <paramref name="busyAttribute"/>, read once.</summary>
     PageProbe ProbePage(string busyAttribute);
+
+    /// <summary>
+    /// For a page found not ready: waits in the page, at most <paramref name="timeoutMs"/>, until the document has loaded
+    /// and <paramref name="busyAttribute"/> says ready as <paramref name="signal"/> reads it, then probes once. A wait in
+    /// the browser ends as the page turns ready, where the poll's pause slept out its whole interval (next-plan item 8).
+    /// By default no wait: a context whose look is cheap (bUnit's) leaves it to the poll.
+    /// </summary>
+    PageProbe ProbePageWhenReady(string busyAttribute, Brinell.Html.Scopes.BusySignal signal, int timeoutMs) => ProbePage(busyAttribute);
 }

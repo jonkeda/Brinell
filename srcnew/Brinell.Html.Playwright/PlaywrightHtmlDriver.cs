@@ -49,6 +49,35 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
     }
 
     /// <summary>
+    /// Waits in the page (or its frame), at most <paramref name="timeoutMs"/>, until the document has loaded and
+    /// <paramref name="busyAttribute"/> says ready as <paramref name="signal"/> reads it, checking every 10 ms; then probes
+    /// once. A wait that times out, or that a navigation ends, is not an error: the probe says what the page is now.
+    /// </summary>
+    public PageProbe ProbePageWhenReady(string busyAttribute, Brinell.Html.Scopes.BusySignal signal, int timeoutMs)
+    {
+        const string ready = "([a, s]) => document.readyState === 'complete' && document.body !== null"
+            + " && (s === 'ignore' || (s === 'required' ? document.body.getAttribute(a) === 'false' : document.body.getAttribute(a) !== 'true'))";
+        var argument = new object[] { busyAttribute, signal.ToString().ToLowerInvariant() };
+        try
+        {
+            Live(() => (_frame != null
+                    ? _frame.WaitForFunctionAsync(ready, argument, new() { Timeout = timeoutMs, PollingInterval = 10 })
+                    : _page.WaitForFunctionAsync(ready, argument, new() { Timeout = timeoutMs, PollingInterval = 10 }))
+                .GetAwaiter().GetResult());
+        }
+        catch (TimeoutException)
+        {
+            // Still not ready: the probe says how.
+        }
+        catch (Brinell.Core.Exceptions.StaleElementException)
+        {
+            return PageProbe.Navigating;
+        }
+
+        return ProbePage(busyAttribute);
+    }
+
+    /// <summary>
     /// The document's load state and the body's <paramref name="busyAttribute"/>, from one
     /// evaluation in the page (or its frame). A document a navigation is replacing answers
     /// <see cref="PageProbe.Navigating"/>.

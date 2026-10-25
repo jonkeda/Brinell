@@ -246,6 +246,11 @@ its own.
   not shared 3 m 27 s and 2 m 44 s, 165 of 165 but for PLT.03.2 once without sharing (it passes alone: a settings scenario,
   flaky beside the others). Its fixtures make a context per collection, so there were few launches to save, and ten parts
   on one browser cost nothing measurable. `ShareBrowser` stays on.
-- **AssertIdle misses its first look** on 25 of 33 page loads and sleeps the 100 ms poll: a wait inside the browser
-  (`WaitForFunctionAsync`) would end as the page turns ready. Not tried yet.
+- **A page found not ready is waited for in the browser:** `IHtmlPageProbe.ProbePageWhenReady` (no wait by default, so
+  bUnit is as before), the Playwright driver's `WaitForFunctionAsync` checking every 10 ms, at most one polling interval and
+  within the call's budget; a ready page is still one look. `BlazorTestContext` now passes the one-trip probe through.
+  AssertIdle in the browser: Blazor 4.6 to 0.9 s over 33 calls, Html 3.3 to 0.7 s over 23, none retried. Suites: Blazor
+  23 to 22 s, Html 23 to 21 s, Todo web 12 to 10 s; all green on both heads.
+- **Item 8 so far, in the browser:** Blazor 41 to 22 s, Html 30 to 21 s. Tomorrow's studio suite in the browser is the next
+  measure of the in-browser wait (it loads a page per scenario).
 - Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.

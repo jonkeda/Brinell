@@ -15,6 +15,9 @@ public class PageProbeTests
     private readonly Queue<PageProbe> _probes = new();
     private int _probeCalls;
 
+    // Each wait in the page the context was asked for, by its timeout.
+    private readonly List<int> _waits = [];
+
     public PageProbeTests()
     {
         _context.Setup(c => c.Timeouts).Returns(new TimeoutSettings
@@ -31,6 +34,12 @@ public class PageProbeTests
             _probeCalls++;
             return _probes.Count > 1 ? _probes.Dequeue() : _probes.Peek();
         });
+        _context.As<IHtmlPageProbe>().Setup(p => p.ProbePageWhenReady("data-busy", It.IsAny<BusySignal>(), It.IsAny<int>()))
+            .Returns((string _, BusySignal _, int timeoutMs) =>
+            {
+                _waits.Add(timeoutMs);
+                return _probes.Count > 1 ? _probes.Dequeue() : _probes.Peek();
+            });
         _target.Setup(e => e.Visible).Returns(true);
         _target.Setup(e => e.Enabled).Returns(true);
     }
@@ -50,12 +59,14 @@ public class PageProbeTests
         Assert.True(new Page(_context.Object, BusySignal.Required).ProbeReadiness().IsReady);
 
         Assert.Equal(1, _probeCalls);
+        Assert.Empty(_waits);
         _context.Verify(c => c.IsIdle(), Times.Never);
         _context.Verify(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "body")), Times.Never);
     }
 
+    // Each attempt looks once and, finding the page not ready, has the context wait in the page and looks again.
     [Fact]
-    public void ABusyPage_DefersTheCall_UntilTheProbeSaysIdle_OneProbePerAttempt()
+    public void ABusyPage_DefersTheCall_UntilTheProbeSaysIdle_AWaitInThePagePerAttempt()
     {
         _probes.Enqueue(new PageProbe("loading", false, null));
         _probes.Enqueue(new PageProbe("complete", true, null));
@@ -65,8 +76,42 @@ public class PageProbeTests
         new Page(_context.Object, BusySignal.Required).Target.Click();
 
         _target.Verify(e => e.Click(), Times.Once);
-        Assert.Equal(4, _probeCalls);
+        Assert.Equal(2, _probeCalls);
+        Assert.Equal(2, _waits.Count);
         _context.Verify(c => c.IsIdle(), Times.Never);
+    }
+
+    [Fact]
+    public void APageNotReadyAtFirst_IsWaitedForInTheContext_AndReadyAsItTurns()
+    {
+        _probes.Enqueue(new PageProbe("complete", true, null));
+        _probes.Enqueue(new PageProbe("complete", true, "false"));
+
+        Assert.True(new Page(_context.Object, BusySignal.Required).ProbeReadiness().IsReady);
+
+        Assert.Equal(1, _probeCalls);
+        Assert.Single(_waits);
+    }
+
+    // At most one polling interval, so the call's poll still runs its attempts and its budget.
+    [Fact]
+    public void TheWait_IsAtMostOnePollingInterval()
+    {
+        _probes.Enqueue(new PageProbe("complete", true, "true"));
+
+        new Page(_context.Object, BusySignal.Required).ProbeReadiness();
+
+        Assert.Equal([1], _waits);
+    }
+
+    [Fact]
+    public void AnInvalidBusySignal_IsNotWaitedFor()
+    {
+        _probes.Enqueue(new PageProbe("complete", true, "maybe"));
+
+        new Page(_context.Object, BusySignal.Required).ProbeReadiness();
+
+        Assert.Empty(_waits);
     }
 
     [Theory]

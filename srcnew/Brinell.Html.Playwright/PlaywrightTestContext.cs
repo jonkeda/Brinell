@@ -227,6 +227,9 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
 
     public PageProbe ProbePage(string busyAttribute) => _driver.ProbePage(busyAttribute);
 
+    public PageProbe ProbePageWhenReady(string busyAttribute, Brinell.Html.Scopes.BusySignal signal, int timeoutMs)
+        => _driver.ProbePageWhenReady(busyAttribute, signal, timeoutMs);
+
     public void Refresh()
     {
         using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(Refresh));

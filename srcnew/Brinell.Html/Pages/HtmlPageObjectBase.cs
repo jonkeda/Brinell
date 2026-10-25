@@ -87,10 +87,22 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     /// </summary>
     public virtual ScopeReadiness ProbeReadiness()
     {
-        _probe = (_context as IHtmlPageProbe)?.ProbePage(BusyAttribute);
+        var prober = _context as IHtmlPageProbe;
+        _probe = prober?.ProbePage(BusyAttribute);
         try
         {
-            return ProbeReadinessOnce();
+            var readiness = ProbeReadinessOnce();
+
+            // Not loaded or busy on its first look: the context waits in the page for it (one poll interval at most, within
+            // the call's budget) and looks again, so the call goes on as the page turns ready.
+            if (prober is not null && readiness.State is ScopeReadinessState.NotLoaded or ScopeReadinessState.Busy
+                && CompareUrl() && CallBudget.Within(PollingIntervalMs) is var waitMs and > 0)
+            {
+                _probe = prober.ProbePageWhenReady(BusyAttribute, BusySignal, waitMs);
+                readiness = ProbeReadinessOnce();
+            }
+
+            return readiness;
         }
         finally
         {
