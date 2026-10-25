@@ -37,6 +37,7 @@ where not.
 | 9 | Squash the six migrations into one `Initial` | 1 to 2 s, fresh builds only | S | the owner: the dev database's history |
 | 10 | Scenario-scoped settings, so `@own-database` can run in parallel | ~33 s bUnit, ~55 s browser | L | the owner: a game design change |
 | 11 | Generated phrase tables (a source generator, `[GeneratedRegex]`) | Only if item 7's benchmark shows the index is not enough | L | not now |
+| 12 | The three slow bUnit tests: the sync, the discard dialog and delete, ~470 ms against 10 to 50 ms | ~1.3 s a run now; whatever wait it is will be in every suite on bUnit | S | done by Claude |
 
 ## 1. Deal scenarios by their last duration
 
@@ -198,3 +199,15 @@ A source generator over the `[Bdd*]` attributes could emit the phrase patterns a
 leaving the feature files bound at run time so the IDE's edit-and-run stays. Generating whole scenarios is ruled out: every
 edit would need a build, and a second engine beside the IDE's goes against AD-022. Only if item 7's benchmark shows the run-time
 index is not enough.
+
+## 12. The three slow bUnit tests
+
+The owner's finding (2026-10-25): on bUnit three tests take about 470 ms while the rest take 10 to 50 ms: the sync, the
+discard dialog and delete. It is not the database. It looks like a fixed wait in the page objects or in the app's state
+code (a poll that waits out its interval, a delay before a dialog, a settle time), and is worth chasing for bUnit speed on
+its own.
+
+- First the timings of the three (`BRINELL_TIMINGS`, `tools/Scripts/timings.ps1`): which call or span holds the 450 ms,
+  and its attempts.
+- Then the wait itself: a page object's fixed wait, a poll interval a bUnit render never shortens, or the app's own
+  delay. Fixed where it lives, and measured on both heads.

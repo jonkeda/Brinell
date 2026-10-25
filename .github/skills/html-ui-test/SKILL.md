@@ -1,6 +1,6 @@
 ---
 name: html-ui-test
-description: Write or fix Brinell Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in testsnew/Brinell.Html.UITests, testsnew/Brinell.Blazor.UITests or samples/Todo/tests/Brinell.Samples.Todo.Web.UITests, or a control unit test in testsnew/Brinell.Html.Tests; also when a web test must run on the bUnit head (BRINELL_HEAD=bunit) or be marked BrowserFact or @browser.
+description: Write or fix Brinell Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in testsnew/Brinell.Html.UITests, testsnew/Brinell.Blazor.UITests or samples/Todo/tests/Brinell.Samples.Todo.Web.UITests, or a control unit test in testsnew/Brinell.Html.Tests; also when a web test must run on the bUnit head (BRINELL_HEAD=bunit) or be marked BrowserFact or @browser, or when picking which web tests a change reaches (tools/Scripts/select-tests.ps1, brinell tests affected).
 ---
 
 # Write Html UI tests
@@ -20,7 +20,11 @@ something they do not offer, add it there first; never reach past them.
    sample's project: the browser head starts it, the bUnit head renders its `Routes`.
 4. **Run the smallest filter that can fail on the bUnit head first**, from the Brinell root:
    `$env:BRINELL_HEAD = "bunit"; dotnet test testsnew\Brinell.Html.UITests --filter "FullyQualifiedName~LoginPageTests"`.
-   It runs in about a second, without a browser.
+   It runs in about a second, without a browser. To get that filter from the change, run
+   `pwsh tools/Scripts/select-tests.ps1` (`brinell tests affected`): it prints the tests and scenarios the working
+   tree's change reaches, each with why, and one `--filter`, and says when shared code (`srcnew/`, the test base, the
+   sample's layout) runs the suite whole. `-Run` runs them, `-Head playwright` in the browser. A new page object or test
+   is not in the suite's `touch-map.json` until `-WriteMap` after a full run: name it in the filter yourself.
 5. **Then once in the browser** (`Remove-Item Env:BRINELL_HEAD`, the same filter) before calling
    it done: the browser judges. One UI test process at a time. Nothing needs to be running: the
    fixture starts the app on a free port (`WebAppHost`). `BLAZOR_APP_URL` points it at a running

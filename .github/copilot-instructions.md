@@ -38,7 +38,9 @@ dotnet test testsnew\Brinell.Html.Bunit.Tests\Brinell.Html.Bunit.Tests.csproj -v
 Use the focused platform run guides under `docs/run/` for UI tests. The Html and Blazor UI
 suites also run without a browser: `$env:BRINELL_HEAD = "bunit"` (the bUnit head,
 `docs/guides/bunit.md`, AD-030). Use it for the narrow runs while working; run the same filter
-once in the browser before calling the work done, since the browser judges every gate.
+once in the browser before calling the work done, since the browser judges every gate. The narrow
+filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` prints the tests the working
+tree's change reaches, with why, and one `--filter` (`-Run` runs it); shared code runs the suite whole.
 `Brinell.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
 MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.

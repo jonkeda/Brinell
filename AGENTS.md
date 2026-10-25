@@ -184,6 +184,12 @@ narrowest filter on the bUnit head (`$env:BRINELL_HEAD = "bunit"`); before repor
 done, run that filter once in the browser (unset the variable). The browser judges: a pass on
 bUnit alone is not done, because bUnit has no layout, style sheets or script.
 
+The narrowest filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` (`brinell tests affected`,
+`docs/run/cli.md`) follows the working tree's changed files through each suite's `touch-map.json` to the tests and
+scenarios they reach, prints each with why and one `--filter`, and runs it with `-Run` (`-Head playwright` for the
+browser). Shared code (`srcnew/`, the test base, the sample's layout and start) runs the suite whole. After a full run,
+`-WriteMap` refreshes the maps; commit them.
+
 Notes:
 
 - A platform's UAT suite lives in its `*.UITests` project (`uat.config.md`, `Features/`, `Uat/`):
