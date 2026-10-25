@@ -9,6 +9,8 @@
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
+    <!-- The SQL log on the bUnit head (BRINELL_SQL_LOG, .my/sql-replay/plan.md step 1). -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Mocking.Data\Brinell.Mocking.Data.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
     <!-- Page objects carry UAT names ([UatName], [UatNavigatesTo]). -->
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />

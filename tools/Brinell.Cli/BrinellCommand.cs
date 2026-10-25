@@ -41,6 +41,7 @@ internal static class BrinellCommand
             DataCommands.Build(io),
             ScenarioCommands.Build(io),
             SelectionCommands.Build(io),
+            Sql.SqlCommands.Build(io),
             GenerateCommand.Build(io),
             Version(io),
             ServerCommands.Mcp(io),

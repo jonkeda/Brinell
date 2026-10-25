@@ -19,6 +19,13 @@ public static class Timing
     private const string Header = "Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;Attempts;Result";
 
     private static readonly Stopwatch Clock = Stopwatch.StartNew();
+
+    /// <summary>
+    /// When the rows' clock read zero, UTC: each file's first row after the header (kind <c>clock</c>, the time as its
+    /// name), so its rows can be joined with what another process logged on the wall clock, such as SQL Server's
+    /// Extended Events (<c>brinell sql report</c>).
+    /// </summary>
+    public static DateTime ZeroUtc { get; } = DateTime.UtcNow - Clock.Elapsed;
     private static readonly object Gate = new();
     private static readonly Lazy<StreamWriter?> Writer = new(Open, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly string Run = $"{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}";
@@ -28,7 +35,7 @@ public static class Timing
 
     /// <summary>
     /// A span of work, written when disposed: <paramref name="kind"/> says what sort (<c>host</c>, <c>fixture</c>,
-    /// <c>bind</c>, <c>lifecycle</c>, <c>step</c>, <c>navigate</c>, <c>arrange</c>), <paramref name="name"/> which one.
+    /// <c>bind</c>, <c>lifecycle</c>, <c>step</c>, <c>navigate</c>, <c>arrange</c>, <c>test</c>), <paramref name="name"/> which one.
     /// </summary>
     public static IDisposable Span(string kind, string name)
         => Enabled ? new SpanScope(kind, name, TestScope.Current, Clock.ElapsedMilliseconds) : NoSpan.Instance;
@@ -91,6 +98,8 @@ public static class Timing
         Directory.CreateDirectory(folder);
         var writer = new StreamWriter(Path.Combine(folder, $"timings-{Run}.csv"), append: false) { AutoFlush = true };
         writer.WriteLine(Header);
+        writer.WriteLine(string.Join(';', Run, WebHeads.Current.ToString().ToLowerInvariant(), string.Empty, string.Empty, string.Empty,
+            "clock", ZeroUtc.ToString("O", CultureInfo.InvariantCulture), string.Empty, string.Empty, string.Empty, "0", "0", string.Empty, string.Empty));
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             lock (Gate)

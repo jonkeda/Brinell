@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.Data.Sqlite;
 
 namespace Brinell.Samples.Todo.Infrastructure.Data;
@@ -69,15 +70,24 @@ public sealed class TodoDatabase(string path)
     /// <summary>The file's path.</summary>
     public string Path { get; } = path;
 
+    /// <summary>
+    /// How the repositories see each connection: as it is in the app; a test sets it to log every command (Brinell's
+    /// <c>LoggingDbConnection</c>, .my/sql-replay/plan.md step 1). Migrations use the connection as it is.
+    /// </summary>
+    public Func<DbConnection, DbConnection>? Wrap { get; init; }
+
     /// <summary>Opens a connection, migrating the file to <see cref="LatestVersion"/> the first time.</summary>
-    public async Task<SqliteConnection> OpenAsync(CancellationToken cancellationToken = default)
+    public async Task<DbConnection> OpenAsync(CancellationToken cancellationToken = default)
     {
         if (!_migrated)
         {
             await MigrateAsync(LatestVersion, cancellationToken).ConfigureAwait(false);
         }
 
-        return await OpenRawAsync(cancellationToken).ConfigureAwait(false);
+        // Wrapped before it opens, so a logging connection logs the open too.
+        var connection = Wrap is { } wrap ? wrap(Create()) : Create();
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        return connection;
     }
 
     /// <summary>
@@ -133,15 +143,16 @@ public sealed class TodoDatabase(string path)
 
     private async Task<SqliteConnection> OpenRawAsync(CancellationToken cancellationToken)
     {
-        var connection = new SqliteConnection(new SqliteConnectionStringBuilder
-        {
-            DataSource = Path,
-            Mode = SqliteOpenMode.ReadWriteCreate,
-        }.ToString());
-
+        var connection = Create();
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         return connection;
     }
+
+    private SqliteConnection Create() => new(new SqliteConnectionStringBuilder
+    {
+        DataSource = Path,
+        Mode = SqliteOpenMode.ReadWriteCreate,
+    }.ToString());
 
     private static async Task<int> ReadVersionAsync(SqliteConnection connection, CancellationToken cancellationToken)
     {

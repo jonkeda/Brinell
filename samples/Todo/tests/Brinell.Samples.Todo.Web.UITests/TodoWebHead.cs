@@ -132,6 +132,12 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
         services.AddSingleton<WebDialogs>();
         services.AddSingleton<IDialogs>(provider => provider.GetRequiredService<WebDialogs>());
 
+        // The SQL log (BRINELL_SQL_LOG): every command the repositories send, through Brinell's ADO.NET wrapper.
+        if (Brinell.Mocking.Data.SqlLog.FromEnvironment() is { } log)
+        {
+            services.AddSingleton(new TodoDatabase(settings.DatabasePath) { Wrap = connection => new Brinell.Mocking.Data.LoggingDbConnection(connection, log) });
+        }
+
         services.AddSingleton(clock);
         services.AddSingleton<SqliteTodoRepository>();
         services.AddSingleton<ITodoRepository>(provider => new TimedTodoRepository(provider.GetRequiredService<SqliteTodoRepository>(), clock));

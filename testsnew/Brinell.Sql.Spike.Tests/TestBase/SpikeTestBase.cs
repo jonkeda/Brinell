@@ -6,7 +6,10 @@ using Brinell.Html.Context;
 using Brinell.Samples.Sql.App.Components;
 using Brinell.Samples.Sql.App.Data;
 using Brinell.Sql.Spike.Tests.PageObjects;
+using Brinell.Mocking.Data;
+using Brinell.Mocking.Data.EntityFrameworkCore;
 using Brinell.Sql.Spike.Tests.Spike;
+using SpikeSchemaSnapshot = Brinell.Sql.Spike.Tests.Spike.SchemaSnapshot;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +20,7 @@ namespace Brinell.Sql.Spike.Tests.TestBase;
 /// <summary>
 /// The SQL Server sample with its five places written afresh before each test, on this run's head: its <c>Routes</c>
 /// rendered by bUnit (<c>BRINELL_HEAD=bunit</c>), or a host of its own in this process behind a browser. Either way the
-/// app's data composition gets this test's <see cref="CommandLog"/> and, with <c>BRINELL_SQL_REPLAY</c>, its
+/// app's data composition gets this test's SQL log (<see cref="SqlLog"/>, through <c>UseSqlLog</c>) and, with <c>BRINELL_SQL_REPLAY</c>, its
 /// <see cref="ReplayInterceptor"/>.
 /// </summary>
 /// <remarks>
@@ -43,7 +46,7 @@ public abstract class SpikeTestBase(ITestOutputHelper output) : IAsyncLifetime
     protected string BaseUrl => WebHeads.IsBunit ? BunitAddress : _host?.BaseUrl ?? throw new InvalidOperationException("No host.");
 
     /// <summary>The app's commands.</summary>
-    protected CommandLog Log { get; } = new();
+    protected SqlLog Log { get; } = new(Environment.GetEnvironmentVariable(SqlLog.Variable), keep: true);
 
     /// <summary>The test's recording or replay; null when off.</summary>
     internal ReplaySession? Session { get; private set; }
@@ -79,7 +82,7 @@ public abstract class SpikeTestBase(ITestOutputHelper output) : IAsyncLifetime
         void Intercept(DbContextOptionsBuilder options)
         {
             options.ConfigureWarnings(warnings => warnings.Throw(CoreEventId.ManyServiceProvidersCreatedWarning));
-            options.AddInterceptors(Log, Log.Connections);
+            options.UseSqlLog(Log);
             if (session is not null)
             {
                 var replay = new ReplayInterceptor(session);
@@ -223,15 +226,15 @@ internal static class Schemas
     private static Schema Read(string connection)
     {
         var path = Path.Combine(Recordings, "schema.json");
-        SchemaSnapshot snapshot;
+        SpikeSchemaSnapshot snapshot;
         if (SpikeTestBase.Mode is ReplayMode.Record or ReplayMode.Snapshot)
         {
-            snapshot = SchemaSnapshot.ReadAsync(connection).GetAwaiter().GetResult();
+            snapshot = SpikeSchemaSnapshot.ReadAsync(connection).GetAwaiter().GetResult();
             snapshot.Save(path);
         }
         else
         {
-            snapshot = SchemaSnapshot.Load(path) ?? throw new ReplayMissException($"No schema snapshot at {path}: record first (BRINELL_SQL_REPLAY=Record).");
+            snapshot = SpikeSchemaSnapshot.Load(path) ?? throw new ReplayMissException($"No schema snapshot at {path}: record first (BRINELL_SQL_REPLAY=Record).");
         }
 
         return snapshot.ToSchema(Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)));

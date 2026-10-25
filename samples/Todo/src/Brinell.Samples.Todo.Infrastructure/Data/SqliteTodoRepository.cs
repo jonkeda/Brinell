@@ -1,7 +1,7 @@
 using System.Globalization;
 using Brinell.Samples.Todo.Core.Models;
 using Brinell.Samples.Todo.Core.Services;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 
 namespace Brinell.Samples.Todo.Infrastructure.Data;
 
@@ -39,7 +39,7 @@ public sealed class SqliteTodoRepository(TodoDatabase database) : ITodoRepositor
         await using var connection = await database.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = $"SELECT {Columns} FROM todos WHERE id = $id;";
-        command.Parameters.AddWithValue("$id", id.ToString("D"));
+        command.AddParameter("$id", id.ToString("D"));
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? Read(reader) : null;
@@ -65,15 +65,15 @@ public sealed class SqliteTodoRepository(TodoDatabase database) : ITodoRepositor
                 is_deleted = excluded.is_deleted;
             """;
 
-        command.Parameters.AddWithValue("$id", item.Id.ToString("D"));
-        command.Parameters.AddWithValue("$title", item.Title);
-        command.Parameters.AddWithValue("$notes", (object?)item.Notes ?? DBNull.Value);
-        command.Parameters.AddWithValue("$due", item.DueDate is { } due ? due.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value);
-        command.Parameters.AddWithValue("$status", item.Status.ToString());
-        command.Parameters.AddWithValue("$created", WriteTime(item.CreatedAt));
-        command.Parameters.AddWithValue("$updated", WriteTime(item.UpdatedAt));
-        command.Parameters.AddWithValue("$sync", item.SyncState.ToString());
-        command.Parameters.AddWithValue("$deleted", item.IsDeleted ? 1 : 0);
+        command.AddParameter("$id", item.Id.ToString("D"));
+        command.AddParameter("$title", item.Title);
+        command.AddParameter("$notes", (object?)item.Notes ?? DBNull.Value);
+        command.AddParameter("$due", item.DueDate is { } due ? due.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value);
+        command.AddParameter("$status", item.Status.ToString());
+        command.AddParameter("$created", WriteTime(item.CreatedAt));
+        command.AddParameter("$updated", WriteTime(item.UpdatedAt));
+        command.AddParameter("$sync", item.SyncState.ToString());
+        command.AddParameter("$deleted", item.IsDeleted ? 1 : 0);
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -84,11 +84,11 @@ public sealed class SqliteTodoRepository(TodoDatabase database) : ITodoRepositor
         await using var connection = await database.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM todos WHERE id = $id;";
-        command.Parameters.AddWithValue("$id", id.ToString("D"));
+        command.AddParameter("$id", id.ToString("D"));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static TodoItem Read(SqliteDataReader reader) => new()
+    private static TodoItem Read(DbDataReader reader) => new()
     {
         Id = Guid.Parse(reader.GetString(0)),
         Title = reader.GetString(1),

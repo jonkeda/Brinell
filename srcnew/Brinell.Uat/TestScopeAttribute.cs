@@ -18,12 +18,31 @@ public sealed class TestScopeAttribute : BeforeAfterTestAttribute
     public static string NameOf(MethodInfo method) => $"{(method.ReflectedType ?? method.DeclaringType)?.FullName}.{method.Name}";
 
     /// <inheritdoc />
-    public override void Before(MethodInfo methodUnderTest) => Entered.Value = TestScope.EnterTest(NameOf(methodUnderTest));
+    /// <remarks>
+    /// Also a <c>test</c> span in the timings, the test's window on their clock: what another process logged, such as SQL
+    /// Server's Extended Events, is joined to the test by time (<c>brinell sql report</c>).
+    /// </remarks>
+    public override void Before(MethodInfo methodUnderTest)
+    {
+        var name = NameOf(methodUnderTest);
+        var scope = TestScope.EnterTest(name);
+        Entered.Value = new Entry(scope, Brinell.Core.Logging.Timing.Span("test", name));
+    }
 
     /// <inheritdoc />
     public override void After(MethodInfo methodUnderTest)
     {
         Entered.Value?.Dispose();
         Entered.Value = null;
+    }
+
+    // The span ends inside the test's scope, then the scope.
+    private sealed class Entry(IDisposable scope, IDisposable span) : IDisposable
+    {
+        public void Dispose()
+        {
+            span.Dispose();
+            scope.Dispose();
+        }
     }
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Brinell.Samples.Todo.Core.Models;
 using Brinell.Samples.Todo.Core.Services;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 
 namespace Brinell.Samples.Todo.Infrastructure.Data;
 
@@ -40,7 +40,7 @@ public sealed class SqliteUserRepository(TodoDatabase database) : IUserRepositor
         await using var connection = await database.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = $"SELECT {Columns} FROM users WHERE id = $id;";
-        command.Parameters.AddWithValue("$id", id.ToString("D"));
+        command.AddParameter("$id", id.ToString("D"));
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? Read(reader) : null;
@@ -58,7 +58,7 @@ public sealed class SqliteUserRepository(TodoDatabase database) : IUserRepositor
     public async Task ReplaceAllAsync(IReadOnlyList<User> users, CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (var clear = connection.CreateCommand())
         {
@@ -76,7 +76,7 @@ public sealed class SqliteUserRepository(TodoDatabase database) : IUserRepositor
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static SqliteCommand Upsert(SqliteConnection connection, SqliteTransaction? transaction, User user)
+    private static DbCommand Upsert(DbConnection connection, DbTransaction? transaction, User user)
     {
         var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -99,23 +99,23 @@ public sealed class SqliteUserRepository(TodoDatabase database) : IUserRepositor
                 updated_at = excluded.updated_at;
             """;
 
-        command.Parameters.AddWithValue("$id", user.Id.ToString("D"));
-        command.Parameters.AddWithValue("$name", user.Name);
-        command.Parameters.AddWithValue("$email", (object?)user.Email ?? DBNull.Value);
-        command.Parameters.AddWithValue("$status", user.Status.ToString());
-        command.Parameters.AddWithValue("$until", user.AllowedUntil is { } until ? until.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value);
-        command.Parameters.AddWithValue("$role", user.Role.ToString());
-        command.Parameters.AddWithValue("$hours", user.HoursPerWeek);
-        command.Parameters.AddWithValue("$rate", decimal.ToInt64(decimal.Round(user.HourlyRate * 100m)));
-        command.Parameters.AddWithValue("$start", (int)user.StartOfDay.ToTimeSpan().TotalMinutes);
-        command.Parameters.AddWithValue("$reminders", user.ReceivesReminders ? 1 : 0);
-        command.Parameters.AddWithValue("$workload", user.Workload);
-        command.Parameters.AddWithValue("$notes", (object?)user.Notes ?? DBNull.Value);
-        command.Parameters.AddWithValue("$updated", user.UpdatedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture));
+        command.AddParameter("$id", user.Id.ToString("D"));
+        command.AddParameter("$name", user.Name);
+        command.AddParameter("$email", (object?)user.Email ?? DBNull.Value);
+        command.AddParameter("$status", user.Status.ToString());
+        command.AddParameter("$until", user.AllowedUntil is { } until ? until.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value);
+        command.AddParameter("$role", user.Role.ToString());
+        command.AddParameter("$hours", user.HoursPerWeek);
+        command.AddParameter("$rate", decimal.ToInt64(decimal.Round(user.HourlyRate * 100m)));
+        command.AddParameter("$start", (int)user.StartOfDay.ToTimeSpan().TotalMinutes);
+        command.AddParameter("$reminders", user.ReceivesReminders ? 1 : 0);
+        command.AddParameter("$workload", user.Workload);
+        command.AddParameter("$notes", (object?)user.Notes ?? DBNull.Value);
+        command.AddParameter("$updated", user.UpdatedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture));
         return command;
     }
 
-    private static User Read(SqliteDataReader reader) => new()
+    private static User Read(DbDataReader reader) => new()
     {
         Id = Guid.Parse(reader.GetString(0)),
         Name = reader.GetString(1),

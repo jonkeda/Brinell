@@ -11,6 +11,9 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
+    <!-- The SQL log (step 1) and the test spans its report joins by (Brinell.Uat's TestScope). -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Mocking.Data.EntityFrameworkCore\Brinell.Mocking.Data.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
   </ItemGroup>
 
   <ItemGroup>

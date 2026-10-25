@@ -3,7 +3,8 @@
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
 legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
-step 0). Next: step 1, the log, detailed below. Each step ends green:
+step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-results.md](log-results.md)). Next: the
+owner measures the legacy system (1.7); step 2 after. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -169,7 +170,7 @@ One JSON line per command in `<BRINELL_SQL_LOG>/sql-<run>-<pid>.jsonl` (in-proce
 | Project | Targets | Holds |
 | --- | --- | --- |
 | `srcnew/Brinell.Mocking.Data` | `netstandard2.0;net8.0;net9.0;net10.0` | `SqlLog` (writer, thread-safe), `SqlLogEntry`, `SqlLogScope` (`Func<string?>` for the test, set by the suite), `LoggingDbConnection`, `LoggingDbCommand`, `LoggingDbDataReader`, `LoggingDbProviderFactory`, `Statements`, `SchemaSnapshot` (over any `DbConnection`), `ExtendedEvents` (the session's SQL; reading through `sys.fn_xe_file_target_read_file`) |
-| `srcnew/Brinell.Mocking.Data.EntityFrameworkCore` | `net8.0;net9.0;net10.0` | `SqlLogInterceptor` (command and connection), `UseSqlLog(this DbContextOptionsBuilder, SqlLog)` |
+| `srcnew/Brinell.Mocking.Data.EntityFrameworkCore` | `net10.0` (EF Core 10) | `SqlLogInterceptor` (command and connection), `UseSqlLog(this DbContextOptionsBuilder, SqlLog)` |
 | `testsnew/Brinell.Mocking.Data.Tests` | `net10.0` | Unit tests; wrapper tests on SQLite and on the local SQL Server; the XE tests in category `SqlServer`, skipped without one |
 | `tools/Brinell.Cli/Sql/` | as the CLI | `brinell sql schema`, `brinell sql capture start`, `stop`, `read`, `brinell sql report` |
 
