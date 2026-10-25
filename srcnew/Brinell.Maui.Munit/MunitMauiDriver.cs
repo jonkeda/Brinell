@@ -110,7 +110,11 @@ public sealed class MunitMauiDriver : IMauiDriver
         return !TestContext.Dispatcher.HasPendingWork;
     }
 
-    public string CurrentRoute() => _rendered.Navigation.Location ?? CurrentPage.GetType().Name;
+    // The top page's identity is its AutomationId, the id a caller then looks it up by
+    // (PageNavigation.WaitArrived); its type name only where it has none.
+    public string CurrentRoute()
+        => _rendered.Navigation.Location
+           ?? (string.IsNullOrEmpty(CurrentPage.AutomationId) ? CurrentPage.GetType().Name : CurrentPage.AutomationId);
 
     public void Refresh() => TestContext.Dispatcher.RunPending();
 

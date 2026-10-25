@@ -30,6 +30,17 @@ public abstract class MauiTestFixtureBase : IDisposable
     protected BrinellMauiConfiguration Configuration { get; private set; }
 
     /// <summary>
+    /// Makes a fixture's context in memory instead of launching the app: the MUnit head
+    /// (<c>Brinell.Maui.Munit</c>, .my/mUnit) sets it once for a test assembly that runs a device
+    /// suite's fixtures, tests and page objects unchanged. Null, the default, launches the app.
+    /// </summary>
+    /// <remarks>
+    /// Static because the suite's fixtures are linked as they are and cannot be told otherwise; it
+    /// is asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.
+    /// </remarks>
+    public static Func<MauiTestFixtureBase, MauiTestContextOptions>? InMemoryHead { get; set; }
+
+    /// <summary>
     /// Initializes the fixture by loading configuration and creating the test context and screenshot service.
     /// </summary>
     protected MauiTestFixtureBase()
@@ -39,11 +50,11 @@ public abstract class MauiTestFixtureBase : IDisposable
         
         Configuration = BrinellMauiConfiguration.Load();
         
-        _options = CreateTestContextOptions();
+        _options = InMemoryHead?.Invoke(this) ?? CreateTestContextOptions();
 
         _context = new MauiTestContext(_options);
         UseTheAppsCulture();
-        
+
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATED - Driver session started");
         
         _screenshotService = CreateScreenshotService(_context);
@@ -101,7 +112,7 @@ public abstract class MauiTestFixtureBase : IDisposable
             Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} old session did not close: {error.Message}");
         }
 
-        _context = new MauiTestContext(_options);
+        _context = new MauiTestContext(InMemoryHead?.Invoke(this) ?? _options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
         OnRestarted();
