@@ -372,3 +372,11 @@ named Bruinell's Blazor and Html suites only.
 
 Next, for the owner to choose: mark the studio's browser-only scenarios and tests so the whole suite is green on
 bUnit, then measure it; a warm in-process host between runs; the game suite's bUnit head.
+
+## Where it stands (2026-10-25)
+
+- The studio suite runs on the bUnit head: 143 passed, 22 browser-only skipped (`@browser`, `[BrowserFact]`), about
+  50 s against about 2 m 40 s in the browser. Bruinell's Blazor, Html and Todo web suites run on both heads.
+- **The game suite's bUnit head waits:** the owner, 2026-10-25, studio first; `Tomorrow.App.UITests` stays in the browser.
+- Todo's web UAT suite was never made to run on bUnit; the warm host waits on reruns without a build being common
+  (`.my/test-selection/next-plan.md`, item 5).
