@@ -16,9 +16,14 @@ public sealed class SelectionTests : IDisposable
               <ItemGroup>
                 <ProjectReference Include="..\Shop.App\Shop.App.csproj" />
                 <ProjectReference Include="..\Lib\Lib.csproj" />
+                <Compile Include="..\Shared\ShopFixture.cs" Link="Shared\ShopFixture.cs" />
+                <Compile Include="..\Shared\Pages\*.cs" LinkBase="Shared\Pages" />
               </ItemGroup>
             </Project>
             """);
+        Write("Shared/ShopFixture.cs", "public sealed class ShopFixture {}");
+        Write("Shared/Pages/MenuPage.cs", "public sealed class MenuPage {}");
+        Write("Shop.App/Components/Pages/Menu.razor", "<MenuList TestId=\"menu-list\" />");
         Write("Lib/Lib.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
         Write("Lib/Control.cs", "class Control {}");
         _app = Write("Shop.App/Shop.App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\" />");
@@ -56,6 +61,7 @@ public sealed class SelectionTests : IDisposable
             1;bunit;Shop.UITests.Tests.CartTests.Coupon;;;call;Enter;CartPage;#coupon;Enter;10;1;1;ok
             1;bunit;Shop.UITests.Tests.CartTests.Lines;;;call;Count;CartPage;Rows('Css:[data-testid^='line-']');Count;11;1;1;ok
             1;bunit;Shop.UITests.Tests.ShellTests.Menu;;;call;Click;SampleShell;SampleShell;Click;12;1;1;ok
+            1;bunit;Shop.UITests.Tests.MenuTests.Open;;;call;Click;MenuPage;menu-list;Click;12;1;1;ok
             1;bunit;Shop.UITests.Tests.CounterTests.Visible;;;query;TryFind;CounterPage;[data-testid='increment-btn'];TryFind;12;0;;
             1;bunit;Uat: Counting up;Counting up;3: Given the counter page;call;Click;CounterPage;[data-testid='increment-btn'];Click;13;1;1;ok
             """);
@@ -140,6 +146,14 @@ public sealed class SelectionTests : IDisposable
         => Assert.Equal("FullyQualifiedName~Shop.UITests.Tests.CartTests.", Changed("Shop.UITests/Tests/CartTests.cs").Filter);
 
     [Fact]
+    public void APageObjectTheSuiteLinksFromElsewhere_ReachesItsTests()
+        => Assert.Equal(["Shop.UITests.Tests.MenuTests.Open"], Changed("Shared/Pages/MenuPage.cs").Picked.Select(test => test.Name));
+
+    [Fact]
+    public void AComponentsTestIdParameter_CountsAsATestId()
+        => Assert.Equal(["Shop.UITests.Tests.MenuTests.Open"], Changed("Shop.App/Components/Pages/Menu.razor").Picked.Select(test => test.Name));
+
+    [Fact]
     public void AFeatureFile_RunsItsScenarios()
         => Assert.Equal("BddScenario=Features/counter.feature.md#Counting-up", Changed("Shop.UITests/Features/counter.feature.md").Filter);
 
@@ -148,6 +162,7 @@ public sealed class SelectionTests : IDisposable
     [InlineData("Shop.App/Program.cs", "shared by the app's pages")]
     [InlineData("Lib/Control.cs", "in Lib, which the suite builds on")]
     [InlineData("Shop.UITests/TestBase/ShopTestBase.cs", "the suite's shared test code")]
+    [InlineData("Shared/ShopFixture.cs", "the suite's shared test code")]
     [InlineData("Shop.UITests/uat.config.md", "the suite's set-up")]
     [InlineData("Directory.Packages.props", "every project's build")]
     public void SharedCode_RunsTheSuiteWhole(string file, string why)

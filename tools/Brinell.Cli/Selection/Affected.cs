@@ -31,12 +31,13 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
         var references = References(suiteFolder);
         var apps = appFolders?.Select(Folder).ToList() ?? references.Where(IsWebProject).ToList();
         var scenarios = SuiteScenarios.Of(suiteFolder);
+        var linked = Linked(suiteFolder);
         var picked = new List<PickedTest>();
         var notes = new List<string>();
 
         foreach (var file in changed.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (Under(file, suiteFolder))
+            if (Under(file, suiteFolder) || linked.Any(item => item.IsMatch(file)))
             {
                 if (InSuite(file, suiteFolder, map, scenarios, picked, notes) is { } whole)
                     return new Affected(whole, [], notes);
@@ -62,7 +63,8 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
         return new Affected(null, ordered, notes);
     }
 
-    // A file of the suite itself: a feature file, a page object, a test class; anything else is the suite's base.
+    // A file of the suite itself, or one it links from elsewhere (<Compile Include="..\Other\Fixture.cs" />): a feature file,
+    // a page object, a test class; anything else is the suite's base.
     private static string? InSuite(string file, string suiteFolder, TouchMap map, SuiteScenarios scenarios, List<PickedTest> picked, List<string> notes)
     {
         var name = Name(file, suiteFolder);
@@ -138,10 +140,13 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
         return null;
     }
 
-    /// <summary>A page's test ids and ids, as written: a value with <c>@</c> in it counts by what comes before.</summary>
+    /// <summary>
+    /// A page's test ids and ids, as written: <c>data-testid</c>, <c>id</c>, and a component's test-id parameter
+    /// (<c>TestId="..."</c>, <c>TabTestId="..."</c>); a value with <c>@</c> in it counts by what comes before.
+    /// </summary>
     public static IEnumerable<TestId> TestIds(string razor)
-        => Regex.Matches(razor, @"\b(data-testid|id)\s*=\s*""([^""]*)""")
-            .Select(match => (Attribute: match.Groups[1].Value, Value: match.Groups[2].Value))
+        => Regex.Matches(razor, @"\b(data-testid|id|\w*TestId)\s*=\s*""([^""]*)""")
+            .Select(match => (Attribute: match.Groups[1].Value == "id" ? "id" : "data-testid", Value: match.Groups[2].Value))
             .Select(found => found.Value.IndexOf('@') is var at and >= 0
                 ? new TestId(found.Attribute, found.Value[..at], Prefix: true)
                 : new TestId(found.Attribute, found.Value, Prefix: false))
@@ -151,7 +156,7 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
     // A control's locator names the id: [data-testid='x'], [data-testid^='x-'], #x, or the id alone.
     private static bool Uses(string control, TestId id)
     {
-        if (control == id.Text)
+        if (control == id.Text || (id.Prefix && control.StartsWith(id.Text, StringComparison.Ordinal)))
             return true;
         var quoted = id.Prefix ? new[] { $"'{id.Text}", $"\"{id.Text}" } : [$"'{id.Text}'", $"\"{id.Text}\""];
         if (id.Attribute == "data-testid")
@@ -184,6 +189,23 @@ internal sealed record Affected(string? Whole, IReadOnlyList<PickedTest> Picked,
 
         return found;
     }
+
+    /// <summary>
+    /// The files the suite's project links from outside its folder (<c>Compile</c>, <c>None</c>, <c>Content</c> items whose
+    /// path leaves it), as patterns over full paths: <c>*</c> within a folder, <c>**</c> across folders.
+    /// </summary>
+    public static IReadOnlyList<Regex> Linked(string suiteFolder)
+        => Directory.EnumerateFiles(suiteFolder, "*.csproj")
+            .SelectMany(project => XDocument.Load(project).Descendants()
+                .Where(element => element.Name.LocalName is "Compile" or "None" or "Content" or "EmbeddedResource")
+                .Select(element => element.Attribute("Include")?.Value)
+                .OfType<string>()
+                .SelectMany(include => include.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Select(include => Path.GetFullPath(include.Replace('\\', Path.DirectorySeparatorChar), Path.GetDirectoryName(project)!)))
+            .Where(path => !Under(path, suiteFolder))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(path => new Regex("^" + Regex.Escape(path).Replace(@"\*\*", "\u0001").Replace(@"\*", @"[^\\/]*").Replace("\u0001", ".*") + "$", RegexOptions.IgnoreCase))
+            .ToList();
 
     private static bool IsWebProject(string folder)
         => Directory.EnumerateFiles(folder, "*.csproj").Any(project => XDocument.Load(project).Root?.Attribute("Sdk")?.Value == "Microsoft.NET.Sdk.Web");
