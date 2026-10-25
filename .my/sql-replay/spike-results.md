@@ -1,10 +1,19 @@
 # SQL replay spike: results
 
 The spike of [plan.md](plan.md), step 0. In progress: the spike app and its suite (0.1, 0.2), Todo.Web
-on bUnit (0.3), the measurement (0.4), replay with no database (P2) and 20 replays on bUnit (P3a)
-are done. Churn (0.5, P4) and the browser's determinism (P3b) are not started.
+on bUnit (0.3), the measurement (0.4), replay with no database (P2), 20 replays on bUnit (P3a) and
+churn (0.5, P4) are done. The browser's determinism (P3b) is not started.
 
 ## The outcome so far
+
+P4 fails, and it's the result that matters most. Of ten ordinary changes, eight needed every
+recording re-recorded: four through the stamp (migrations, an upgrade), four through misses that
+reached every test. Only an `AsNoTracking` and a different kind of GUID left the recordings alone.
+Every message named its cause, so the failure is the cost, not confusion. Two things make the cost
+worse than it has to be: EF orders a query's columns by property name, so renaming a property
+alone breaks every query on its entity; and on bUnit every test runs the start page's query first,
+so any change to that query touches every recording.
+
 
 P2 and P3a pass. All five scenarios replay on bUnit with the connection string pointing at a
 server that doesn't exist, the unique-key error and the spatial distance included, and 20 replay
@@ -144,3 +153,57 @@ first query was back, so a slow first load could overwrite the filtered list. Th
 only once loaded, and the page object waits for it; 6 runs on each head passed after. Replay never
 showed the race because its answers come at once, which is also a warning: replay can hide a race
 the real database would show.
+
+## Churn (0.5, P4)
+
+The recordings made at a base commit, then ten changes each made on its own on the branch
+`spike/sql-replay-churn` (a commit and its revert per change) and the five scenarios replayed with
+no database. Two things were added to the spike first: a stamp on each recording (the migrations'
+ids hashed, EF Core's and SqlClient's versions), checked before any command; and a miss message
+that names where the text parts from the nearest recorded command.
+
+| # | Change | Expected | Got | Recordings hit |
+| --- | --- | --- | --- | --- |
+| 1 | Nullable column `Notes`, migration | Stale | Stale: migrations | 5 |
+| 2 | `AsNoTracking` on the list | No miss | No miss | 0 |
+| 3 | `Include` of a new `Region`, migration | Miss on the list | Stale: migrations | 5 |
+| 4 | Property `Kind` renamed, column kept | No miss | Miss: column order | 5 |
+| 5 | Column renamed too, migration | Stale | Stale: migrations | 5 |
+| 6 | List ordered by `CreatedAt` | Miss on the list | Miss: `ORDER BY` | 5 |
+| 7 | `==` chain for `Contains` | Miss on the list | Miss: constants in `IN` | 5 |
+| 8 | EF 10.0.12 to 10.0.13 | Stale | Stale: EF and SqlClient (6.1.6 to 6.1.7) | 5 |
+| 9 | Count badge, own `CountAsync` | Miss naming it | Miss: `SELECT COUNT(*)` | 5 |
+| 10 | `Guid.CreateVersion7()` | No miss | No miss: bound | 0 |
+
+Two changes gave another outcome than the plan expected:
+
+- **Change 3 is stale, not a miss.** A new entity needs a migration, so the stamp speaks first; the
+  plan's expectation was wrong, not replay.
+- **Change 4 misses everywhere.** EF projects columns in property-name order, so after the rename
+  `[Kind]` comes before `[CreatedAt]` in every query on `Place`. The schema and the behaviour are the
+  same; the recordings aren't. This is the failure of P4.
+
+Replayed with the stamp ignored (`BRINELL_SQL_STAMP=ignore`), changes 1, 3 and 5 each miss on the
+first query that loads a `Place`: the new column, join or name is in every projection. So the
+stamp hides nothing that would have survived; it only says it sooner and in one line.
+
+Why every change reaches every recording: on bUnit each test's first page load renders the start
+address (`/`), so every recording begins with the list query, even `DistanceIsShown`, which never
+opens the list. Five of the eight re-records come down to that one query.
+
+Also found on the way: recording twice failed once in 16 runs, because the start page's query and
+the detail page's queries came in another order. Replay already took the reads between two writes
+as a set; the pairing of the two recordings now does the same.
+
+## What P4 changes before step 2
+
+- **Match a query's columns as a set.** Compare `SELECT` lists without their order and give the
+  recorded columns back in the order asked for. That takes change 4's kind of miss away, and needs
+  a light parse of the projection.
+- **No start-page render on bUnit.** The bUnit context renders its root at the start address before
+  the first navigation; skipping that render when a navigation follows at once takes the list
+  query out of every recording, and helps the bUnit head's speed too.
+- **Say the cost plainly in the proposal.** With those two, changes 4 and 6 would hit one or two
+  recordings instead of five; but migrations and upgrades still re-record everything. Replay pays
+  where the schema is quiet and the database is expensive to have, not where the model changes
+  every week.

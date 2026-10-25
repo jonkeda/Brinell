@@ -1,8 +1,8 @@
 # SQL replay: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.4, P2 and P3a done (P1 37% with the reset; replay 239 ms
-against 1,245 ms; see [spike-results.md](spike-results.md)); next churn (0.5, P4) and the browser (P3b).
-Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
+Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.5 done; P2, P3a pass, P4 fails (8 of 10 changes re-record
+every recording; see [spike-results.md](spike-results.md)); next P3b (the browser), then the proposal
+amended. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
