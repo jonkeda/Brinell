@@ -55,6 +55,8 @@ The Scraper drives Playwright's Chromium. Install it once per machine with
 | `brinell data schema [--check]` | Writes (or checks) `testdata.schema.json` | |
 | `brinell scenario preview <file> [--out page.html]` | A feature file's preview as a page (`--suite`, `--host`) | [Visual Studio Preview](../guides/visual-studio-preview.md) |
 | `brinell scenario results delete [file] [--line N \| --suite <name>]` | Deletes old results of a scenario, a file or a suite from every run | |
+| `brinell tests touch-map <timings>… [--suite <folder>]` | From a full run's timings (`BRINELL_TIMINGS`), writes the suite's `touch-map.json`: which test and scenario used which page objects and controls | |
+| `brinell tests affected [--suite <folder>] [--base <rev> \| --files <paths>]` | The suite's tests a change reaches, each with why, as one `--filter` (`--app`, `--map`, `--always`, `--json`); the suite's libraries, test base and the app's shared code run it whole | |
 | `brinell controls generate --input <paths>` | Each `.tpl.cs` to its `.gen.cs` (`--members all\|actions\|state`) | [generator contract](../../.github/skills/maui-control/references/generator-contract.md) |
 | `brinell version` | The version | |
 

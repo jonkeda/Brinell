@@ -28,7 +28,7 @@ where not.
 | --- | --- | --- | --- | --- |
 | 1 | Deal scenarios to collections by their last duration (done) | ~5 s bUnit, ~20 to 30 s browser, every full run | S | done by Claude |
 | 2 | Report a skipped scenario as skipped, not Passed (done) | True counts in every run and gate | S | done by Claude |
-| 3 | Selection: the touch map and a script that picks what a diff reaches | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
+| 3 | Selection: the touch map and a script that picks what a diff reaches (Brinell's done) | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
 | 4 | Fewer fights in PLT.35.4 (done: 10) | 15 to 20 s off the slowest collection | S | the owner: the scenario |
 | 5 | A warm host between runs | ~10 to 20 s off every small run | M | done by Claude |
 | 6 | Measure `Tomorrow.Data.Tests`' database setup | Unknown until measured; the template may apply | S, then M | done by Claude |
@@ -90,6 +90,30 @@ record test, scenario, step, page and control for every call: the touch map the 
 - The widening rules: shared code (layout, `Tomorrow.Web`, the fixture, migrations, `Directory.Packages.props`) runs the
   suite whole. The owner checks the list.
 - Done when a change to one bench page runs that bench's scenarios and nothing else, with the reasons printed.
+
+## Item 3 on Brinell's suites, done (2026-10-25)
+
+- **`brinell tests touch-map <timings>`** writes `touch-map.json` beside the suite: every test and scenario of the run, its
+  filter (`FullyQualifiedName=` or `BddScenario=`), and the page objects and controls it reached.
+- **`brinell tests affected`** follows `git diff <base>` (or `--files`) to the tests it reaches and prints each with why and
+  one `--filter`. A page reaches the tests that used its `data-testid`s or ids (an id built with `@` counts by its start); a
+  page object, the tests that used it; a feature file, its scenarios; a test class, its tests.
+- **The widening rules:** a file in any project the suite references (the libraries), the suite's other code (test base,
+  fixture, config), the app's shared code (layout, `Program.cs`, styles) and the root build files run the suite whole. Files
+  outside the suite, its app and what they reference run nothing. `--always` adds a smoke set to a pick.
+- **For the rows:** `[assembly: TestScope]` names plain `[Fact]` tests in the timings; a query outside a call
+  (`IsVisible`, `TryGetText`, `IsExists`) writes a `query` row. Before it, six Blazor tests that only asked `IsVisible` or
+  `IsEnabled` reached no control and would have been missed. Both suites' UAT classes now run one case per scenario.
+- **Misses, measured:** Counter.razor's text broken ("Current count" to "Count now"). Blazor picks 24 of 35, Html 7 of 27;
+  on both heads every test that failed in the whole run was picked (5 and 5 failing on Blazor, 4 and 5 on Html).
+- **Time:** small here. These suites are a few seconds of tests behind a fixed start: Blazor in the browser 36 s picked
+  against 56 s whole (green), Html 27 s against 36 s; with the break both took as long, the failures' waits leading.
+  The saving shows on a suite like Tomorrow's studio, 172 scenarios.
+- **Two Html tests touch no page** (ResetAppState): they run only with the suite's base or libraries, which is right.
+- **Next, Tomorrow:** `tools/Select-Tests.ps1` calls `brinell tests affected` per suite (`--app src/Tomorrow.Studio`, the
+  game's for the game suite, `--always "Gate=Smoke"`); `Tomorrow.Web`, `Tomorrow.Game` and the rest widen by reference. A
+  full run with `BRINELL_TIMINGS` writes each suite's map. Tomorrow's pages use test-id prefixes (`bench-*`), which the
+  id rule covers if the page writes them literally; to be checked on one bench page, the item's done line.
 
 ## 4. Fewer fights in PLT.35.4: done
 
