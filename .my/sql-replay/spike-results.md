@@ -305,3 +305,34 @@ What the browser changed:
 Time: replay ran 8 to 9 s per run of five tests, the real database 9 s in the same session. In
 the browser the browser dominates, so replay saves little for a small app; its gain there is
 not having a database, not speed.
+
+## Parallel runs (P5)
+
+P5 passes. The statics are gone, the five scenarios are five classes (xUnit runs each class as its
+own collection, in parallel), and:
+
+| Check | Result |
+| --- | --- |
+| 20 parallel replays, bUnit, no database | 100 passes, no miss; under 1 s a run |
+| 20 parallel replays, browser, no database | 100 passes, no miss; 5 to 6 s a run (8 to 9 s serial) |
+| Parallel recording on a database per worker | The same recordings as serial, on both heads |
+| 35 tests in one run (30 repeats of one) | EF's too-many-service-providers warning, made an error, never raised |
+
+How nothing is shared:
+
+- **The test's name** comes from its own `ITestOutputHelper` (xUnit 2 keeps the test in a private
+  field; xUnit 3's `TestContext` would replace that), not from an attribute and a static.
+- **The session** lives in the test's bUnit container or in its own host; the interceptors are
+  the test's instances. EF keeps one internal service provider for them all, so per-test
+  interceptors cost nothing.
+- **A database per worker:** a test leases a database no running test holds
+  (`BrinellSqlSpike_w1`, `_w2`, ...), made from the migrations the first time, and returns it when
+  done. Five tests in parallel made five. The app hosted in the test's process takes its worker's
+  database through a setting (`Spike:Connection`). Off, the browser head now uses the same host
+  per test, not one process for the run.
+- **The schema snapshot** is written once a run, under a lock, from the first worker database.
+
+One thing parallel recording found: SqlClient names a spatial column's type with its database
+(`BrinellSqlSpike_w4.sys.geography`), so a recording depended on which worker's database made it.
+The type is now recorded without the database; after that, serial and parallel recordings were
+the same. On a legacy system any user-defined type will do the same.

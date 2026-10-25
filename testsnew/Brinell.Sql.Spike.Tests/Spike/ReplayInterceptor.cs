@@ -101,7 +101,7 @@ public sealed class ReplayInterceptor(ReplaySession session) : DbCommandIntercep
         {
             do
             {
-                var columns = Enumerable.Range(0, reader.FieldCount).Select(i => new RecordedColumn(reader.GetName(i), FieldType(reader, i), reader.GetDataTypeName(i))).ToList();
+                var columns = Enumerable.Range(0, reader.FieldCount).Select(i => new RecordedColumn(reader.GetName(i), FieldType(reader, i), TypeName(reader.GetDataTypeName(i)))).ToList();
                 var rows = new List<IReadOnlyList<System.Text.Json.Nodes.JsonNode?>>();
                 while (reader.Read())
                 {
@@ -122,6 +122,10 @@ public sealed class ReplayInterceptor(ReplaySession session) : DbCommandIntercep
 
     // A UDT (geography, geometry, hierarchyid) has no CLR type here: its bytes, as SqlClient gives them.
     private static bool IsUdt(RecordedColumn column) => column.ClrType == typeof(SqlBytes).FullName;
+
+    // A UDT's name comes as database.schema.type (BrinellSqlSpike_w4.sys.geography): without the database, so a recording
+    // doesn't depend on which worker's database it was made on.
+    private static string TypeName(string name) => name.Split('.') is [_, var schema, var type] ? $"{schema}.{type}" : name;
 
     private static string FieldType(DbDataReader reader, int ordinal)
     {

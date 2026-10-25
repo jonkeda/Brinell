@@ -1,12 +1,13 @@
-using Brinell.Sql.Spike.Tests.Spike;
 using Brinell.Sql.Spike.Tests.TestBase;
+using Xunit.Abstractions;
 
 namespace Brinell.Sql.Spike.Tests.Tests;
 
-/// <summary>The spike's five scenarios (.my/sql-replay/plan.md, 0.2), on either head.</summary>
+// The spike's five scenarios (.my/sql-replay/plan.md, 0.2), on either head; a class each, so xUnit runs them in parallel
+// (each class is its own collection), as P5 needs.
+
 [Trait("Category", "UITest")]
-[MeasureDatabaseShare]
-public sealed class PlaceTests : SpikeTestBase
+public sealed class PlaceListTests(ITestOutputHelper output) : SpikeTestBase(output)
 {
     [Fact]
     public void ListShowsSeededPlaces()
@@ -17,7 +18,11 @@ public sealed class PlaceTests : SpikeTestBase
         places.Names.AssertText("Amsterdam, Enkhuizen, Hoorn, Medemblik, Purmerend");
         places.KindCounts.AssertText("city 2, town 3");
     }
+}
 
+[Trait("Category", "UITest")]
+public sealed class PlaceFilterTests(ITestOutputHelper output) : SpikeTestBase(output)
+{
     [Fact]
     public void FilterByKind()
     {
@@ -28,7 +33,11 @@ public sealed class PlaceTests : SpikeTestBase
         places.Count.AssertText("3");
         places.Names.AssertText("Enkhuizen, Hoorn, Medemblik");
     }
+}
 
+[Trait("Category", "UITest")]
+public sealed class AddPlaceTests(ITestOutputHelper output) : SpikeTestBase(output)
+{
     [Fact]
     public void AddPlaceShowsIt()
     {
@@ -40,7 +49,11 @@ public sealed class PlaceTests : SpikeTestBase
         place.Kind.AssertText("town");
         place.Population.AssertText("28,000");
     }
+}
 
+[Trait("Category", "UITest")]
+public sealed class DuplicatePlaceTests(ITestOutputHelper output) : SpikeTestBase(output)
+{
     [Fact]
     public void AddDuplicateNameIsRefused()
     {
@@ -50,7 +63,11 @@ public sealed class PlaceTests : SpikeTestBase
 
         form.Error.AssertText("That name is taken");
     }
+}
 
+[Trait("Category", "UITest")]
+public sealed class PlaceDistanceTests(ITestOutputHelper output) : SpikeTestBase(output)
+{
     [Fact]
     public void DistanceIsShown()
     {

@@ -2,7 +2,8 @@
 
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
-legacy system; steps 1 to 6 below are its outline, detailed one at a time. Next: step 1, the log. Each step ends green:
+legacy system; steps 1 to 6 below are its outline, detailed one at a time. P5, parallel runs, passes (added after
+step 0). Next: step 1, the log. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -105,6 +106,7 @@ didn't touch counts as a confusing miss.
 | P3a | Determinism, bUnit | 20 replays in a row of the five scenarios: 0 misses | The matcher's design changes before step 2 |
 | P3b | Determinism, browser | 20 replays with a host per test: at most 1 miss | Step 7 is dropped |
 | P4 | Churn | Every change gives its expected outcome; no confusing miss | The stamp, keys or summary change before step 2 |
+| P5 | Parallel runs | No statics; the scenarios in several classes; 20 parallel replays on each head, 0 misses; parallel recording on a database per worker gives the recordings a serial one gives; EF's too-many-service-providers warning never raised | The session's scoping or the recording's isolation changes before step 2 |
 
 ### 0.7 The report
 

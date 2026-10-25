@@ -94,7 +94,7 @@
             {
               "Name": "Location",
               "ClrType": "System.Data.SqlTypes.SqlBytes",
-              "DataTypeName": "BrinellSqlSpike.sys.geography"
+              "DataTypeName": "sys.geography"
             },
             {
               "Name": "Name",
@@ -249,49 +249,183 @@
     {
       "Index": 2,
       "Kind": "reader",
-      "Text": "SET IMPLICIT_TRANSACTIONS OFF;\r\nSET NOCOUNT ON;\r\nINSERT INTO [Places] ([Id], [CreatedAt], [Kind], [Location], [Name], [Population])\r\nVALUES (@p0, @p1, @p2, @p3, @p4, @p5);\r\n",
-      "Parameters": {
-        "@p0": {
-          "t": "Guid",
-          "v": "bedefd45-b259-4383-9156-688f7b6155ce"
-        },
-        "@p1": {
-          "t": "DateTimeOffset",
-          "v": "2026-10-25T18:43:58.1765417\u002B01:00"
-        },
-        "@p2": {
-          "t": "String",
-          "v": "town"
-        },
-        "@p3": {
-          "t": "SqlBytes",
-          "v": "5hAAAAEMUrgehetRSkA9CtejcD0UQA=="
-        },
-        "@p4": {
-          "t": "String",
-          "v": "Hoorn"
-        },
-        "@p5": {
-          "t": "Decimal",
-          "v": "1"
+      "Text": "SELECT [Kind], [Places] FROM [dbo].[KindCounts] ORDER BY [Kind]\r\n",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "Kind",
+              "ClrType": "System.String",
+              "DataTypeName": "nvarchar"
+            },
+            {
+              "Name": "Places",
+              "ClrType": "System.Int32",
+              "DataTypeName": "int"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "city"
+              },
+              {
+                "t": "Int32",
+                "v": "2"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "town"
+              },
+              {
+                "t": "Int32",
+                "v": "3"
+              }
+            ]
+          ]
         }
-      },
-      "Volatile": [
-        "@p0",
-        "@p1"
       ],
-      "Results": null,
       "RecordsAffected": -1,
       "Scalar": null,
-      "Error": {
-        "Type": "SqlException",
-        "Number": 2601,
-        "State": 1,
-        "Class": 14,
-        "Message": "Cannot insert duplicate key row in object \u0027dbo.Places\u0027 with unique index \u0027IX_Places_Name\u0027. The duplicate key value is (Hoorn).\r\nThe statement has been terminated.",
-        "Server": "."
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 3,
+      "Kind": "reader",
+      "Text": "SELECT [p].[Id], [p].[CreatedAt], [p].[Kind], [p].[Location], [p].[Name], [p].[Population]\r\nFROM [Places] AS [p]\r\nWHERE [p].[Kind] = @_kinds1\r\nORDER BY [p].[Name]",
+      "Parameters": {
+        "@_kinds1": {
+          "t": "String",
+          "v": "town"
+        }
       },
-      "IsWrite": true
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "Id",
+              "ClrType": "System.Guid",
+              "DataTypeName": "uniqueidentifier"
+            },
+            {
+              "Name": "CreatedAt",
+              "ClrType": "System.DateTimeOffset",
+              "DataTypeName": "datetimeoffset"
+            },
+            {
+              "Name": "Kind",
+              "ClrType": "System.String",
+              "DataTypeName": "nvarchar"
+            },
+            {
+              "Name": "Location",
+              "ClrType": "System.Data.SqlTypes.SqlBytes",
+              "DataTypeName": "sys.geography"
+            },
+            {
+              "Name": "Name",
+              "ClrType": "System.String",
+              "DataTypeName": "nvarchar"
+            },
+            {
+              "Name": "Population",
+              "ClrType": "System.Decimal",
+              "DataTypeName": "decimal"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "Guid",
+                "v": "a1000000-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "DateTimeOffset",
+                "v": "2026-10-01T09:00:00.0000000\u002B02:00"
+              },
+              {
+                "t": "String",
+                "v": "town"
+              },
+              {
+                "t": "SqlBytes",
+                "v": "5hAAAAEMNV66SQxaSkB56SYxCCwVQA=="
+              },
+              {
+                "t": "String",
+                "v": "Enkhuizen"
+              },
+              {
+                "t": "Decimal",
+                "v": "18945.00"
+              }
+            ],
+            [
+              {
+                "t": "Guid",
+                "v": "a1000000-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "DateTimeOffset",
+                "v": "2026-10-01T09:00:00.0000000\u002B02:00"
+              },
+              {
+                "t": "String",
+                "v": "town"
+              },
+              {
+                "t": "SqlBytes",
+                "v": "5hAAAAEMp3nHKTpSSkDpSC7/IT0UQA=="
+              },
+              {
+                "t": "String",
+                "v": "Hoorn"
+              },
+              {
+                "t": "Decimal",
+                "v": "74064.00"
+              }
+            ],
+            [
+              {
+                "t": "Guid",
+                "v": "a1000000-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "DateTimeOffset",
+                "v": "2026-10-01T09:00:00.0000000\u002B02:00"
+              },
+              {
+                "t": "String",
+                "v": "town"
+              },
+              {
+                "t": "SqlBytes",
+                "v": "5hAAAAEMiUFg5dBiSkCwA\u002BeMKG0UQA=="
+              },
+              {
+                "t": "String",
+                "v": "Medemblik"
+              },
+              {
+                "t": "Decimal",
+                "v": "47402.00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Error": null,
+      "IsWrite": false
     }
   ]
 }

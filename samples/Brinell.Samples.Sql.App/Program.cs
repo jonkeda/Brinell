@@ -7,7 +7,8 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddSpikeData(SpikeData.Connection);
+// Spike:Connection lets a test hosting the app in its own process give each host its own database.
+builder.Services.AddSpikeData(builder.Configuration["Spike:Connection"] ?? SpikeData.Connection);
 
 var app = builder.Build();
 

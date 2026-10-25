@@ -98,6 +98,28 @@ aren't hashed with their tables; reference data written by scripts isn't in any 
 names in a body are taken as `dbo`. Proposal: dependencies listed by hand for the few dynamic
 procedures, triggers hashed into their table, reference data recorded once as a shared recording.
 
+## Parallel runs
+
+Parallel runs matter as much as replay itself. On a legacy system the shared test database is
+usually what keeps UI tests serial: tests collide on each other's rows, so suites run one at a time
+or are split by hand. A replayed test shares no database, so replayed tests can run side by side.
+
+- **Nothing is shared between tests.** Each test's session (its recording, bindings and misses) is
+  found through its own container on bUnit or its own host in the browser, never through a static.
+  Recordings are a file per test and head; the schema snapshot is read-only.
+- **Recording runs on a database per worker.** Recording still needs a real database, and
+  recording in parallel on one would bring the collisions back. A worker leases a database of its
+  own, made once from the migrations (or a template), and resets it per test as before.
+- **The cost is the host, not the database.** A host per test in the browser starts on a free port
+  and is safe in parallel, but each one takes start-up time and memory; how many workers a machine
+  carries is measured, not assumed.
+- **EF's internal service providers** must not multiply with every test's interceptors; the spike
+  makes that an error to find out.
+
+The spike proves it as pass line P5: the statics removed, the tests split across classes so they
+run in parallel, 20 parallel replays on both heads without a miss, and parallel recording on a
+database per worker giving the same recordings as a serial one.
+
 ## Never in scope
 
 Synthesizing results for a command that wasn't recorded, recordings shared across providers,

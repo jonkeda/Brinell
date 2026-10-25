@@ -94,7 +94,7 @@
             {
               "Name": "Location",
               "ClrType": "System.Data.SqlTypes.SqlBytes",
-              "DataTypeName": "BrinellSqlSpike.sys.geography"
+              "DataTypeName": "sys.geography"
             },
             {
               "Name": "Name",
