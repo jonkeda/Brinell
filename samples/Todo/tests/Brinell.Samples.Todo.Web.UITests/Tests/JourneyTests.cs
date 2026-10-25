@@ -11,6 +11,7 @@ namespace Brinell.Samples.Todo.Web.UITests.Tests;
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Head", "Web")]
+[Spike.MeasureDatabaseShare]
 public sealed class JourneyTests
 {
     private readonly ThreeTodosWebFixture _fixture;
@@ -172,6 +173,7 @@ public sealed class JourneyTests
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Head", "Web")]
+[Spike.MeasureDatabaseShare]
 public sealed class EmptyListTests(EmptyWebFixture fixture)
 {
     [Fact]

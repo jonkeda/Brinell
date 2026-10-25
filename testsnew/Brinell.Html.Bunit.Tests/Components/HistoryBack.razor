@@ -1,0 +1,6 @@
+@* A page that goes back with the browser's history, as an app's own back button does. *@
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<button data-testid="go" @onclick='() => Navigation.NavigateTo("/elsewhere")'>Go</button>
+<button data-testid="back" @onclick='() => JS.InvokeVoidAsync("history.back").AsTask()'>Back</button>

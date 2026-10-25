@@ -28,6 +28,10 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     private readonly BunitHtmlDriver _driver;
     private readonly List<string> _back = [];
     private readonly List<string> _forward = [];
+
+    // Every address the circuit has been at, for the page's own history.back(); _back is the test's back button.
+    private readonly List<string> _history = [];
+    private bool _goingBack;
     private BunitContext _bunit = null!;
     private global::Bunit.TestDoubles.BunitAuthorizationContext _authorization = null!;
     private IServiceScope? _fallbackScope;
@@ -102,7 +106,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     {
         ThrowIfAppFailed();
         var busy = _bunit.JSInterop.Invocations
-            .Where(call => call.Identifier == BusyScript)
+            .Where(call => call.Identifier == _options.BusyScript)
             .Select(call => call.Arguments.FirstOrDefault())
             .LastOrDefault() is true;
         return new PageProbe("complete", true, busy ? "true" : "false");
@@ -293,7 +297,8 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     {
         _bunit = new BunitContext();
         _bunit.JSInterop.Mode = _options.JsInterop;
-        _bunit.JSInterop.SetupVoid(BusyScript, _ => true).SetVoidResult();
+        _bunit.JSInterop.SetupVoid(_options.BusyScript, _ => true).SetVoidResult();
+        _bunit.JSInterop.AddInvocationHandler(new HistoryBackHandler(HistoryBack));
         _options.ConfigureJs?.Invoke(_bunit.JSInterop);
         _options.ConfigureServices?.Invoke(_bunit.Services);
         if (_options.FallbackServices is { } fallback)
@@ -320,6 +325,15 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
             builder.OpenComponent(0, root);
             builder.CloseComponent();
         });
+        _history.Clear();
+        _history.Add(Navigation.Uri);
+        Navigation.LocationChanged += (_, e) =>
+        {
+            if (!_goingBack)
+            {
+                _history.Add(e.Location);
+            }
+        };
         if (_options.BaseUrl is { Length: > 0 } baseUrl)
         {
             Go(baseUrl);
@@ -370,6 +384,43 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
 
         _entered.Remove(key);
         return null;
+    }
+
+    // The page's own history.back(), on the renderer's dispatcher already: the entry before in this circuit, as the
+    // browser goes back without a page load; at the first entry nothing happens, as in a browser with no history.
+    private void HistoryBack()
+    {
+        if (_history.Count < 2)
+        {
+            return;
+        }
+
+        _history.RemoveAt(_history.Count - 1);
+        _goingBack = true;
+        try
+        {
+            Navigation.NavigateTo(_history[^1]);
+        }
+        finally
+        {
+            _goingBack = false;
+        }
+    }
+
+    // Answers history.back() by going back in the circuit; bUnit's loose mode would answer it with nothing.
+    private sealed class HistoryBackHandler(Action back)
+        : JSRuntimeInvocationHandlerBase<Microsoft.JSInterop.Infrastructure.IJSVoidResult>(invocation => invocation.Identifier == "history.back", isCatchAllHandler: false)
+    {
+        // Answers InvokeVoidAsync, which is how a page calls it.
+        public override bool IsVoidResultHandler => true;
+
+        protected override Task<Microsoft.JSInterop.Infrastructure.IJSVoidResult> HandleAsync(JSRuntimeInvocation invocation)
+        {
+            var result = base.HandleAsync(invocation);
+            back();
+            SetResultBase(default!);
+            return result;
+        }
     }
 
     private void Go(string url)

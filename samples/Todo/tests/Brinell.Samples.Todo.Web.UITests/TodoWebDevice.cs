@@ -2,43 +2,43 @@ using Brinell.Core.Configuration;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Services;
 using Brinell.Core.Testing;
-using Brinell.Html.Context;
-using Brinell.Html.Playwright;
-using Brinell.Html.Testing;
+using System.Diagnostics;
 using Brinell.Mocking;
 using Brinell.Samples.Todo.Infrastructure;
+using Brinell.Samples.Todo.Infrastructure.Data;
 using Brinell.Samples.Todo.Web.UITests.Pages;
+using Brinell.Samples.Todo.Web.UITests.Spike;
 
 namespace Brinell.Samples.Todo.Web.UITests;
 
 /// <summary>
-/// One device running the Todo web head: its own seeded SQLite file, network-state file, host
-/// process and browser context. Devices share a backend; the fixture that owns the backend owns
+/// One device running the Todo web head: its own seeded SQLite file, network-state file, and
+/// app on this run's head (<see cref="ITodoWebHead"/>: a host process and browser context, or bUnit). Devices share a backend; the fixture that owns the backend owns
 /// the devices (<see cref="TodoWebFixture"/>).
 /// </summary>
 /// <remarks>
-/// A restart stops the host and starts it again, on a new port, with the same database; the
-/// browser context stays, so page objects built on <see cref="Context"/> keep working.
+/// A restart stops the app and starts it again with the same database. In the browser the host
+/// gets a new port and the browser context stays, so page objects built on <see cref="Context"/>
+/// keep working; on bUnit the context is new, so page objects are made again from it.
 /// </remarks>
 public sealed class TodoWebDevice : ITestApp
 {
     private readonly List<TempDatabase> _retired = [];
-    private readonly PlaywrightTestContext _context;
+    private readonly ITodoWebHead _head;
     private TempDatabase _database;
     private readonly NetworkStateFile _network;
-    private WebAppHost? _host;
     private LaunchSettings _settings;
     private LaunchSettings? _unchangedSettings;
     private IScreenshotService? _screenshots;
 
-    private TodoWebDevice(TestAppDefinition definition, string name, TempDatabase database, NetworkStateFile network, LaunchSettings settings, PlaywrightTestContext context)
+    private TodoWebDevice(TestAppDefinition definition, string name, TempDatabase database, NetworkStateFile network, LaunchSettings settings, ITodoWebHead head)
     {
         Definition = definition;
         Name = name;
         _database = database;
         _network = network;
         _settings = settings;
-        _context = context;
+        _head = head;
     }
 
     /// <summary>The device's name: its browser context's, for the call log.</summary>
@@ -57,9 +57,12 @@ public sealed class TodoWebDevice : ITestApp
     /// <summary>The name the app sends in <c>X-Todo-Client</c>.</summary>
     public string? ClientId => _settings.ClientId;
 
-    public IHtmlTestContext Context => _context;
+    public IHtmlTestContext Context => _head.Context;
 
-    public string BaseUrl => _host?.BaseUrl ?? throw new InvalidOperationException($"{Name} is not running.");
+    public string BaseUrl => _head.BaseUrl;
+
+    /// <summary>The app's time in its repositories, on a head that measures it (bUnit); else null.</summary>
+    public DatabaseClock? Clock => _head.Clock;
 
     /// <summary>The device's network: the app reads it from a file.</summary>
     public NetworkStateFile Network => _network;
@@ -87,8 +90,7 @@ public sealed class TodoWebDevice : ITestApp
         Func<LaunchSettings, LaunchSettings>? adjust = null,
         TestAppDefinition? definition = null)
     {
-        var database = new TempDatabase($"web-{name}-{testSet.Name}");
-        await testSet.SeedDatabaseAsync(database.Path);
+        var database = await SeedAsync(name, testSet);
         var network = NetworkStateFile.Create(Path.Combine(database.Folder, "network-state.txt"));
 
         var settings = new LaunchSettings
@@ -101,15 +103,10 @@ public sealed class TodoWebDevice : ITestApp
             ClientId = clientId,
         };
 
-        var context = await PlaywrightTestContext.CreateAsync(new HtmlTestContextOptions
-        {
-            Headless = !string.Equals(Environment.GetEnvironmentVariable("HEADLESS"), "false", StringComparison.OrdinalIgnoreCase),
-            Name = name,
-        });
-
+        var head = await TodoWebHeads.CreateAsync(name);
         definition ??= new TestAppDefinition(name, name, "web", new Dictionary<string, string>());
-        var device = new TodoWebDevice(definition, name, database, network, adjust?.Invoke(settings) ?? settings, context);
-        device.StartHost();
+        var device = new TodoWebDevice(definition, name, database, network, adjust?.Invoke(settings) ?? settings, head);
+        device.StartApp();
         return device;
     }
 
@@ -136,8 +133,7 @@ public sealed class TodoWebDevice : ITestApp
     /// <summary>Stops the app and starts it again on the same database and backend, then opens the list.</summary>
     public TodoListPage Restart()
     {
-        _host?.Dispose();
-        StartHost();
+        StartApp();
         return OpenList();
     }
 
@@ -165,8 +161,7 @@ public sealed class TodoWebDevice : ITestApp
     /// <summary>Moves the device to another test set: a new seeded database, then a restart.</summary>
     public TodoListPage UseTestSet(TodoTestSet testSet)
     {
-        var database = new TempDatabase($"web-{Name}-{testSet.Name}");
-        testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
+        var database = SeedAsync(Name, testSet).GetAwaiter().GetResult();
 
         // The first database's folder holds the network-state file, so earlier ones stay until Dispose.
         _retired.Add(_database);
@@ -178,8 +173,8 @@ public sealed class TodoWebDevice : ITestApp
 
     public async ValueTask DisposeAsync()
     {
-        await _context.DisposeAsync();
-        _host?.Dispose();
+        await _head.DisposeAsync();
+        TodoDatabase.ReleaseFileHandles();
         _network.Dispose();
         _database.Dispose();
         _retired.ForEach(database => database.Dispose());
@@ -188,12 +183,15 @@ public sealed class TodoWebDevice : ITestApp
     private static string FolderName(string app)
         => string.Concat(app.Select(character => Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
 
-    private void StartHost()
-        => _host = WebAppHost.Start(new WebAppHostOptions
-        {
-            AppPath = WebApp.Assembly(),
-            Environment = _settings.ToVariables(),
-            ReadyPath = "/health",
-            Name = $"Todo web ({Name})",
-        });
+    private void StartApp() => _head.Start(_settings);
+
+    // A fresh database from the test set's local half; its time is the fixture's seed in the SQL replay spike.
+    private static async Task<TempDatabase> SeedAsync(string name, TodoTestSet testSet)
+    {
+        var database = new TempDatabase($"web-{name}-{testSet.Name}");
+        var start = Stopwatch.GetTimestamp();
+        await testSet.SeedDatabaseAsync(database.Path);
+        DatabaseShare.Seeded($"{name}/{testSet.Name}", Stopwatch.GetElapsedTime(start));
+        return database;
+    }
 }

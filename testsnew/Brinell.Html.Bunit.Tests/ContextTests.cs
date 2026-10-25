@@ -135,6 +135,30 @@ public sealed class ContextTests
     }
 
     [Fact]
+    public void HistoryBack_FromThePage_GoesToTheAddressBefore()
+    {
+        using var context = Of<HistoryBack>();
+        var start = context.CurrentUrl;
+        context.FindElement(Locator.ByDataTestId("go")).Click();
+        Assert.Equal(Base + "/elsewhere", context.CurrentUrl);
+
+        context.FindElement(Locator.ByDataTestId("back")).Click();
+
+        Assert.Equal(start, context.CurrentUrl);
+    }
+
+    [Fact]
+    public void HistoryBack_WithNothingBefore_StaysPut()
+    {
+        using var context = Of<HistoryBack>();
+        var start = context.CurrentUrl;
+
+        context.FindElement(Locator.ByDataTestId("back")).Click();
+
+        Assert.Equal(start, context.CurrentUrl);
+    }
+
+    [Fact]
     public void Refresh_RendersThePageAgain_FromItsStart()
     {
         using var context = Sample("/counter");

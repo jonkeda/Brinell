@@ -32,6 +32,12 @@ public sealed class BunitTestContextOptions : HtmlTestContextOptions
     /// </summary>
     public JSRuntimeMode JsInterop { get; init; } = JSRuntimeMode.Loose;
 
+    /// <summary>
+    /// The script the app's pages call with <c>true</c> or <c>false</c> to say whether they are busy; Brinell's own
+    /// <c>brinellBusy.set</c> unless the app has one of its own.
+    /// </summary>
+    public string BusyScript { get; init; } = BunitTestContext.BusyScript;
+
     /// <summary>Planned answers to the page's script calls, as bUnit's <c>Setup</c> and <c>SetupVoid</c> make them.</summary>
     public Action<BunitJSInterop>? ConfigureJs { get; init; }
 }

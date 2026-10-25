@@ -1,6 +1,7 @@
 # SQL replay: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: step 0 (spike) not started; steps 1 to
+Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.3 and 0.4 done (Todo.Web, P1 6% there, see
+[spike-results.md](spike-results.md)); next 0.1 and 0.2, the spike app. Steps 1 to
 8 are an outline, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
@@ -13,7 +14,7 @@ when Todo is touched, the step's own tests, and the suites it touches on every h
 | EF Core | `Microsoft.EntityFrameworkCore` 10.0.12 (root `Directory.Packages.props`); add `Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite` at 10.0.12 |
 | SQLite | `Microsoft.Data.Sqlite` 10.0.12 |
 | bUnit head | `srcnew/Brinell.Html.Bunit`: `BunitTestContext(BunitTestContextOptions)` with `RootComponent`, `ConfigureServices`, `FallbackServices`, `User`, `Roles`, `JsInterop`; example `testsnew/Brinell.Blazor.UITests/TestBase/BlazorSampleBunit.cs` |
-| Head switch | `Brinell.Html.Testing.HtmlHeads`: `BRINELL_HEAD`, else `brinell.html.config.json` `head`, else `Browser` |
+| Head switch | `Brinell.Core.Testing.WebHeads`: `BRINELL_HEAD=bunit`, else the browser |
 | Replay switch | `BRINELL_SQL_REPLAY` = `Off` (default) \| `Record` \| `Replay` |
 | SQL Server | Local instance; `BRINELL_SQL_CONNECTION`, default `Server=.;Database=BrinellSqlSpike;Integrated Security=True;TrustServerCertificate=True`; never LocalDB |
 | Todo.Web | Blazor Interactive Server; composition `AddTodoServices(settings)` plus `WebNavigator`, `WebDialogs`; root `Components/Routes.razor`; data `TodoDatabase` (returns `SqliteConnection`), `SqliteTodoRepository`, `SqliteUserRepository` |
@@ -67,7 +68,7 @@ its own process. So Todo.Web.UITests gets a bUnit head as `Brinell.Blazor.UITest
 
 | Item | Value |
 | --- | --- |
-| Database time, Todo | `Spike/TimedTodoRepository.cs`, `Spike/TimedUserRepository.cs`: decorators registered over the real repositories in the bUnit context; plus the fixture's seed and reset time |
+| Database time, Todo | `Brinell.Samples.Todo.Web.UITests/Spike/DatabaseClock.cs` (`TimedTodoRepository`, `TimedUserRepository` over the real repositories in the bUnit head's composition), `Spike/DatabaseShare.cs` (`BRINELL_DB_SHARE` folder, `[MeasureDatabaseShare]`, run with `-- xUnit.ParallelizeTestCollections=false`); plus the fixture's seed |
 | Database time, spike app | The command log's durations, plus the seed |
 | Test time | A `Stopwatch` per test in the fixture, from the test's start to its end |
 | Runs | Each suite on the bUnit head 3 times; the median per test |

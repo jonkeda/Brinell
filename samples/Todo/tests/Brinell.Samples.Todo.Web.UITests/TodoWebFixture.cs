@@ -91,6 +91,7 @@ public abstract class TodoWebFixture : IAsyncLifetime, ITodoArrangement
     /// <summary>Online, the backend back to the test set, and the list open, showing every todo.</summary>
     public virtual TodoListPage StartTest()
     {
+        Spike.DatabaseShare.Start(Device.Clock);
         Network.SetOnline();
         ResetBackend();
         return OpenList();

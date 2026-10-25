@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
     <!-- Page objects carry UAT names ([UatName], [UatNavigatesTo]). -->
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
@@ -15,9 +16,9 @@
     <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Api\Brinell.Samples.Todo.Api.csproj" />
   </ItemGroup>
 
-  <!-- Built with the tests, not referenced: the fixtures start it themselves (WebAppHost). -->
+  <!-- In the browser the fixtures start it themselves (WebAppHost); on bUnit they render its Routes. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Web\Brinell.Samples.Todo.Web.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Web\Brinell.Samples.Todo.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
