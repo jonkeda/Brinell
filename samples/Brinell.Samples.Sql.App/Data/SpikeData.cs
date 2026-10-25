@@ -64,6 +64,7 @@ public static class PlaceSeed
     public static async Task<IReadOnlyList<Place>> ResetAsync(SpikeDbContext db, CancellationToken cancellationToken = default)
     {
         await db.Database.MigrateAsync(cancellationToken);
+        await db.Visits.ExecuteDeleteAsync(cancellationToken);
         await db.Places.ExecuteDeleteAsync(cancellationToken);
         var places = Places();
         db.Places.AddRange(places);

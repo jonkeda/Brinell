@@ -1,9 +1,11 @@
 {
   "Version": 1,
   "Stamp": {
-    "Migrations": "7F260DD0C36C",
     "Ef": "10.0.12",
-    "SqlClient": "6.1.6"
+    "SqlClient": "6.1.6",
+    "Tables": {
+      "dbo.places": "D3B963F3D3E8"
+    }
   },
   "Exchanges": [
     {
@@ -201,11 +203,11 @@
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "d09e34c9-35ea-4c0b-a0ee-9f5dc9cbbd88"
+          "v": "2d20de78-c756-4568-860d-c7571042217b"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T18:24:52.3067065\u002B01:00"
+          "v": "2026-10-25T18:33:42.0061569\u002B01:00"
         },
         "@p2": {
           "t": "String",

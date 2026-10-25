@@ -70,7 +70,7 @@ public abstract class SpikeTestBase : IAsyncLifetime
         {
             var log = new CommandLog();
             Log = log;
-            var session = Mode == ReplayMode.Off ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentStamp());
+            var session = Mode == ReplayMode.Off ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentSchema());
             Session = session;
             _context = new BunitTestContext(new BunitTestContextOptions
             {
@@ -134,14 +134,25 @@ public abstract class SpikeTestBase : IAsyncLifetime
         return page;
     }
 
-    // The migrations in the app's assembly (no connection needed) and the versions that shape the SQL.
-    private static Stamp CurrentStamp()
+    // Every table of the app's model with a hash of its columns, keys and indexes, and the versions that shape the SQL:
+    // read from the EF model, so replay needs no database. A system without EF would read a checked-in schema instead.
+    private static Schema CurrentSchema()
     {
         using var db = new SpikeDbContext(SpikeData.Options(SpikeData.Connection));
-        var migrations = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(string.Join(";", db.Database.GetMigrations()))))[..12];
-        return new Stamp(migrations, Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)));
+        var tables = db.Model.GetRelationalModel().Tables.ToDictionary(
+            table => $"{table.Schema ?? "dbo"}.{table.Name}".ToLowerInvariant(),
+            table => Hash(
+                table.Columns.OrderBy(column => column.Name, StringComparer.Ordinal).Select(column => $"{column.Name} {column.StoreType} {(column.IsNullable ? "null" : "not null")}")
+                    .Concat(table.UniqueConstraints.Select(key => $"key {key.Name} ({string.Join(", ", key.Columns.Select(column => column.Name))})"))
+                    .Concat(table.Indexes.Select(index => $"index {index.Name} {(index.IsUnique ? "unique " : string.Empty)}({string.Join(", ", index.Columns.Select(column => column.Name))})"))
+                    .Concat(table.ForeignKeyConstraints.Select(key => $"fk {key.Name} -> {key.PrincipalTable.Name}"))
+                    .Order(StringComparer.Ordinal)),
+            StringComparer.OrdinalIgnoreCase);
+        return new Schema(Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)), tables);
     }
+
+    private static string Hash(IEnumerable<string> lines)
+        => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines))))[..12];
 
     private static string Version(Type type)
         => (type.Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)

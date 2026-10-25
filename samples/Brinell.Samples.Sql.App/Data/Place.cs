@@ -21,3 +21,13 @@ public sealed class Place
     /// <summary>From the app's <see cref="TimeProvider"/>.</summary>
     public DateTimeOffset CreatedAt { get; set; }
 }
+
+/// <summary>A visit to a place: a second table, read by the detail page only, so a change to it reaches only the tests that open a place.</summary>
+public sealed class Visit
+{
+    public Guid Id { get; set; }
+
+    public Guid PlaceId { get; set; }
+
+    public DateTimeOffset At { get; set; }
+}

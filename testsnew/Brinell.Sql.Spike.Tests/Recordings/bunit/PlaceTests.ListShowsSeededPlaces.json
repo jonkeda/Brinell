@@ -1,9 +1,11 @@
 {
   "Version": 1,
   "Stamp": {
-    "Migrations": "7F260DD0C36C",
     "Ef": "10.0.12",
-    "SqlClient": "6.1.6"
+    "SqlClient": "6.1.6",
+    "Tables": {
+      "dbo.places": "D3B963F3D3E8"
+    }
   },
   "Exchanges": [
     {

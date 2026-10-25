@@ -8,6 +8,8 @@ public sealed class SpikeDbContext(DbContextOptions<SpikeDbContext> options) : D
 {
     public DbSet<Place> Places => Set<Place>();
 
+    public DbSet<Visit> Visits => Set<Visit>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var place = modelBuilder.Entity<Place>();
@@ -17,6 +19,8 @@ public sealed class SpikeDbContext(DbContextOptions<SpikeDbContext> options) : D
         place.Property(p => p.Kind).HasMaxLength(30);
         place.Property(p => p.Location).HasColumnType("geography");
         place.Property(p => p.Population).HasPrecision(12, 2);
+
+        modelBuilder.Entity<Visit>().HasOne<Place>().WithMany().HasForeignKey(v => v.PlaceId);
     }
 }
 

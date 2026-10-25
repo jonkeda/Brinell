@@ -1,9 +1,12 @@
 {
   "Version": 1,
   "Stamp": {
-    "Migrations": "7F260DD0C36C",
     "Ef": "10.0.12",
-    "SqlClient": "6.1.6"
+    "SqlClient": "6.1.6",
+    "Tables": {
+      "dbo.places": "D3B963F3D3E8",
+      "dbo.visits": "4EA6162D1634"
+    }
   },
   "Exchanges": [
     {
@@ -145,6 +148,41 @@
               {
                 "t": "Double",
                 "v": "17183.587284599555"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 3,
+      "Kind": "reader",
+      "Text": "SELECT COUNT(*)\r\nFROM [Visits] AS [v]\r\nWHERE [v].[PlaceId] = @Id",
+      "Parameters": {
+        "@Id": {
+          "t": "Guid",
+          "v": "a1000000-0000-0000-0000-000000000002"
+        }
+      },
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "",
+              "ClrType": "System.Int32",
+              "DataTypeName": "int"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "Int32",
+                "v": "0"
               }
             ]
           ]

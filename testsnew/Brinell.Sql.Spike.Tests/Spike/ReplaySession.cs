@@ -25,27 +25,30 @@ public sealed class ReplaySession
 
     private readonly string? _stale;
 
-    public ReplaySession(ReplayMode mode, string path, Stamp stamp)
+    private readonly Schema _schema;
+
+    public ReplaySession(ReplayMode mode, string path, Schema schema)
     {
         Mode = mode;
         Path = path;
+        _schema = schema;
         if (mode == ReplayMode.Replay)
         {
             _recording = Recording.Load(path) ?? throw new ReplayMissException($"No recording at {path}: record the test first (BRINELL_SQL_REPLAY=Record, twice).");
             // BRINELL_SQL_STAMP=ignore: replay a stale recording anyway, to see which commands a change touched.
             var ignoreStamp = string.Equals(Environment.GetEnvironmentVariable("BRINELL_SQL_STAMP"), "ignore", StringComparison.OrdinalIgnoreCase);
-            if (!ignoreStamp && _recording.Stamp?.Differences(stamp) is { Count: > 0 } differences)
+            if (!ignoreStamp && _recording.Stamp?.Differences(schema) is { Count: > 0 } differences)
             {
                 _stale = $"Stale recording {System.IO.Path.GetFileName(path)}: re-record it (BRINELL_SQL_REPLAY=Record, twice). Changed: {string.Join("; ", differences)}.";
             }
         }
         else
         {
-            _recording = new Recording { Stamp = stamp };
+            _recording = new Recording();
             _previous = Recording.Load(path);
-            if (_previous?.Stamp != stamp)
+            if (_previous?.Stamp?.Differences(schema) is not { Count: 0 })
             {
-                // Recorded against other migrations or versions: not the same run, so not a source of volatile values.
+                // Recorded against other tables or versions: not the same run, so not a source of volatile values.
                 _previous = null;
             }
         }
@@ -101,6 +104,7 @@ public sealed class ReplaySession
             _recording.MarkVolatile(_previous);
         }
 
+        _recording.Stamp = _schema.StampFor(_recording.Exchanges.SelectMany(exchange => Statements.Tables(exchange.Text)));
         _recording.Save(Path);
     }
 

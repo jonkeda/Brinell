@@ -52,17 +52,46 @@ public sealed class Exchange
 }
 
 /// <summary>
-/// What a recording was made against: the migrations (their ids, hashed), EF Core's and SqlClient's versions. A
-/// recording whose stamp differs is stale, said before any miss: a migration or an upgrade changes most queries.
+/// The schema as the app sees it now, without a database: EF Core's and SqlClient's versions, and every table by its
+/// name (<c>dbo.places</c>) with a hash of its columns, keys and indexes.
 /// </summary>
-public sealed record Stamp(string Migrations, string Ef, string SqlClient)
+public sealed record Schema(string Ef, string SqlClient, IReadOnlyDictionary<string, string> Tables)
 {
-    /// <summary>The parts that differ from <paramref name="now"/>, as "what: recorded, now".</summary>
-    public IReadOnlyList<string> Differences(Stamp now) =>
+    /// <summary>The hash of an unknown table: a name in a command the schema doesn't hold (a view, a function).</summary>
+    public const string Unknown = "?";
+
+    /// <summary>The stamp of a recording whose commands touched <paramref name="tables"/>.</summary>
+    public Stamp StampFor(IEnumerable<string> tables) => new()
+    {
+        Ef = Ef,
+        SqlClient = SqlClient,
+        Tables = tables.Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(table => table, table => Tables.GetValueOrDefault(table, Unknown), StringComparer.OrdinalIgnoreCase),
+    };
+}
+
+/// <summary>
+/// What a recording was made against: EF Core's and SqlClient's versions, and each table its commands touched with
+/// that table's hash. Only an upgrade, or a change to one of those tables, makes it stale: on a schema of thousands of
+/// tables a change elsewhere leaves it alone. Said before any miss, since such a change reaches most of its queries.
+/// </summary>
+public sealed class Stamp
+{
+    public required string Ef { get; init; }
+
+    public required string SqlClient { get; init; }
+
+    public Dictionary<string, string> Tables { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>What differs from <paramref name="now"/>, as "what: recorded, now".</summary>
+    public IReadOnlyList<string> Differences(Schema now) =>
     [
-        .. Migrations != now.Migrations ? [$"migrations: {Migrations}, now {now.Migrations}"] : Array.Empty<string>(),
         .. Ef != now.Ef ? [$"EF Core: {Ef}, now {now.Ef}"] : Array.Empty<string>(),
         .. SqlClient != now.SqlClient ? [$"SqlClient: {SqlClient}, now {now.SqlClient}"] : Array.Empty<string>(),
+        .. Tables
+            .Where(table => now.Tables.GetValueOrDefault(table.Key, Schema.Unknown) != table.Value)
+            .Select(table => now.Tables.ContainsKey(table.Key) ? $"table {table.Key} changed" : $"table {table.Key} is gone"),
     ];
 }
 
@@ -180,6 +209,18 @@ public static partial class Statements
         return parameters;
     }
 
+    /// <summary>
+    /// The tables a command names after <c>FROM</c>, <c>JOIN</c>, <c>INTO</c>, <c>UPDATE</c> or <c>MERGE</c>, as
+    /// <c>schema.table</c> in lower case, <c>dbo</c> when none is written. A stored procedure names none: its tables
+    /// would come from the database's dependencies, which this spike doesn't read.
+    /// </summary>
+    public static IEnumerable<string> Tables(string text)
+        => TableNames().Matches(Normalize(text)).Select(match =>
+        {
+            var parts = match.Groups["name"].Value.Split('.').Select(part => part.Trim('[', ']').ToLowerInvariant()).ToArray();
+            return parts.Length == 1 ? "dbo." + parts[0] : string.Join('.', parts[^2..]);
+        });
+
     private static IEnumerable<string> Split(string list) => list.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>
@@ -227,6 +268,9 @@ public static partial class Statements
 
     [GeneratedRegex(@"INSERT INTO (?<table>\S+) \((?<columns>[^)]*)\) VALUES \((?<values>[^)]*)\)", RegexOptions.IgnoreCase)]
     private static partial Regex Insert();
+
+    [GeneratedRegex(@"\b(?:FROM|JOIN|INTO|UPDATE|MERGE)\s+(?<name>(?:\[[^\]]+\]|\w+)(?:\.(?:\[[^\]]+\]|\w+))*)(?!\s*\()", RegexOptions.IgnoreCase)]
+    private static partial Regex TableNames();
 
     [GeneratedRegex(@"^SELECT (DISTINCT )?(TOP\([^)]*\) )?", RegexOptions.IgnoreCase)]
     private static partial Regex SelectStart();

@@ -1,9 +1,12 @@
 {
   "Version": 1,
   "Stamp": {
-    "Migrations": "7F260DD0C36C",
     "Ef": "10.0.12",
-    "SqlClient": "6.1.6"
+    "SqlClient": "6.1.6",
+    "Tables": {
+      "dbo.places": "D3B963F3D3E8",
+      "dbo.visits": "4EA6162D1634"
+    }
   },
   "Exchanges": [
     {
@@ -201,11 +204,11 @@
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "377837e0-c170-4300-bfbb-6fcbd093c012"
+          "v": "c1c18c99-e48a-48df-a78d-3ea574a12f53"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T18:24:52.4046018\u002B01:00"
+          "v": "2026-10-25T18:33:42.0849556\u002B01:00"
         },
         "@p2": {
           "t": "String",
@@ -246,7 +249,7 @@
       "Parameters": {
         "@Id": {
           "t": "Guid",
-          "v": "377837e0-c170-4300-bfbb-6fcbd093c012"
+          "v": "c1c18c99-e48a-48df-a78d-3ea574a12f53"
         }
       },
       "Volatile": [
@@ -290,11 +293,11 @@
             [
               {
                 "t": "Guid",
-                "v": "377837e0-c170-4300-bfbb-6fcbd093c012"
+                "v": "c1c18c99-e48a-48df-a78d-3ea574a12f53"
               },
               {
                 "t": "DateTimeOffset",
-                "v": "2026-10-25T18:24:52.4046018\u002B01:00"
+                "v": "2026-10-25T18:33:42.0849556\u002B01:00"
               },
               {
                 "t": "String",
@@ -362,7 +365,7 @@
         },
         "@Id": {
           "t": "Guid",
-          "v": "377837e0-c170-4300-bfbb-6fcbd093c012"
+          "v": "c1c18c99-e48a-48df-a78d-3ea574a12f53"
         }
       },
       "Volatile": [
@@ -382,6 +385,43 @@
               {
                 "t": "Double",
                 "v": "23860.298162947278"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 5,
+      "Kind": "reader",
+      "Text": "SELECT COUNT(*)\r\nFROM [Visits] AS [v]\r\nWHERE [v].[PlaceId] = @Id",
+      "Parameters": {
+        "@Id": {
+          "t": "Guid",
+          "v": "c1c18c99-e48a-48df-a78d-3ea574a12f53"
+        }
+      },
+      "Volatile": [
+        "@Id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "",
+              "ClrType": "System.Int32",
+              "DataTypeName": "int"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "Int32",
+                "v": "0"
               }
             ]
           ]

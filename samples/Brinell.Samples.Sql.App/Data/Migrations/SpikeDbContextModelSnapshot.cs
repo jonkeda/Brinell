@@ -56,6 +56,34 @@ namespace Brinell.Samples.Sql.App.Data.Migrations
 
                     b.ToTable("Places");
                 });
+
+            modelBuilder.Entity("Brinell.Samples.Sql.App.Data.Visit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("PlaceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaceId");
+
+                    b.ToTable("Visits");
+                });
+
+            modelBuilder.Entity("Brinell.Samples.Sql.App.Data.Visit", b =>
+                {
+                    b.HasOne("Brinell.Samples.Sql.App.Data.Place", null)
+                        .WithMany()
+                        .HasForeignKey("PlaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 #pragma warning restore 612, 618
         }
     }

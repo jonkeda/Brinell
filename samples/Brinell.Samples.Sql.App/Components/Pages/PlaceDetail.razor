@@ -12,6 +12,7 @@ else
     <h1 data-testid="place-name">@_place.Name</h1>
     <p>Kind: <span data-testid="place-kind">@_place.Kind</span></p>
     <p>Population: <span data-testid="place-population">@_place.Population.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)</span></p>
+    <p>Visits: <span data-testid="place-visits">@_visits</span></p>
     <p>From @PlaceSeed.Origin: <span data-testid="place-distance">@(_distanceKm?.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)) km</span></p>
 }
 
@@ -21,6 +22,7 @@ else
 
     private Place? _place;
     private double? _distanceKm;
+    private int _visits;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -35,5 +37,6 @@ else
         var origin = await db.Places.Where(p => p.Name == PlaceSeed.Origin).Select(p => p.Location).SingleAsync();
         var meters = await db.Places.Where(p => p.Id == Id).Select(p => p.Location.Distance(origin)).SingleAsync();
         _distanceKm = meters / 1000;
+        _visits = await db.Visits.CountAsync(v => v.PlaceId == Id);
     }
 }
