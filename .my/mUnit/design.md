@@ -13,6 +13,8 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MUnit.Tests.NUnit` | `testsnew/MUnit.Tests.NUnit` | NUnit 4.3.2 + adapter 5.0.0 | `MUnit`, samples |
 | `MUnit.Tests.MSTest` | `testsnew/MUnit.Tests.MSTest` | MSTest 3.9.3 | `MUnit`, samples |
 | `Bruinell.Maui.Munit.Tests` | `testsnew/Bruinell.Maui.Munit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinell.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
+| `Bruinell.Samples.Maui.App.Headless`, `.ShellApp.Headless` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
+| `Bruinell.Maui.UITests.Munit` | `testsnew/Bruinell.Maui.UITests.Munit` | net10.0-windows, xUnit | The device suite linked (all but `FlaUIErrorsTests`); `HeadSetup.cs` sets `MauiTestFixtureBase.InMemoryHead` per fixture |
 
 ## Dependency analysis
 
@@ -28,12 +30,21 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MUnit` | `MauiTestContext`, `MauiTestContextOptions` | `ApplicationScope` (nested) |
 | `MUnit.Hosting` | `TestDispatcher`, `TestServiceProvider`, `InMemoryPreferences`, `InMemorySecureStorage` | `TestDispatcherProvider`, `TestDispatcherTimer`, `HeadlessHandler`, `HeadlessMauiContext` |
 | `MUnit.Rendering` | `IRenderedElement<out T>`, `RenderOptions`, `TestNavigator` | `RenderedElement<T>` |
-| `MUnit.Inspection` | `VisualNode`, `VisualTree`, `IElementAdapter`, `DefaultElementAdapter`, `ElementQueries`, `Screen`, `ElementNotFoundException` | `ItemRealizer` |
-| `MUnit.Interaction` | `Interactions`, `ElementNotInteractableException` | |
+| `MUnit.Inspection` | `VisualNode`, `VisualTree`, `IElementAdapter`, `DefaultElementAdapter`, `ElementQueries`, `Screen`, `ShellTabBar`, `ShellFlyoutList`, `ElementNotFoundException` | `ItemRealizer`, `ShellChromeNodes` |
+| `MUnit.Interaction` | `Interactions`, `ElementNotInteractableException`, `InteractionRefusal` | |
+| `MUnit.Dialogs` | `TestDialog`, `DialogKind`, `DialogRequests` | |
 | `MUnit.Assertions` | `ShouldExtensions`, `ElementAssertions<T>`, `MUnitAssertionException` | |
 | `MUnit.Snapshots` | `TreeSnapshot`, `SnapshotOptions` | |
 | `MUnit.Internals` | | `MauiInternals` |
-| `Bruinell.Maui.Munit` | `MunitMauiDriver`, `MunitMauiElement`, `MunitHead`, `DeviceOnlyException` | `MunitLocators` |
+| `Bruinell.Maui.Munit` | `MunitMauiDriver`, `MunitMauiElement`, `MunitHead`, `DeviceOnlyException` | `MunitLocators`, `MunitState`, `MunitAppBridge`, `MunitRefusals` |
+
+The tree a window shows, top down:
+1. Open dialogs, top first.
+2. Then the visible page: the top modal, else `Window.Page` down through NavigationPage, Shell and TabbedPage.
+
+A Shell's children are its flyout (while presented), then its tab bar (while the current item has more than one section), then its page. A page's children are its toolbar items, then its content. An items view's children are its header, its rows (or its empty view), then its footer. A carousel's cards other than the one at `Position` read as not visible.
+
+Interactions added: `Swipe(direction)`, `SetFocus()`, `ClearFocus()`, `ShellSection.Select()`, `ShellItem.Select()`, and `Tap(taps)`. Dialogs: `TestDialog.Choose(text)` and `Type(text)`; `DialogRequests.Of(window)` and `Top(window)`.
 
 ## Public API
 
@@ -121,35 +132,48 @@ new ButtonsTestPage(ctx2).TestButton.Click();
 
 ## Bruinell head mapping
 
+Every action runs through `MunitRefusals`: a refusal for a hidden element is an `ElementNotReadyException` (`NotVisible`), one for a disabled element is `ElementNotReadyException` (`Disabled`), and any other refusal is a `BruinellException` with MUnit's reason.
+
 | `IMauiElement` member | On MUnit |
 | --- | --- |
-| `Visible`, `Enabled` | Effective `IsVisible` and `IsEnabled` up the ancestors |
-| `Text` | The adapter's text: `Label` spans, `InputView`, `Button`, `Picker` item, date and time formatted, `MenuItem`, `Page.Title`, `IText` |
+| `Visible`, `Enabled` | Effective `IsVisible` and `IsEnabled` up the ancestors; a carousel card off screen is not visible |
+| `Text` | The adapter's text: `Label` spans, `InputView`, `Button`, `Picker` item, date and time formatted, `MenuItem`, a Shell tab's or item's title, `Page.Title`, `IText` |
+| `Name` | Semantic description, else `AutomationProperties.Name`, else a button's or label's text, a menu item's text, a tab's title, a dialog's title |
 | `Rect`, `Size`, `Location` | 1x1 at the origin when visible, empty when hidden |
-| `Click`, `Invoke`, `Select` | Button, ImageButton or MenuItem click; Switch or CheckBox toggle; RadioButton select; a realized row selects its item; otherwise a tap |
+| `Click`, `Invoke`, `Select` | Button, ImageButton or MenuItem click; Switch or CheckBox toggle; RadioButton select; Shell tab or flyout item select; a realized row selects its item; the app's sink when it names Tap; otherwise a tap |
 | `SendKeys(Keys or Paste)`, `AppendText` | Appends to `Text`; `SetValue` replaces it |
 | `Clear`, `Submit` | `ClearText`; `Entry.Complete` or `SearchBar.Search` |
 | `Checked`, `SetChecked`, `Toggle` | Switch, CheckBox, RadioButton |
 | `RangeValue`, `RangeMinimum`, `RangeMaximum`, `SetRangeValue` | Slider, Stepper, and ProgressBar (read only) |
-| `SelectIndex`, `SelectByText`, `ReadItemTexts`, `SelectedItemText` | Picker, `SelectableItemsView` rows, `CarouselView.Position` |
+| A Stepper's `FindElements(ClassName RepeatButton)` or `(ControlType button)` | Its two parts, `-` then `+`, each stepping by `Increment`; disabled at its bound |
+| `ReadState(name)` | The Windows bridge's names and formats (`MunitState`), then the app's sink for `GetState` (`MunitAppBridge`), else `NotSupportedException` |
+| `PerformGesture` (element and driver) | The app's sink when it names the verb; else tap and double tap through recognizers, and swipes through MUnit's `Swipe`; long press, pan and pinch need a sink |
+| `SelectIndex`, `SelectByText`, `ReadItemTexts`, `SelectedItemText` | Picker (refusing an item equal to an earlier one), `SelectableItemsView` rows, `CarouselView.Position`, the app's sink for `SelectIndex` |
+| `OpenDropdown`, `CloseDropdown`, `IsDropdownOpen`, `ReadDropdownItemTexts` | A Picker's open flag, kept by the head; its items |
 | `SetDate`, `SetTime` | DatePicker, TimePicker, with min and max checked |
-| `DoubleClick` | Tap with `NumberOfTapsRequired = 2` |
-| `GetAttribute(name)` | Any `{name}Property` bindable property, as invariant text |
-| `ScrollIntoView`, `Focus`, `ClearFocus` | No-ops |
-| `RightClick`, `Hover`, `LongPress`, `Swipe` | `DeviceOnlyException` (`IEndsCall`) |
-| App element `ReadAlert`, `TryFindActiveDialog` | null, because there are no alerts yet (Phase 4) |
+| `DoubleClick`, `LongPress` | The gestures of the same names |
+| `Focus`, `ClearFocus` | MUnit's `SetFocus` and `ClearFocus` |
+| `ScrollTo(id)`, `ScrollToIndex`, `ScrollContent`, `ScrollTowards` | Succeed at once where the target exists (`NotMoved`, `Jumped`); a missing id or an index past the end is refused |
+| `TryFindByScrolling` | null: nothing is off screen, so a scroll finds nothing a lookup missed |
+| `ReadScrollPosition`, `RightClick`, `Hover`, `Swipe(points)` | `DeviceOnlyException` (`IEndsCall`) |
+| `GetAttribute(name)` | Any `{name}Property` bindable property, as invariant text; `ClassName`, `Name` |
+| App element `ReadAlert`, `TryFindActiveDialog` | The window's top `TestDialog`, as `AlertContents` or as an element |
+| App element `TryFindDeclared(id)` | Any element with that id, hidden ones included |
 | App element flyout members | `Shell.FlyoutIsPresented` or `FlyoutPage.IsPresented` |
-| `IMauiDriver.FindElements` | `MunitLocators` |
-| `NavigateTo` | `Shell.GoToAsync` |
-| `NavigateBack` | `TestNavigator.GoBack` |
+| `IMauiDriver.FindElements` | `MunitLocators`, leaving out `IsVisible="False"` elements as the device trees do |
+| `ShellChrome` | `ClassName` `ShellTabBar`, `ShellSection`, `ShellFlyoutList` and `ShellItem` |
+| `InvokeMenuItem`, `InvokeToolbarItem` | Menu bar and context menu items, toolbar items of the page and its containers; missing is a `BruinellException`, disabled an `ElementNotReadyException` |
+| `NavigateTo`, `NavigateBack` | `Shell.GoToAsync`; `TestNavigator.GoBack` (nothing behind is a `BruinellException`) |
+| `CurrentRoute` | Shell's location, else the top page's `AutomationId` |
+| `CurrentWindowHandle` | `munit-N`, one per rendered window |
 | `GetPageSource` | `TreeSnapshot` |
 | `GetScreenshot` | An empty byte array |
 
 Locator strategies:
 - `AutomationId`, `Id`, `AccessibilityId`, `DataAutomationId` and `DataTestId` match the `AutomationId`.
-- `Name` matches the semantic description, else `AutomationProperties.Name`.
+- `Name` matches the name above.
 - `Text` and `LinkText` match the text exactly; `PartialLinkText` matches a substring.
-- `ClassName`, `TagName` and `ControlType` match the type name or any of its base types.
+- `ControlType` matches the platforms' words (`text`, `button`, `image`, `edit`, `entry`, `checkbox`, `radiobutton`, `combobox`, `slider`, `progressbar`, `tabitem`) as the MAUI types they draw; any other word, and `ClassName` and `TagName`, match the type name or any of its base types.
 - The XPath `./*` gives the children.
 - Any other strategy throws `DeviceOnlyException`.
 
@@ -160,8 +184,10 @@ Locator strategies:
 | `Application.AddWindow(Window)`, `RemoveWindow(Window)` | Lifecycle; `Shell.Current` | Used (reflection) |
 | `TapGestureRecognizer.SendTapped(View, Func<IElement, Point?>)` | `Tap` | Used (reflection) |
 | `BindableObject.GetContext(BindableProperty)` and `.Bindings` | `BeBoundTo` | Used (reflection) |
-| `Page.SendAppearing` and `SendDisappearing`, `Button.SendClicked`, `SendPressed` and `SendReleased`, `Entry.SendCompleted`, `ISearchBarController`, `ISliderController`, `IMenuItemController`, `IShellContentController.GetOrCreateContent` | Interactions, lifecycle | Public (`EditorBrowsable(Never)`) |
-| `Window.AlertManager` and the internal `IAlertManagerSubscription` | `DisplayAlert`, action sheets, prompts | Explore in Phase 4 |
+| `VisualElement.IsFocusedPropertyKey` | `SetFocus`, `ClearFocus` | Used (reflection) |
+| `Page._pendingActions`, the closures holding `AlertArguments`, `PromptArguments`, `ActionSheetArguments` | Dialogs (`TestDialog`) | Used (reflection); the arguments and their `SetResult` are public |
+| `Page.SendAppearing` and `SendDisappearing`, `Button.SendClicked`, `SendPressed` and `SendReleased`, `Entry.SendCompleted`, `ISearchBarController`, `ISliderController`, `IMenuItemController`, `IShellContentController.GetOrCreateContent`, `SwipeGestureRecognizer.SendSwiped` | Interactions, lifecycle | Public (`EditorBrowsable(Never)`) |
+| `Bruinell.Maui.AppSupport.Uia.GestureAutomation.SinkProperty` and a sink's `Verbs`, `Invoke` and `Exchange` | The head calling the app's own verb sinks | Found by name, so a copied-in AppSupport works too |
 | `BindingDiagnostics.BindingFailed` | Turning binding errors into test failures | Explore in Phase 3 |
 | `GroupableItemsView` grouping and `ListView` `TemplatedItemsList` | Realizing grouped rows and cells | Explore in Phase 1 |
 | `VisualElement.IsLoaded`, `SendLoaded` and `OnLoaded` | `Loaded` and `Unloaded` | Explore in Phase 6 |
@@ -170,19 +196,20 @@ Locator strategies:
 
 ## Planned skeletons
 
-### Phase 4: alerts answered from the test
+### Phase 4: alerts (built, no longer a skeleton)
 
-```csharp
-public sealed class TestDialogs   // ctx.Dialogs
-{
-    public Queue<object?> Answers { get; } = new();    // bool for DisplayAlert, string for sheets and prompts
-    public IReadOnlyList<DialogRequest> Shown { get; }  // title, message, buttons, in order
-    public DialogRequest ShouldHaveShown(string title);
-}
-// Wiring: subscribe on Window.AlertManager through the internal IAlertManagerSubscription that
-// MauiInternals resolves, completing each request's TaskCompletionSource with the next answer.
-// With no answer queued, fail the test naming the dialog.
-```
+`DialogRequests.Of(window)` takes each pending request from the window's pages, reading it from
+`Page._pendingActions`. It makes a `TestDialog` (a `ContentView`) from it, with:
+- `#DialogTitle` and `#DialogMessage` labels;
+- a `#DialogInput` entry for a prompt;
+- one button per choice, then accept, then cancel.
+
+The dialog's parent is the window. A button's click calls the arguments' `SetResult`:
+- `true` or `false` for an alert;
+- the field's text, or null, for a prompt;
+- the choice for an action sheet.
+
+After the click the dialog is removed, and the app's continuation runs at the next drain.
 
 ### Phase 5: snapshots
 
@@ -232,6 +259,9 @@ internal sealed class HeadlessViewHandler(IHeadlessSizer sizer) : ViewHandler<IV
 | `MUnit.Tests/Examples/NavigationTests.cs` | Select, push, back; rows from the template; toolbar reload and empty view; Shell `GoToAsync` from the app's handler, back, `GoTo` |
 | `MUnit.Tests/Framework/DispatcherTests.cs` | Timer on the virtual clock; delayed order; an async void exception fails the test; `WaitForAssertion` on a real delay; 8 contexts in parallel |
 | `MUnit.Tests/Framework/TreeTests.cs` | Snapshot text; effective state; miss message; ambiguity; hidden input refused; assertion message; MaxLength; tap command |
+| `MUnit.Tests/Framework/ChromeAndSwipeTests.cs` | Shell tab bar and a tab navigating; the flyout only while open; carousel swipe and its end; one card visible; focus moving; a swipe recognizer's direction; a picker's equal items; refusal reasons |
+| `MUnit.Tests/Framework/DialogTests.cs` | An alert over the page answered; a prompt typed into; an action sheet's choice |
 | `MUnit.Tests.NUnit/SettingsPageTests.cs` | Save through SetUp and TearDown; MUnit failure message under NUnit |
 | `MUnit.Tests.MSTest/GreetingAndShellTests.cs` | Click; Shell help route; method-level parallel |
 | `Bruinell.Maui.Munit.Tests/SamplePagesOnMunitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |
+| `Bruinell.Maui.UITests.Munit` (the device suite, linked) | 354 tests; 319 pass ([suite-count.md](suite-count.md)) |

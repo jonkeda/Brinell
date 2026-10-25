@@ -10,33 +10,33 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 - [proposal.md](proposal.md): the architecture proposal, how bUnit maps onto MAUI, the feasibility and the roadmap.
 - [design.md](design.md): namespaces, API, interfaces, the head's mapping, MAUI internals and planned skeletons.
 - [findings.md](findings.md): what the spikes proved about MAUI without a platform.
-- [suite-count.md](suite-count.md): the device suite on the MUnit head, what passes, what is device-only and what breaks; the full list is in [suite-count-failures.md](suite-count-failures.md).
+- [suite-count.md](suite-count.md): the device suite on the MUnit head, what passes and why the rest cannot; the full list is in [suite-count-failures.md](suite-count-failures.md).
 
 ## Status
 
 | Piece | Where | State |
 | --- | --- | --- |
-| MUnit core | `srcnew/MUnit` | Green under its tests |
+| MUnit core | `srcnew/MUnit` | Green under its tests; Shell chrome and dialogs added |
 | Sample app (XAML on plain net10.0) | `samples/MUnit.Samples.App` | Settings, Greeting, Products, Shell, Countdown |
-| xUnit, NUnit and MSTest tests | `testsnew/MUnit.Tests`, `.NUnit`, `.MSTest` | 30, 2 and 2 green |
-| Bruinell head | `srcnew/Bruinell.Maui.Munit` | Driver, element, `MunitHead.AsBruinellContext()` and `MunitHead.InMemory()` |
+| xUnit, NUnit and MSTest tests | `testsnew/MUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
+| Bruinell head | `srcnew/Bruinell.Maui.Munit` | Driver, element, state, app sinks, refusals, `MunitHead` |
 | Head's own tests | `testsnew/Bruinell.Maui.Munit.Tests` | 3 of 3 green |
-| The device suite on the head | `testsnew/Bruinell.Maui.UITests.Munit`, `samples/Bruinell.Samples.Maui.App.Headless` | 220 of 354 pass (71% of the 308 that can run here); 20 ms per passing test |
+| The device suite on the head | `testsnew/Bruinell.Maui.UITests.Munit`, both sample apps compiled headless | **319 of 354 pass in 6 s**; the other 33 are device-only, platform media, or one known difference |
 | Proposal, design, count | `.my/mUnit` | Written |
 
 Changes outside the new projects, both small:
 - `MauiTestFixtureBase.InMemoryHead`, a static seam that makes a fixture's context in memory instead of launching the app;
-- `net10.0` added to `Bruinell.Maui.AppSupport`'s targets, which the app's XAML needs.
+- `net10.0` added to `Bruinell.Maui.AppSupport`'s targets, which the apps' XAML needs.
 
 The work is committed on `move` and not pushed: Bruinell's `move` stays local until a push is asked
 for. Tomorrow's submodule pointer has not been moved.
 
 ## Next
 
-1. Close the head gaps: read state, semantic gestures, refusal types, Stepper parts, scroll routes. They are worth about 65 tests.
-2. Compile the Shell app headless, which adds 17 tests.
-3. A proper head choice in the fixture base (`BRUINELL_HEAD=munit`), replacing the static seam.
-4. The UAT scenarios on both heads.
+1. A proper head choice in the fixture base (`BRUINELL_HEAD=munit`), replacing the static seam, with `@device` for the scenarios that need a device.
+2. The UAT scenarios on both heads, as the bUnit head's step 4 did.
+3. A decision record once the owner has seen the counts: a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
+4. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
 
 ## Log
 
@@ -54,4 +54,22 @@ for. Tomorrow's submodule pointer has not been moved.
 - **Bruinell head green.** No change to Bruinell.Maui was needed. Visible elements report nominal 1x1 bounds.
 - **The device suite linked unchanged.** The whole sample app compiled headless at the first try. The suite needed `net10.0-windows` like the original, and only `FlaUIErrorsTests` is left out.
 - **First count: 10 s per test.** The cause was a head bug: `CurrentRoute()` named the page by type, not by `AutomationId`, so `WaitArrived` timed out on every `Open`. After the fix, `ButtonTests` took 0.1 s instead of 60 s.
-- **Second count: 220 of 354 pass.** The groups are in [suite-count.md](suite-count.md). The run takes 3 min, almost all of it the failing tests waiting out their timeouts.
+- **Second count: 220 of 354 pass.** The run took 3 min, almost all of it the failing tests waiting out their timeouts.
+- **Brinell became Bruinell.** The rename (c9d220b6, another session) carried every MUnit project over; all green after it.
+- **Head gaps closed, run 3: 278.**
+  - State is answered as the Windows bridge answers it.
+  - Refusals are Bruinell's exceptions.
+  - The scroll routes succeed at once.
+  - A Stepper publishes its two buttons.
+  - The app's own verb sinks are called in process.
+  - MUnit can swipe.
+- **Shell and hidden elements, run 4: 295.**
+  - The Shell sample app is compiled headless.
+  - MUnit's tree shows Shell's tab bar and flyout.
+  - The head leaves `IsVisible="False"` elements out of lookups, as every device tree does.
+- **Sweeps, focus, carousel, run 5: 308.** The big one: a control that misses sweeps by asking `AppElement.TryFindByScrolling`, and the head answered that app-wide, so a container's miss became a hit outside it. Now it answers null, since nothing is off screen. Focus also works, through MAUI's own `IsFocused` key, and a carousel shows one card.
+- **Dialogs, run 6: 319 in 6 s.**
+  - Without a platform, MAUI keeps `DisplayAlertAsync`, `DisplayPromptAsync` and `DisplayActionSheetAsync` on the page.
+  - MUnit takes them from there and shows a `TestDialog` over the page, whose buttons answer the app's await.
+  - Off-screen carousel cards stay in lookups, as on Windows.
+  - Failing tests now refuse at once, so the run went from 2 min to 6 s.

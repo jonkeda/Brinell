@@ -13,12 +13,13 @@ It is feasible, and the proof of concept is green:
 
 | Suite | Tests | What it covers |
 | --- | --- | --- |
-| `MUnit.Tests` (xUnit) | 30 | The six example kinds, plus the dispatcher, virtual clock, tree, errors and parallel contexts |
+| `MUnit.Tests` (xUnit) | 41 | The six example kinds; the dispatcher, virtual clock, tree, errors and parallel contexts; Shell chrome, swipes, focus and dialogs |
 | `MUnit.Tests.NUnit`, `MUnit.Tests.MSTest` | 2 + 2 | The same API under the other two frameworks |
 | `Bruinell.Maui.Munit.Tests` | 3 | The sample app's real XAML pages, driven by the device suite's page objects, unchanged |
+| `Bruinell.Maui.UITests.Munit` | 319 of 354 | The whole MAUI device suite, linked unchanged, on both sample apps compiled headless; the other 33 are device-only ([suite-count.md](suite-count.md)) |
 
-Each suite runs in about 0.2 s. The pages are real MAUI: XAML compiled by XamlC, compiled bindings,
-`Command`, `NavigationPage`, Shell routes and `CollectionView`.
+Each MUnit suite runs in about 0.2 s, and the device suite in 6 s. The pages are real MAUI: XAML
+compiled by XamlC, compiled bindings, `Command`, `NavigationPage`, Shell routes and `CollectionView`.
 
 The key finding is that MAUI needs much less platform than expected. Controls, bindings, triggers,
 navigation and Shell all run on the plain `net10.0` assemblies. They need only three things:
@@ -103,44 +104,47 @@ Controls get no handlers in V1. This is what that means for each concern:
 | Shell `ContentTemplate` pages | A services carrier on the Shell | `HeadlessHandler` (no mapping) | Nothing to do |
 | `Measure` and `Arrange`, bounds, `SizeChanged` | Yes: `GetDesiredSize` | None: zero sizes | Phase 6: fake leaf handlers with a text-length sizer, real layout managers above them |
 | `Loaded` and `Unloaded`, `IsLoaded` | Yes: platform view attach | Not raised | Phase 6: raise them on render and dispose |
-| Focus, keyboard, `ScrollView.ScrollToAsync` | Yes | Not supported | Phase 6 fakes that record and complete |
-| `DisplayAlert`, `DisplayActionSheet`, `DisplayPromptAsync` | Yes: AlertManager over the window handler | Not supported | Phase 4: answer them from a test-side queue |
+| Focus | Yes, for `Focus()` | `SetFocus` and `ClearFocus` set MAUI's own `IsFocused` key | Nothing to do |
+| Keyboard, `ScrollView.ScrollToAsync` | Yes | Not supported | Phase 6 fakes that record and complete |
+| `DisplayAlert`, `DisplayActionSheet`, `DisplayPromptAsync` | Yes: AlertManager over the window handler | Taken from the page and shown as a `TestDialog`; its buttons answer the app | Nothing to do |
+| Shell's tab bar and flyout | Yes: the platform draws them | `ShellTabBar` and `ShellFlyoutList` nodes; selecting one sets the Shell's current item | Nothing to do |
 | `WebView`, `Map`, `GraphicsView` drawing, `MediaElement` | Yes, and fully platform | Out of scope | Device heads only |
 
 So there are three groups:
 - **Omitted:** everything that only draws or measures.
-- **Faked later:** the leaf views' `GetDesiredSize`, plus focus and scroll.
-- **Mocked at the service level instead of the handler level:** alerts, navigation services and Essentials APIs. A test answers these through the context, not through a handler.
+- **Faked later:** the leaf views' `GetDesiredSize`, plus keyboard and scroll.
+- **Shown as a user sees them, without a handler:** dialogs and Shell chrome, read from MAUI's own state.
 
 ## Feasibility and risks
 
-- **Internals.** MUnit calls four MAUI internals by reflection:
+- **Internals.** MUnit calls six MAUI internals by reflection:
   - `Application.AddWindow` and `RemoveWindow`;
   - `TapGestureRecognizer.SendTapped`;
-  - `BindableObject.GetContext`, which backs `BeBoundTo`.
+  - `BindableObject.GetContext`, which backs `BeBoundTo`;
+  - `VisualElement.IsFocusedPropertyKey`, for focus;
+  - `Page._pendingActions`, where the dialog requests wait.
 
   They live in one class, `MauiInternals`, and a missing one fails with its name. Each MAUI upgrade needs one run of MUnit's suite. That risk is real but small, and MAUI's own unit tests rely on the same members.
 - **Static Essentials.** `Preferences.Default`, `MainThread` and `Connectivity.Current` throw on the plain TFM. Apps that inject `IPreferences`, `IDispatcher` and the rest (MAUI's own guidance) test cleanly; apps that call the statics have to change first. This is the biggest adoption cost.
 - **False passes.** A page that only fails on layout (clipped text, a button pushed off screen) passes here. The device heads stay the judge at a gate, as with the bUnit head.
-- **Grouped `CollectionView`, `ListView` cells and `CarouselView` peeking** are not realized yet.
+- **Grouped `CollectionView` and `ListView` cells** are not realized yet. A `CarouselView` shows only its current card, as a phone does; Windows reports every card as on screen, which is the one known difference in the suite's count.
 - **Parallel speed.** With `SetApplicationCurrent` on, contexts take turns running MUnit work. Each turn takes microseconds, so measured suites are not slowed. A heavy `OnAppearing` would be.
 
 ## Roadmap
 
 1. **Visual tree inspection.** Done in the proof of concept: tree, queries, effective state, realized rows, toolbar, errors. Remaining: grouped items, `ListView`, `FlyoutPage` and `TabbedPage` tests.
-2. **Interaction simulation.** Done for buttons, taps, text, toggles, ranges, pickers, dates, selection and refresh. Remaining: swipe items, drag and drop, context menus, `SwipeView`.
+2. **Interaction simulation.** Done for buttons, taps, text, toggles, ranges, pickers, dates, selection, refresh, swipes (SwipeView, CarouselView, RefreshView, recognizers) and focus. Remaining: drag and drop, pan and pinch without an app sink.
 3. **Binding assertions.** `BeBoundTo` and `HaveBindingContext` are done. Remaining: binding failures captured as test failures (MAUI's binding diagnostics), and the converter and `StringFormat` in messages.
-4. **Navigation testing.** NavigationPage, modals and Shell work today. Remaining:
-   - alerts and action sheets answered from the test;
+4. **Navigation testing.** Done: NavigationPage, modals, Shell routes, Shell's tab bar and flyout, and alerts, prompts and action sheets. Remaining:
    - `ShellNavigationQueryParameters` assertions;
    - back-button handling (`OnBackButtonPressed`).
 5. **Snapshot testing.** The formatter is done. Remaining: `ShouldMatchSnapshot()` with `__snapshots__/<Test>.txt` beside the test, a `.received.txt` on mismatch, and an accept switch (environment variable), as Verify does. Design in [design.md](design.md).
 6. **Optional handler integration.** Fake leaf handlers with a sizer, so `Measure`, bounds, `Loaded` and `SizeChanged` work. This is off by default, because it costs speed and determinism.
 
 For Bruinell, the head follows the bUnit head's plan:
-1. Run the sample suite's page objects on MUnit and count what passes, what is device-only and what breaks.
-2. Add a head choice in `MauiTestFixtureBase` and the UAT fixture, with `@device` scenarios skipped on MUnit.
-3. Write a decision record once the counts exist.
+1. Done: the device suite runs on MUnit, 319 of 354 in 6 s; the other 33 are device-only or platform media, and one is a known difference ([suite-count.md](suite-count.md)).
+2. Add a head choice in `MauiTestFixtureBase` and the UAT fixture (`BRUINELL_HEAD=munit`, replacing the static `InMemoryHead`), with `@device` scenarios and a `DeviceFact` skipped on MUnit.
+3. Write a decision record once the owner has seen the counts.
 
 ## Open questions, each with a proposal
 
