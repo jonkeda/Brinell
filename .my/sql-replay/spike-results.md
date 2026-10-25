@@ -219,7 +219,33 @@ suite 35, Todo.Web 10, the bUnit head's own tests 97 with three new ones).
 What's left is the honest cost: a change to a query hits the tests that run it, and a new
 column hits every test on its table, because EF selects all columns. On a large schema with
 hand-written SQL, both reach far fewer tests than here, where every test reads the one table.
-The stamp is still one hash over all migrations; per table is the next change for such a system.
+
+## The stamp per table
+
+The stamp no longer hashes the migrations. Each recording lists the tables its commands touched
+(read from `FROM`, `JOIN`, `INTO`, `UPDATE` and `MERGE`), each with a hash of that table's columns,
+keys, indexes and foreign keys taken from the EF model, so replay still needs no database. EF's
+and SqlClient's versions stay in the stamp for every recording. The sample has a second table,
+`Visits`, which only the detail page reads: the two detail tests list `dbo.places` and
+`dbo.visits`, the three list tests only `dbo.places`.
+
+| Change, with its migration | Stale |
+| --- | --- |
+| A column on `Places` | 5 of 5: "table dbo.places changed" |
+| A new table `Tags`, read by nothing | 0 of 5: all replay |
+| A column on `Visits` | 2 of 5, the detail tests: "table dbo.visits changed" |
+
+Before, each of the three made all five stale. On a schema of 2000 tables this is the
+difference that counts: a migration stales only the tests that touch its tables.
+
+What it doesn't cover yet:
+
+- **Stored procedures and views name no table** in the command text. Their tables would come
+  from the database's dependencies (`sys.sql_expression_dependencies`), read when recording.
+- **A system without EF** has no model to hash. Its schema would come from a checked-in snapshot
+  (a SQL project, or a schema file written at recording), hashed the same way per table.
+- **Data changed by a migration** (seed rows) isn't in the hash: the test's own data is the
+  fixture's, but reference data a migration writes would replay as it was recorded.
 
 ## What P4 changes before step 2
 
