@@ -1,8 +1,8 @@
 # SQL replay: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.4 done (P1: 4.9% for queries, 37% with the reset, on the spike
-app; see [spike-results.md](spike-results.md)); next the spike's replay (P2, P3a). Steps 1 to
-8 are an outline, detailed after the spike reports. Each step ends green:
+Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.4, P2 and P3a done (P1 37% with the reset; replay 239 ms
+against 1,245 ms; see [spike-results.md](spike-results.md)); next churn (0.5, P4) and the browser (P3b).
+Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -48,7 +48,7 @@ thrown away by step 2; the app and the bUnit head of Todo.Web stay.
 | Page objects | `PlacesPage`, `NewPlacePage`, `PlacePage` over `IHtmlTestContext` |
 | Fixture | `SpikeFixture`: seeds the database, makes the context by head: bUnit (`BunitTestContext` over the app's `Routes`, the app's services registered in `ConfigureServices`) or browser (`WebAppHost` over the app's `.csproj`, a host per test in replay) |
 | Scenarios | `ListShowsSeededPlaces`, `FilterByKind`, `AddPlaceShowsIt` (insert, then the detail page by the new `Id`), `AddDuplicateNameIsRefused` (the `SqlException` path), `DistanceIsShown` (spatial) |
-| Spike replay | `Spike/ReplayInterceptor.cs` (`DbConnectionInterceptor` suppressing the open, `DbCommandInterceptor` answering reader, non-query and scalar with `SuppressWithResult`, errors rethrown as `SqlException` by reflection), `Spike/Recording.cs` (JSON per test and head, `Recordings/<head>/<test>.json`), `Spike/Matcher.cs` (occurrence keys, writes as barriers, values bound from two recordings) |
+| Spike replay | `Spike/ReplayInterceptor.cs` (suppresses the open, answers reader, non-query and scalar with `SuppressWithResult`), `Spike/SqlErrors.cs` (`SqlException` by reflection), `Spike/SpatialReplay.cs` (the geometry mapping read through `DbDataReader`), `Spike/Recording.cs` (JSON per test and head, `Recordings/<head>/<test>.json`), `Spike/ReplaySession.cs` (occurrence keys, writes as barriers, values bound from two recordings), `Spike/ReplayDataReader.cs`; `BRINELL_SQL_REPLAY=Record` twice, then `Replay` |
 | Command log | `Spike/CommandLog.cs`: every command's text, parameters, start and duration, written to `TestResults/sql-log/<head>/<test>.jsonl`, on in every mode |
 
 ### 0.3 Todo.Web's bUnit head

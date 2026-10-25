@@ -81,12 +81,17 @@ public static class DatabaseShare
     }
 }
 
-/// <summary>Brackets a test for <see cref="DatabaseShare"/>.</summary>
+/// <summary>Brackets a test: its context made once its name is known, and its time for <see cref="DatabaseShare"/>.</summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class MeasureDatabaseShareAttribute : BeforeAfterTestAttribute
 {
-    public override void Before(MethodInfo methodUnderTest) => DatabaseShare.Begin();
+    public override void Before(MethodInfo methodUnderTest)
+    {
+        TestBase.SpikeTestBase.Current?.Begin(Name(methodUnderTest)).GetAwaiter().GetResult();
+        DatabaseShare.Begin();
+    }
 
-    public override void After(MethodInfo methodUnderTest)
-        => DatabaseShare.End($"{methodUnderTest.DeclaringType?.Name}.{methodUnderTest.Name}");
+    public override void After(MethodInfo methodUnderTest) => DatabaseShare.End(Name(methodUnderTest));
+
+    private static string Name(MethodInfo method) => $"{method.DeclaringType?.Name}.{method.Name}";
 }

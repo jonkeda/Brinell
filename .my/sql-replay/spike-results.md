@@ -1,10 +1,18 @@
 # SQL replay spike: results
 
 The spike of [plan.md](plan.md), step 0. In progress: the spike app and its suite (0.1, 0.2), Todo.Web
-on bUnit (0.3) and the measurement on both (0.4) are done. Replay itself (P2, P3), churn (0.5) and
-the browser's determinism are not started.
+on bUnit (0.3), the measurement (0.4), replay with no database (P2) and 20 replays on bUnit (P3a)
+are done. Churn (0.5, P4) and the browser's determinism (P3b) are not started.
 
 ## The outcome so far
+
+P2 and P3a pass. All five scenarios replay on bUnit with the connection string pointing at a
+server that doesn't exist, the unique-key error and the spatial distance included, and 20 replay
+runs in a row gave no miss. Replay runs the five tests in 239 ms against 1,245 ms on the real
+database with its resets. Two of the review's three risks held up as real, and both have a
+workaround: EF's SQL Server spatial mapping casts to `SqlDataReader`, and `SqlException` has to be
+built by reflection.
+
 
 P1 passes on the spike app, but only because of the reset. The app's own queries are a 4.9% median
 share on SQL Server, about what they were on Todo's SQLite (6%). Writing the five places afresh
@@ -86,3 +94,53 @@ Four things the replay design has to take into account, seen in the logs:
   and replay has to give them back as the provider expects.
 - **`DateTimeOffset` comes from the app's clock** (`CreatedAt`), so the insert's parameters differ
   every run: a value to bind, beside the new `Id`.
+
+## Replay with no database (P2)
+
+The spike's replay is an EF interceptor over a session per test and head
+(`Recordings/bunit/<test>.json`, kept in git, 10 to 16 KB each). In record mode each command runs,
+its results are read whole and the app reads them back from a `ReplayDataReader`, as it will in
+replay. In replay the connection open is suppressed and every command is answered by the session.
+
+| Check | Result |
+| --- | --- |
+| Five scenarios, server `127.0.0.1,1` | Pass |
+| Duplicate name | `SqlException` 2601 rebuilt by reflection; the page's `catch ... when Number is 2601 or 2627` runs |
+| Distance | Geography bytes recorded and read back; the distance shows |
+| A recorded parameter changed by hand | A miss naming the command, the live parameters and the nearest recorded one |
+
+What it took, beyond the matcher:
+
+- **EF's spatial mapping casts to `SqlDataReader`.** The first record run failed in every test
+  with `InvalidCastException` from the query's shaper. The fix swaps SQL Server's NetTopologySuite
+  type-mapping plugin (`ReplaceService`) for one whose geometry mapping reads with
+  `DbDataReader.GetFieldValue<SqlBytes>`; SQL Server's own converter does the rest. It uses EF's
+  internal API (`EF1001`) and reflection for the mapping's parameters, so an EF upgrade may break it.
+- **`SqlException` has no public constructor.** `SqlErrors` builds one through SqlClient's internal
+  `SqlError`, `SqlErrorCollection` and `SqlException.CreateException`, filling parameters by name.
+  Same risk on a SqlClient upgrade.
+- **Recording twice finds the volatile values.** The second record run marked exactly the
+  app-made values: the insert's `@p0` (the new `Id`) and `@p1` (`CreatedAt`), and `@Id` in the
+  two reads after it. Binding carried the live `Id` through those reads and into their rows.
+- **Test data has fixed ids.** The seed now uses fixed GUIDs, so only what the app makes differs
+  between runs.
+
+## Determinism on bUnit (P3a)
+
+20 replay runs in a row of the five scenarios: 100 passes, no miss, about 1 s per run.
+
+| Test | Real database (test + reset) | Replay |
+| --- | --- | --- |
+| ListShowsSeededPlaces | 88 + 704 ms (first: EF and the pool warming up) | 92 ms |
+| AddDuplicateNameIsRefused | 39 + 25 ms | 84 ms |
+| AddPlaceShowsIt | 139 + 69 ms | 43 ms |
+| DistanceIsShown | 114 + 30 ms | 4 ms |
+| FilterByKind | 8 + 30 ms | 16 ms |
+| All five | 1,245 ms | 239 ms |
+
+One real-database run failed on the way: `FilterByKind` timed out once in 9 runs. The likely cause
+is a race in the sample, not in replay: the page object took the heading as "loaded" before the
+first query was back, so a slow first load could overwrite the filtered list. The list now renders
+only once loaded, and the page object waits for it; 6 runs on each head passed after. Replay never
+showed the race because its answers come at once, which is also a warning: replay can hide a race
+the real database would show.

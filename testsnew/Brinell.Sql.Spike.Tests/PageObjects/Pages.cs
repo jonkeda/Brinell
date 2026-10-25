@@ -5,7 +5,8 @@ namespace Brinell.Sql.Spike.Tests.PageObjects;
 /// <summary>The list of places (/), filtered by kind.</summary>
 public sealed class PlacesPage(IHtmlTestContext context) : BlazorPageObjectBase<PlacesPage>(context)
 {
-    public override bool IsLoaded() => base.IsLoaded() && Heading.IsExists();
+    // The count shows once the first load is back, not with the heading.
+    public override bool IsLoaded() => base.IsLoaded() && Count.IsExists();
 
     public LabelControl<PlacesPage> Heading => new(this, Locator.ByDataTestId("places-heading"));
 

@@ -53,11 +53,11 @@ public static class PlaceSeed
 
     public static IReadOnlyList<Place> Places() =>
     [
-        Make("Amsterdam", "city", 52.3676, 4.9041, 931298m),
-        Make("Enkhuizen", "town", 52.7035, 5.2930, 18945m),
-        Make(Origin, "town", 52.6424, 5.0597, 74064m),
-        Make("Medemblik", "town", 52.7720, 5.1066, 47402m),
-        Make("Purmerend", "city", 52.5050, 4.9592, 93451m),
+        Make("a1000000-0000-0000-0000-000000000001", "Amsterdam", "city", 52.3676, 4.9041, 931298m),
+        Make("a1000000-0000-0000-0000-000000000002", "Enkhuizen", "town", 52.7035, 5.2930, 18945m),
+        Make("a1000000-0000-0000-0000-000000000003", Origin, "town", 52.6424, 5.0597, 74064m),
+        Make("a1000000-0000-0000-0000-000000000004", "Medemblik", "town", 52.7720, 5.1066, 47402m),
+        Make("a1000000-0000-0000-0000-000000000005", "Purmerend", "city", 52.5050, 4.9592, 93451m),
     ];
 
     /// <summary>The database migrated and holding the five places only, which it returns.</summary>
@@ -72,9 +72,10 @@ public static class PlaceSeed
         return places;
     }
 
-    private static Place Make(string name, string kind, double latitude, double longitude, decimal population) => new()
+    // Fixed ids: test data is the same every run, so only what the app makes differs between recordings.
+    private static Place Make(string id, string name, string kind, double latitude, double longitude, decimal population) => new()
     {
-        Id = Guid.NewGuid(),
+        Id = Guid.Parse(id),
         Name = name,
         Kind = kind,
         Location = SpikeData.At(latitude, longitude),

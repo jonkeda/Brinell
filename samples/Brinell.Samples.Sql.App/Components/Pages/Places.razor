@@ -18,24 +18,28 @@
     }
 </fieldset>
 
-<p>
-    <span data-testid="place-count">@_places.Count</span> places:
-    <span data-testid="place-names">@string.Join(", ", _places.Select(p => p.Name))</span>
-</p>
+@* Shown once the first load is back: a filter changed before it would be overwritten by it. *@
+@if (_places is not null)
+{
+    <p>
+        <span data-testid="place-count">@_places.Count</span> places:
+        <span data-testid="place-names">@string.Join(", ", _places.Select(p => p.Name))</span>
+    </p>
 
-<ul>
-    @foreach (var place in _places)
-    {
-        <li><a href="places/@place.Id">@place.Name</a> (@place.Kind)</li>
-    }
-</ul>
+    <ul>
+        @foreach (var place in _places)
+        {
+            <li><a href="places/@place.Id">@place.Name</a> (@place.Kind)</li>
+        }
+    </ul>
+}
 
 <button type="button" data-testid="add-place" @onclick='() => Navigation.NavigateTo("places/new")'>Add a place</button>
 
 @code {
     private static readonly string[] AllKinds = ["city", "town"];
     private readonly List<string> _kinds = [.. AllKinds];
-    private List<Place> _places = [];
+    private List<Place>? _places;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
