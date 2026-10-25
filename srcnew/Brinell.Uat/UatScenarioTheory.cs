@@ -119,7 +119,10 @@ public static class UatScenarioSkip
         return config is null ? null : Of(config, file, scenarioName, Environment.GetEnvironmentVariable);
     }
 
-    /// <summary>The reason <paramref name="config"/> skips the scenario, with these environment variables; null when it runs.</summary>
+    /// <summary>
+    /// The reason <paramref name="config"/> skips the scenario for its head or tags, with these environment variables; null when
+    /// it runs, or when only a skip rule would skip it (the run decides those).
+    /// </summary>
     public static string? Of(BddConfig config, string file, string scenarioName, Func<string, string?> getEnvironmentVariable)
     {
         ArgumentNullException.ThrowIfNull(config);
@@ -129,8 +132,10 @@ public static class UatScenarioSkip
             return null;
         }
 
+        // A skip rule's variable may be set by the fixture as it starts, after discovery (Tomorrow's TOMORROW_OWN_DATABASE): only the
+        // run can decide those, so here only a skip without a rule (a head, @browser) counts.
         var decision = config.EvaluateSkip(scenario.Tags, getEnvironmentVariable);
-        return decision.ShouldSkip ? decision.Reason ?? "Skipped by the suite's config." : null;
+        return decision is { ShouldSkip: true, Rule: null } ? decision.Reason ?? "Skipped by the suite's config." : null;
     }
 }
 

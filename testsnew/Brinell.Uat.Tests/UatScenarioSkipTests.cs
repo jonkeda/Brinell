@@ -51,6 +51,23 @@ public sealed class UatScenarioSkipTests : IDisposable
     public void Of_AnUntaggedScenarioOnTheBunitHead_Runs()
         => Assert.Null(UatScenarioSkip.Of(Config, Feature(), "Runs anywhere", name => name == "BRINELL_HEAD" ? "bunit" : null));
 
+    // The fixture may set a rule's variable as it starts, after discovery: the run decides it.
+    [Fact]
+    public void Of_ASkipRuleWhoseVariableIsUnset_IsLeftToTheRun()
+    {
+        var config = BddConfigParser.Parse("""
+            # UAT Config
+
+            ## Skip Rules
+
+            | Tag | EnvironmentVariable |
+            | --- | --- |
+            | browser | EXAMPLE_OWN |
+            """);
+
+        Assert.Null(UatScenarioSkip.Of(config, Feature(), "Needs a browser", _ => null));
+    }
+
     [Fact]
     public void Of_AScenarioNotInTheFile_Runs()
         => Assert.Null(UatScenarioSkip.Of(Config, Feature(), "Not there", _ => "bunit"));
