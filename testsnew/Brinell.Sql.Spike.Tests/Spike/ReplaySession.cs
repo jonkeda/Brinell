@@ -185,9 +185,10 @@ public sealed class ReplaySession
             return false;
         }
 
+        var actuals = Aligned(recorded, live);
         foreach (var (name, value) in recorded.Parameters)
         {
-            if (!live.Parameters.TryGetValue(name, out var actual))
+            if (!actuals.TryGetValue(name, out var actual))
             {
                 return false;
             }
@@ -240,6 +241,27 @@ public sealed class ReplaySession
                 result.Columns,
                 [.. result.Rows.Select(row => (IReadOnlyList<JsonNode?>)[.. row.Select(Bound)])]))],
         };
+    }
+
+    // The live parameters under the recorded names: an insert's by the column each fills, the others by their own name.
+    private static Dictionary<string, JsonNode?> Aligned(Exchange recorded, Exchange live)
+    {
+        var aligned = new Dictionary<string, JsonNode?>(live.Parameters, StringComparer.Ordinal);
+        var was = Statements.InsertParameters(recorded.Text);
+        if (was.Count == 0)
+        {
+            return aligned;
+        }
+
+        foreach (var (column, liveName) in Statements.InsertParameters(live.Text))
+        {
+            if (was.TryGetValue(column, out var recordedName) && live.Parameters.TryGetValue(liveName, out var value))
+            {
+                aligned[recordedName] = value;
+            }
+        }
+
+        return aligned;
     }
 
     // The recorded columns in the order the live query asks for them: matched as a set, read by ordinal.

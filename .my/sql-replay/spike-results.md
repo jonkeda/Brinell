@@ -195,6 +195,32 @@ Also found on the way: recording twice failed once in 16 runs, because the start
 the detail page's queries came in another order. Replay already took the reads between two writes
 as a set; the pairing of the two recordings now does the same.
 
+## After the two fixes
+
+Both are built. The bUnit head renders only the page a navigation opens, and `StartBlank` opens
+on an empty page until the first navigation, as a browser context opens on `about:blank`; the
+spike and Todo.Web's bUnit head use it. The matcher keys a `SELECT` by its columns as a set and
+an `INSERT` by its columns as a set with each parameter matched by the column it fills; replay
+gives the recorded columns back in the order the live query asks for. Each recording now holds
+only what its test does: `DistanceIsShown` has three commands, no list query.
+
+| # | Change | Before | After |
+| --- | --- | --- | --- |
+| 4 | Property renamed, column kept | Miss, 5 | No miss, 0 |
+| 6 | List ordered by `CreatedAt` | Miss, 5 | Miss, 4 (the tests that open the list) |
+| 7 | `==` chain for `Contains` | Miss, 5 | Miss, 4 |
+| 9 | Count badge | Miss, 5 | Miss, 4 |
+| 1 | New column, stamp ignored | Miss, 5 | Miss, 5 (every query on `Place` selects it) |
+
+Changes 2 and 10 left nothing to fix; the stale ones (1, 3, 5, 8) are the stamp's and unchanged.
+The base replays 20 times without a miss, and the suites on the bUnit head pass (Brinell's Blazor
+suite 35, Todo.Web 10, the bUnit head's own tests 97 with three new ones).
+
+What's left is the honest cost: a change to a query hits the tests that run it, and a new
+column hits every test on its table, because EF selects all columns. On a large schema with
+hand-written SQL, both reach far fewer tests than here, where every test reads the one table.
+The stamp is still one hash over all migrations; per table is the next change for such a system.
+
 ## What P4 changes before step 2
 
 - **Match a query's columns as a set.** Compare `SELECT` lists without their order and give the

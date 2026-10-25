@@ -151,11 +151,36 @@ public static partial class Statements
     /// </summary>
     public static string Key(string text)
     {
-        var normalized = Normalize(text);
+        var normalized = Insert().Replace(Normalize(text), insert =>
+            $"INSERT INTO {insert.Groups["table"].Value} ({string.Join(", ", Split(insert.Groups["columns"].Value).Order(StringComparer.Ordinal))}) VALUES (...)");
         return Projection(normalized) is { } projection
             ? projection.Prefix + string.Join(", ", projection.Columns.Order(StringComparer.Ordinal)) + projection.Tail
             : normalized;
     }
+
+    /// <summary>
+    /// The parameter that fills each column of the text's <c>INSERT</c>s, by column: EF numbers an insert's parameters in
+    /// its column order, which follows property names, so a parameter is matched by the column it fills, not its name.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> InsertParameters(string text)
+    {
+        var parameters = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (Match insert in Insert().Matches(Normalize(text)))
+        {
+            var table = insert.Groups["table"].Value;
+            foreach (var (column, value) in Split(insert.Groups["columns"].Value).Zip(Split(insert.Groups["values"].Value)))
+            {
+                if (value.StartsWith('@'))
+                {
+                    parameters[$"{table}.{column}"] = value;
+                }
+            }
+        }
+
+        return parameters;
+    }
+
+    private static IEnumerable<string> Split(string list) => list.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>
     /// A leading <c>SELECT</c>'s columns: the text before them, each column as written, and the text from <c>FROM</c>
@@ -199,6 +224,9 @@ public static partial class Statements
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
+
+    [GeneratedRegex(@"INSERT INTO (?<table>\S+) \((?<columns>[^)]*)\) VALUES \((?<values>[^)]*)\)", RegexOptions.IgnoreCase)]
+    private static partial Regex Insert();
 
     [GeneratedRegex(@"^SELECT (DISTINCT )?(TOP\([^)]*\) )?", RegexOptions.IgnoreCase)]
     private static partial Regex SelectStart();
