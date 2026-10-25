@@ -11,7 +11,8 @@ Step 4, the heads, adds the test-id hook for an app in a process of its own; H1 
 review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-results.md)). Step 6 is written:
 [docs/guides/sql-replay.md](../../docs/guides/sql-replay.md) and
 [AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md). Steps 0 to 6
-are done; 1.7, the legacy system's measurement, waits until the owner has the system, then the trial there. Each step ends green:
+are done; 1.7, the legacy system's measurement, waits until the owner has the system, then the trial there.
+Step 7, the schema snapshot on SQLite, is planned below. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -394,6 +395,50 @@ holds the recordings to.
 | M4 | Gate | `reviewed` passes after `--accept`, fails after a recording changes, passes after a re-record that comes out the same |
 | M5 | Re-record after an app change | A session recording over a recording without one of its commands saves, no throw |
 | M6 | On the spike | An unchanged re-record shows no change; a changed seed value shows only the tests that read it, and the gate fails until accepted; the spike's gate test passes on its accepted recordings |
+
+## Step 7: the schema snapshot on SQLite
+
+Planned, not built. Replay already runs on SQLite (R1, R3, the hook sample); the snapshot, and with
+it the stamp and `bruinell sql stale`, reads SQL Server's catalog only. Step 7 gives SQLite its own
+reader behind the same `SchemaSnapshot`, so a SQLite suite gets stale reports as a SQL Server one
+does. About half a day.
+
+### 7.1 What changes per provider
+
+| Part | SQL Server (now) | SQLite (step 7) |
+| --- | --- | --- |
+| Objects | `sys.objects`: tables, views, procedures, functions | `sqlite_master`: `type` `table` and `view`, in schema `main` (`main.places`); `sqlite_*` tables left out |
+| A table's hash | columns, indexes, keys, triggers, defaults, checks | the `sql` text of its `CREATE TABLE` (columns, keys, defaults, checks: SQLite rewrites it on `ALTER TABLE`), its indexes' and its triggers' `sql`, whitespace collapsed; automatic indexes have no `sql` and are left out |
+| A view's hash | its body | its `CREATE VIEW` text |
+| References | `sys.sql_expression_dependencies` | none in the catalog: a view's and a trigger's text parsed by `Statements.Names`, unqualified names in `main`, kept only when the snapshot holds them (a CTE's or an alias's name is dropped); a trigger's are its table's (`tbl_name`) |
+| Dynamic SQL | marked, listed by hand | none: SQLite has no procedures; `Dynamic` stays false |
+| Reference data (`--data`) | `CHECKSUM_AGG(BINARY_CHECKSUM(*))` | the table's rows read whole, each row canonical (`Values`), the lines sorted and hashed in C#: reference tables are small |
+| Default schema | `--default-schema`, `dbo` | always `main`; attached databases are out of scope |
+| The log | Extended Events, or in process | in process only (`UseSqlLog`, `LoggingDbConnection`): SQLite has no server to capture |
+
+### 7.2 Decisions
+
+| Question | Decision |
+| --- | --- |
+| How the reader is chosen | `SchemaSnapshot.ReadAsync` looks at the connection's type: a `SqliteConnection` (by type name, no reference) reads `sqlite_master`; anything else reads SQL Server's catalog as now. `SnapshotOptions.Provider` overrides it |
+| The CLI | `bruinell sql schema --provider sqlite --connection "Data Source=<file>"`; `sqlserver` stays the default, as `Data Source=` is a SQL Server keyword too and can't tell them apart. The CLI references `Microsoft.Data.Sqlite` |
+| Commands EF sends to the catalog | `Statements.Names` leaves out `sqlite_*` names (EF's probes of `sqlite_master`), as it leaves out `sys` |
+| Where the code goes | `srcnew/Bruinell.Mocking.Data/SqliteSchema.cs`, internal, called by `SchemaSnapshot.ReadAsync`; netstandard2.0 like the rest |
+
+### 7.3 Checks
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| Q1 | Objects | A file database with tables, a view on a view, an index and a trigger: tables and views as `main.<name>`, kinds `table` and `view`, no `sqlite_sequence` or `sqlite_stat1`, no index or trigger as an object of its own |
+| Q2 | Hashes | `ALTER TABLE ADD COLUMN`, a new index and a changed trigger each change their table's hash only; a changed view changes the view's |
+| Q3 | References | A view references its table; the view on the view expands to the table; a trigger's insert target is in its table's references; a CTE's name is not |
+| Q4 | Reference data | A changed row of a `--data` table changes its hash; the same rows in another order don't; an unlisted table keeps its hash |
+| Q5 | Stamp | A session recording `SELECT "p"."Name" FROM "Places" AS "p"` against the SQLite snapshot is stamped `main.places`; EF's `sqlite_master` probe stamps nothing |
+| Q6 | Stale | Two recordings over SQLite, one reading `Places` and one `Kinds`; a column added to `Kinds` and the snapshot read again: `RecordingCheck` and `bruinell sql stale` list only the `Kinds` one |
+
+Q1 to Q5 run in `testsnew/Bruinell.Mocking.Data.Tests` (`SqliteSchemaTests`, no server needed); Q6
+there too, and once through the CLI by hand, recorded in `sqlite-results.md`. The guide's "Stale
+Recordings" section gets `--provider sqlite`.
 
 ## Steps 1 to 6: outline
 
