@@ -51,6 +51,7 @@ internal sealed class ControlCall
         Func<T, bool>? succeeded = null)
     {
         var clock = Stopwatch.StartNew();
+        var startMs = Timing.NowMs;
         var context = new AttemptContext(Deadline.In(budgetMs), animationMs);
         _logger?.LogEntry(_testName, _pageName, _controlId, caller, value);
 
@@ -65,6 +66,7 @@ internal sealed class ControlCall
         {
             _logger?.LogExit(_testName, _pageName, _controlId, caller,
                 LogResult.Error, (int)clock.ElapsedMilliseconds, error.Message);
+            Timing.Call(_pageName, _controlId, caller, startMs, (int)clock.ElapsedMilliseconds, context.Log.Attempts, "error");
             throw;
         }
         finally
@@ -73,7 +75,9 @@ internal sealed class ControlCall
         }
 
         var elapsed = (int)clock.ElapsedMilliseconds;
-        if (succeeded != null && !succeeded(result))
+        var answered = succeeded == null || succeeded(result);
+        Timing.Call(_pageName, _controlId, caller, startMs, elapsed, context.Log.Attempts, answered ? "success" : "error");
+        if (!answered)
         {
             _logger?.LogExit(_testName, _pageName, _controlId, caller,
                 LogResult.Error, elapsed, context.Log.Summary());

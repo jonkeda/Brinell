@@ -167,6 +167,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
 
     public void NavigateTo(string destination)
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(NavigateTo));
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         _driver.GoTo(destination);
     }
@@ -177,7 +178,11 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
         await _page.GotoAsync(destination).ConfigureAwait(false);
     }
 
-    public void NavigateBack() => _driver.GoBack();
+    public void NavigateBack()
+    {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(NavigateBack));
+        _driver.GoBack();
+    }
 
     public void GoForward() => _driver.GoForward();
 
@@ -185,7 +190,11 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
 
     public PageProbe ProbePage(string busyAttribute) => _driver.ProbePage(busyAttribute);
 
-    public void Refresh() => _driver.Reload();
+    public void Refresh()
+    {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(Refresh));
+        _driver.Reload();
+    }
 
     public byte[] TakeScreenshot() => _driver.TakeScreenshot();
 
@@ -220,6 +229,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IHtmlPageProbe, Br
     /// </summary>
     public void ResetAppState()
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(ResetAppState));
         (_browserContext ?? _page.Context).ClearCookiesAsync().GetAwaiter().GetResult();
         if (!_page.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
         {

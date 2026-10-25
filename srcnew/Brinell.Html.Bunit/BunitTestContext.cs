@@ -121,6 +121,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     // A link inside the page stays in its circuit (Follow).
     public void NavigateTo(string destination)
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(NavigateTo));
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         _back.Add(CurrentUrl);
         _forward.Clear();
@@ -138,6 +139,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
 
     public void NavigateBack()
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(NavigateBack));
         if (_back.Count == 0)
         {
             return;
@@ -160,6 +162,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
 
     public void Refresh()
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(Refresh));
         var url = CurrentUrl;
         Restart();
         Go(url);
@@ -228,6 +231,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
     // As clearing a browser's cookies and storage: signed out, a fresh root.
     public void ResetAppState()
     {
+        using var span = Brinell.Core.Logging.Timing.Span("navigate", nameof(ResetAppState));
         _back.Clear();
         _forward.Clear();
         _signedIn = null;

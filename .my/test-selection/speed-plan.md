@@ -78,6 +78,17 @@ paper's step 3) reads this file; T1 builds the writer once for both.
 | The in-process studio's workers | The call queue and runners share the test process's CPU with ten collections | S1 against S2: a cost that grows with collections |
 | `GenerateArea` and the host start | 100+ s in an earlier full run's first tests | `host` span |
 
+## Candidates to try after T1, each on its set
+
+They hold whatever T1 finds; each is one iteration, kept only if its set is faster and green.
+
+| Candidate | Set | Expected | How |
+| --- | --- | --- | --- |
+| Fewer parallel collections | S2, then the full run | Each scenario stretches from about 6 s alone to about 25 s with ten collections; six may finish sooner | `maxParallelThreads` in the suites' `xunit.runner.json` (10 now) |
+| Rebalance the serial collection | S3 | 48 scenarios run alone at the end, about 5 min | Move the ones that change no shared setting to the parallel collections (`UatCollections.ChangesSettings`) |
+| The start without generating the area | `host` span | Part of the host start is the geo import and `GenerateArea` | A snapshot of the generated test database, restored at the start |
+| A warm host between runs | any small set | A small set skips the start | Brinell's warm runners (`BddWarmRunners`) for the studio suite |
+
 ## Fixes already known
 
 | Fix | Where | Note |

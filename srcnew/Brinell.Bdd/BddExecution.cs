@@ -254,7 +254,13 @@ public sealed class BddStepExecutionSession
                 await pacer.BeforeAsync(invocation, _context, cancellationToken).ConfigureAwait(false);
             }
 
-            var result = NameTheSession(await handler(_context, invocation, cancellationToken).ConfigureAwait(false));
+            BddStepResult result;
+            using (Brinell.Core.Testing.TestScope.EnterStep($"{invocation.Step.Source.LineNumber}: {invocation.Step.Text}"))
+            using (Brinell.Core.Logging.Timing.Span("step", invocation.Step.Text))
+            {
+                result = NameTheSession(await handler(_context, invocation, cancellationToken).ConfigureAwait(false));
+            }
+
             BreakOnFailure(invocation, result);
             _results.Add(result);
             await PaceAfterAsync(result, cancellationToken).ConfigureAwait(false);

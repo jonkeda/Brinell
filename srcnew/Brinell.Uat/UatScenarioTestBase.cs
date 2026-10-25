@@ -60,6 +60,7 @@ public abstract class UatScenarioTestBase<TFixture>
     /// <param name="scenario">The scenario about to run.</param>
     protected virtual void BeforeScenario(BddBoundScenario scenario)
     {
+        using var span = Brinell.Core.Logging.Timing.Span("lifecycle", "BeforeScenario");
         (Fixture as IUatScenarioLifecycle)?.BeforeScenario(scenario);
     }
 
@@ -70,6 +71,7 @@ public abstract class UatScenarioTestBase<TFixture>
     /// <param name="scenario">The scenario that ran.</param>
     protected virtual void AfterScenario(BddBoundScenario scenario)
     {
+        using var span = Brinell.Core.Logging.Timing.Span("lifecycle", "AfterScenario");
         (Fixture as IUatScenarioLifecycle)?.AfterScenario(scenario);
     }
 
@@ -151,8 +153,16 @@ public abstract class UatScenarioTestBase<TFixture>
         string scenarioName,
         CancellationToken cancellationToken = default)
     {
-        EnterFile(filePath);
-        var context = BindUatFile(filePath);
+        using var test = Brinell.Core.Testing.TestScope.EnterTest($"{GetType().Name}: {scenarioName}");
+        using var scenarioScope = Brinell.Core.Testing.TestScope.EnterScenario(scenarioName);
+        using var whole = Brinell.Core.Logging.Timing.Span("test", scenarioName);
+        UatBoundFileContext context;
+        using (Brinell.Core.Logging.Timing.Span("bind", "EnterFile"))
+        {
+            EnterFile(filePath);
+        }
+
+        context = BindUatFile(filePath);
         var matches = context.Document.Scenarios.Where(scenario => scenario.Source.Name == scenarioName).ToList();
         if (matches.Count != 1)
         {
@@ -195,10 +205,17 @@ public abstract class UatScenarioTestBase<TFixture>
         CancellationToken cancellationToken)
     {
         var started = System.Diagnostics.Stopwatch.StartNew();
-        var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
-            .ConfigureAwait(false);
+        BddScenarioExecutionResult execution;
+        using (Brinell.Core.Logging.Timing.Span("scenario", scenario.Source.Name))
+        {
+            execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
-        RecordScenarioResult(context, scenario, execution, started.Elapsed);
+        using (Brinell.Core.Logging.Timing.Span("report", scenario.Source.Name))
+        {
+            RecordScenarioResult(context, scenario, execution, started.Elapsed);
+        }
 
         if (!IsAcceptableResult(execution))
         {
@@ -433,16 +450,36 @@ public abstract class UatScenarioTestBase<TFixture>
 
     private UatBoundFileContext BindUatFile(string filePath)
     {
-        var file = BddScenarioFiles.Load(filePath);
+        BddLoadedScenarioFile file;
+        using (Brinell.Core.Logging.Timing.Span("bind", "Load"))
+        {
+            file = BddScenarioFiles.Load(filePath);
+        }
+
         if (!file.Success)
         {
             throw new InvalidOperationException(
                 BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
-        var runtime = CreateRuntime();
-        var catalog = CreateCommandCatalog(runtime);
-        var bind = file.Bind(runtime.CreateCatalogSet(catalog));
+        UatRuntime runtime;
+        using (Brinell.Core.Logging.Timing.Span("bind", "CreateRuntime"))
+        {
+            runtime = CreateRuntime();
+        }
+
+        BddCommandCatalog catalog;
+        using (Brinell.Core.Logging.Timing.Span("bind", "CreateCommandCatalog"))
+        {
+            catalog = CreateCommandCatalog(runtime);
+        }
+
+        BddBindResult bind;
+        using (Brinell.Core.Logging.Timing.Span("bind", "Bind"))
+        {
+            bind = file.Bind(runtime.CreateCatalogSet(catalog));
+        }
+
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(
