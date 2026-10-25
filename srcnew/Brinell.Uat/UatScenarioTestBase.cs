@@ -162,7 +162,7 @@ public abstract class UatScenarioTestBase<TFixture>
             EnterFile(filePath);
         }
 
-        context = BindUatFile(filePath);
+        context = BindUatFile(filePath, scenarioName);
         var matches = context.Document.Scenarios.Where(scenario => scenario.Source.Name == scenarioName).ToList();
         if (matches.Count != 1)
         {
@@ -448,7 +448,8 @@ public abstract class UatScenarioTestBase<TFixture>
             .FirstOrDefault(tag => tag.StartsWith("uat-", StringComparison.OrdinalIgnoreCase));
     }
 
-    private UatBoundFileContext BindUatFile(string filePath)
+    // only: the one scenario a test runs; the file's other scenarios are not bound (speed plan, iteration 1).
+    private UatBoundFileContext BindUatFile(string filePath, string? only = null)
     {
         BddLoadedScenarioFile file;
         using (Brinell.Core.Logging.Timing.Span("bind", "Load"))
@@ -477,7 +478,7 @@ public abstract class UatScenarioTestBase<TFixture>
         BddBindResult bind;
         using (Brinell.Core.Logging.Timing.Span("bind", "Bind"))
         {
-            bind = file.Bind(runtime.CreateCatalogSet(catalog));
+            bind = file.Bind(runtime.CreateCatalogSet(catalog), only);
         }
 
         if (!bind.Success || bind.Document is null)

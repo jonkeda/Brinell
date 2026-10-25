@@ -37,7 +37,8 @@ public static class BddBinder
     /// <param name="document">The parsed document.</param>
     /// <param name="catalogs">The catalogs and the apps.</param>
     /// <param name="callables">The callable phrases the document can see (<see cref="BddScenarioFiles.Load(string)"/>).</param>
-    public static BddBindResult Bind(BddDocument document, BddCatalogSet catalogs, BddCallableSet callables)
+    /// <param name="only">The one scenario to bind, by name, for a run of it alone; null binds them all, as a check does.</param>
+    public static BddBindResult Bind(BddDocument document, BddCatalogSet catalogs, BddCallableSet callables, string? only = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(catalogs);
@@ -71,6 +72,14 @@ public static class BddBinder
 
         foreach (var scenario in document.Scenarios)
         {
+            // A run of one scenario binds only that one: each scenario's walk costs, and the others do not run (speed plan,
+            // iteration 1). Their problems are a check's to report, which binds them all.
+            if (only is not null && !string.Equals(scenario.Name, only, StringComparison.Ordinal))
+            {
+                scenarios.Add(new BddBoundScenario(scenario, []));
+                continue;
+            }
+
             // A scenario for another head is skipped when it runs, so its steps are not this head's to bind (AD-014).
             if (catalogs.SuiteHead is { } suiteHead &&
                 BddTagConventions.WhyNotOnHead(scenario.Tags.Select(BddTagConventions.NormalizeTag).ToHashSet(StringComparer.OrdinalIgnoreCase), suiteHead) is not null)

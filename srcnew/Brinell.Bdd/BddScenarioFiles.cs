@@ -17,8 +17,10 @@ public sealed record BddLoadedScenarioFile(
     public bool Success => Document is not null && Diagnostics.All(x => x.Severity != BddDiagnosticSeverity.Error);
 
     /// <summary>Binds the file against <paramref name="catalogs"/>, with its callables.</summary>
-    public BddBindResult Bind(BddCatalogSet catalogs)
-        => BddBinder.Bind(Document ?? throw new InvalidOperationException("The file did not parse."), catalogs, Callables);
+    /// <param name="catalogs">The suite's catalogs.</param>
+    /// <param name="only">The one scenario to bind, by name; null binds them all.</param>
+    public BddBindResult Bind(BddCatalogSet catalogs, string? only = null)
+        => BddBinder.Bind(Document ?? throw new InvalidOperationException("The file did not parse."), catalogs, Callables, only);
 
     /// <summary>
     /// Every problem of the file, as the gate reports it: parse (<c>UAT0xx</c>), bind
