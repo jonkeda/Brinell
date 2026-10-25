@@ -3,13 +3,63 @@
   "Stamp": {
     "Ef": "10.0.12",
     "SqlClient": "6.1.6",
-    "Tables": {
-      "dbo.places": "D3B963F3D3E8"
+    "Objects": {
+      "dbo.kindcounts": "06B327E49421",
+      "dbo.places": "8F7F6A2F4BF9"
     }
   },
   "Exchanges": [
     {
       "Index": 0,
+      "Kind": "reader",
+      "Text": "SELECT [Kind], [Places] FROM [dbo].[KindCounts] ORDER BY [Kind]\r\n",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "Kind",
+              "ClrType": "System.String",
+              "DataTypeName": "nvarchar"
+            },
+            {
+              "Name": "Places",
+              "ClrType": "System.Int32",
+              "DataTypeName": "int"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "city"
+              },
+              {
+                "t": "Int32",
+                "v": "2"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "town"
+              },
+              {
+                "t": "Int32",
+                "v": "3"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 1,
       "Kind": "reader",
       "Text": "SELECT [p].[Id], [p].[CreatedAt], [p].[Kind], [p].[Location], [p].[Name], [p].[Population]\r\nFROM [Places] AS [p]\r\nWHERE [p].[Kind] IN (@_kinds1, @_kinds2)\r\nORDER BY [p].[Name]",
       "Parameters": {
@@ -197,17 +247,17 @@
       "IsWrite": false
     },
     {
-      "Index": 1,
+      "Index": 2,
       "Kind": "reader",
       "Text": "SET IMPLICIT_TRANSACTIONS OFF;\r\nSET NOCOUNT ON;\r\nINSERT INTO [Places] ([Id], [CreatedAt], [Kind], [Location], [Name], [Population])\r\nVALUES (@p0, @p1, @p2, @p3, @p4, @p5);\r\n",
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "2d20de78-c756-4568-860d-c7571042217b"
+          "v": "bedefd45-b259-4383-9156-688f7b6155ce"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T18:33:42.0061569\u002B01:00"
+          "v": "2026-10-25T18:43:58.1765417\u002B01:00"
         },
         "@p2": {
           "t": "String",

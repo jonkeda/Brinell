@@ -15,6 +15,7 @@ public sealed class PlaceTests : SpikeTestBase
 
         places.Count.AssertText("5");
         places.Names.AssertText("Amsterdam, Enkhuizen, Hoorn, Medemblik, Purmerend");
+        places.KindCounts.AssertText("city 2, town 3");
     }
 
     [Fact]
@@ -56,5 +57,6 @@ public sealed class PlaceTests : SpikeTestBase
         var place = OpenPlace("Enkhuizen");
 
         place.Distance.AssertTextStartsWith("17.");
+        place.Visits.AssertText("0");
     }
 }

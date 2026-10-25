@@ -70,7 +70,12 @@ public abstract class SpikeTestBase : IAsyncLifetime
         {
             var log = new CommandLog();
             Log = log;
-            var session = Mode == ReplayMode.Off ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentSchema());
+            if (Mode == ReplayMode.Snapshot)
+            {
+                CurrentSchema();
+            }
+
+            var session = Mode is ReplayMode.Off or ReplayMode.Snapshot ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentSchema());
             Session = session;
             _context = new BunitTestContext(new BunitTestContextOptions
             {
@@ -134,25 +139,28 @@ public abstract class SpikeTestBase : IAsyncLifetime
         return page;
     }
 
-    // Every table of the app's model with a hash of its columns, keys and indexes, and the versions that shape the SQL:
-    // read from the EF model, so replay needs no database. A system without EF would read a checked-in schema instead.
-    private static Schema CurrentSchema()
-    {
-        using var db = new SpikeDbContext(SpikeData.Options(SpikeData.Connection));
-        var tables = db.Model.GetRelationalModel().Tables.ToDictionary(
-            table => $"{table.Schema ?? "dbo"}.{table.Name}".ToLowerInvariant(),
-            table => Hash(
-                table.Columns.OrderBy(column => column.Name, StringComparer.Ordinal).Select(column => $"{column.Name} {column.StoreType} {(column.IsNullable ? "null" : "not null")}")
-                    .Concat(table.UniqueConstraints.Select(key => $"key {key.Name} ({string.Join(", ", key.Columns.Select(column => column.Name))})"))
-                    .Concat(table.Indexes.Select(index => $"index {index.Name} {(index.IsUnique ? "unique " : string.Empty)}({string.Join(", ", index.Columns.Select(column => column.Name))})"))
-                    .Concat(table.ForeignKeyConstraints.Select(key => $"fk {key.Name} -> {key.PrincipalTable.Name}"))
-                    .Order(StringComparer.Ordinal)),
-            StringComparer.OrdinalIgnoreCase);
-        return new Schema(Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)), tables);
-    }
+    private static readonly Lazy<Schema> Snapshot = new(ReadSchema, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static string Hash(IEnumerable<string> lines)
-        => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines))))[..12];
+    // The schema from the checked-in snapshot (Recordings/schema.json), with the versions that shape the SQL. Recording
+    // writes it from the database first, once a run, after the first test's reset has migrated it; replay only reads it.
+    private static Schema CurrentSchema() => Snapshot.Value;
+
+    private static Schema ReadSchema()
+    {
+        var path = Path.Combine(Recordings, "schema.json");
+        SchemaSnapshot snapshot;
+        if (Mode is ReplayMode.Record or ReplayMode.Snapshot)
+        {
+            snapshot = SchemaSnapshot.ReadAsync(SpikeData.Connection).GetAwaiter().GetResult();
+            snapshot.Save(path);
+        }
+        else
+        {
+            snapshot = SchemaSnapshot.Load(path) ?? throw new ReplayMissException($"No schema snapshot at {path}: record first (BRINELL_SQL_REPLAY=Record).");
+        }
+
+        return snapshot.ToSchema(Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)));
+    }
 
     private static string Version(Type type)
         => (type.Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)

@@ -31,3 +31,11 @@ public sealed class Visit
 
     public DateTimeOffset At { get; set; }
 }
+
+/// <summary>A row of the view <c>dbo.KindCounts</c>: how many places of a kind.</summary>
+public sealed class KindCount
+{
+    public required string Kind { get; set; }
+
+    public int Places { get; set; }
+}

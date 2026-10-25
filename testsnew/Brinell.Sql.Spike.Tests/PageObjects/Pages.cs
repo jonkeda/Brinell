@@ -18,6 +18,8 @@ public sealed class PlacesPage(IHtmlTestContext context) : BlazorPageObjectBase<
 
     public LabelControl<PlacesPage> Names => new(this, Locator.ByDataTestId("place-names"));
 
+    public LabelControl<PlacesPage> KindCounts => new(this, Locator.ByDataTestId("kind-counts"));
+
     public ButtonControl<PlacesPage> AddButton => new(this, Locator.ByDataTestId("add-place"));
 
     public NewPlacePage Add()
@@ -88,4 +90,6 @@ public sealed class PlacePage(IHtmlTestContext context) : BlazorPageObjectBase<P
     public LabelControl<PlacePage> Population => new(this, Locator.ByDataTestId("place-population"));
 
     public LabelControl<PlacePage> Distance => new(this, Locator.ByDataTestId("place-distance"));
+
+    public LabelControl<PlacePage> Visits => new(this, Locator.ByDataTestId("place-visits"));
 }

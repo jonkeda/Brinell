@@ -147,10 +147,12 @@ public sealed class ReplayInterceptor(ReplaySession session) : DbCommandIntercep
             : reader.GetValue(ordinal);
     }
 
+    // A stored procedure called as one (CommandType.StoredProcedure, as ADO.NET code does) is kept as its EXEC, so it is
+    // keyed and stamped as a procedure written out in text is.
     private static Exchange Live(DbCommand command, string kind) => new()
     {
         Kind = kind,
-        Text = command.CommandText,
+        Text = command.CommandType == System.Data.CommandType.StoredProcedure ? "EXEC " + command.CommandText : command.CommandText,
         Parameters = command.Parameters.Cast<DbParameter>().ToDictionary(parameter => parameter.ParameterName, parameter => Values.ToJson(parameter.Value)),
     };
 

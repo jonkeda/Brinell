@@ -37,6 +37,7 @@ else
         var origin = await db.Places.Where(p => p.Name == PlaceSeed.Origin).Select(p => p.Location).SingleAsync();
         var meters = await db.Places.Where(p => p.Id == Id).Select(p => p.Location.Distance(origin)).SingleAsync();
         _distanceKm = meters / 1000;
-        _visits = await db.Visits.CountAsync(v => v.PlaceId == Id);
+        // A stored procedure: the text names no table at all.
+        _visits = (await db.Database.SqlQuery<int>($"EXEC [dbo].[VisitCount] @PlaceId = {Id}").ToListAsync()).Single();
     }
 }

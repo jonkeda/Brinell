@@ -3,9 +3,10 @@
   "Stamp": {
     "Ef": "10.0.12",
     "SqlClient": "6.1.6",
-    "Tables": {
-      "dbo.places": "D3B963F3D3E8",
-      "dbo.visits": "4EA6162D1634"
+    "Objects": {
+      "dbo.places": "8F7F6A2F4BF9",
+      "dbo.visitcount": "67403C1D885A",
+      "dbo.visits": "B42D39124A8B"
     }
   },
   "Exchanges": [
@@ -161,9 +162,9 @@
     {
       "Index": 3,
       "Kind": "reader",
-      "Text": "SELECT COUNT(*)\r\nFROM [Visits] AS [v]\r\nWHERE [v].[PlaceId] = @Id",
+      "Text": "EXEC [dbo].[VisitCount] @PlaceId = @p0\r\n",
       "Parameters": {
-        "@Id": {
+        "p0": {
           "t": "Guid",
           "v": "a1000000-0000-0000-0000-000000000002"
         }
@@ -173,7 +174,7 @@
         {
           "Columns": [
             {
-              "Name": "",
+              "Name": "Value",
               "ClrType": "System.Int32",
               "DataTypeName": "int"
             }

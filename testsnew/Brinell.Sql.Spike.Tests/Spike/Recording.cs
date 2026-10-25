@@ -12,6 +12,9 @@ public enum ReplayMode
     Off,
     Record,
     Replay,
+
+    /// <summary>Against the database, writing only the schema snapshot: after a schema change, before replaying.</summary>
+    Snapshot,
 }
 
 /// <summary>One column of a recorded result set.</summary>
@@ -52,29 +55,52 @@ public sealed class Exchange
 }
 
 /// <summary>
-/// The schema as the app sees it now, without a database: EF Core's and SqlClient's versions, and every table by its
-/// name (<c>dbo.places</c>) with a hash of its columns, keys and indexes.
+/// The schema as the app sees it now, without a database: EF Core's and SqlClient's versions, every table, view,
+/// procedure and function by its name (<c>dbo.places</c>) with its hash, and what each one's body references
+/// (<see cref="SchemaSnapshot"/>).
 /// </summary>
-public sealed record Schema(string Ef, string SqlClient, IReadOnlyDictionary<string, string> Tables)
+public sealed record Schema(
+    string Ef,
+    string SqlClient,
+    IReadOnlyDictionary<string, string> Objects,
+    IReadOnlyDictionary<string, IReadOnlyList<string>> References)
 {
-    /// <summary>The hash of an unknown table: a name in a command the schema doesn't hold (a view, a function).</summary>
+    /// <summary>The hash of an unknown object: a name in a command the schema doesn't hold.</summary>
     public const string Unknown = "?";
 
-    /// <summary>The stamp of a recording whose commands touched <paramref name="tables"/>.</summary>
-    public Stamp StampFor(IEnumerable<string> tables) => new()
+    /// <summary>
+    /// The stamp of a recording whose commands named <paramref name="named"/>: those objects and every object their
+    /// bodies reference, followed through views into tables, so a procedure's recording goes stale with its tables.
+    /// </summary>
+    public Stamp StampFor(IEnumerable<string> named)
     {
-        Ef = Ef,
-        SqlClient = SqlClient,
-        Tables = tables.Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(table => table, table => Tables.GetValueOrDefault(table, Unknown), StringComparer.OrdinalIgnoreCase),
-    };
+        var touched = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        var waiting = new Queue<string>(named);
+        while (waiting.TryDequeue(out var name))
+        {
+            if (touched.Add(name))
+            {
+                foreach (var referenced in References.GetValueOrDefault(name) ?? [])
+                {
+                    waiting.Enqueue(referenced);
+                }
+            }
+        }
+
+        return new Stamp
+        {
+            Ef = Ef,
+            SqlClient = SqlClient,
+            Objects = touched.ToDictionary(name => name, name => Objects.GetValueOrDefault(name, Unknown), StringComparer.OrdinalIgnoreCase),
+        };
+    }
 }
 
 /// <summary>
-/// What a recording was made against: EF Core's and SqlClient's versions, and each table its commands touched with
-/// that table's hash. Only an upgrade, or a change to one of those tables, makes it stale: on a schema of thousands of
-/// tables a change elsewhere leaves it alone. Said before any miss, since such a change reaches most of its queries.
+/// What a recording was made against: EF Core's and SqlClient's versions, and each object its commands touched, named or
+/// through a view's or procedure's body, with that object's hash. Only an upgrade, or a change to one of those objects,
+/// makes it stale: on a schema of thousands of tables a change elsewhere leaves it alone. Said before any miss, since
+/// such a change reaches most of its queries.
 /// </summary>
 public sealed class Stamp
 {
@@ -82,16 +108,16 @@ public sealed class Stamp
 
     public required string SqlClient { get; init; }
 
-    public Dictionary<string, string> Tables { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Objects { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>What differs from <paramref name="now"/>, as "what: recorded, now".</summary>
     public IReadOnlyList<string> Differences(Schema now) =>
     [
         .. Ef != now.Ef ? [$"EF Core: {Ef}, now {now.Ef}"] : Array.Empty<string>(),
         .. SqlClient != now.SqlClient ? [$"SqlClient: {SqlClient}, now {now.SqlClient}"] : Array.Empty<string>(),
-        .. Tables
-            .Where(table => now.Tables.GetValueOrDefault(table.Key, Schema.Unknown) != table.Value)
-            .Select(table => now.Tables.ContainsKey(table.Key) ? $"table {table.Key} changed" : $"table {table.Key} is gone"),
+        .. Objects
+            .Where(item => now.Objects.GetValueOrDefault(item.Key, Schema.Unknown) != item.Value)
+            .Select(item => now.Objects.ContainsKey(item.Key) ? $"{item.Key} changed" : $"{item.Key} is gone"),
     ];
 }
 
@@ -210,12 +236,12 @@ public static partial class Statements
     }
 
     /// <summary>
-    /// The tables a command names after <c>FROM</c>, <c>JOIN</c>, <c>INTO</c>, <c>UPDATE</c> or <c>MERGE</c>, as
-    /// <c>schema.table</c> in lower case, <c>dbo</c> when none is written. A stored procedure names none: its tables
-    /// would come from the database's dependencies, which this spike doesn't read.
+    /// The objects a command names: tables and views after <c>FROM</c>, <c>JOIN</c>, <c>INTO</c>, <c>UPDATE</c> or
+    /// <c>MERGE</c>, procedures after <c>EXEC</c>; as <c>schema.name</c> in lower case, <c>dbo</c> when none is written.
+    /// What a view's or procedure's body touches comes from the schema's references (<see cref="Schema.StampFor"/>).
     /// </summary>
-    public static IEnumerable<string> Tables(string text)
-        => TableNames().Matches(Normalize(text)).Select(match =>
+    public static IEnumerable<string> Objects(string text)
+        => TableNames().Matches(Normalize(text)).Concat(Procedures().Matches(Normalize(text))).Select(match =>
         {
             var parts = match.Groups["name"].Value.Split('.').Select(part => part.Trim('[', ']').ToLowerInvariant()).ToArray();
             return parts.Length == 1 ? "dbo." + parts[0] : string.Join('.', parts[^2..]);
@@ -271,6 +297,9 @@ public static partial class Statements
 
     [GeneratedRegex(@"\b(?:FROM|JOIN|INTO|UPDATE|MERGE)\s+(?<name>(?:\[[^\]]+\]|\w+)(?:\.(?:\[[^\]]+\]|\w+))*)(?!\s*\()", RegexOptions.IgnoreCase)]
     private static partial Regex TableNames();
+
+    [GeneratedRegex(@"\bEXEC(?:UTE)?\s+(?:@\w+\s*=\s*)?(?<name>(?:\[[^\]]+\]|\w+)(?:\.(?:\[[^\]]+\]|\w+))*)", RegexOptions.IgnoreCase)]
+    private static partial Regex Procedures();
 
     [GeneratedRegex(@"^SELECT (DISTINCT )?(TOP\([^)]*\) )?", RegexOptions.IgnoreCase)]
     private static partial Regex SelectStart();

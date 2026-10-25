@@ -25,6 +25,7 @@
         <span data-testid="place-count">@_places.Count</span> places:
         <span data-testid="place-names">@string.Join(", ", _places.Select(p => p.Name))</span>
     </p>
+    <p>By kind: <span data-testid="kind-counts">@string.Join(", ", _counts.Select(c => $"{c.Kind} {c.Places}"))</span></p>
 
     <ul>
         @foreach (var place in _places)
@@ -40,6 +41,7 @@
     private static readonly string[] AllKinds = ["city", "town"];
     private readonly List<string> _kinds = [.. AllKinds];
     private List<Place>? _places;
+    private List<KindCount> _counts = [];
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -56,6 +58,8 @@
     private async Task LoadAsync()
     {
         await using var db = await Data.CreateDbContextAsync();
+        // A view: its table comes from the database's dependencies, not from this text.
+        _counts = await db.Database.SqlQuery<KindCount>($"SELECT [Kind], [Places] FROM [dbo].[KindCounts] ORDER BY [Kind]").ToListAsync();
         _places = await db.Places
             .Where(p => _kinds.Contains(p.Kind))
             .OrderBy(p => p.Name)
