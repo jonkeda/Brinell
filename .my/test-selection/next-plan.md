@@ -242,8 +242,10 @@ its own.
   next build and run hung (a test host at 0 CPU). Shown by a run with the handler (the sample left running) against three
   without (none left). No handler now: Playwright's driver is the test host's child and ends with it; no browser is left.
 - **After both:** Blazor in the browser 41 to 23 s, Html 30 to 23 s, Todo web 11 to 12 s; all green on both heads.
-- **Before Tomorrow:** its fixtures make a context per collection, ten parts in parallel, which would now share one
-  browser: a studio run in the browser decides whether `ShareBrowser` stays on there.
+- **In Tomorrow, neutral:** the studio suite in the browser, in one worktree, two pairs: shared 2 m 59 s and 2 m 44 s,
+  not shared 3 m 27 s and 2 m 44 s, 165 of 165 but for PLT.03.2 once without sharing (it passes alone: a settings scenario,
+  flaky beside the others). Its fixtures make a context per collection, so there were few launches to save, and ten parts
+  on one browser cost nothing measurable. `ShareBrowser` stays on.
 - **AssertIdle misses its first look** on 25 of 33 page loads and sleeps the 100 ms poll: a wait inside the browser
   (`WaitForFunctionAsync`) would end as the page turns ready. Not tried yet.
 - Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.
