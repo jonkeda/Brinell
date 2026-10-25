@@ -251,6 +251,11 @@ its own.
   within the call's budget; a ready page is still one look. `BlazorTestContext` now passes the one-trip probe through.
   AssertIdle in the browser: Blazor 4.6 to 0.9 s over 33 calls, Html 3.3 to 0.7 s over 23, none retried. Suites: Blazor
   23 to 22 s, Html 23 to 21 s, Todo web 12 to 10 s; all green on both heads.
-- **Item 8 so far, in the browser:** Blazor 41 to 22 s, Html 30 to 21 s. Tomorrow's studio suite in the browser is the next
-  measure of the in-browser wait (it loads a page per scenario).
+- **Item 8 so far, in the browser:** Blazor 41 to 22 s, Html 30 to 21 s.
+- **In Tomorrow, the in-browser wait showed two races** in the studio suite's full run, both passing alone. PLT.22.2: the
+  Interactions bench's person panel read its face, lines and talks one after another, each rendering, and the purse was
+  typed into before the last; the panel now says `data-ready` and talking to someone waits for it (Tomorrow b3887df7). The
+  old-link test (`BuildingsBench_OldLink_LandsOnTheThingBench`): the bench loaded but `<body>` had no `data-busy` for 10 s,
+  once in two runs; its cause is not found. With the panel fixed, two full browser runs passed 165 of 165 (2 m 39 s and
+  2 m 35 s, against about 2 m 44 s before). The in-browser wait goes to Tomorrow with the next pointer bump.
 - Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.
