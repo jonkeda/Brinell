@@ -115,7 +115,8 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     // A browser's click: the handler of the element or of the nearest one around it (the click bubbles); else a
     // submit button submits its form. A link follows its href after any handler, unless a handler on the way prevents
-    // it, which Blazor's script does in a browser and nothing does here. A disabled control gets no click, as in a browser.
+    // it, which Blazor's script does in a browser and nothing does here; a summary opens or closes its fold. A disabled control
+    // gets no click, as in a browser.
     public void Click()
     {
         var node = Node;
@@ -125,10 +126,10 @@ public sealed class BunitHtmlElement : IHtmlElement
             return;
         }
 
-        // Read before the handler runs: its render may replace the link.
-        var href = node.Closest("a")?.GetAttribute("href") is { Length: > 0 } link && !link.StartsWith('#') && !PreventsDefault(node, "onclick")
-            ? link
-            : null;
+        // Read before the handler runs: its render may replace the link or move the fold.
+        var prevented = PreventsDefault(node, "onclick");
+        var href = node.Closest("a")?.GetAttribute("href") is { Length: > 0 } link && !link.StartsWith('#') && !prevented ? link : null;
+        var fold = !prevented && FoldToggledBy(node) is { } details ? KeyOf(details) : null;
 
         // bUnit itself submits the form after a submit button's own click handler.
         var target = handler ?? node;
@@ -141,6 +142,11 @@ public sealed class BunitHtmlElement : IHtmlElement
         {
             Raise(form, "onsubmit", EventArgs.Empty);
             return;
+        }
+
+        if (fold is not null)
+        {
+            _context.Toggle(fold);
         }
 
         if (href is not null)
@@ -481,9 +487,32 @@ public sealed class BunitHtmlElement : IHtmlElement
     }
 
     // Inside a closed <details>, all but its first <summary> is folded away.
-    private static bool Folded(IElement node)
-        => node.ParentElement is IHtmlDetailsElement details && !details.HasAttribute("open")
-            && node != details.Children.FirstOrDefault(child => child.LocalName == "summary");
+    private bool Folded(IElement node)
+        => node.ParentElement is IHtmlDetailsElement details && !IsOpen(details) && node != SummaryOf(details);
+
+    // Open as rendered, unless the user toggled it since.
+    private bool IsOpen(IElement details) => details.HasAttribute("open") ^ _context.Toggled(KeyOf(details));
+
+    private static IElement? SummaryOf(IElement details) => details.Children.FirstOrDefault(child => child.LocalName == "summary");
+
+    // The fold a click toggles: the one whose summary the click is in, or the closed fold itself, whose summary is all it shows.
+    private IElement? FoldToggledBy(IElement node)
+    {
+        if (node is IHtmlDetailsElement closed && !IsOpen(closed))
+        {
+            return closed;
+        }
+
+        for (IElement? at = node; at?.ParentElement is { } parent; at = parent)
+        {
+            if (parent is IHtmlDetailsElement details && at == SummaryOf(details))
+            {
+                return details;
+            }
+        }
+
+        return null;
+    }
 
     // bUnit writes a handled event as a blazor:on… attribute on the element.
     private static bool Handles(IElement element, string eventName) => element.HasAttribute($"blazor:{eventName}");

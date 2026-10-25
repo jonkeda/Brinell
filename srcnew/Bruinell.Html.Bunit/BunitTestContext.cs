@@ -388,6 +388,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         _history.Add(Navigation.Uri);
         Navigation.LocationChanged += (_, e) =>
         {
+            // Another page: the folds toggled on this one are gone with it.
+            _toggled.Clear();
+
             // A page load is LoadAskedPage's; a replaced entry is gone from the browser's history, as here.
             if (_goingBack || Latest is { Options.ForceLoad: true })
             {
@@ -426,6 +429,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         _bunit.Dispose();
         _fallbackScope?.Dispose();
         _entered.Clear();
+        _toggled.Clear();
         _serverPage = null;
         Start(address);
     }
@@ -447,6 +451,22 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
             _entered[key] = (attribute, value);
         }
     }
+
+    // The folds (<details>) the user opened or closed, by element, as a browser's DOM keeps them: Blazor's diff leaves `open`
+    // alone unless the page renders it. Until the page changes, since an element is known by its place.
+    private readonly HashSet<string> _toggled = new(StringComparer.Ordinal);
+
+    /// <summary>Opens or closes the fold at <paramref name="key"/>, as a click on its summary does.</summary>
+    internal void Toggle(string key)
+    {
+        if (!_toggled.Remove(key))
+        {
+            _toggled.Add(key);
+        }
+    }
+
+    /// <summary>Whether the user toggled the fold at <paramref name="key"/> since the page loaded.</summary>
+    internal bool Toggled(string key) => _toggled.Contains(key);
 
     /// <summary>Forgets every entry: the next action may render the fields anew.</summary>
     internal void ForgetEntries() => _entered.Clear();

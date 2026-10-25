@@ -100,6 +100,8 @@ waiting out the budget.
   until the next action.
 - **Click** runs the element's handler; a submit button without one submits its form; a link
   navigates after its handler, unless `@onclick:preventDefault` stops it. A disabled control gets no click.
+- **A fold** (`<details>`) opens or closes on a click on its summary, or on the closed fold itself, and stays so
+  until the page changes.
 - **Check** on a radio sends its `value` (`on` without one), as a browser's change event does.
 - **A handler that throws** ends the call with `AppUnavailableException`, as a browser's circuit ends;
   a throw after the handler's first `await` is reported on the next look at the page. An event on a handler

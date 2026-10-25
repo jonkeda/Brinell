@@ -453,6 +453,37 @@ public sealed class MemberTests : IDisposable
     [InlineData("in-open-dialog", true)]
     public void Visible_MarkupThatHides_IsNotVisible(string testId, bool visible) => Assert.Equal(visible, Id(testId).Visible);
 
+    // As a browser's fold: a click on its summary, or on the closed fold itself, opens it; again on the summary closes it.
+    [Fact]
+    public void Click_TheSummaryOfAClosedFold_OpensAndClosesIt()
+    {
+        Id("closed-summary").Click();
+        Assert.True(Id("folded").Visible);
+
+        Id("closed-summary").Click();
+        Assert.False(Id("folded").Visible);
+    }
+
+    [Fact]
+    public void Click_AClosedFold_OpensIt()
+    {
+        Id("closed-details").Click();
+
+        Assert.True(Id("folded").Visible);
+    }
+
+    [Fact]
+    public void Click_AnOpenedFold_StaysOpenUntilAPageLoad()
+    {
+        Id("closed-summary").Click();
+        Id("wrap").Click();
+        Assert.True(Id("folded").Visible);
+
+        _context.Refresh();
+
+        Assert.False(Id("folded").Visible);
+    }
+
     [Fact]
     public void State_InADisabledFieldset_IsDisabledAndGetsNoClick()
     {
