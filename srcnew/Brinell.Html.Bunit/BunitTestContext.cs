@@ -222,6 +222,9 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     internal IEnumerable<IElement> Nodes() => _root.Nodes.OfType<IElement>();
 
+    /// <summary>Runs <paramref name="raise"/> on the renderer's dispatcher, as a circuit runs an event between renders.</summary>
+    internal Task Dispatch(Func<Task> raise) => _root.InvokeAsync(raise);
+
     internal IReadOnlyList<IElement> Select(Locator locator)
     {
         ThrowIfAppFailed();

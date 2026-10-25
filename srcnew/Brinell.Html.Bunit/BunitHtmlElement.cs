@@ -275,10 +275,23 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
 
         _context.ForgetEntries();
+
+        // The target is the element or one around it (its handler, its form): so many levels up, found again inside the renderer's
+        // dispatcher, where no render can come between finding it and raising its event.
+        var levels = LevelsUp(Node, node);
         try
         {
             // Raised as a browser does: returns when the handler awaits, a refusal seen here rather than by the renderer later.
-            var raised = node.TriggerEventAsync(eventName, args);
+            var raised = _context.Dispatch(() =>
+            {
+                var target = levels is { } up ? Up(_resolve(), up) : node;
+                if (target is null || !Handles(target, eventName))
+                {
+                    throw new StaleElementException(_locator, detail: $"Its {eventName} handler was rendered anew.");
+                }
+
+                return target.TriggerEventAsync(eventName, args);
+            });
             raised.Wait(DispatchWaitMs);
         }
         catch (AggregateException error) when (error.InnerExceptions.Count == 1)
@@ -289,7 +302,12 @@ public sealed class BunitHtmlElement : IHtmlElement
                 throw new StaleElementException(_locator, inner, $"Its {eventName} handler was rendered anew.");
             }
 
-            throw inner is BrinellException ? inner : BunitTestContext.HandlerFailed(eventName, inner);
+            if (inner is BrinellException)
+            {
+                throw inner;
+            }
+
+            throw BunitTestContext.HandlerFailed(eventName, inner);
         }
         catch (Exception error) when (GoneHandler(error))
         {
@@ -348,6 +366,29 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
 
         return null;
+    }
+
+    // How many levels above the element the target is, by their places; null when it is not one of them.
+    private static int? LevelsUp(IElement element, IElement target)
+    {
+        var below = KeyOf(element).Split('/');
+        var above = KeyOf(target).Split('/');
+        if (above.Length > below.Length || !below.Take(above.Length).SequenceEqual(above))
+        {
+            return null;
+        }
+
+        return below.Length - above.Length;
+    }
+
+    private static IElement? Up(IElement? element, int levels)
+    {
+        for (var i = 0; i < levels && element is not null; i++)
+        {
+            element = element.ParentElement;
+        }
+
+        return element;
     }
 
     // How long an event is waited for before the call goes on: a handler that awaits longer runs on, as in a browser.
