@@ -244,6 +244,11 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
 
     internal IEnumerable<IElement> Nodes() => _root.Nodes.OfType<IElement>();
 
+    /// <summary>How many times the app's markup has changed: unchanged over a spell, the renderer is quiet.</summary>
+    internal int RenderCount => Volatile.Read(ref _renders);
+
+    private int _renders;
+
     /// <summary>Runs <paramref name="raise"/> on the renderer's dispatcher, as a circuit runs an event between renders.</summary>
     internal Task Dispatch(Func<Task> raise) => _root.InvokeAsync(raise);
 
@@ -325,6 +330,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Brinell
             builder.OpenComponent(0, root);
             builder.CloseComponent();
         });
+        _root.OnMarkupUpdated += (_, _) => Interlocked.Increment(ref _renders);
         _history.Clear();
         _history.Add(Navigation.Uri);
         Navigation.LocationChanged += (_, e) =>

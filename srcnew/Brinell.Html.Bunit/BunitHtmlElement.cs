@@ -292,7 +292,7 @@ public sealed class BunitHtmlElement : IHtmlElement
 
                 return target.TriggerEventAsync(eventName, args);
             });
-            raised.Wait(DispatchWaitMs);
+            Settle(raised);
         }
         catch (AggregateException error) when (error.InnerExceptions.Count == 1)
         {
@@ -391,8 +391,31 @@ public sealed class BunitHtmlElement : IHtmlElement
         return element;
     }
 
+    // Waits for the handler as a browser's event returns: until it is done, or until it awaits and the renderer has been quiet
+    // for QuietMs, at most DispatchWaitMs. A handler that awaits the user (a dialog's answer) goes on at once, where waiting out
+    // the whole 100 ms made each such click cost it (next-plan item 12); one that awaits a quick task still finishes first.
+    // A fault, its own or a gone handler's, is thrown here as Wait throws it.
+    private void Settle(Task raised)
+    {
+        var waited = System.Diagnostics.Stopwatch.StartNew();
+        var renders = _context.RenderCount;
+        while (!raised.Wait(QuietMs) && waited.ElapsedMilliseconds < DispatchWaitMs)
+        {
+            var now = _context.RenderCount;
+            if (now == renders)
+            {
+                return;
+            }
+
+            renders = now;
+        }
+    }
+
     // How long an event is waited for before the call goes on: a handler that awaits longer runs on, as in a browser.
     private const int DispatchWaitMs = 100;
+
+    // A spell with no render: the handler waits on something that is not the page.
+    private const int QuietMs = 5;
 
     // Blazor's renderer refuses an event whose handler id a newer render dropped.
     internal static bool GoneHandler(Exception error)

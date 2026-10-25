@@ -7,6 +7,16 @@ namespace Brinell.Html.Bunit;
 /// <summary>What a <see cref="BunitTestContext"/> renders and with which services.</summary>
 public sealed class BunitTestContextOptions : HtmlTestContextOptions
 {
+    /// <summary>
+    /// The bUnit head's timeouts by default: the browser's, polling every <see cref="PollingIntervalMs"/>. An attempt here
+    /// asks the rendered markup in the process, with no round trip, so a wait that ends a few milliseconds after its first
+    /// miss need not sleep out the browser's 100 ms (next-plan item 12). A suite's own <c>Timeouts</c> replace them.
+    /// </summary>
+    public BunitTestContextOptions() => Timeouts = Brinell.Core.Configuration.TimeoutSettings.Default.With(pollingInterval: PollingIntervalMs);
+
+    /// <summary>The bUnit head's polling interval, in milliseconds.</summary>
+    public const int PollingIntervalMs = 10;
+
     /// <summary>The component rendered as the app: a suite's <c>Routes</c>, or one component on its own.</summary>
     public required Type RootComponent { get; init; }
 
