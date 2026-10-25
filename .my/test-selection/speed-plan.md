@@ -1,7 +1,7 @@
 # Faster studio tests: timings first, then one change per small set
 
 Agent document, 2026-10-25. Builds [paper.md](paper.md) (the touch map) and [workflow.md](workflow.md) (selection from the
-diff). Status: T1 built; iterations 1 to 3 done (binding, the database template); S2 measured; next: the catalog warm-up or the studio's own start.
+diff). Status: T1 built; iterations 1 to 4 done (binding, the database template, interpreted patterns); next: the full suite on both heads.
 
 ## What the last full run showed
 
@@ -107,6 +107,8 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | 2 | S1 | browser | the same, checked | not measured | 37 s, 10 of 10; tests 38.0 s, steps 28.5 s, binding 8.3 s once | yes |
 | 3 | S1 | bUnit | the prepared database kept as a template (a SQL Server backup, by a fingerprint of the build's `Tomorrow*.dll` and the geo and OSM test data), restored by the next run: no migration, seed, geo import or area (`TestDatabase.TryRestore`, `KeepAsTemplate`; `TOMORROW_UI_TEMPLATE=0` builds afresh) | start 18.2 s, wall 38 s | start 7.2 s (restore 0.8 s, the studio's own start 4.6 s), wall 28 s | yes |
 | S2 | S2 | bUnit | measured, no change | | 20 of 20, 38 s, wall 48 s; collection A 18.2 s as alone, B 39.0 s: 21.6 s of it is PLT.35.4 waiting for 100 fights the studio plays | |
+| 4 | S2 | bUnit | command patterns interpreted, not `RegexOptions.Compiled` (`BddCommandCatalog`): every step is tried against every pattern, so a catalog's first walk compiled and JIT-ed hundreds of regexes | 38 s, wall 48 s; binding 8.8 and 8.6 s | **15 s**, wall 30 s; binding 0.13 s a collection, a first walk 12 ms; A 4.6 s, B 15.1 s | yes |
+| 4 | S1 | browser | the same, with the template | 37 s, wall 73 s; start 31.2 s, tests 38.0 s | **17 s**, wall 31 s; start 9.2 s, tests 17.7 s (steps 17.0 s) | yes |
 
 What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Brinell's runner, so the
 browser head paid it too. Next, by the S1 reports: the host's start (20 s on bUnit, 31 s in the browser: the host 12 s,
@@ -121,6 +123,10 @@ What iteration 3 and S2 showed:
 - Two collections side by side cost nothing visible; S2's slow collection is one scenario's own work (PLT.35.4, 100 fights).
 - Left, by size: the catalog's warm-up (about 8.7 s in each collection's first test, ten collections), the studio's own
   start (4.6 s), and PLT.35.4's 100 fights (the owner's scenario: fewer fights, or a faster fight simulation).
+
+A source-generated regex (`[GeneratedRegex]`) would cost nothing at run time, but it needs its pattern as a constant in the code;
+the patterns are made at run time from the phrases discovered in a suite's pages and phrase classes, and an interpreted match
+of one short step line is microseconds. Matching also runs while steps execute: collection B's calls fell by 14 s with it.
 
 ## At the end
 
