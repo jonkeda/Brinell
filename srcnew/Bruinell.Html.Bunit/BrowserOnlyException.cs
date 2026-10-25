@@ -15,6 +15,13 @@ public sealed class BrowserOnlyException : BruinellException, IEndsCall
         Member = member;
     }
 
+    /// <summary>A browser-only <paramref name="member"/> whose <paramref name="why"/> says more than the default.</summary>
+    public BrowserOnlyException(string member, string why)
+        : base($"{why} Run this test on the browser head.")
+    {
+        Member = member;
+    }
+
     /// <summary>The member that was asked.</summary>
     public string Member { get; }
 }

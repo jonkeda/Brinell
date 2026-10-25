@@ -3,4 +3,5 @@
 @inject IJSRuntime JS
 
 <button data-testid="go" @onclick='() => Navigation.NavigateTo("/elsewhere")'>Go</button>
-<button data-testid="back" @onclick='() => JS.InvokeVoidAsync("history.back").AsTask()'>Back</button>
+<button data-testid="replace" @onclick='() => Navigation.NavigateTo("/replaced", replace: true)'>Replace</button>
+<button data-testid="back"@onclick='() => JS.InvokeVoidAsync("history.back").AsTask()'>Back</button>

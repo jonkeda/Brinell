@@ -442,6 +442,52 @@ public sealed class MemberTests : IDisposable
         Assert.Equal("Banana split", item.Text);
     }
 
+    // What the browser shows without a style sheet: a hidden input, a closed fold, a closed dialog.
+    [Theory]
+    [InlineData("hidden-input", false)]
+    [InlineData("closed-summary", true)]
+    [InlineData("folded", false)]
+    [InlineData("unfolded", true)]
+    [InlineData("closed-dialog", false)]
+    [InlineData("in-dialog", false)]
+    [InlineData("in-open-dialog", true)]
+    public void Visible_MarkupThatHides_IsNotVisible(string testId, bool visible) => Assert.Equal(visible, Id(testId).Visible);
+
+    [Fact]
+    public void State_InADisabledFieldset_IsDisabledAndGetsNoClick()
+    {
+        Assert.False(Id("fenced").Enabled);
+
+        Id("fenced").Click();
+
+        Assert.Equal("0", Echo("fenced"));
+    }
+
+    [Fact]
+    public void State_InTheLegendOfADisabledFieldset_IsEnabled() => Assert.True(Id("in-legend").Enabled);
+
+    #endregion
+
+    #region Bubbling
+
+    [Fact]
+    public void Click_InsideAnElementThatHandlesIt_RaisesBoth()
+    {
+        Id("row-button").Click();
+
+        Assert.Equal("1", Echo("row-button"));
+        Assert.Equal("1", Echo("row"));
+    }
+
+    [Fact]
+    public void Click_ThatStopsPropagation_RaisesItsOwnOnly()
+    {
+        Id("row-stop").Click();
+
+        Assert.Equal("1", Echo("row-button"));
+        Assert.Equal("0", Echo("row"));
+    }
+
     #endregion
 
     #region Browser-only

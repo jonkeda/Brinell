@@ -86,6 +86,25 @@
 <div style="display: none"><span data-testid="hidden-child">Hidden child</span></div>
 <div data-testid="invisible" style="visibility:hidden">Invisible</div>
 
+<input type="hidden" data-testid="hidden-input" value="x" />
+<details><summary data-testid="closed-summary">More</summary><span data-testid="folded">Folded</span></details>
+<details open><span data-testid="unfolded">Unfolded</span></details>
+<dialog data-testid="closed-dialog"><span data-testid="in-dialog">Inside</span></dialog>
+<dialog open><span data-testid="in-open-dialog">Inside</span></dialog>
+
+<fieldset disabled>
+    <legend><input data-testid="in-legend" /></legend>
+    <button data-testid="fenced" @onclick="() => fencedClicks++">Fenced</button>
+</fieldset>
+<span data-testid="fenced-echo">@fencedClicks</span>
+
+<div @onclick="() => rowClicks++">
+    <button data-testid="row-button" @onclick="() => rowButtonClicks++">In the row</button>
+    <button data-testid="row-stop" @onclick="() => rowButtonClicks++" @onclick:stopPropagation>Stops</button>
+</div>
+<span data-testid="row-echo">@rowClicks</span>
+<span data-testid="row-button-echo">@rowButtonClicks</span>
+
 <ul data-testid="list">
     <li class="item first" id="one" name="one" data-automation-id="auto-one">Apple pie</li>
     <li class="item">Banana <b>split</b></li>
@@ -113,6 +132,9 @@
     private int number;
     private int handled;
     private int linkClicks;
+    private int fencedClicks;
+    private int rowClicks;
+    private int rowButtonClicks;
     private string size = string.Empty;
     private string pet = "cat";
 

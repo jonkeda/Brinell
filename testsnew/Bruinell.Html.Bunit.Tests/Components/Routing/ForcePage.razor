@@ -1,0 +1,13 @@
+@page "/force"
+@* A page whose own navigations load a page, as Blazor's forceLoad asks the browser to. *@
+@inject NavigationManager Navigation
+
+<span data-testid="bumps">@bumps</span>
+<button data-testid="bump" @onclick="() => bumps++">Bump</button>
+<button data-testid="load-self" @onclick='() => Navigation.NavigateTo("/force", forceLoad: true)'>Load again</button>
+<button data-testid="load-other" @onclick='() => Navigation.NavigateTo("/other", forceLoad: true)'>Load other</button>
+<button data-testid="load-server" @onclick='() => Navigation.NavigateTo("/Account/Logout", forceLoad: true)'>Sign out</button>
+
+@code {
+    private int bumps;
+}

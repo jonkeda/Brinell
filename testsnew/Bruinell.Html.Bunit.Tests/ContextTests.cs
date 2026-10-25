@@ -5,6 +5,7 @@ using Bruinell.Html.Controls.Buttons;
 using Bruinell.Samples.Blazor.App.Components;
 using Bruinell.Samples.Blazor.App.Services;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bruinell.Html.Bunit.Tests;
@@ -199,6 +200,21 @@ public sealed class ContextTests
         Assert.Equal(start, context.CurrentUrl);
     }
 
+    // As a browser's history: a replaced entry is gone, so back skips it.
+    [Fact]
+    public void HistoryBack_AfterAReplace_SkipsTheReplacedEntry()
+    {
+        using var context = Of<HistoryBack>();
+        var start = context.CurrentUrl;
+        context.FindElement(Locator.ByDataTestId("go")).Click();
+        context.FindElement(Locator.ByDataTestId("replace")).Click();
+        Assert.Equal(Base + "/replaced", context.CurrentUrl);
+
+        context.FindElement(Locator.ByDataTestId("back")).Click();
+
+        Assert.Equal(start, context.CurrentUrl);
+    }
+
     [Fact]
     public void HistoryBack_WithNothingBefore_StaysPut()
     {
@@ -208,6 +224,51 @@ public sealed class ContextTests
         context.FindElement(Locator.ByDataTestId("back")).Click();
 
         Assert.Equal(start, context.CurrentUrl);
+    }
+
+    private static BunitTestContext Force() => new(new BunitTestContextOptions
+    {
+        RootComponent = typeof(Components.Routing.LoadRoutes),
+        ConfigureServices = services => services.AddSingleton(new PageLoads()),
+        BaseUrl = Base + "/force",
+    });
+
+    // The app's forceLoad is a page load, as the browser makes it: the page rendered anew, its state gone.
+    [Fact]
+    public void ForceLoad_TheSamePage_RendersItAnew()
+    {
+        using var context = Force();
+        context.FindElement(Locator.ByDataTestId("bump")).Click();
+        Assert.Equal("1", Text(context, "bumps"));
+
+        context.FindElement(Locator.ByDataTestId("load-self")).Click();
+
+        Assert.Equal("0", Text(context, "bumps"));
+    }
+
+    [Fact]
+    public void ForceLoad_AnotherPage_RendersIt_AndBackReturns()
+    {
+        using var context = Force();
+
+        context.FindElement(Locator.ByDataTestId("load-other")).Click();
+
+        Assert.Equal(Base + "/other", context.CurrentUrl);
+        Assert.NotNull(context.TryFindElement(Locator.ByDataTestId("other")));
+        context.NavigateBack();
+        Assert.NotNull(context.TryFindElement(Locator.ByDataTestId("bump")));
+    }
+
+    // A Razor Page or an endpoint, not a component: only a browser can load it.
+    [Fact]
+    public void ForceLoad_AnAddressNoComponentServes_IsBrowserOnly()
+    {
+        using var context = Force();
+
+        context.FindElement(Locator.ByDataTestId("load-server")).Click();
+
+        var error = Assert.Throws<BrowserOnlyException>(() => context.FindElement(Locator.ByDataTestId("bumps")));
+        Assert.Contains("/Account/Logout", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -392,6 +453,41 @@ public sealed class ContextTests
         context.ResetAppState();
 
         Assert.NotEqual(first, Text(context, "greeting"));
+    }
+
+    // The app's host has its own navigation manager, not the circuit's: a host service that takes it is named, not used.
+    [Fact]
+    public void Fallback_AServiceThatTakesACircuitService_IsNamed()
+    {
+        var app = new ServiceCollection()
+            .AddScoped<NavigationManager, HostNavigationManager>()
+            .AddScoped<IGreeting, NavigatingGreeting>()
+            .BuildServiceProvider();
+
+        var error = Assert.ThrowsAny<Exception>(() => new BunitTestContext(new BunitTestContextOptions { RootComponent = typeof(Greeting), FallbackServices = app }));
+
+        var message = error.ToString();
+        Assert.Contains(nameof(NavigatingGreeting), message, StringComparison.Ordinal);
+        Assert.Contains(nameof(NavigationManager), message, StringComparison.Ordinal);
+        Assert.Contains("ConfigureServices", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Fallback_AServiceThatTakesACircuitService_RegisteredAgain_GetsBunits()
+    {
+        var app = new ServiceCollection()
+            .AddScoped<NavigationManager, HostNavigationManager>()
+            .AddScoped<IGreeting, NavigatingGreeting>()
+            .BuildServiceProvider();
+
+        using var context = new BunitTestContext(new BunitTestContextOptions
+        {
+            RootComponent = typeof(Greeting),
+            FallbackServices = app,
+            ConfigureServices = own => own.AddScoped<IGreeting, NavigatingGreeting>(),
+        });
+
+        Assert.StartsWith("http://localhost", Text(context, "greeting"), StringComparison.Ordinal);
     }
 
     // An app started again: its new services, in the same context, so what holds the context keeps a live one.

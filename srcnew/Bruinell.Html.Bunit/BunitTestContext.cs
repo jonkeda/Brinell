@@ -9,6 +9,7 @@ using Bruinell.Core.Scopes;
 using Bruinell.Html.Interfaces;
 using ElementNotFoundException = Bruinell.Core.Exceptions.ElementNotFoundException;
 using Bunit;
+using Bunit.TestDoubles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -251,14 +252,58 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
 
     internal IReadOnlyList<IElement> Select(Locator locator)
     {
+        // A lookup inside the renderer's dispatcher (an event finding its target) is in the middle of the page, not a new look at it.
+        if (!_bunit.Renderer.Dispatcher.CheckAccess())
+        {
+            LoadAskedPage();
+        }
+
         ThrowIfAppFailed();
         return BunitLocators.FindAll(css => _root.Nodes.QuerySelectorAll(css), locator);
     }
+
+    // The app's newest navigation, as bUnit's navigation manager keeps it.
+    private NavigationHistory? Latest => ((BunitNavigationManager)Navigation).History.FirstOrDefault();
+
+    // The page load the app asked for with forceLoad, on the next look at the page, as a browser loads it: a fresh root and
+    // scope at that address, still signed in, the page before it behind the back button. An address no component serves (a
+    // Razor Page, an endpoint) is the server's, which only a browser reaches.
+    private void LoadAskedPage()
+    {
+        if (Latest is not { Options.ForceLoad: true } load || ReferenceEquals(load, _loaded))
+        {
+            return;
+        }
+
+        _loaded = load;
+        var path = Navigation.ToBaseRelativePath(Navigation.ToAbsoluteUri(load.Uri).AbsoluteUri);
+        if (!BunitRoutes.Serves(_root, path))
+        {
+            _serverPage = new BrowserOnlyException("NavigateTo(forceLoad)",
+                $"The page asked for a page load of /{path.Split('?', '#')[0]}, which no component serves (a Razor Page or an endpoint): only a browser loads it.");
+            return;
+        }
+
+        _back.Add(_history[^1]);
+        _forward.Clear();
+        Restart(load.Uri);
+    }
+
+    // The forceLoad navigation last loaded, so each is loaded once.
+    private NavigationHistory? _loaded;
+
+    // A page load no component serves: every look at the page says so, until the test opens another.
+    private BrowserOnlyException? _serverPage;
 
     // A handler that threw after its first await reaches bUnit's renderer, not the event that raised it:
     // the next look at the page reports it.
     internal void ThrowIfAppFailed()
     {
+        if (_serverPage is { } serverPage)
+        {
+            throw serverPage;
+        }
+
         // An event refused for a handler a newer render dropped was the call's stale element, not the app failing.
         if (_bunit.Renderer.UnhandledException is { IsCompleted: true } failed && !BunitHtmlElement.GoneHandler(failed.Result))
         {
@@ -309,7 +354,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         {
             // A scope per render of the root, as each circuit has its own: no scoped state outlives a reset.
             _fallbackScope = fallback.GetService<IServiceScopeFactory>()?.CreateScope();
-            _bunit.Services.AddFallbackServiceProvider(_fallbackScope?.ServiceProvider ?? fallback);
+            _bunit.Services.AddFallbackServiceProvider(new CircuitServiceGuard(_fallbackScope?.ServiceProvider ?? fallback));
         }
 
         _authorization = _bunit.AddAuthorization();
@@ -343,7 +388,17 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         _history.Add(Navigation.Uri);
         Navigation.LocationChanged += (_, e) =>
         {
-            if (!_goingBack)
+            // A page load is LoadAskedPage's; a replaced entry is gone from the browser's history, as here.
+            if (_goingBack || Latest is { Options.ForceLoad: true })
+            {
+                return;
+            }
+
+            if (Latest is { Options.ReplaceHistoryEntry: true } && _history.Count > 0)
+            {
+                _history[^1] = e.Location;
+            }
+            else
             {
                 _history.Add(e.Location);
             }
@@ -371,6 +426,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         _bunit.Dispose();
         _fallbackScope?.Dispose();
         _entered.Clear();
+        _serverPage = null;
         Start(address);
     }
 

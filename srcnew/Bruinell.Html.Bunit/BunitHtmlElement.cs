@@ -45,9 +45,16 @@ public sealed class BunitHtmlElement : IHtmlElement
     {
         get
         {
-            for (var node = Node; node is not null; node = node.ParentElement)
+            var start = Node;
+            if (start is IHtmlInputElement { Type: "hidden" })
             {
-                if (node.HasAttribute("hidden") || HidesItself(node.GetAttribute("style")) || IsBlazorErrorUi(node))
+                return false;
+            }
+
+            for (var node = start; node is not null; node = node.ParentElement)
+            {
+                if (node.HasAttribute("hidden") || HidesItself(node.GetAttribute("style")) || IsBlazorErrorUi(node) || Folded(node)
+                    || node is IHtmlDialogElement && !node.HasAttribute("open"))
                 {
                     return false;
                 }
@@ -57,7 +64,7 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
     }
 
-    public bool Enabled => !Node.HasAttribute("disabled");
+    public bool Enabled => !Disabled(Node);
 
     public bool Selected => Node is IHtmlOptionElement option ? option.IsSelected : Node.HasAttribute("selected");
 
@@ -113,7 +120,7 @@ public sealed class BunitHtmlElement : IHtmlElement
     {
         var node = Node;
         var handler = Handling(node, "onclick");
-        if (node.HasAttribute("disabled") || handler?.HasAttribute("disabled") == true)
+        if (Disabled(node) || handler is not null && Disabled(handler))
         {
             return;
         }
@@ -257,7 +264,7 @@ public sealed class BunitHtmlElement : IHtmlElement
     private void SetChecked(bool value)
     {
         var node = Node;
-        if (IsChecked == value || node.HasAttribute("disabled"))
+        if (IsChecked == value || Disabled(node))
         {
             return;
         }
@@ -447,6 +454,36 @@ public sealed class BunitHtmlElement : IHtmlElement
         => node is IHtmlButtonElement { Type: "submit" } or IHtmlInputElement { Type: "submit" };
 
     private static bool IsRadio(IElement node) => node is IHtmlInputElement { Type: "radio" };
+
+    // As a browser's :disabled: the element's own attribute, or a form control in a disabled fieldset, outside that fieldset's
+    // first legend.
+    private static bool Disabled(IElement node)
+    {
+        if (node.HasAttribute("disabled"))
+        {
+            return true;
+        }
+
+        if (node is not (IHtmlButtonElement or IHtmlInputElement or IHtmlSelectElement or IHtmlTextAreaElement))
+        {
+            return false;
+        }
+
+        for (var (below, at) = (node, node.ParentElement); at is not null; (below, at) = (at, at.ParentElement))
+        {
+            if (at is IHtmlFieldSetElement && at.HasAttribute("disabled") && below != at.Children.FirstOrDefault(child => child is IHtmlLegendElement))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Inside a closed <details>, all but its first <summary> is folded away.
+    private static bool Folded(IElement node)
+        => node.ParentElement is IHtmlDetailsElement details && !details.HasAttribute("open")
+            && node != details.Children.FirstOrDefault(child => child.LocalName == "summary");
 
     // bUnit writes a handled event as a blazor:on… attribute on the element.
     private static bool Handles(IElement element, string eventName) => element.HasAttribute($"blazor:{eventName}");
