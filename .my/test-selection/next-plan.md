@@ -37,7 +37,7 @@ where not.
 | 9 | Squash the six migrations into one `Initial` | 1 to 2 s, fresh builds only | S | the owner: the dev database's history |
 | 10 | Scenario-scoped settings, so `@own-database` can run in parallel | ~33 s bUnit, ~55 s browser | L | the owner: a game design change |
 | 11 | Generated phrase tables (a source generator, `[GeneratedRegex]`) | Only if item 7's benchmark shows the index is not enough | L | not now |
-| 12 | The three slow bUnit tests: the sync, the discard dialog and delete, ~470 ms against 10 to 50 ms | ~1.3 s a run now; whatever wait it is will be in every suite on bUnit | S | done by Claude |
+| 12 | The three slow bUnit tests: the sync, the discard dialog and delete, ~470 ms against 10 to 50 ms (done) | ~1.3 s a run now; whatever wait it is will be in every suite on bUnit | S | done by Claude |
 
 ## 1. Deal scenarios by their last duration
 
@@ -74,7 +74,7 @@ A scenario skipped by `@browser`, a head rule or a skip rule shows as Passed in 
 - **Open: PLT.39.2 on bUnit** ("Hoorn's background generated in one go") finds no run line after Generate. It fails alone, on
   a fresh database too, and passed inside the serial collection's own run: it depends on state an earlier scenario leaves,
   which bUnit's speed exposes. Its Generate returns at once (no status line), so `model` or `view` is not set when it is
-  clicked. To be made to stand alone, in Tomorrow.
+  clicked. To be made to stand alone, in Tomorrow. Done with item 12: Generate was on before the town was read.
 - Brinell's own suites have no parallel collections of their own to deal yet; the dealer moves to `Brinell.Uat` when one has.
 
 ## 3. Selection
@@ -211,3 +211,20 @@ its own.
   and its attempts.
 - Then the wait itself: a page object's fixed wait, a poll interval a bUnit render never shortens, or the app's own
   delay. Fixed where it lives, and measured on both heads.
+
+### Item 12, done (2026-10-25)
+
+- **Two waits in the bUnit head, not in the app's state code.** An event waited a fixed 100 ms for its handler
+  (`BunitHtmlElement.Raise`): a click that opens a dialog has a handler awaiting the answer, so it always waited all of
+  it, although the dialog had rendered during the dispatch. And a poll that missed by a few ms slept the browser's 100 ms.
+- **The fix:** an event goes on once its handler is done, or once it has rendered and then waits with the renderer quiet
+  for 5 ms (`Settle`); a handler that awaits before rendering anything is waited for as before. The bUnit head polls every
+  10 ms by default (`BunitTestContextOptions.PollingIntervalMs`); a suite's own `Timeouts` replace it.
+- **A first try went on whenever the renderer was quiet:** the studio's PLT.23.6 and PLT.39.2 then raced handlers still
+  reading the database. Waiting for a render first fixed PLT.23.6.
+- **PLT.39.2 was the app:** the Street generator's Generate was enabled before the town was read (`view` null), and a click
+  then did nothing. The 100 ms waits had hidden it. Generate stays off until the town is read, and PLT.39.2 now passes alone.
+- **Todo web on bUnit:** delete 475 to ~120 ms, discard 470 to ~135 ms. Sync, the first test, 615 to ~530 ms: the rest is
+  the app's first render and load, not a wait.
+- **Tomorrow's studio suite on bUnit:** 1 m 4 s to 47 s, 143 passed and 22 skipped both times; in the browser 165 of 165
+  in 2 m 42 s, unchanged. Brinell's Blazor, Html and Todo web suites green on both heads.
