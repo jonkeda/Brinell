@@ -1,7 +1,7 @@
 # Faster studio tests: timings first, then one change per small set
 
 Agent document, 2026-10-25. Builds [paper.md](paper.md) (the touch map) and [workflow.md](workflow.md) (selection from the
-diff). Status: T1 built; iterations 1 to 4 done (binding, the database template, interpreted patterns); next: the full suite on both heads.
+diff). Status: T1 built; iterations 1 to 4 done; the full studio suite measured on both heads (below): 1 m 29 s on bUnit, 3 m 15 s in the browser. Next: the serial collection, then selection on the touch map.
 
 ## What the last full run showed
 
@@ -128,7 +128,21 @@ A source-generated regex (`[GeneratedRegex]`) would cost nothing at run time, bu
 the patterns are made at run time from the phrases discovered in a suite's pages and phrase classes, and an interpreted match
 of one short step line is microseconds. Matching also runs while steps execute: collection B's calls fell by 14 s with it.
 
-## At the end
+## At the end: the full studio suite, 2026-10-25
 
-The full studio suite on both heads, with the timings report for each, and the numbers into this file; then
-selection (`tools/Select-Tests.ps1`, the workflow) on top of the touch map T1 wrote.
+`Tomorrow.Studio.UITests`, iterations 1 to 4 in, the template restored, one run per head, one after the other.
+
+| Head | Before (iteration 0) | Now | Tests summed | Of it, control calls |
+| --- | --- | --- | --- | --- |
+| bUnit | 11 m 15 s; 167 passed, 1 failed | **1 m 29 s** (wall 91 s); 168 passed, 4 skipped (`UiFact(Browser)`), 0 failed | 139 s (was 3,794 s) | 114.5 s |
+| Browser | 9 to 17 min (24 min once, RW-251) | **3 m 15 s** (wall 199 s); 172 of 172 passed | 393 s | 337 s |
+
+- The start: 4.0 s a collection on bUnit, 9.7 s in the browser, the template restored in under a second.
+- Binding is gone from the report; the scenarios' time is their steps, and the steps' time is their control calls: the
+  app and the head doing the work.
+- The serial collection is now the largest part: 68 s of 140 s on bUnit, 126 s of 394 s in the browser. It runs alone,
+  after the parallel collections; the candidate "rebalance the serial collection" is next.
+- PLT.40.4, which failed on bUnit before, passes: the earlier failure was the run, not the head.
+
+Then selection: the timings' rows already name test, scenario, step, page and control, the touch map the paper and the
+workflow need; `brinell touch-map` reads this file (paper, step 3).
