@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike) and 2 (the driver) done; step 3 next. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike), 2 (the driver) and 3 (the context) done; step 4 next. Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -83,7 +83,8 @@ ends at once instead of polling to its budget (check the type in `Brinell.Core.C
 | `User` | Null for signed out, else the name and roles given to bUnit's test authorization |
 | `JsInterop` | `Loose` (default) or `Strict`; planned answers through `ConfigureJs` |
 | `BaseUrl` | The address the fake `NavigationManager` reports, so page objects' paths resolve |
-| `TestIdAttribute`, `Timeouts`, `Logger`, `NearMiss`, `Name` | As `HtmlTestContextOptions` |
+| `Timeouts`, `Logger`, `NearMiss`, `Name` | As `HtmlTestContextOptions` |
+| `Roles` | The signed-in user's roles |
 
 | Member | Implementation |
 | --- | --- |
@@ -217,6 +218,41 @@ Found, for the next steps:
   form after it unless the button is `type="button"`. Not met in the sample; left for step 3's tests.
 - **`Read_AfterAReset_FindsTheElementAgain`:** an element found before `ResetAppState` is found again
   in the new render, as a Playwright locator is. A truly gone element is `StaleElementException`.
+
+## Step 3 results
+
+2026-10-25, one run each.
+
+| Run | Result |
+| --- | --- |
+| `Brinell.Html.Bunit.Tests` | 77 of 77 in 0.72 s: `ContextTests` (21), `MemberTests` (51), `SpikeTests` (5) |
+| `Brinell.Blazor.UITests` controls and pages, `BRINELL_HEAD=bunit` | 33 of 33 in 0.31 s |
+| `Brinell.Blazor.UITests`, the browser head, whole suite | 35 of 35 in 37 s |
+
+What changed in `BunitTestContext` and its options:
+
+| Part | Now |
+| --- | --- |
+| Navigation | `NavigateTo`, `NavigateBack`, `GoForward` through the root's router with a history of its own; `Refresh` renders the root again at the same address; a link in the layout navigates. Tests: `Navigate_*`, `Back_*`, `Forward_AfterBack_ShowsTheSecond`, `Refresh_RendersThePageAgain_FromItsStart` |
+| `PageTitle` | The last `PageTitle` the page rendered, its content rendered on its own (`Counter - Brinell Blazor Sample`); empty without one |
+| Readiness | `ProbePage` reads the page's own busy signal: the last `brinellBusy.set` call its layout made, recorded by bUnit's JS interop (planned in every mode). A root without the script is interactive from its first render. `BlazorPageObjectBase`'s required busy signal works unchanged; `Busy_FollowsTheLayoutsBusyScript` sees busy while a handler runs and idle after |
+| Sign-in | bUnit's test authorization is always registered: signed out by default, `User` and `Roles` sign in. `AuthorizeView` and roles tested (`SignedOut_*`, `SignedIn_*`) |
+| Scripts | `JsInterop`: `Loose` (default) or `Strict`; `ConfigureJs` plans answers with bUnit's `Setup`/`SetupVoid`. Strict with an unplanned call fails the render, naming the call |
+| Screenshot | The markup as `.html`, beside the path asked for (`Screenshot_WritesMarkup`) |
+| Reset | `ResetAppState` renders a fresh root at `BaseUrl` with an empty history (`Reset_StartsFromTheRoot`) |
+| Services | `Services`: the app's own provider, for a test that arranges through it |
+
+Found, for the next steps:
+
+- **bUnit submits the form itself** after a submit button's own click handler (and not for `type="button"`);
+  the driver submits only where the button has no handler, so a form is submitted once. Tests:
+  `Click_ButtonWithItsOwnHandlerInAForm_AlsoSubmits`, `Click_TypeButtonInAForm_DoesNotSubmit`.
+- **Test authorization replaces the app's own:** it is registered after `ConfigureServices`, so a suite's
+  `AuthenticationStateProvider` (Tomorrow's Identity one) does not reach the bUnit head. That is the
+  proposal's intent (arrange the account, don't sign in); step 6 relies on it.
+- **No `TestIdAttribute` option:** Brinell's `DataTestId` strategy is `data-testid` on both heads, so there is
+  nothing to set; dropped from the options table.
+- **`RecordingTarget`:** the context is not `IRecordable`, so nothing records on this head, as planned.
 
 ## Step 5 results
 

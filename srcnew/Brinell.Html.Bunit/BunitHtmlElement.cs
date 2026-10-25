@@ -128,11 +128,13 @@ public sealed class BunitHtmlElement : IHtmlElement
             return;
         }
 
+        // bUnit itself submits the form after a submit button's own click handler.
+        var form = SubmitsForm(node) ? node.Closest("form") : null;
         if (Handles(node, "onclick"))
         {
             Raise(node, "onclick", new MouseEventArgs { Type = "click", Detail = 1 });
         }
-        else if (node is IHtmlButtonElement { Type: "submit" or "" } or IHtmlInputElement { Type: "submit" } && node.Closest("form") is { } form)
+        else if (form is not null)
         {
             Raise(form, "onsubmit", EventArgs.Empty);
         }
@@ -291,6 +293,10 @@ public sealed class BunitHtmlElement : IHtmlElement
 
         _context.ThrowIfAppFailed();
     }
+
+    // A submit button: a <button> is one unless its type says otherwise.
+    private static bool SubmitsForm(IElement node)
+        => node is IHtmlButtonElement { Type: "submit" } or IHtmlInputElement { Type: "submit" };
 
     // bUnit writes a handled event as a blazor:on… attribute on the element.
     private static bool Handles(IElement element, string eventName) => element.HasAttribute($"blazor:{eventName}");

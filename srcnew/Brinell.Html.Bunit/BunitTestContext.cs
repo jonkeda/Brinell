@@ -10,6 +10,7 @@ using Brinell.Html.Interfaces;
 using ElementNotFoundException = Brinell.Core.Exceptions.ElementNotFoundException;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Brinell.Html.Bunit;
@@ -57,8 +58,16 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     public string CurrentUrl => Navigation.Uri;
 
-    // PageTitle renders into the head, which App.razor holds and the root does not.
-    public string PageTitle => string.Empty;
+    // PageTitle renders into the head, which App.razor holds and the root does not: the last PageTitle
+    // the page rendered, as a browser shows the last one, its content rendered on its own.
+    public string PageTitle
+    {
+        get
+        {
+            var title = _root.FindComponents<PageTitle>().LastOrDefault()?.Instance.ChildContent;
+            return title is null ? string.Empty : BunitLocators.Normalize(_bunit.Render(title).Nodes.Select(node => node.TextContent).Aggregate(string.Empty, string.Concat));
+        }
+    }
 
     /// <summary>The root's markup as it is now.</summary>
     public string Markup => _root.Markup;
@@ -78,8 +87,20 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     public bool IsIdle() => true;
 
-    // As brinell-busy.js says once the circuit is up: rendered by bUnit, the page is interactive at once.
-    public PageProbe ProbePage(string busyAttribute) => new("complete", true, "false");
+    // The page's own busy signal: the last brinellBusy.set call its layout made, which bUnit's JS interop
+    // records. A root without that script is interactive from its first render, since nothing prerenders.
+    public PageProbe ProbePage(string busyAttribute)
+    {
+        ThrowIfAppFailed();
+        var busy = _bunit.JSInterop.Invocations
+            .Where(call => call.Identifier == BusyScript)
+            .Select(call => call.Arguments.FirstOrDefault())
+            .LastOrDefault() is true;
+        return new PageProbe("complete", true, busy ? "true" : "false");
+    }
+
+    /// <summary>The script a Blazor app's layout calls to say whether it is busy (<c>brinell-busy.js</c>).</summary>
+    public const string BusyScript = "brinellBusy.set";
 
     public IHtmlElement? TryFindElement(Locator locator) => _driver.FindElements(locator).FirstOrDefault();
 
@@ -168,11 +189,15 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     private void Start()
     {
         _bunit = new BunitContext();
-        _bunit.JSInterop.Mode = JSRuntimeMode.Loose;
+        _bunit.JSInterop.Mode = _options.JsInterop;
+        _bunit.JSInterop.SetupVoid(BusyScript, _ => true).SetVoidResult();
+        _options.ConfigureJs?.Invoke(_bunit.JSInterop);
         _options.ConfigureServices?.Invoke(_bunit.Services);
+        var authorization = _bunit.AddAuthorization();
         if (_options.User is { } user)
         {
-            _bunit.AddAuthorization().SetAuthorized(user);
+            authorization.SetAuthorized(user);
+            authorization.SetRoles([.. _options.Roles]);
         }
 
         var root = _options.RootComponent;

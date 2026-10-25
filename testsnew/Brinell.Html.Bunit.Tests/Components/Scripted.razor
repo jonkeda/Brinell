@@ -1,0 +1,10 @@
+@* A page that needs a script's answer to render. *@
+@inject IJSRuntime JS
+
+<span data-testid="greeting">@greeting</span>
+
+@code {
+    private string greeting = string.Empty;
+
+    protected override async Task OnInitializedAsync() => greeting = await JS.InvokeAsync<string>("app.greet");
+}

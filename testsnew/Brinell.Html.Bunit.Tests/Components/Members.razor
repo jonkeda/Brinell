@@ -45,6 +45,12 @@
 </form>
 <span data-testid="submit-echo">@submitted</span>
 
+<form @onsubmit="() => submitted++">
+    <button data-testid="form-handled" @onclick="() => handled++">Handled</button>
+    <button type="button" data-testid="form-plain" @onclick="() => handled++">Plain</button>
+</form>
+<span data-testid="handled-echo">@handled</span>
+
 <a data-testid="link" href="/elsewhere">Elsewhere</a>
 
 <div data-testid="hidden" hidden>Hidden</div>
@@ -72,6 +78,7 @@
     private string keys = string.Empty;
     private string focus = string.Empty;
     private int submitted;
+    private int handled;
 
     private void Double() => pointer = "double";
 

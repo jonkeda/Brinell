@@ -104,6 +104,24 @@ public sealed class MemberTests : IDisposable
     }
 
     [Fact]
+    public void Click_ButtonWithItsOwnHandlerInAForm_AlsoSubmits()
+    {
+        Id("form-handled").Click();
+
+        Assert.Equal("1", Echo("handled"));
+        Assert.Equal("1", Echo("submit"));
+    }
+
+    [Fact]
+    public void Click_TypeButtonInAForm_DoesNotSubmit()
+    {
+        Id("form-plain").Click();
+
+        Assert.Equal("1", Echo("handled"));
+        Assert.Equal("0", Echo("submit"));
+    }
+
+    [Fact]
     public void Click_Link_FollowsItsHref()
     {
         Id("link").Click();
