@@ -32,7 +32,9 @@ public sealed class ReplaySession
         if (mode == ReplayMode.Replay)
         {
             _recording = Recording.Load(path) ?? throw new ReplayMissException($"No recording at {path}: record the test first (BRINELL_SQL_REPLAY=Record, twice).");
-            if (_recording.Stamp?.Differences(stamp) is { Count: > 0 } differences)
+            // BRINELL_SQL_STAMP=ignore: replay a stale recording anyway, to see which commands a change touched.
+            var ignoreStamp = string.Equals(Environment.GetEnvironmentVariable("BRINELL_SQL_STAMP"), "ignore", StringComparison.OrdinalIgnoreCase);
+            if (!ignoreStamp && _recording.Stamp?.Differences(stamp) is { Count: > 0 } differences)
             {
                 _stale = $"Stale recording {System.IO.Path.GetFileName(path)}: re-record it (BRINELL_SQL_REPLAY=Record, twice). Changed: {string.Join("; ", differences)}.";
             }
