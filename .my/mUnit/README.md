@@ -20,10 +20,16 @@ under way. Started 2026-10-25.
 | NUnit and MSTest tests | `testsnew/MUnit.Tests.NUnit`, `.MSTest` | 2 and 2 green (MSTest in parallel by method) |
 | Brinell head | `srcnew/Brinell.Maui.Munit` | `MunitMauiDriver`, `MunitMauiElement`, `MunitHead.AsBrinellContext()`, `DeviceOnlyException` |
 | Head's tests | `testsnew/Brinell.Maui.Munit.Tests` | 3 of 3 green: the sample app's XAML Buttons and Toggle pages, driven by the device suite's own page objects, linked unchanged |
-| Proposal and design | `.my/mUnit/proposal.md`, `design.md` | Writing |
+| Proposal and design | `.my/mUnit/proposal.md`, `design.md` | Written |
 
-Nothing is committed yet. Brinell has other people's uncommitted changes in it (Bdd, Html.Bunit,
-Uat, Blazor.UITests), and a commit will take only MUnit's files.
+The work is committed on `move` as 35a78463 and not pushed: Brinell's `move` stays local until a
+push is asked for. Tomorrow's submodule pointer has not been moved to it, because another session is
+committing Brinell work at the same time.
+
+## Next
+
+Run every page object of the sample suite on MUnit and count what passes, what is device-only and
+what breaks, as the bUnit head's step 1 did. Then the head choice goes in the fixtures.
 
 ## Log
 
