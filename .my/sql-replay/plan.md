@@ -1,8 +1,8 @@
 # SQL replay: development plan
 
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
-render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). Next: the
-proposal amended for a legacy system. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
+render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
+legacy system; steps 1 to 6 below are its outline, detailed one at a time. Next: step 1, the log, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -112,17 +112,15 @@ didn't touch counts as a confusing miss.
 why, and the changes to the proposal and to steps 1 to 8. The proposal is amended in the same
 commit.
 
-## Steps 1 to 8: outline
+## Steps 1 to 6: outline
 
-Detailed after the spike, from `spike-results.md`.
+From the amended proposal; each is detailed here before it is built.
 
 | Step | What | Projects |
 | --- | --- | --- |
-| 1 | The log: ADO.NET and EF adapters in record-only mode; counts, N+1, SQL snapshot assertions; Todo moves to `DbDataSource` | `srcnew/Brinell.Mocking.Data`, `srcnew/Brinell.Mocking.Data.EntityFrameworkCore`, their tests, Todo |
-| 2 | Replay core: occurrence keys, write barriers, SQLite and SqlClient rules, errors, the stamp, the miss message | the same |
-| 3 | Value binding, volatile values found by recording twice | the same |
-| 4 | The bUnit head: replay in the context's container, recordings per head, the shared startup recording | the same, `Brinell.Html.Bunit` if it needs a hook |
-| 5 | Maintenance: the re-record summary, the check on unread re-records | the same, a check in the build |
-| 6 | Todo's suites and the spike app's suite on replay on bUnit, measured against their real-database runs | Todo, `samples/Brinell.Samples.Sql.App` and its suite |
-| 7 | Browser scoping, if P3b passed: a host per test, the test-id header | `Brinell.Html.Playwright` fixtures |
-| 8 | `docs/guides/sql-replay.md` and an AD on when a test replays and when it needs the database | `docs/`, `.docs/decisions/` |
+| 1 | The log for ADO.NET and EF: commands per test, their time, the objects they touch; first used to measure the legacy system (database share, fan-out per change) | `srcnew/Brinell.Mocking.Data`, `srcnew/Brinell.Mocking.Data.EntityFrameworkCore`, their tests |
+| 2 | The package from the spike's code: core, ADO.NET adapter, SqlClient rules, EF adapter (spatial mapping, `SqlException`), matching, binding, errors, the miss message | the same |
+| 3 | The schema snapshot as its own command, the stamp per object; dynamic procedures, triggers, reference data, default schemas | the same, a CLI command |
+| 4 | The heads: bUnit's container, a host per test for ASP.NET Core, a test-id hook for older UIs | the same, `Brinell.Html.Bunit`, `Brinell.Html.Playwright` fixtures |
+| 5 | Maintenance: the re-record summary, the check on unread re-records | the same, a build check |
+| 6 | `docs/guides/sql-replay.md` and an AD on when a test replays and when it needs the database | `docs/`, `.docs/decisions/` |
