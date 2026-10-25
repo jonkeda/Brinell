@@ -33,8 +33,13 @@ wall time (0.8 s), as the studio's background work runs beside the page.
 ## Where the time goes
 
 - **A third is waiting for a lock.** `sp_getapplock` with a timeout took 7.2 s in 393 calls,
-  35% of all database time: Tomorrow's seed lock or the call queue's claim lock (the log keeps no
-  literals, so not which). That is waiting, not work, and worth a look on its own.
+  35% of all database time. The raw capture names it: the call queue's claim lock, `calls:claim`
+  (392 calls, 7.2 s; the seed's lock once, 0 ms). A claim alone never waits; claims that come
+  together wait 18 ms each on average, 7.0 of the 7.2 s. `JobSignal.Wake` wakes all four of the
+  studio's claim loops at once, and each claim holds the lock through two sweeping updates, the
+  lanes' check and the pick, so the three that find nothing queue behind the one that gets the
+  job. It is waiting in the background, not work, and the job itself starts first: it costs the
+  tests little time.
 - **The geo tables take 28%**, the call queue alone 7%.
 - **Repeats:** in PLT.38.5 one `PlayAreaCell` query ran 161 times and two others 119 times each,
   in PLT.41.4 and PLT.38.3 over 100: candidates for an N+1. `settings.setting` was read 651 times
