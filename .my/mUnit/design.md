@@ -14,7 +14,7 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MUnit.Tests.MSTest` | `testsnew/MUnit.Tests.MSTest` | MSTest 3.9.3 | `MUnit`, samples |
 | `Bruinell.Maui.Munit.Tests` | `testsnew/Bruinell.Maui.Munit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinell.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
 | `Bruinell.Samples.Maui.App.Headless`, `.ShellApp.Headless` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
-| `Bruinell.Maui.UITests.Munit` | `testsnew/Bruinell.Maui.UITests.Munit` | net10.0-windows, xUnit | The device suite linked (all but `FlaUIErrorsTests`); `HeadSetup.cs` sets `MauiTestFixtureBase.InMemoryHead` per fixture |
+| `Bruinell.Maui.UITests` (the device suite) | `testsnew/Bruinell.Maui.UITests` | net10.0-windows, xUnit | Also references `Bruinell.Maui.Munit` and both headless apps; `BRUINELL_HEAD=munit` runs it in memory through the fixtures' `CreateInMemoryOptions` |
 
 ## Dependency analysis
 
@@ -264,4 +264,4 @@ internal sealed class HeadlessViewHandler(IHeadlessSizer sizer) : ViewHandler<IV
 | `MUnit.Tests.NUnit/SettingsPageTests.cs` | Save through SetUp and TearDown; MUnit failure message under NUnit |
 | `MUnit.Tests.MSTest/GreetingAndShellTests.cs` | Click; Shell help route; method-level parallel |
 | `Bruinell.Maui.Munit.Tests/SamplePagesOnMunitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |
-| `Bruinell.Maui.UITests.Munit` (the device suite, linked) | 354 tests; 319 pass ([suite-count.md](suite-count.md)) |
+| `Bruinell.Maui.UITests` with `BRUINELL_HEAD=munit` | 360 tests; 325 pass, 35 skip as device-only ([suite-count.md](suite-count.md)) |

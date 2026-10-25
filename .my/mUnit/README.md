@@ -21,11 +21,18 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 | xUnit, NUnit and MSTest tests | `testsnew/MUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
 | Bruinell head | `srcnew/Bruinell.Maui.Munit` | Driver, element, state, app sinks, refusals, `MunitHead` |
 | Head's own tests | `testsnew/Bruinell.Maui.Munit.Tests` | 3 of 3 green |
-| The device suite on the head | `testsnew/Bruinell.Maui.UITests.Munit`, both sample apps compiled headless | **319 of 354 pass in 6 s**; the other 33 are device-only, platform media, or one known difference |
+| The device suite on both heads | `testsnew/Bruinell.Maui.UITests`, both sample apps compiled headless | `BRUINELL_HEAD=munit`: **325 pass, 35 skip with their reason, 0 fail, in 7 s**. Unset: Windows (FlaUI), as before |
 | Proposal, design, count | `.my/mUnit` | Written |
 
-Changes outside the new projects, both small:
-- `MauiTestFixtureBase.InMemoryHead`, a static seam that makes a fixture's context in memory instead of launching the app;
+How the head is chosen, as the Html suites choose bUnit:
+- `BRUINELL_HEAD=munit` is read by `MauiHeads` in Bruinell.Core; anything else is the device.
+- `MauiTestFixtureBase` calls the fixture's `CreateInMemoryOptions()` on MUnit and `CreateTestContextOptions()` on a device; `MauiFixture` and `ShellFixture` name their app's first page.
+- A test that needs a device is `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]` where it is Windows only too; a scenario is tagged `@device`. They are skipped on MUnit with the reason.
+
+Changes outside the new projects:
+- `MauiHeads` and `DeviceFact` in Bruinell.Core, `@device` in Bruinell.Bdd;
+- the head choice in `MauiTestFixtureBase`;
+- the device suite references the head and both headless apps, and marks 33 tests;
 - `net10.0` added to `Bruinell.Maui.AppSupport`'s targets, which the apps' XAML needs.
 
 The work is committed on `move` and not pushed: Bruinell's `move` stays local until a push is asked
@@ -33,10 +40,9 @@ for. Tomorrow's submodule pointer has not been moved.
 
 ## Next
 
-1. A proper head choice in the fixture base (`BRUINELL_HEAD=munit`), replacing the static seam, with `@device` for the scenarios that need a device.
-2. The UAT scenarios on both heads, as the bUnit head's step 4 did.
-3. A decision record once the owner has seen the counts: a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
-4. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
+1. A decision record once the owner has seen the counts: a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
+2. The maui-ui-test skill told when to use `DeviceFact` and `@device`, as html-ui-test was for `BrowserFact`.
+3. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
 
 ## Log
 
@@ -73,3 +79,7 @@ for. Tomorrow's submodule pointer has not been moved.
   - MUnit takes them from there and shows a `TestDialog` over the page, whose buttons answer the app's await.
   - Off-screen carousel cards stay in lookups, as on Windows.
   - Failing tests now refuse at once, so the run went from 2 min to 6 s.
+- **The head choice, 2026-10-26.**
+  - `BRUINELL_HEAD=munit` replaces the static seam, and the device suite runs on either head itself, so the linked project `Bruinell.Maui.UITests.Munit` is gone.
+  - The 33 device-only tests are marked and skip with their reason: 325 pass, 35 skip, 0 fail, in 7 s. `FlaUIErrorsTests` now runs too.
+  - Unset, the Windows head runs as before: `ButtonTests`, and two FlaUI-only tests, passed on the built Windows app.

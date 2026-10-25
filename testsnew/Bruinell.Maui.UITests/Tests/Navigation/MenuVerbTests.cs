@@ -54,7 +54,7 @@ public class MenuVerbTests
     /// starts publishing menu chrome, this fails and says so - at which point the verb is a
     /// convenience rather than the only way in, and everything below should be re-argued.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it checks what Windows' accessibility tree leaves out", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task MenuItems_AreInvisibleToTheAccessibilityTree()
     {
         Assert.Null(Page.TryFindByAutomationId("PageMenuFileNew"));

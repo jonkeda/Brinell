@@ -19,7 +19,7 @@ public static class MunitHead
     /// <summary>
     /// The options for a Bruinell context on an app made in memory: a new MUnit context, the
     /// <paramref name="root"/> page rendered into it, and the driver over that. For
-    /// <c>MauiTestFixtureBase.InMemoryHead</c>, which runs a device suite's fixtures unchanged.
+    /// a fixture's <c>CreateInMemoryOptions</c>, which runs a device suite on the MUnit head (<c>BRUINELL_HEAD=munit</c>).
     /// </summary>
     /// <param name="root">The app's first page, as its <c>App</c> would show it.</param>
     /// <param name="configure">The MUnit context's options: the app's <c>Application</c>, adapters.</param>

@@ -377,6 +377,16 @@ public class MauiFixture : MauiTestFixtureBase
 
     #region MauiTestFixtureBase Overrides
 
+    /// <summary>
+    /// The MUnit head (<c>BRUINELL_HEAD=munit</c>): the app as its <c>App</c> starts it, a
+    /// <c>NavigationPage</c> on the hub, rendered in memory from the app compiled headless
+    /// (<c>Bruinell.Samples.Maui.App.Headless</c>).
+    /// </summary>
+    protected override MauiTestContextOptions CreateInMemoryOptions()
+        => Bruinell.Maui.Munit.MunitHead.InMemory(
+            _ => new Microsoft.Maui.Controls.NavigationPage(new Bruinell.Samples.Maui.App.HubPage()),
+            options => options.Application = _ => new Bruinell.Samples.Maui.App.App());
+
     /// <inheritdoc />
     protected override string GetDefaultAppPath(MauiPlatform platform)
     {

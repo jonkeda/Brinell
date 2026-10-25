@@ -73,7 +73,7 @@ public class GestureAddressabilityTests
     /// an element. <c>SwipeView</c> maps to a WinUI <c>SwipeControl</c> whose peer must not be
     /// overridden, so nothing will ever find it - and the bridge reaches it anyway.
     /// </remarks>
-    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs, Device = "it checks what Windows' accessibility tree leaves out")]
     public Task SwipeView_IsUnfindableAndStillAnswersItsVerb()
     {
         _fixture.NavigateToContainerModule();

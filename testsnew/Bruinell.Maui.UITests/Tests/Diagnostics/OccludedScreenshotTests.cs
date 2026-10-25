@@ -60,7 +60,7 @@ public class OccludedScreenshotTests
     /// <summary>
     /// A screenshot taken while the app is fully covered still shows the app.
     /// </summary>
-    [Fact]
+    [DeviceFact("it needs pixels")]
     public void Screenshot_OfOccludedWindow_ShowsTheApp()
     {
         // Two waits, and both are load-bearing. NavigateToButtons only clicks — it does not wait

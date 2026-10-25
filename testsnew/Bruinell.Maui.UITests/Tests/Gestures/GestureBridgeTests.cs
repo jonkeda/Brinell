@@ -200,7 +200,7 @@ public class GestureBridgeTests
     /// what to change, because the usual cause is a missing declaration in the app's markup
     /// rather than anything wrong with the test.
     /// </remarks>
-    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs, Device = "it checks the Windows UI Automation bridge's own refusals")]
     public Task UndeclaredGesture_IsRefusedWithAUsefulMessage()
     {
         var driver = _fixture.Context.Driver;
@@ -221,7 +221,7 @@ public class GestureBridgeTests
     }
 
     /// <summary>An element that was never declared is distinguished from a missing bridge.</summary>
-    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs, Device = "it checks the Windows UI Automation bridge's own refusals")]
     public Task UndeclaredElement_SaysWhatToAdd()
     {
         var failure = Assert.ThrowsAny<NotSupportedException>(

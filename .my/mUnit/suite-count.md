@@ -1,17 +1,30 @@
 # The MAUI device suite on the MUnit head: the count
 
-The latest count, run 7, 2026-10-25. `testsnew/Bruinell.Maui.UITests.Munit` links the device suite
-(`Bruinell.Maui.UITests`) unchanged: `MauiFixture`, `ShellFixture`, 64 test files, containers,
-page objects and UAT scenarios. It runs them against both sample apps compiled for plain `net10.0`
-(`samples/Bruinell.Samples.Maui.App.Headless` and `.ShellApp.Headless`, also linked unchanged). Only
-`FlaUIErrorsTests` is left out; it unit-tests the Windows driver's internals, which only the
-original assembly can see.
+## Now: the suite on its own MUnit head
 
-## Outcome
+Since 2026-10-26 the device suite runs on either head itself.
+`$env:BRUINELL_HEAD='munit'; dotnet test testsnew/Bruinell.Maui.UITests` gives **325 passed, 35
+skipped, 0 failed, in 7 s**. The 35 skipped are:
+- the 33 tests below, now marked `[DeviceFact]` or `[WindowsOnlyFact(Device = ...)]`, each skip naming what it needs the device for;
+- the suite's own 2 probe and stress skips.
 
-319 of the 354 tests pass, 2 are skipped, and 33 fail, in 6 s. Of those 33, 32 are tests no
-in-memory head can or should pass. That leaves one known fidelity difference. Of the 320 tests that
-can run in memory, 319 pass.
+`FlaUIErrorsTests` runs now too: it is a unit test, and passes on either head. Without the variable
+the suite runs on Windows as before.
+
+The count below was made before that, through a linked copy of the suite
+(`Bruinell.Maui.UITests.Munit`, since retired), and is kept as the record of what fails in memory
+and why.
+
+## The count, run 7 (2026-10-25)
+
+The linked copy took the device suite unchanged: `MauiFixture`, `ShellFixture`, 64 test files,
+containers, page objects and UAT scenarios. It ran them against both sample apps compiled for plain
+`net10.0` (`samples/Bruinell.Samples.Maui.App.Headless` and `.ShellApp.Headless`, also linked
+unchanged), leaving out only `FlaUIErrorsTests`.
+
+319 of the 354 tests passed, 2 were skipped, and 33 failed, in 6 s. Of those 33, 32 are tests no
+in-memory head can or should pass, and one is a known fidelity difference. Of the 320 tests that
+can run in memory, 319 passed.
 
 | Group | Tests | What it means |
 | --- | --- | --- |

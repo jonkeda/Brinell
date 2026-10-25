@@ -8,6 +8,7 @@ global using Bruinell.Core.Composition;
 global using Bruinell.Core.Exceptions;
 global using Bruinell.Core.Interfaces;
 global using Bruinell.Core.Locators;
+global using Bruinell.Core.Testing;
 global using Bruinell.Maui.Context;
 global using Bruinell.Maui.Controls;
 global using Bruinell.Maui.Controls.Buttons;

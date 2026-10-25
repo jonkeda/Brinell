@@ -38,7 +38,7 @@ public class ForegroundWatchdogTests
     }
 
     /// <summary>Walking the app does not raise it over the person's work.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task Navigating_DoesNotTakeTheForeground()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;

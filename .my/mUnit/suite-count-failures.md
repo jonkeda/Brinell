@@ -1,6 +1,6 @@
 # The 33 that fail on the MUnit head, by group (agent document)
 
-Run 7, 2026-10-25, `dotnet test testsnew/Bruinell.Maui.UITests.Munit`: 319 passed, 2 skipped, these 33 failed. Each line is the test and its first message line.
+Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 passed, 2 skipped, these 33 failed. All 33 are now marked `DeviceFact` or `WindowsOnlyFact(Device = ...)` and skip on the MUnit head. Each line is the test and its first message line.
 
 ## 1 MediaElement: no type on plain net10.0 (12)
 

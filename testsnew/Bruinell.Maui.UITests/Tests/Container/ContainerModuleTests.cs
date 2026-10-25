@@ -190,7 +190,7 @@ public class ContainerModuleTests
     /// same reason Frame, SwipeView and RefreshView are unreachable. It has no children and no
     /// behaviour, so nothing is lost beyond an existence check.
     /// </remarks>
-    [WindowsOnlyFact("asserts what Windows' accessibility tree leaves out", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact("asserts what Windows' accessibility tree leaves out", Timeout = TestConstants.DefaultTestTimeoutMs, Device = "it checks what Windows' accessibility tree leaves out")]
     [Trait("Control", "BoxView")]
     public Task BoxView_IsNotAddressableOnWindows()
     {

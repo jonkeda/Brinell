@@ -155,7 +155,7 @@ public class SelectionVerbTests
     /// quietly ceasing to demonstrate anything.
     /// </para>
     /// </remarks>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it shows that a platform's picker popup realizes only some items", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task LongPicker_ReportsEveryItemAndItsOwnIndex()
     {
         var page = Page;

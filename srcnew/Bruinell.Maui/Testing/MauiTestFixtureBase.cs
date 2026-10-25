@@ -29,16 +29,6 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected BruinellMauiConfiguration Configuration { get; private set; }
 
-    /// <summary>
-    /// Makes a fixture's context in memory instead of launching the app: the MUnit head
-    /// (<c>Bruinell.Maui.Munit</c>, .my/mUnit) sets it once for a test assembly that runs a device
-    /// suite's fixtures, tests and page objects unchanged. Null, the default, launches the app.
-    /// </summary>
-    /// <remarks>
-    /// Static because the suite's fixtures are linked as they are and cannot be told otherwise; it
-    /// is asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.
-    /// </remarks>
-    public static Func<MauiTestFixtureBase, MauiTestContextOptions>? InMemoryHead { get; set; }
 
     /// <summary>
     /// Initializes the fixture by loading configuration and creating the test context and screenshot service.
@@ -50,7 +40,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         
         Configuration = BruinellMauiConfiguration.Load();
         
-        _options = InMemoryHead?.Invoke(this) ?? CreateTestContextOptions();
+        _options = Options();
 
         _context = new MauiTestContext(_options);
         UseTheAppsCulture();
@@ -112,7 +102,8 @@ public abstract class MauiTestFixtureBase : IDisposable
             Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} old session did not close: {error.Message}");
         }
 
-        _context = new MauiTestContext(InMemoryHead?.Invoke(this) ?? _options);
+        // In memory a restart is a fresh app; on a device the first launch's options are kept.
+        _context = new MauiTestContext(MauiHeads.IsMunit ? CreateInMemoryOptions() : _options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
         OnRestarted();
@@ -214,6 +205,24 @@ public abstract class MauiTestFixtureBase : IDisposable
         ArgumentNullException.ThrowIfNull(configureAction);
         configureAction(Configuration);
     }
+
+    #endregion
+
+    #region Heads
+
+    // The device unless BRUINELL_HEAD=munit (MauiHeads).
+    private MauiTestContextOptions Options()
+        => MauiHeads.IsMunit ? CreateInMemoryOptions() : CreateTestContextOptions();
+
+    /// <summary>
+    /// The suite's MUnit head (<see cref="MauiHeads"/>, .my/mUnit): its app's first page rendered in
+    /// memory, the options from <c>Bruinell.Maui.Munit</c>'s <c>MunitHead.InMemory</c>. A suite that has
+    /// one overrides this; by default an MUnit run of the suite says it has none.
+    /// </summary>
+    /// <remarks>Asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.</remarks>
+    protected virtual MauiTestContextOptions CreateInMemoryOptions()
+        => throw new InvalidOperationException(
+            $"{GetType().Name} has no MUnit head: override CreateInMemoryOptions, or run it without {MauiHeads.Variable}=munit.");
 
     #endregion
 

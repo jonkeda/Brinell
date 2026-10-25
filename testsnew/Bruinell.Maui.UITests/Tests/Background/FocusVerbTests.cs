@@ -59,7 +59,7 @@ public class FocusVerbTests
     /// the app was built without the automation sources, or the declaration in
     /// <c>TextView.xaml</c> is missing.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Bridge_PublishesTheFocusVerbs()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;
@@ -176,7 +176,7 @@ public class FocusVerbTests
     /// by key, right-clicking and hovering have none on any element.
     /// </para>
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it checks the Windows driver's rule against physical input", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task ActionsWithNoSemanticRoute_ThrowInsteadOfUsingRealInput()
     {
         var element = _fixture.Context.TryFindElement(Locator.ByAutomationId("TestEntry"));

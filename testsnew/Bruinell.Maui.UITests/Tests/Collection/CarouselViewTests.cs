@@ -18,7 +18,7 @@ public class CarouselViewTests
 
     private CollectionModuleTestPage GetPage() => new(_fixture.Context);
 
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it reads cards off screen, which Windows reports as on screen and MUnit, like a phone, does not", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Item")]
     public Task CarouselView_Items_AreTheSeededCardsInOrder()
     {

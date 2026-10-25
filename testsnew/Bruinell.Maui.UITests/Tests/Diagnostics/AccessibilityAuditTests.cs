@@ -81,7 +81,7 @@ public class AccessibilityAuditTests
     /// <summary>
     /// Walks the app, writes the backlog, and checks the audit still tells the cases apart.
     /// </summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task Audit_ReportsWhatEachInstrumentedElementOffersWithoutAPointer()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;
@@ -119,7 +119,7 @@ public class AccessibilityAuditTests
     /// well as in the contract's own unit test because this is where getting it wrong would
     /// actually cost something.
     /// </remarks>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task Audit_LeavesReadOnlyElementsOffTheBacklog()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;

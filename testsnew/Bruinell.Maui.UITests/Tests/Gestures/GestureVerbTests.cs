@@ -136,7 +136,7 @@ public class GestureVerbTests
     /// It carries a working one-tap recognizer, so an inferring bridge would publish it. The
     /// claim being tested is <c>GestureAutomation</c>'s own: declared, never inferred.
     /// </remarks>
-    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [WindowsOnlyFact(Timeout = TestConstants.DefaultTestTimeoutMs, Device = "it checks what the Windows UI Automation bridge publishes")]
     public Task UndeclaredRow_IsNotOnTheBridgeAtAll()
     {
         Assert.False(

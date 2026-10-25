@@ -39,7 +39,7 @@ public class BridgeTreeDumpTests
     }
 
     /// <summary>Reports the tree; asserts only that the app still has one.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task DumpRawTreeBelowTheWindow()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;
@@ -64,7 +64,7 @@ public class BridgeTreeDumpTests
     /// visible: the <c>SwipeView</c> publishes no <c>AutomationId</c> on Windows, so the only
     /// way to see whether the swipe took is to look at what appeared. This prints it.
     /// </remarks>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
+    [DeviceFact("it drives the Windows driver (FlaUI) itself", Timeout = TestConstants.LongTestTimeoutMs)]
     public Task DumpSwipeViewAfterOpening()
     {
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;

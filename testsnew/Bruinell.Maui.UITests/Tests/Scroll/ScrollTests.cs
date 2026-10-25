@@ -114,7 +114,7 @@ public class ScrollTests
     /// Both answers have to be the same on Windows and Android, which is the whole reason the
     /// two are separate methods.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it needs layout: what is below the fold", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsVisible")]
     public Task BottomLabel_IsVisible_IsFalseUntilScrolledTo()
     {

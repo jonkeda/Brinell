@@ -52,7 +52,7 @@ public class ScrollVerbTests
     /// only checked the offset would pass on a page that had quietly become short - which is a
     /// change to the sample app that ought to fail loudly.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it reads scroll offsets and extents, which need layout", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task ScrollPosition_ReportsExtentAsWellAsOffset()
     {
         var position = Element.ReadScrollPosition();
@@ -73,7 +73,7 @@ public class ScrollVerbTests
     /// depends on the window size, and a test that hard-coded it would be a test about this
     /// machine.
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it reads scroll offsets, which need layout", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task ScrollTo_MovesTheViewport_WithoutPhysicalInput()
     {
         var before = Element.ReadScrollPosition();
@@ -107,7 +107,7 @@ public class ScrollVerbTests
     /// layout's padding. Visibility is what the verb promises, so visibility is what this asks.
     /// </para>
     /// </remarks>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it reads scroll offsets, which need layout", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task ScrollTo_PutsTheNamedElementOnScreen()
     {
         var page = new ScrollTestPage(_fixture.Context);

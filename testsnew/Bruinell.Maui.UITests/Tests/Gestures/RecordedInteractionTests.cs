@@ -29,7 +29,7 @@ public class RecordedInteractionTests
 
     private ContainerTestPage Page => _fixture.ContainerTestPage;
 
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it logs input in physical pixels", Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task ATap_AndAPullToRefresh_AreLogged_OverTheirControls_InPhysicalPixels()
     {
         var log = new Log();
