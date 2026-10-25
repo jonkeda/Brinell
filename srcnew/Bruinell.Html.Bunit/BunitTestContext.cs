@@ -305,7 +305,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
         _bunit.JSInterop.AddInvocationHandler(new HistoryBackHandler(HistoryBack));
         _options.ConfigureJs?.Invoke(_bunit.JSInterop);
         _options.ConfigureServices?.Invoke(_bunit.Services);
-        if (_options.FallbackServices is { } fallback)
+        if ((_fallback ?? _options.FallbackServices) is { } fallback)
         {
             // A scope per render of the root, as each circuit has its own: no scoped state outlives a reset.
             _fallbackScope = fallback.GetService<IServiceScopeFactory>()?.CreateScope();
@@ -349,6 +349,22 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, Bruinel
             }
         };
     }
+
+    /// <summary>
+    /// The app started again with <paramref name="fallbackServices"/> (its new composition), in this same context, as a
+    /// browser context outlives a restart of the app it shows: what holds the context (a scenario's composition, its page
+    /// objects) keeps it, still signed in. It opens as a new context does, blank or on the base address; the caller
+    /// disposes the old services.
+    /// </summary>
+    public void RestartApp(IServiceProvider fallbackServices)
+    {
+        ArgumentNullException.ThrowIfNull(fallbackServices);
+        _fallback = fallbackServices;
+        Restart();
+    }
+
+    // The app's services after RestartApp; the options' until then.
+    private IServiceProvider? _fallback;
 
     private void Restart(string? address = null)
     {

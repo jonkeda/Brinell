@@ -86,8 +86,8 @@ public sealed class BrowserTodoWebHead : ITodoWebHead
 
 /// <summary>
 /// The app's composition (<c>Program.cs</c>'s registrations) as the fallback of a bUnit context over its
-/// <c>Routes</c>: the singletons outlive page loads as in the host, and a restart builds them again. A restart
-/// makes a new context, so page objects made before it are made again from <see cref="Context"/>.
+/// <c>Routes</c>: the singletons outlive page loads as in the host, and a restart builds them again, in the same
+/// context (<see cref="BunitTestContext.RestartApp"/>), as the browser head keeps its browser context.
 /// </summary>
 public sealed class BunitTodoWebHead(string name) : ITodoWebHead
 {
@@ -103,9 +103,19 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
 
     public void Start(LaunchSettings settings)
     {
-        Stop();
         Clock = new DatabaseClock();
+        var old = _services;
         _services = Compose(settings, Clock);
+
+        // Started again: the same context with the app's new services, as the browser head keeps its browser context, so
+        // what holds it (the UAT scenario's composition, its page objects) is not left with a disposed one.
+        if (_context is not null)
+        {
+            _context.RestartApp(_services);
+            old?.Dispose();
+            return;
+        }
+
         _context = new BunitTestContext(new BunitTestContextOptions
         {
             RootComponent = typeof(Web.Components.Routes),

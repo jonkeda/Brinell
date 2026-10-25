@@ -27,7 +27,7 @@ namespace Bruinell.Samples.Todo.Web.Uat.Runtime;
 /// </para>
 /// <para>
 /// Each device has its own composition, whose <see cref="IHtmlTestContext"/> is that device's. A
-/// restart keeps a device's browser context, so a composition is never rebuilt.
+/// restart keeps a device's context on both heads, so a composition is never rebuilt.
 /// </para>
 /// </remarks>
 [TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Bruinell.Samples.Todo.Web.UITests.Pages")]
@@ -82,7 +82,7 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
 
     /// <inheritdoc />
     public void AddAppServices(ITestApp app, IServiceCollection services)
-        => services.AddSingleton<IHtmlTestContext>(((TodoWebDevice)app).Context);
+        => AddContext(services, (TodoWebDevice)app);
 
     /// <inheritdoc />
     /// <remarks>The fixture's own members (the network, a restart) act on the app a scenario is using.</remarks>
@@ -130,7 +130,12 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
         => app["ClientId"] ?? $"web-{app.Name.ToLowerInvariant()}";
 
     private TestComposition ComposeFor(TodoWebDevice device)
-        => TestComposition.ForFixture(this, services => services.AddSingleton<IHtmlTestContext>(device.Context));
+        => TestComposition.ForFixture(this, services => AddContext(services, device));
+
+    // The device's context, one for its whole life on both heads (a restart keeps it): an instance, so the composition
+    // never disposes it.
+    private static void AddContext(IServiceCollection services, TodoWebDevice device)
+        => services.AddSingleton<IHtmlTestContext>(device.Context);
 
     // Beside this assembly, wherever the suite runs (AD-025); the source's when a host runs it from there.
     private static BddConfig ReadConfig()

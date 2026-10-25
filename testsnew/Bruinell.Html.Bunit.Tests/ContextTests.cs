@@ -394,6 +394,21 @@ public sealed class ContextTests
         Assert.NotEqual(first, Text(context, "greeting"));
     }
 
+    // An app started again: its new services, in the same context, so what holds the context keeps a live one.
+    [Fact]
+    public void RestartApp_RendersWithTheNewServices_InTheSameContext()
+    {
+        var before = new ServiceCollection().AddSingleton<IGreeting>(new FixedGreeting("before")).BuildServiceProvider();
+        var after = new ServiceCollection().AddSingleton<IGreeting>(new FixedGreeting("after")).BuildServiceProvider();
+        using var context = new BunitTestContext(new BunitTestContextOptions { RootComponent = typeof(Greeting), FallbackServices = before });
+        Assert.Equal("before", Text(context, "greeting"));
+
+        context.RestartApp(after);
+        before.Dispose();
+
+        Assert.Equal("after", Text(context, "greeting"));
+    }
+
     #endregion
 
     #region Rendering
