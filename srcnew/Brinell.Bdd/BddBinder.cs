@@ -43,10 +43,25 @@ public static class BddBinder
         ArgumentNullException.ThrowIfNull(catalogs);
         ArgumentNullException.ThrowIfNull(callables);
 
-        List<BddDiagnostic> diagnostics = [.. catalogs.CheckNames(document.Source)];
+        List<BddDiagnostic> diagnostics;
+        using (Brinell.Core.Logging.Timing.Span("bind", "CheckNames"))
+        {
+            diagnostics = [.. catalogs.CheckNames(document.Source)];
+        }
+
         List<BddBoundScenario> scenarios = [];
-        var prepared = callables.Prepare(catalogs);
-        var scope = BddScope.Of(document, catalogs);
+        BddPreparedCallables prepared;
+        using (Brinell.Core.Logging.Timing.Span("bind", "PrepareCallables"))
+        {
+            prepared = callables.Prepare(catalogs);
+        }
+
+        BddScope scope;
+        using (Brinell.Core.Logging.Timing.Span("bind", "Scope"))
+        {
+            scope = BddScope.Of(document, catalogs);
+        }
+
         HashSet<string> used = new(StringComparer.OrdinalIgnoreCase);
         var hooks = catalogs.All
             .SelectMany(catalog => catalog.Hooks)
@@ -65,6 +80,7 @@ public static class BddBinder
             }
 
             List<BddStepInvocation> invocations = [];
+            using var walking = Brinell.Core.Logging.Timing.Span("bind", "Walk");
             var walk = new Walk(catalogs, prepared, scenario.Name, invocations, scope, used, inference: null);
 
             foreach (var step in document.Background)
@@ -80,7 +96,10 @@ public static class BddBinder
             scenarios.Add(new BddBoundScenario(scenario, invocations) { Hooks = hooks });
         }
 
-        diagnostics.AddRange(CheckUsings(document, catalogs, callables, used));
+        using (Brinell.Core.Logging.Timing.Span("bind", "CheckUsings"))
+        {
+            diagnostics.AddRange(CheckUsings(document, catalogs, callables, used));
+        }
 
         var boundDocument = diagnostics.Any(x => x.Severity == BddDiagnosticSeverity.Error)
             ? null
