@@ -1,7 +1,7 @@
 # Faster studio tests: timings first, then one change per small set
 
 Agent document, 2026-10-25. Builds [paper.md](paper.md) (the touch map) and [workflow.md](workflow.md) (selection from the
-diff). Status: T1 built; iterations 1 to 4 done; the full studio suite measured on both heads (below): 1 m 29 s on bUnit, 3 m 15 s in the browser. Next: the serial collection, then selection on the touch map.
+diff). Status: T1 built; iterations 1 to 5 done; the full studio suite: 1 m 9 s on bUnit, 2 m 41 s in the browser (below). Next: selection on the touch map.
 
 ## What the last full run showed
 
@@ -109,6 +109,7 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | S2 | S2 | bUnit | measured, no change | | 20 of 20, 38 s, wall 48 s; collection A 18.2 s as alone, B 39.0 s: 21.6 s of it is PLT.35.4 waiting for 100 fights the studio plays | |
 | 4 | S2 | bUnit | command patterns interpreted, not `RegexOptions.Compiled` (`BddCommandCatalog`): every step is tried against every pattern, so a catalog's first walk compiled and JIT-ed hundreds of regexes | 38 s, wall 48 s; binding 8.8 and 8.6 s | **15 s**, wall 30 s; binding 0.13 s a collection, a first walk 12 ms; A 4.6 s, B 15.1 s | yes |
 | 4 | S1 | browser | the same, with the template | 37 s, wall 73 s; start 31.2 s, tests 38.0 s | **17 s**, wall 31 s; start 9.2 s, tests 17.7 s (steps 17.0 s) | yes |
+| 5 | S3 | bUnit | the serial collection split: `@own-database` (settings, regenerated rows) stays serial, after the rest; the `@serial`-only scenarios get lanes of their own, one after another but beside the parts: Avatars (PLT.22, 23: the trader) and World (the World studio's kept levels) (`UatCollections.LaneOf`, `StudioLanes.cs`) | 48 in 1 m 15 s | 48 in 1 m 4 s: World 32.0 s and Avatars 5.4 s beside each other, Serial's 20 in 32.8 s after | yes |
 
 What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Brinell's runner, so the
 browser head paid it too. Next, by the S1 reports: the host's start (20 s on bUnit, 31 s in the browser: the host 12 s,
@@ -146,3 +147,14 @@ of one short step line is microseconds. Matching also runs while steps execute: 
 
 Then selection: the timings' rows already name test, scenario, step, page and control, the touch map the paper and the
 workflow need; `brinell touch-map` reads this file (paper, step 3).
+
+### After iteration 5, the full studio suite once more
+
+| Head | After iteration 4 | After iteration 5 |
+| --- | --- | --- |
+| bUnit | 1 m 29 s | **1 m 9 s** (wall 71 s); 168 passed, 4 skipped, 0 failed |
+| Browser | 3 m 15 s | **2 m 41 s** (wall 165 s); 172 of 172 passed |
+
+The World lane (33 s on bUnit, 54 s in the browser) runs beside the parts; Serial holds the 20 `@own-database` scenarios
+(33 s, 55 s). The World lane's writers ran beside the parts' World page readers on both heads without a failure: one run
+each, so a later full run that fails there points at this lane first.
