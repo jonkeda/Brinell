@@ -448,6 +448,26 @@ public abstract class UatScenarioTestBase<TFixture>
             .FirstOrDefault(tag => tag.StartsWith("uat-", StringComparison.OrdinalIgnoreCase));
     }
 
+    // The runtime and its catalogs, made once per fixture and test class and kept for the tests after (speed plan, iteration 2):
+    // a fresh catalog's first match warms up for seconds, and every test made one. A scenario still gets a scope of its own.
+    private static readonly ConditionalWeakTable<object, ConcurrentDictionary<Type, Lazy<(UatRuntime, BddCommandCatalog, BddCatalogSet)>>> KeptCatalogs = new();
+
+    private (UatRuntime Runtime, BddCommandCatalog Catalog, BddCatalogSet Catalogs) Catalogs()
+        => KeptCatalogs.GetValue(Fixture, _ => new()).GetOrAdd(GetType(), _ => new Lazy<(UatRuntime, BddCommandCatalog, BddCatalogSet)>(() =>
+        {
+            UatRuntime runtime;
+            using (Brinell.Core.Logging.Timing.Span("bind", "CreateRuntime"))
+            {
+                runtime = CreateRuntime();
+            }
+
+            using (Brinell.Core.Logging.Timing.Span("bind", "CreateCommandCatalog"))
+            {
+                var catalog = CreateCommandCatalog(runtime);
+                return (runtime, catalog, runtime.CreateCatalogSet(catalog));
+            }
+        })).Value;
+
     // only: the one scenario a test runs; the file's other scenarios are not bound (speed plan, iteration 1).
     private UatBoundFileContext BindUatFile(string filePath, string? only = null)
     {
@@ -463,22 +483,11 @@ public abstract class UatScenarioTestBase<TFixture>
                 BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
-        UatRuntime runtime;
-        using (Brinell.Core.Logging.Timing.Span("bind", "CreateRuntime"))
-        {
-            runtime = CreateRuntime();
-        }
-
-        BddCommandCatalog catalog;
-        using (Brinell.Core.Logging.Timing.Span("bind", "CreateCommandCatalog"))
-        {
-            catalog = CreateCommandCatalog(runtime);
-        }
-
+        var (runtime, catalog, catalogs) = Catalogs();
         BddBindResult bind;
         using (Brinell.Core.Logging.Timing.Span("bind", "Bind"))
         {
-            bind = file.Bind(runtime.CreateCatalogSet(catalog), only);
+            bind = file.Bind(catalogs, only);
         }
 
         if (!bind.Success || bind.Document is null)
