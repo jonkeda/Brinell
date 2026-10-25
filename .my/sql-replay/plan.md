@@ -2,7 +2,7 @@
 
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
 render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). The proposal is amended for a
-legacy system; steps 1 to 6 below are its outline, detailed one at a time. Next: step 1, the log, detailed after the spike reports. Each step ends green:
+legacy system; steps 1 to 6 below are its outline, detailed one at a time. Next: step 1, the log. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
