@@ -69,7 +69,7 @@ public sealed class FramesPageTests : BlazorSampleTestBase
 AD-030); the Todo web suites have no bUnit head yet. Write every web test so it can.
 
 - **A test that needs a browser** says so: `[BrowserFact("an iframe is its own document")]`
-  instead of `[Fact]`, `@browser` on a scenario. It is skipped on the bUnit head with the reason.
+  instead of `[Fact]`, `[UiFact(Browser = "why")]` for a `UiFact`, `@browser` on a scenario. It is skipped on the bUnit head with the reason.
 - **What needs one:** layout and style (positions, sizes, CSS values, hover, swipe), script
   (`Evaluate`, a handler bound in JavaScript), frames (`FrameScope`), recordings and videos,
   XPath and accessible-name locators. On bUnit these end the call at once with

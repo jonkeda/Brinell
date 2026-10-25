@@ -64,7 +64,7 @@ scenarios need no change. Addresses are under `http://localhost`.
 
 ## What Needs A Browser
 
-Mark a test `[BrowserFact("why")]` and a scenario `@browser`: on the bUnit head they are skipped with
+Mark a test `[BrowserFact("why")]` (or `[UiFact(Browser = "why")]` for a `UiFact`) and a scenario `@browser`: on the bUnit head they are skipped with
 the reason, so the run still lists them.
 
 | Needs a browser | Why |

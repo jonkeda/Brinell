@@ -18,6 +18,24 @@ namespace Brinell.Uat;
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class UiFactAttribute : FactAttribute
 {
+    private string? _browser;
+
+    /// <summary>
+    /// What the test needs a browser for, when it does: skipped on the bUnit head with the reason, as
+    /// <see cref="Brinell.Core.Testing.BrowserFactAttribute"/> is (AD-030).
+    /// </summary>
+    public string? Browser
+    {
+        get => _browser;
+        set
+        {
+            _browser = value;
+            if (value is not null && Brinell.Core.Testing.WebHeads.IsBunit)
+            {
+                Skip = $"Browser only: {value}; this run uses the bUnit head ({Brinell.Core.Testing.WebHeads.Variable}=bunit).";
+            }
+        }
+    }
 }
 
 /// <summary>Finds a <see cref="UiFactAttribute"/>'s case.</summary>
