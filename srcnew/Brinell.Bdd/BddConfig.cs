@@ -62,12 +62,19 @@ public sealed record BddConfig(
             return new BddSkipDecision(ShouldSkip: true, Reason: reason, Rule: null);
         }
 
+        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
+        if (normalizedTags.Contains(BddTagConventions.Browser) && WebHeads.Parse(getEnvironmentVariable(WebHeads.Variable)) == WebHead.Bunit)
+        {
+            return new BddSkipDecision(
+                ShouldSkip: true,
+                Reason: $"Scenario is tagged @{BddTagConventions.Browser}; this run uses the bUnit head ({WebHeads.Variable}=bunit).",
+                Rule: null);
+        }
+
         if (SkipRules.Count == 0)
         {
             return BddSkipDecision.Run;
         }
-
-        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
 
         foreach (var rule in SkipRules)
         {
@@ -193,6 +200,9 @@ public static class BddTagConventions
     public const string Android = "android";
     public const string Ios = "ios";
     public const string Deterministic = "deterministic";
+
+    /// <summary>A scenario that needs a browser: skipped on the bUnit head (<see cref="WebHeads"/>).</summary>
+    public const string Browser = "browser";
     public const string OpenAiLive = "openai-live";
 
     /// <summary>

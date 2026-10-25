@@ -35,7 +35,7 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options;
-        _logger = options.Logger ?? NullTestLogger.Instance;
+        _logger = options.Logger ?? (ITestLogger?)OpenCallLog() ?? NullTestLogger.Instance;
         _driver = new BunitHtmlDriver(this);
         Start();
     }
@@ -182,9 +182,29 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
     internal static AppUnavailableException HandlerFailed(string handler, Exception error)
         => new($"the page's {handler} threw {error.GetType().Name}: {error.Message} (in a browser the circuit ends here).", error);
 
-    public void Dispose() => _bunit.Dispose();
+    public void Dispose()
+    {
+        _bunit.Dispose();
+        _logger.Flush();
+        _logger.Dispose();
+    }
 
-    public ValueTask DisposeAsync() => _bunit.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _bunit.DisposeAsync().ConfigureAwait(false);
+        _logger.Flush();
+        _logger.Dispose();
+    }
+
+    // The call log as the browser head writes it, its file named for this head: calls-bunit-….csv.
+    private static CsvTestLogger? OpenCallLog()
+    {
+        var folder = Environment.GetEnvironmentVariable("BRINELL_CALL_LOG");
+        return string.IsNullOrWhiteSpace(folder)
+            ? null
+            : new CsvTestLogger(Path.Combine(folder,
+                $"calls-bunit-{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}-{Guid.NewGuid().ToString("N")[..8]}.csv"));
+    }
 
     private void Start()
     {

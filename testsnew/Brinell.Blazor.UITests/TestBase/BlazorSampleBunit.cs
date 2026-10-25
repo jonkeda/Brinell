@@ -3,12 +3,12 @@ using Brinell.Samples.Blazor.App.Services;
 
 namespace Brinell.Blazor.UITests.TestBase;
 
-/// <summary>The sample on the bUnit head (.my/bunit/plan.md step 1): its <c>Routes</c> and its four services.</summary>
+/// <summary>The sample on the bUnit head (.my/bunit/plan.md): its <c>Routes</c> and its four services.</summary>
 internal static class BlazorSampleBunit
 {
     public const string BaseUrl = "http://localhost";
 
-    public static bool IsHead => string.Equals(Environment.GetEnvironmentVariable("BRINELL_HEAD"), "bunit", StringComparison.OrdinalIgnoreCase);
+    public static bool IsHead => Core.Testing.WebHeads.IsBunit;
 
     public static BunitTestContext Create() => new(new BunitTestContextOptions
     {

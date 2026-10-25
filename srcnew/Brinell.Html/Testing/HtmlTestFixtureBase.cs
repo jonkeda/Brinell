@@ -1,5 +1,6 @@
 using Brinell.Core.Configuration;
 using Brinell.Core.Artifacts;
+using Brinell.Core.Testing;
 using Brinell.Html.Context;
 using Brinell.Html.Interfaces;
 
@@ -39,10 +40,20 @@ public abstract class HtmlTestFixtureBase
 
     protected abstract Task<IHtmlTestContext> CreateContextAsync(HtmlTestContextOptions options);
 
+    /// <summary>
+    /// The suite's bUnit head (<see cref="WebHeads"/>): its root component and services rendered without a
+    /// browser, a <c>BunitTestContext</c> from <c>Brinell.Html.Bunit</c>. A suite that has one overrides this;
+    /// by default a bUnit run of the suite says it has none.
+    /// </summary>
+    protected virtual IHtmlTestContext CreateBunitContext()
+        => throw new InvalidOperationException(
+            $"{GetType().Name} has no bUnit head: override CreateBunitContext, or run it without {WebHeads.Variable}=bunit.");
+
     public virtual async Task InitializeAsync()
     {
-        var options = CreateOptions();
-        _context = await CreateContextAsync(options).ConfigureAwait(false);
+        _context = WebHeads.IsBunit
+            ? CreateBunitContext()
+            : await CreateContextAsync(CreateOptions()).ConfigureAwait(false);
     }
 
     public virtual async Task DisposeAsync()

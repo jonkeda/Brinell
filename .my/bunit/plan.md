@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike), 2 (the driver) and 3 (the context) done; step 4 next. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike), 2 (the driver), 3 (the context) and 4 (heads in the fixtures and scenarios) done; step 5 next. Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -253,6 +253,43 @@ Found, for the next steps:
 - **No `TestIdAttribute` option:** Brinell's `DataTestId` strategy is `data-testid` on both heads, so there is
   nothing to set; dropped from the options table.
 - **`RecordingTarget`:** the context is not `IRecordable`, so nothing records on this head, as planned.
+
+## Step 4 results
+
+2026-10-25, one run each.
+
+| Run | Result |
+| --- | --- |
+| `Brinell.Blazor.UITests`, whole suite, `BRINELL_HEAD=bunit` | 35 of 35 in 2 s, the two UAT scenarios included (the login one 1.6 s, the sample's own delay) |
+| `Brinell.Blazor.UITests`, whole suite, the browser head | 35 of 35 in 38 s |
+| `Brinell.Core.Tests`, `Brinell.Bdd.Tests`, `Brinell.Uat.Tests` | 58, 251, 225: all green |
+| `Brinell.Html.Tests`, `Brinell.Html.Bunit.Tests`, `Brinell.Blazor.Tests` | 74, 77, 173: all green |
+| `Brinell.Core.Tests` `WebHeads*`, `BRINELL_HEAD=bunit` | `BrowserFact_RunsOnlyOnTheBrowserHead` skipped: "Browser only: … this run uses the bUnit head (BRINELL_HEAD=bunit)." |
+
+What changed, and where it differs from the step's text:
+
+- **The head lives in Core, not Html:** `Brinell.Core.Testing.WebHead` (`Browser`, `Bunit`) and `WebHeads`
+  (`Current`, `IsBunit`, `Parse`, `Variable = "BRINELL_HEAD"`), so the scenario runner (`Brinell.Bdd`, which does not
+  reference Html) and the fixtures read the same thing. **The variable only:** no `brinell.html.config.json` fallback,
+  since Bdd cannot read that file and one source keeps a fixture and a skip in agreement. It is a separate axis from
+  a UAT suite's `Head` (maui, web, mixed, service), which says which app's pages a suite uses.
+- **`HtmlTestFixtureBase`:** `InitializeAsync` makes `CreateBunitContext()` on the bUnit head, `CreateContextAsync(options)`
+  otherwise. `CreateBunitContext()` is virtual and by default says the suite has no bUnit head; it returns a context,
+  not `BunitTestContextOptions`, because `Brinell.Html` does not reference `Brinell.Html.Bunit`. No suite derives from
+  this base today (`BlazorTestFixtureBase` does, unused); the Blazor suite's own `BlazorSampleTestBase` and
+  `Uat/BlazorUatFixture` choose by `WebHeads` themselves, the UAT fixture without starting the sample's host.
+- **`@browser`:** `BddTagConventions.Browser`; `BddConfig.EvaluateSkip` skips a scenario with it when
+  `BRINELL_HEAD` is `bunit`, read through the method's `getEnvironmentVariable` so it is testable
+  (`EvaluateSkip_BrowserTagOnTheBunitHead_Skips`, `…OnTheBrowserHead_Runs`, `EvaluateSkip_UntaggedScenarioOnTheBunitHead_Runs`).
+  Neither of the sample's two scenarios needs it.
+- **`BrowserFact`:** `Brinell.Core.Testing.BrowserFactAttribute(reason)`, in Core because Core already references xUnit;
+  skipped on the bUnit head with the reason.
+- **Results name the head:** every UAT `__result.json` has `"head": "bunit"` or `"browser"` (checked in both runs).
+  **The call log keeps its columns:** the bUnit head writes `calls-bunit-….csv` where the browser writes
+  `calls-html-….csv`, so the file names the head and readers of the CSV need no change.
+
+Not run: Tomorrow's UI suites, which reference `Brinell.Uat` (the report's new field) but no changed fixture base;
+building them in place would rebuild the studio this checkout runs on 5219.
 
 ## Step 5 results
 

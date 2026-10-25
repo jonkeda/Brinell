@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Brinell.Core.Testing;
 
 namespace Brinell.Uat;
 
@@ -53,6 +54,7 @@ internal static class UatScenarioReport
             ["tags"] = new JsonArray([.. scenario.Source.Tags.Select(tag => (JsonNode?)tag)]),
             ["evidencePath"] = execution.EvidencePath,
             ["skipReason"] = execution.Result.SkipDecision?.Reason,
+            ["head"] = WebHeads.Current.ToString().ToLowerInvariant(),
             ["steps"] = new JsonArray([.. execution.Result.Steps.Select(step => (JsonNode?)Step(step, configDirectory, trace is not null))]),
         };
 

@@ -153,6 +153,40 @@ public sealed class BddConfigParserTests
         Assert.Contains("EXAMPLE_UAT_HARDWARE", decision.Reason);
     }
 
+    [Fact]
+    public void EvaluateSkip_BrowserTagOnTheBunitHead_Skips()
+    {
+        var config = BddConfigParser.Parse("# UAT Config");
+
+        var decision = config.EvaluateSkip(["@browser"], name => name == "BRINELL_HEAD" ? "bunit" : null);
+
+        Assert.True(decision.ShouldSkip);
+        Assert.Contains("@browser", decision.Reason);
+        Assert.Contains("bUnit", decision.Reason);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("browser")]
+    public void EvaluateSkip_BrowserTagOnTheBrowserHead_Runs(string? head)
+    {
+        var config = BddConfigParser.Parse("# UAT Config");
+
+        var decision = config.EvaluateSkip(["browser"], name => name == "BRINELL_HEAD" ? head : null);
+
+        Assert.False(decision.ShouldSkip);
+    }
+
+    [Fact]
+    public void EvaluateSkip_UntaggedScenarioOnTheBunitHead_Runs()
+    {
+        var config = BddConfigParser.Parse("# UAT Config");
+
+        var decision = config.EvaluateSkip(["smoke"], name => name == "BRINELL_HEAD" ? "bunit" : null);
+
+        Assert.False(decision.ShouldSkip);
+    }
+
     [Theory]
     [InlineData("1")]
     [InlineData("true")]
