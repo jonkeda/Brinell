@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MUnit.Samples.App.ViewModels"
+             x:Class="MUnit.Samples.App.Pages.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             AutomationId="SettingsPage"
+             Title="Settings">
+
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <Label Text="Your name" />
+        <Entry AutomationId="Name" Placeholder="Name" Text="{Binding Name}" />
+
+        <HorizontalStackLayout Spacing="8">
+            <Label Text="Notifications" />
+            <Switch AutomationId="Notifications" IsToggled="{Binding Notifications}" />
+        </HorizontalStackLayout>
+
+        <Button AutomationId="SaveButton" Text="Save" Command="{Binding SaveCommand}" />
+        <ActivityIndicator AutomationId="Busy" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        <Label AutomationId="Status" Text="{Binding Status}" />
+    </VerticalStackLayout>
+
+</ContentPage>
