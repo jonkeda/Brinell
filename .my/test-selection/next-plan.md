@@ -28,7 +28,7 @@ where not.
 | --- | --- | --- | --- | --- |
 | 1 | Deal scenarios to collections by their last duration (done) | ~5 s bUnit, ~20 to 30 s browser, every full run | S | done by Claude |
 | 2 | Report a skipped scenario as skipped, not Passed (done) | True counts in every run and gate | S | done by Claude |
-| 3 | Selection: the touch map and a script that picks what a diff reaches (Brinell's done) | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
+| 3 | Selection: the touch map and a script that picks what a diff reaches (done; the game suite's map to make) | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
 | 4 | Fewer fights in PLT.35.4 (done: 10) | 15 to 20 s off the slowest collection | S | the owner: the scenario |
 | 5 | A warm host between runs | ~10 to 20 s off every small run | M | done by Claude |
 | 6 | Measure `Tomorrow.Data.Tests`' database setup | Unknown until measured; the template may apply | S, then M | done by Claude |
@@ -114,6 +114,25 @@ record test, scenario, step, page and control for every call: the touch map the 
   game's for the game suite, `--always "Gate=Smoke"`); `Tomorrow.Web`, `Tomorrow.Game` and the rest widen by reference. A
   full run with `BRINELL_TIMINGS` writes each suite's map. Tomorrow's pages use test-id prefixes (`bench-*`), which the
   id rule covers if the page writes them literally; to be checked on one bench page, the item's done line.
+
+## Item 3 in Tomorrow, done (2026-10-25)
+
+- **`tools/Select-Tests.ps1`** runs `brinell tests affected` per suite (studio: `src/Tomorrow.Studio`; game:
+  `src/Tomorrow.App`), with `Gate=Smoke` joined to any pick; `-Run` runs it, `-WriteMap` makes a suite's map from a full
+  run (and the studio's `durations.json`). brinell is built into a temp artifacts folder with `-p:BrinellRecorders=false`,
+  because the agents' MCP servers keep `tools/Brinell.Cli/bin` open.
+- **What Tomorrow needed from Brinell:** files the suite links from elsewhere are the suite's (the studio links the
+  fixture, the Uat runner and shared pages from the game suite); a component's `TestId="..."` parameter is a test id; a routed
+  page reaches every page object that opens its route.
+- **The route rule matters:** `Fights.razor`'s own ids reached 7 of the bench's 16 scenarios; the others use only its panels'
+  ids. With the rule, a change to the page picks the 16 and the one admin test that opens the bench, nothing else.
+- **Misses, measured:** `BenchFights_Seed` renamed in `Fights.razor`, so the old id is gone from the page. The pick (17)
+  and the whole suite (165) both failed PLT.35.1 and PLT.35.4, the two that used it; only the route rule found them.
+- **Time, in the browser:** 24 s of tests for the pick against 2 m 41 s for the suite.
+- **The studio's map:** 154 tests and scenarios from one full browser run (164 of 165 passed; AdminTests'
+  `Settings_ShowsMinutesPerStepWithItsRange` failed in the run and passed alone: it reads settings a serial scenario changes).
+- **Left:** the game suite has no map yet, so it runs whole until `-Suite game -WriteMap`; misses at the gates are not
+  counted yet (a full run's failures against what the script would have picked).
 
 ## 4. Fewer fights in PLT.35.4: done
 
