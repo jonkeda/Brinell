@@ -146,6 +146,21 @@ For a small set the fixed costs now lead: the test process, discovery, and the s
 browser). Brinell's warm runners (`BddWarmRunners`) keep a runner and its fixture ready per suite between runs; applied to the
 studio suite, a small set would skip the start. Done when S1 runs a second time in about its tests' own 17 s.
 
+### Item 5, measured first (2026-10-25)
+
+On the Todo web UAT suite, `dotnet test --no-build` of one scenario (TOD.05.1): 7.8 s of wall time for 2.2 s of
+scenario. A run that matches nothing takes 1.3 s (the process and discovery), so about 4.3 s is the fixture starting the
+app and the browser: what a warm host would save.
+
+- **It saves only on a run with no build.** A warm runner is made from a copy of the suite's output and is replaced when
+  the output changes (AD-025). An app or page-object change rebuilds the output and the app has to start again anyway, so
+  the usual loop (edit, build, run) gains nothing.
+- **Where it would save:** a second run of the same build (a failure looked at again, a flake checked), and a feature-file
+  edit when the runner reads the scenarios from the source (AD-022; `dotnet test` reads the output's copy, so it needs a
+  build there too).
+- **Proposal:** not built for now. Item 8 (cheaper browser calls) and item 6 save on every run; item 5 waits until reruns
+  without a build turn out to be common.
+
 ## 6. `Tomorrow.Data.Tests`' databases
 
 If it migrates and seeds a fresh database per test class, it pays 7.5 s each time, the cost the template removed from the UI
