@@ -37,7 +37,16 @@ public abstract partial class ControlBase<TScope> : ObjectBase, IControlObject<T
     public override IHtmlTestContext Context => _scope.Context;
 
     /// <summary>The element, found in one attempt, or null.</summary>
-    protected IHtmlElement? TryFindElement() => _scope.TryFindElement(Locator);
+    protected IHtmlElement? TryFindElement()
+    {
+        // A query outside a call (IsVisible, TryGetText, IsExists) writes no call row; the touch map still needs it.
+        if (Brinell.Core.Logging.Timing.Enabled && AttemptContext.Current is null)
+        {
+            Brinell.Core.Logging.Timing.Query(_scope.Page?.GetType().Name ?? "Unknown", Locator.Value, "TryFind");
+        }
+
+        return _scope.TryFindElement(Locator);
+    }
 
     /// <summary>The element, found in one attempt.</summary>
     /// <exception cref="ElementNotFoundException">It is not there.</exception>

@@ -204,6 +204,10 @@ public abstract class UatScenarioTestBase<TFixture>
         BddBoundScenario scenario,
         CancellationToken cancellationToken)
     {
+        // A file's run enters each scenario here; a scenario's run has entered it already, before binding.
+        using var scenarioScope = Brinell.Core.Testing.TestScope.Current.Scenario == scenario.Source.Name
+            ? null
+            : Brinell.Core.Testing.TestScope.EnterScenario(scenario.Source.Name);
         var started = System.Diagnostics.Stopwatch.StartNew();
         BddScenarioExecutionResult execution;
         using (Brinell.Core.Logging.Timing.Span("scenario", scenario.Source.Name))

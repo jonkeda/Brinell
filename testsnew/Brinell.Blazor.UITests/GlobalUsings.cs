@@ -15,3 +15,6 @@ global using Brinell.Core.Composition;
 global using Brinell.Blazor.UITests.PageObjects;
 global using Brinell.Uat;
 global using Microsoft.Extensions.DependencyInjection;
+
+// Every test named in the timings, so a run is its touch map (brinell touch-map).
+[assembly: Brinell.Uat.TestScope]

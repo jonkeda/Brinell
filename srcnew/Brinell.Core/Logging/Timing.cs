@@ -42,6 +42,18 @@ public static class Timing
         }
     }
 
+    /// <summary>
+    /// A control asked outside a call (<c>IsVisible</c>, <c>TryGetText</c>): no call row, but the touch map still needs to
+    /// know the test reached it. A <c>query</c> row with no duration.
+    /// </summary>
+    public static void Query(string page, string control, string name)
+    {
+        if (Enabled)
+        {
+            Write(TestScope.Current, "query", name, page, control, name, Clock.ElapsedMilliseconds, 0, null, null);
+        }
+    }
+
     /// <summary>Milliseconds since the run began, the rows' <c>StartMs</c>.</summary>
     public static long NowMs => Clock.ElapsedMilliseconds;
 

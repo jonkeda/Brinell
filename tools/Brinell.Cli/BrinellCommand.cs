@@ -6,6 +6,7 @@ using Brinell.Cli.Data;
 using Brinell.Cli.Generate;
 using Brinell.Cli.Scenario;
 using Brinell.Cli.Scrape;
+using Brinell.Cli.Selection;
 using Brinell.Cli.Servers;
 using Brinell.Core.Scraping;
 using Brinell.DataValidator;
@@ -39,6 +40,7 @@ internal static class BrinellCommand
             ScrapeCommands.Build(io),
             DataCommands.Build(io),
             ScenarioCommands.Build(io),
+            SelectionCommands.Build(io),
             GenerateCommand.Build(io),
             Version(io),
             ServerCommands.Mcp(io),

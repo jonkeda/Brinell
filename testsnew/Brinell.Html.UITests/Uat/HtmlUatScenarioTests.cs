@@ -8,15 +8,16 @@ public sealed class HtmlUatScenarioTests(HtmlUatFixture fixture)
     : UatScenarioTestBase<HtmlUatFixture>(fixture),
         IClassFixture<HtmlUatFixture>
 {
-    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
+    // One case per scenario, each with its BddScenario trait: one scenario runs by filter (brinell affected).
+    public static IEnumerable<object[]> Scenarios => GetScenarioTheoryData();
 
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
         new(Target: "HTML", Fixture: "HtmlUatFixture");
 
-    [Theory(Timeout = 120000)]
-    [MemberData(nameof(ScenarioFiles))]
-    public Task UatFile_Passes(string filePath)
+    [UatScenarioTheory(Timeout = 120000)]
+    [MemberData(nameof(Scenarios))]
+    public Task Scenario_Passes(string filePath, string scenarioName)
     {
-        return RunUatFileAsync(filePath);
+        return RunUatScenarioAsync(filePath, scenarioName);
     }
 }

@@ -119,7 +119,7 @@ public sealed class UiTestInvoker(
     protected override async Task<decimal> InvokeTestMethodAsync(object testClassInstance)
     {
         decimal time;
-        using (Brinell.Core.Testing.TestScope.EnterTest($"{TestClass.Name}.{TestMethod.Name}"))
+        using (Brinell.Core.Testing.TestScope.EnterTest(TestScopeAttribute.NameOf(TestMethod)))
         using (Brinell.Core.Logging.Timing.Span("test", TestMethod.Name))
         {
             time = await base.InvokeTestMethodAsync(testClassInstance).ConfigureAwait(false);
