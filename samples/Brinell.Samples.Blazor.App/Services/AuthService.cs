@@ -36,7 +36,9 @@ public class AuthService : IAuthService
 {
     private const string ValidEmail = "test@example.com";
     private const string ValidPassword = "password123";
-    private const int SimulatedDelayMs = 1500;
+    // Long enough that a sign-in is asynchronous and the tests must wait for its answer; 1.5 s cost every login test that
+    // much on both heads (next-plan item 8).
+    private const int SimulatedDelayMs = 150;
 
     /// <inheritdoc />
     public bool IsAuthenticated { get; private set; }

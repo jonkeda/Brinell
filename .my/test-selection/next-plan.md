@@ -228,3 +228,17 @@ its own.
   the app's first render and load, not a wait.
 - **Tomorrow's studio suite on bUnit:** 1 m 4 s to 47 s, 143 passed and 22 skipped both times; in the browser 165 of 165
   in 2 m 42 s, unchanged. Brinell's Blazor, Html and Todo web suites green on both heads.
+
+### Item 8, first findings (2026-10-25)
+
+- **The review's Html items (H1 to H6) were done already;** what costs time now is outside the calls.
+- **The sample's sign-in slept 1.5 s** (`AuthService.SimulatedDelayMs`) in seven login tests. Now 150 ms, still a wait the
+  tests must make: Html in the browser 30 to 22 s, Blazor 41 to 35 s, Html on bUnit 8 to 6 s.
+- **A browser per test:** both suites' test bases make a context per test, and `PlaywrightTestContext.CreateAsync` starts
+  Playwright and launches Chromium each time, about 0.5 to 1 s. One shared browser with a new browser context per test
+  took Blazor from 41 to 26 s, but the Html suite hung (its UAT fixture creates its context with a blocking
+  `GetAwaiter().GetResult()`), and launching it on the thread pool did not cure it. Reverted; to be found with a hang dump
+  (`--blame-hang-timeout`) before it is tried again.
+- **AssertIdle misses its first look** on 25 of 33 page loads and sleeps the 100 ms poll: a wait inside the browser
+  (`WaitForFunctionAsync`) would end as the page turns ready. Not tried yet.
+- Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.
