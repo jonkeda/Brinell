@@ -1,7 +1,7 @@
 # Faster studio tests: timings first, then one change per small set
 
 Agent document, 2026-10-25. Builds [paper.md](paper.md) (the touch map) and [workflow.md](workflow.md) (selection from the
-diff). Status: T1 built; iterations 1 and 2 done (binding); next: the host start.
+diff). Status: T1 built; iterations 1 to 3 done (binding, the database template); S2 measured; next: the catalog warm-up or the studio's own start.
 
 ## What the last full run showed
 
@@ -105,11 +105,22 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | 1 | S1 | bUnit | a test binds only its own scenario, not the file's others (`BddBinder.Bind(..., only)`) | 1 m 35 s | 1 m 21 s; binding still 5 to 9 s a test | yes |
 | 2 | S1 | bUnit | the runtime and its catalogs kept per fixture (`UatScenarioTestBase.Catalogs`): a fresh catalog's first match warmed up for 5 to 8 s in every test | 1 m 21 s | **17 s**; tests 17.5 s, binding 8.7 s once (the first test), steps 8.4 s | yes |
 | 2 | S1 | browser | the same, checked | not measured | 37 s, 10 of 10; tests 38.0 s, steps 28.5 s, binding 8.3 s once | yes |
+| 3 | S1 | bUnit | the prepared database kept as a template (a SQL Server backup, by a fingerprint of the build's `Tomorrow*.dll` and the geo and OSM test data), restored by the next run: no migration, seed, geo import or area (`TestDatabase.TryRestore`, `KeepAsTemplate`; `TOMORROW_UI_TEMPLATE=0` builds afresh) | start 18.2 s, wall 38 s | start 7.2 s (restore 0.8 s, the studio's own start 4.6 s), wall 28 s | yes |
+| S2 | S2 | bUnit | measured, no change | | 20 of 20, 38 s, wall 48 s; collection A 18.2 s as alone, B 39.0 s: 21.6 s of it is PLT.35.4 waiting for 100 fights the studio plays | |
 
 What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Brinell's runner, so the
 browser head paid it too. Next, by the S1 reports: the host's start (20 s on bUnit, 31 s in the browser: the host 12 s,
 the geo import 4 to 9 s, the area 3 to 5 s); then S2, to see what parallel collections cost now; then the one warm-up
 left (6.8 s in a collection's first test).
+
+What iteration 3 and S2 showed:
+
+- A fresh database costs 3.8 s of migrations (six of them) and 3.7 s of seed; the template takes both out of every run but
+  the first after a change. Squashing the migrations into one `Initial` would save part of the 3.8 s, and only on a fresh
+  build: worth it when they pile up, or for `Tomorrow.Data.Tests` if it migrates a database per test class.
+- Two collections side by side cost nothing visible; S2's slow collection is one scenario's own work (PLT.35.4, 100 fights).
+- Left, by size: the catalog's warm-up (about 8.7 s in each collection's first test, ten collections), the studio's own
+  start (4.6 s), and PLT.35.4's 100 fights (the owner's scenario: fewer fights, or a faster fight simulation).
 
 ## At the end
 
