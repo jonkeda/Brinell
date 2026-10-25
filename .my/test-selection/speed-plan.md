@@ -1,7 +1,7 @@
 # Faster studio tests: timings first, then one change per small set
 
 Agent document, 2026-10-25. Builds [paper.md](paper.md) (the touch map) and [workflow.md](workflow.md) (selection from the
-diff). Status: plan; T1 next.
+diff). Status: T1 built; iterations 1 and 2 done (binding); next: the host start.
 
 ## What the last full run showed
 
@@ -101,6 +101,15 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | # | Set | Head | Change | Before | After | Kept |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | full | bUnit | none (the run above) | | 11 m 15 s | |
+| T1 | S1 | bUnit | the timings | | 1 m 35 s; tests 96.0 s, of it binding 87.7 s (8 to 9 s a test), steps 7.9 s, outside 0 s | yes |
+| 1 | S1 | bUnit | a test binds only its own scenario, not the file's others (`BddBinder.Bind(..., only)`) | 1 m 35 s | 1 m 21 s; binding still 5 to 9 s a test | yes |
+| 2 | S1 | bUnit | the runtime and its catalogs kept per fixture (`UatScenarioTestBase.Catalogs`): a fresh catalog's first match warmed up for 5 to 8 s in every test | 1 m 21 s | **17 s**; tests 17.5 s, binding 8.7 s once (the first test), steps 8.4 s | yes |
+| 2 | S1 | browser | the same, checked | not measured | 37 s, 10 of 10; tests 38.0 s, steps 28.5 s, binding 8.3 s once | yes |
+
+What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Brinell's runner, so the
+browser head paid it too. Next, by the S1 reports: the host's start (20 s on bUnit, 31 s in the browser: the host 12 s,
+the geo import 4 to 9 s, the area 3 to 5 s); then S2, to see what parallel collections cost now; then the one warm-up
+left (6.8 s in a collection's first test).
 
 ## At the end
 
