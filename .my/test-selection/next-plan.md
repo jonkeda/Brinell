@@ -5,6 +5,20 @@ A plan, 2026-10-25, after [speed-plan.md](speed-plan.md)'s five iterations took 
 costs, so the cheap and valuable come first. Each item is measured the way the speed plan works: a small set, the timings,
 one change, the same set again.
 
+## Brinell's suites first
+
+The owner's rule from 2026-10-25: what is left is built and measured on Brinell's own sample apps and test suites first
+(`testsnew/Brinell.Blazor.UITests`, `testsnew/Brinell.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
+step of its own. A change tried on Tomorrow first, the World lane, failed scenarios there that its one green run had not shown.
+
+| Item | Brinell's proving ground |
+| --- | --- |
+| 1, deal by duration | The Todo suites' collections, and a dealer in `Brinell.Uat` any suite can use |
+| 3, selection | `brinell touch-map` and `brinell affected` on the Blazor and Html suites and their sample |
+| 5, a warm host | The Todo UAT suite, whose warm runner keeps the app already |
+| 7, the phrase index | The large-suite benchmark in `Brinell.Bdd.Tests` |
+| 8, browser calls | The Blazor and Html suites, measured per call kind |
+
 ## The order
 
 Cost: S is an afternoon, M a day or two, L a week or a design. Value is measured where there are numbers, estimated (~)
