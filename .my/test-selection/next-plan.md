@@ -15,7 +15,7 @@ where not.
 | 1 | Deal scenarios to collections by their last duration | ~5 s bUnit, ~20 to 30 s browser, every full run | S | done by Claude |
 | 2 | Report a skipped scenario as skipped, not Passed | True counts in every run and gate | S | done by Claude |
 | 3 | Selection: the touch map and a script that picks what a diff reaches | A change's run in seconds, not 1 to 3 minutes | M | the owner: the widening rules |
-| 4 | Fewer fights in PLT.35.4 | 15 to 20 s off the slowest collection | S | the owner: the scenario |
+| 4 | Fewer fights in PLT.35.4 (done: 10) | 15 to 20 s off the slowest collection | S | the owner: the scenario |
 | 5 | A warm host between runs | ~10 to 20 s off every small run | M | done by Claude |
 | 6 | Measure `Tomorrow.Data.Tests`' database setup | Unknown until measured; the template may apply | S, then M | done by Claude |
 | 7 | A phrase index and a parse cache, with a large-suite benchmark | ~1 to 3 s now; keeps a very large suite linear | M | done by Claude |
@@ -57,11 +57,11 @@ record test, scenario, step, page and control for every call: the touch map the 
   suite whole. The owner checks the list.
 - Done when a change to one bench page runs that bench's scenarios and nothing else, with the reasons printed.
 
-## 4. Fewer fights in PLT.35.4
+## 4. Fewer fights in PLT.35.4: done
 
-"Walker against two dogs, run 100 times" waits 15 to 21 s while the studio plays the fights, the longest step of the suite.
-Twenty runs would show the same table in a fifth of the time. The scenario is the owner's; the bench's rules are unit tested
-(`FightBenchTests`).
+The owner asked for way fewer (2026-10-25). The bench offers 10 beside 100 and 500 (`FightRunPanel.Counts`, still opening on
+100), and PLT.35.4 runs 10. Its run step went from 21.6 s to 2.7 s on bUnit and 3.0 s in the browser; the whole of PLT.35 from
+28 to 32 s to 5 s on bUnit, 16 s in the browser, 16 of 16 on both.
 
 ## 5. A warm host between runs
 
