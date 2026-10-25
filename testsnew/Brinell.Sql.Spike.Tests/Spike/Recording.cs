@@ -51,12 +51,29 @@ public sealed class Exchange
     public bool IsWrite => Statements.IsWrite(Text);
 }
 
+/// <summary>
+/// What a recording was made against: the migrations (their ids, hashed), EF Core's and SqlClient's versions. A
+/// recording whose stamp differs is stale, said before any miss: a migration or an upgrade changes most queries.
+/// </summary>
+public sealed record Stamp(string Migrations, string Ef, string SqlClient)
+{
+    /// <summary>The parts that differ from <paramref name="now"/>, as "what: recorded, now".</summary>
+    public IReadOnlyList<string> Differences(Stamp now) =>
+    [
+        .. Migrations != now.Migrations ? [$"migrations: {Migrations}, now {now.Migrations}"] : Array.Empty<string>(),
+        .. Ef != now.Ef ? [$"EF Core: {Ef}, now {now.Ef}"] : Array.Empty<string>(),
+        .. SqlClient != now.SqlClient ? [$"SqlClient: {SqlClient}, now {now.SqlClient}"] : Array.Empty<string>(),
+    ];
+}
+
 /// <summary>A test's recording on one head.</summary>
 public sealed class Recording
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public int Version { get; set; } = 1;
+
+    public Stamp? Stamp { get; set; }
 
     public List<Exchange> Exchanges { get; set; } = [];
 
@@ -79,20 +96,46 @@ public sealed class Recording
             throw new InvalidOperationException($"The two recordings sent {previous.Exchanges.Count} and {Exchanges.Count} commands: not the same run.");
         }
 
+        // Paired as replay matches: the same text, its n-th time between the same two writes. Reads between two writes
+        // may come in another order each run (on bUnit the start page's query races the page navigated to).
+        var earlier = Keys(previous.Exchanges, out _);
+        Keys(Exchanges, out var keys);
         for (var i = 0; i < Exchanges.Count; i++)
         {
             var now = Exchanges[i];
-            var before = previous.Exchanges[i];
-            if (Statements.Normalize(now.Text) != Statements.Normalize(before.Text))
+            if (!earlier.TryGetValue(keys[i], out var index))
             {
-                throw new InvalidOperationException($"Command {i} differs between the two recordings:\n{before.Text}\n{now.Text}");
+                throw new InvalidOperationException($"Command {i} has no counterpart in the other recording:\n{now.Text}");
             }
 
+            var before = previous.Exchanges[index];
             now.Volatile = [.. now.Parameters.Keys.Where(name =>
                 !before.Parameters.TryGetValue(name, out var old) || !Values.Same(old, now.Parameters[name]))
                 .Union(before.Volatile)
                 .Order(StringComparer.Ordinal)];
         }
+    }
+
+    // Each exchange's key: the writes before it, its text, and which time it is that text since the last write.
+    private static Dictionary<string, int> Keys(List<Exchange> exchanges, out string[] byIndex)
+    {
+        var keys = new Dictionary<string, int>(StringComparer.Ordinal);
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        byIndex = new string[exchanges.Count];
+        var writes = 0;
+        for (var i = 0; i < exchanges.Count; i++)
+        {
+            var text = $"{writes}|{Statements.Normalize(exchanges[i].Text)}";
+            var occurrence = seen[text] = seen.GetValueOrDefault(text) + 1;
+            byIndex[i] = $"{text}|{occurrence}";
+            keys[byIndex[i]] = i;
+            if (exchanges[i].IsWrite)
+            {
+                writes++;
+            }
+        }
+
+        return keys;
     }
 }
 

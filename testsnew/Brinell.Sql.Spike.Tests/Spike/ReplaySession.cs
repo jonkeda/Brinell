@@ -23,18 +23,29 @@ public sealed class ReplaySession
     private readonly List<string> _misses = [];
     private int _writes;
 
-    public ReplaySession(ReplayMode mode, string path)
+    private readonly string? _stale;
+
+    public ReplaySession(ReplayMode mode, string path, Stamp stamp)
     {
         Mode = mode;
         Path = path;
         if (mode == ReplayMode.Replay)
         {
             _recording = Recording.Load(path) ?? throw new ReplayMissException($"No recording at {path}: record the test first (BRINELL_SQL_REPLAY=Record, twice).");
+            if (_recording.Stamp?.Differences(stamp) is { Count: > 0 } differences)
+            {
+                _stale = $"Stale recording {System.IO.Path.GetFileName(path)}: re-record it (BRINELL_SQL_REPLAY=Record, twice). Changed: {string.Join("; ", differences)}.";
+            }
         }
         else
         {
-            _recording = new Recording();
+            _recording = new Recording { Stamp = stamp };
             _previous = Recording.Load(path);
+            if (_previous?.Stamp != stamp)
+            {
+                // Recorded against other migrations or versions: not the same run, so not a source of volatile values.
+                _previous = null;
+            }
         }
 
         _epochs = new int[_recording.Exchanges.Count];
@@ -96,6 +107,16 @@ public sealed class ReplaySession
     {
         lock (_gate)
         {
+            if (_stale is not null)
+            {
+                if (_misses.Count == 0)
+                {
+                    _misses.Add(_stale);
+                }
+
+                throw new ReplayMissException(_stale);
+            }
+
             var key = Statements.Normalize(live.Text);
             Dictionary<string, JsonNode?>? bound = null;
             var index = -1;
@@ -225,11 +246,44 @@ public sealed class ReplaySession
     private string Describe(Exchange live, string key)
     {
         var text = new StringBuilder($"SQL replay miss in {System.IO.Path.GetFileName(Path)} after {_writes} writes: no recorded {live.Kind} answers\n  {key}\n  with {Show(live.Parameters)}");
-        var nearest = _recording.Exchanges
-            .Where((exchange, i) => !_used[i] && Statements.Normalize(exchange.Text) == key)
-            .Select(exchange => $"#{exchange.Index} {(exchange.IsWrite ? "write" : "read")} with {Show(exchange.Parameters)}, volatile [{string.Join(", ", exchange.Volatile)}]")
-            .DefaultIfEmpty("no unused recorded command has this text");
-        return text.Append("\nNearest:\n  ").AppendJoin("\n  ", nearest).ToString();
+        var unused = _recording.Exchanges.Where((exchange, i) => !_used[i]).ToList();
+        var same = unused.Where(exchange => Statements.Normalize(exchange.Text) == key).ToList();
+        if (same.Count > 0)
+        {
+            return text.Append("\nNearest, the same text with other values:\n  ")
+                .AppendJoin("\n  ", same.Select(exchange => $"#{exchange.Index} {(exchange.IsWrite ? "write" : "read")} with {Show(exchange.Parameters)}, volatile [{string.Join(", ", exchange.Volatile)}]"))
+                .ToString();
+        }
+
+        // Another text: the unused command of the same kind and place that shares the longest start, and where they part.
+        var nearest = unused
+            .Where(exchange => exchange.Kind == live.Kind && exchange.IsWrite == live.IsWrite && _epochs[exchange.Index] == _writes)
+            .MaxBy(exchange => Common(Statements.Normalize(exchange.Text), key));
+        if (nearest is null)
+        {
+            return text.Append("\nNo recorded command is left at this point: the app sends a command it didn't send when recorded.").ToString();
+        }
+
+        var recorded = Statements.Normalize(nearest.Text);
+        var at = Common(recorded, key);
+        return text.Append($"\nNearest, #{nearest.Index}, parts at character {at}:\n  recorded ...{Around(recorded, at)}...\n  now      ...{Around(key, at)}...").ToString();
+    }
+
+    private static int Common(string left, string right)
+    {
+        var i = 0;
+        while (i < left.Length && i < right.Length && left[i] == right[i])
+        {
+            i++;
+        }
+
+        return i;
+    }
+
+    private static string Around(string text, int at)
+    {
+        var start = Math.Max(0, at - 20);
+        return text.Substring(start, Math.Min(text.Length - start, 60));
     }
 
     private static string Show(Dictionary<string, JsonNode?> parameters)

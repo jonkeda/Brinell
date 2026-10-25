@@ -1,5 +1,10 @@
 {
   "Version": 1,
+  "Stamp": {
+    "Migrations": "7F260DD0C36C",
+    "Ef": "10.0.12",
+    "SqlClient": "6.1.6"
+  },
   "Exchanges": [
     {
       "Index": 0,
@@ -384,11 +389,11 @@
       "Parameters": {
         "@p0": {
           "t": "Guid",
-          "v": "3dc005ae-397e-45bb-bd16-25a55f5e6b2b"
+          "v": "d31beaab-fad4-4499-8cb8-2d0c72621757"
         },
         "@p1": {
           "t": "DateTimeOffset",
-          "v": "2026-10-25T17:45:46.4589313\u002B01:00"
+          "v": "2026-10-25T18:06:24.5143261\u002B01:00"
         },
         "@p2": {
           "t": "String",

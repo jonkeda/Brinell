@@ -70,7 +70,7 @@ public abstract class SpikeTestBase : IAsyncLifetime
         {
             var log = new CommandLog();
             Log = log;
-            var session = Mode == ReplayMode.Off ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"));
+            var session = Mode == ReplayMode.Off ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentStamp());
             Session = session;
             _context = new BunitTestContext(new BunitTestContextOptions
             {
@@ -132,6 +132,19 @@ public abstract class SpikeTestBase : IAsyncLifetime
         page.AssertLoaded(true);
         return page;
     }
+
+    // The migrations in the app's assembly (no connection needed) and the versions that shape the SQL.
+    private static Stamp CurrentStamp()
+    {
+        using var db = new SpikeDbContext(SpikeData.Options(SpikeData.Connection));
+        var migrations = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(string.Join(";", db.Database.GetMigrations()))))[..12];
+        return new Stamp(migrations, Version(typeof(DbContext)), Version(typeof(Microsoft.Data.SqlClient.SqlConnection)));
+    }
+
+    private static string Version(Type type)
+        => (type.Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "?").Split('+')[0];
 
     // Beside the project, so recordings are kept in git: Recordings/<head>/<test>.json.
     private static string Recordings
