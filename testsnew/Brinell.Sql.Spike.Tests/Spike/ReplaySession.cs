@@ -126,23 +126,35 @@ public sealed class ReplaySession
             var key = Statements.Key(live.Text);
             Dictionary<string, JsonNode?>? bound = null;
             var index = -1;
-            for (var i = 0; i < _recording.Exchanges.Count && index < 0; i++)
+
+            // An unused exchange first; then, for a read, one already used: between two writes the same read returns the
+            // same rows, so a read repeated more often than when recorded (the browser's prerender, a page opened twice)
+            // is answered again rather than missed.
+            foreach (var reuse in (bool[])[false, true])
             {
-                var recorded = _recording.Exchanges[i];
-                if (_used[i] || recorded.Kind != live.Kind || Statements.Key(recorded.Text) != key)
+                for (var i = 0; i < _recording.Exchanges.Count && index < 0; i++)
                 {
-                    continue;
+                    var recorded = _recording.Exchanges[i];
+                    if (_used[i] != reuse || (reuse && live.IsWrite) || recorded.Kind != live.Kind || Statements.Key(recorded.Text) != key)
+                    {
+                        continue;
+                    }
+
+                    // A write is only the next write; a read only one between the same two writes.
+                    if (live.IsWrite ? !recorded.IsWrite || _epochs[i] != _writes || NextWrite() != i : recorded.IsWrite || _epochs[i] != _writes)
+                    {
+                        continue;
+                    }
+
+                    if (Matches(recorded, live, out bound))
+                    {
+                        index = i;
+                    }
                 }
 
-                // A write is only the next write; a read only one between the same two writes.
-                if (live.IsWrite ? !recorded.IsWrite || _epochs[i] != _writes || NextWrite() != i : recorded.IsWrite || _epochs[i] != _writes)
+                if (index >= 0)
                 {
-                    continue;
-                }
-
-                if (Matches(recorded, live, out bound))
-                {
-                    index = i;
+                    break;
                 }
             }
 

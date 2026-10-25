@@ -71,6 +71,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+    <!-- The SQL replay spike's browser head: the sample hosted in the test's process on Kestrel -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <!-- Serilog -->
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <!-- WebView2 (the Visual Studio extension), DI, SQLite (the Todo sample), Roslyn (the generator) -->

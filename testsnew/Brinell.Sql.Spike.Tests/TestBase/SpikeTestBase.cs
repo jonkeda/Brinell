@@ -8,6 +8,7 @@ using Brinell.Samples.Sql.App.Data;
 using Brinell.Sql.Spike.Tests.PageObjects;
 using Brinell.Sql.Spike.Tests.Spike;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Brinell.Sql.Spike.Tests.TestBase;
 
@@ -26,6 +27,7 @@ public abstract class SpikeTestBase : IAsyncLifetime
     public const string ReplayVariable = "BRINELL_SQL_REPLAY";
     private const string BunitAddress = "http://localhost";
     private IHtmlTestContext? _context;
+    private SqlSampleHost? _host;
     private TimeSpan _reset;
 
     /// <summary>The test that is running, for the attribute that brackets it.</summary>
@@ -35,12 +37,12 @@ public abstract class SpikeTestBase : IAsyncLifetime
 
     protected IHtmlTestContext Context => _context ?? throw new InvalidOperationException("Context has not been initialized.");
 
-    protected string BaseUrl => WebHeads.IsBunit ? BunitAddress : SqlSample.BaseUrl;
+    protected string BaseUrl => WebHeads.IsBunit ? BunitAddress : _host?.BaseUrl ?? SqlSample.BaseUrl;
 
-    /// <summary>The app's commands on the bUnit head; null in the browser, where the app is another process.</summary>
+    /// <summary>The app's commands; null in the browser when off, where the app is another process.</summary>
     protected CommandLog? Log { get; private set; }
 
-    /// <summary>The test's recording or replay on the bUnit head; null when off or in the browser.</summary>
+    /// <summary>The test's recording or replay; null when off.</summary>
     internal ReplaySession? Session { get; private set; }
 
     /// <summary>The five places as written for this test, with their ids.</summary>
@@ -49,7 +51,7 @@ public abstract class SpikeTestBase : IAsyncLifetime
     public virtual async Task InitializeAsync()
     {
         Current = this;
-        if (Mode == ReplayMode.Replay && WebHeads.IsBunit)
+        if (Mode == ReplayMode.Replay)
         {
             return;
         }
@@ -66,35 +68,51 @@ public abstract class SpikeTestBase : IAsyncLifetime
     /// <summary>The test <paramref name="name"/> starts: its context, and its recording or replay.</summary>
     internal async Task Begin(string name)
     {
-        if (WebHeads.IsBunit)
+        if (Mode == ReplayMode.Snapshot)
         {
-            var log = new CommandLog();
-            Log = log;
-            if (Mode == ReplayMode.Snapshot)
+            CurrentSchema();
+        }
+
+        var head = WebHeads.IsBunit ? "bunit" : "browser";
+        var log = Mode == ReplayMode.Off && !WebHeads.IsBunit ? null : new CommandLog();
+        var session = Mode is ReplayMode.Off or ReplayMode.Snapshot ? null : new ReplaySession(Mode, Path.Combine(Recordings, head, name + ".json"), CurrentSchema());
+        Log = log;
+        Session = session;
+
+        // The test's interceptors in the app's own composition: the log, and the recording or replay.
+        void Intercept(DbContextOptionsBuilder options)
+        {
+            if (log is not null)
             {
-                CurrentSchema();
+                options.AddInterceptors(log, log.Connections);
             }
 
-            var session = Mode is ReplayMode.Off or ReplayMode.Snapshot ? null : new ReplaySession(Mode, Path.Combine(Recordings, "bunit", name + ".json"), CurrentSchema());
-            Session = session;
+            if (session is not null)
+            {
+                var replay = new ReplayInterceptor(session);
+                options.AddInterceptors(replay, replay.Connections);
+                options.UseSpatialReplay();
+            }
+        }
+
+        if (WebHeads.IsBunit)
+        {
             _context = new BunitTestContext(new BunitTestContextOptions
             {
                 RootComponent = typeof(Routes),
                 StartBlank = true,
-                ConfigureServices = services => services.AddSpikeData(SpikeData.Connection, options =>
-                {
-                    options.AddInterceptors(log, log.Connections);
-                    if (session is not null)
-                    {
-                        var replay = new ReplayInterceptor(session);
-                        options.AddInterceptors(replay, replay.Connections);
-                        options.UseSpatialReplay();
-                    }
-                }),
+                ConfigureServices = services => services.AddSpikeData(SpikeData.Connection, Intercept),
             });
         }
         else
         {
+            // Off, the sample runs as its own process for the run. Otherwise a host per test in this process, so every
+            // command it sends is this test's: what the browser does reaches the session through the app's composition.
+            if (Mode != ReplayMode.Off)
+            {
+                _host = new SqlSampleHost(Intercept);
+            }
+
             _context = await BlazorTestContext.CreateAsync(new HtmlTestContextOptions
             {
                 BaseUrl = BaseUrl,
@@ -111,6 +129,11 @@ public abstract class SpikeTestBase : IAsyncLifetime
         if (_context is IAsyncDisposable disposable)
         {
             await disposable.DisposeAsync();
+        }
+
+        if (_host is not null)
+        {
+            await _host.DisposeAsync();
         }
 
         if (Session is { } session)
@@ -179,6 +202,33 @@ public abstract class SpikeTestBase : IAsyncLifetime
 
             return Path.Combine(folder?.FullName ?? throw new DirectoryNotFoundException("The spike's project folder"), "Recordings");
         }
+    }
+}
+
+/// <summary>
+/// The sample hosted in the test's process on Kestrel (a free port), one per test, with the test's interceptors added to
+/// its data composition; it doesn't migrate, since the fixture does and replay has no database.
+/// </summary>
+internal sealed class SqlSampleHost : Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>
+{
+    private readonly Action<DbContextOptionsBuilder> _intercept;
+
+    public SqlSampleHost(Action<DbContextOptionsBuilder> intercept)
+    {
+        _intercept = intercept;
+        UseKestrel(0);
+        StartServer();
+        var addresses = Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>().Features
+            .Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()!.Addresses;
+        BaseUrl = addresses.First().Replace("[::]", "localhost", StringComparison.Ordinal).Replace("0.0.0.0", "localhost", StringComparison.Ordinal).TrimEnd('/');
+    }
+
+    public string BaseUrl { get; }
+
+    protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
+    {
+        builder.UseSetting("Spike:Migrate", "false");
+        builder.ConfigureServices(services => services.ConfigureDbContext<SpikeDbContext>(_intercept));
     }
 }
 

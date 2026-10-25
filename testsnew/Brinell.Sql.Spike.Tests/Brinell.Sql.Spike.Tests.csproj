@@ -13,6 +13,10 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Html.Bunit\Brinell.Html.Bunit.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
   <!-- Started by the tests in the browser (TestBase/SqlSample); rendered by bUnit on that head. -->
   <ItemGroup>
     <ProjectReference Include="..\..\samples\Brinell.Samples.Sql.App\Brinell.Samples.Sql.App.csproj" />

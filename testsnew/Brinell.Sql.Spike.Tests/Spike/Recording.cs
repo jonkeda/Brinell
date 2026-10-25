@@ -142,23 +142,21 @@ public sealed class Recording
 
     /// <summary>
     /// Marks as volatile every parameter whose value differs from <paramref name="previous"/>'s, exchange by exchange:
-    /// recording twice finds the GUIDs, clocks and ids nobody configures. Throws when the two runs sent different commands.
+    /// recording twice finds the GUIDs, clocks and ids nobody configures. Throws when a command has no counterpart: the
+    /// two runs did different things.
     /// </summary>
     public void MarkVolatile(Recording previous)
     {
-        if (previous.Exchanges.Count != Exchanges.Count)
-        {
-            throw new InvalidOperationException($"The two recordings sent {previous.Exchanges.Count} and {Exchanges.Count} commands: not the same run.");
-        }
-
         // Paired as replay matches: the same text, its n-th time between the same two writes. Reads between two writes
-        // may come in another order each run (on bUnit the start page's query races the page navigated to).
+        // may come in another order each run (on bUnit the start page's query races the page navigated to), and in the
+        // browser as often as prerendering and page loads make them: a repeat beyond the other run's count is paired with
+        // its last one, as replay answers it.
         var earlier = Keys(previous.Exchanges, out _);
         Keys(Exchanges, out var keys);
         for (var i = 0; i < Exchanges.Count; i++)
         {
             var now = Exchanges[i];
-            if (!earlier.TryGetValue(keys[i], out var index))
+            if (!Counterpart(earlier, keys[i], out var index))
             {
                 throw new InvalidOperationException($"Command {i} has no counterpart in the other recording:\n{now.Text}");
             }
@@ -169,6 +167,22 @@ public sealed class Recording
                 .Union(before.Volatile)
                 .Order(StringComparer.Ordinal)];
         }
+    }
+
+    // The other recording's exchange for a key: its n-th time, or the last time before n it was sent.
+    private static bool Counterpart(Dictionary<string, int> keys, string key, out int index)
+    {
+        var cut = key.LastIndexOf('|');
+        for (var occurrence = int.Parse(key[(cut + 1)..], System.Globalization.CultureInfo.InvariantCulture); occurrence > 0; occurrence--)
+        {
+            if (keys.TryGetValue($"{key[..cut]}|{occurrence}", out index))
+            {
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
     }
 
     // Each exchange's key: the writes before it, its text, and which time it is that text since the last write.

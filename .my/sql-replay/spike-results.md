@@ -2,7 +2,7 @@
 
 The spike of [plan.md](plan.md), step 0. In progress: the spike app and its suite (0.1, 0.2), Todo.Web
 on bUnit (0.3), the measurement (0.4), replay with no database (P2), 20 replays on bUnit (P3a) and
-churn (0.5, P4) are done. The browser's determinism (P3b) is not started.
+churn (0.5, P4) and the browser's determinism (P3b) are done.
 
 ## The outcome so far
 
@@ -276,3 +276,32 @@ What it doesn't cover yet:
 - **Reference data** written by a script isn't in the hash: replay gives back the rows it recorded.
 - **Unqualified names** in a body are taken as `dbo`, which is wrong for a schema with users'
   default schemas.
+
+## Determinism in the browser (P3b)
+
+P3b passes: 20 replay runs in the browser with no database, the five scenarios each, no miss.
+
+A host per test, in the test's process: the sample hosted by `WebApplicationFactory` on Kestrel at
+a free port (.NET 10's `UseKestrel`), the test's interceptors added to its data composition with
+`ConfigureDbContext`. Every command the host sends is that test's, whatever the browser, the
+circuit or prerendering do; no header or `AsyncLocal` is needed. The sample needed two things: a
+public `Program`, and a setting to skip its startup migration (`Spike:Migrate`), since the fixture
+migrates and replay has no database. Off, the browser head still runs the sample as its own
+process, as before.
+
+What the browser changed:
+
+- **The number of reads varies between runs.** The list loads three or four times per page open
+  (the page the context opens first, prerendering, the interactive render), and two record runs
+  of the same test sent 9 and 7 commands, 12 and 10. Occurrence keys alone would miss whenever a
+  run reads once more than the recording.
+- **The fix: a read may be answered again.** Between two writes the same read with the same
+  parameters returns the same rows, so a repeat beyond the recorded count gets the recorded
+  answer again. Writes stay strictly in order. Recording twice pairs an extra repeat with the
+  last of its kind. bUnit replay still passes 10 of 10 with the change.
+- **Recordings are per head**, as planned: `Recordings/browser/` holds 6 to 11 exchanges per
+  test where `Recordings/bunit/` holds 2 to 5.
+
+Time: replay ran 8 to 9 s per run of five tests, the real database 9 s in the same session. In
+the browser the browser dominates, so replay saves little for a small app; its gain there is
+not having a database, not speed.

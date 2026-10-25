@@ -1,8 +1,8 @@
 # SQL replay: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.5 done; P2, P3a pass, P4 fails (8 of 10 changes re-record
-every recording; see [spike-results.md](spike-results.md)); then columns matched as a set, no start-page
-render on bUnit, the stamp per table and the schema snapshot with procedures and views (built); next P3b (the browser), then the proposal amended. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
+Agent document. Builds [proposal.md](proposal.md). Status: step 0 done: P2, P3a, P3b pass; P4 failed and was answered (columns as a set, no start-page
+render, the stamp per object from a schema snapshot); see [spike-results.md](spike-results.md). Next: the
+proposal amended for a legacy system. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
