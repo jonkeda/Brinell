@@ -32,7 +32,7 @@ where not.
 | 4 | Fewer fights in PLT.35.4 (done: 10) | 15 to 20 s off the slowest collection | S | the owner: the scenario |
 | 5 | A warm host between runs | ~10 to 20 s off every small run | M | done by Claude |
 | 6 | Measure `Tomorrow.Data.Tests`' database setup | Unknown until measured; the template may apply | S, then M | done by Claude |
-| 7 | A phrase index and a parse cache, with a large-suite benchmark | ~1 to 3 s now; keeps a very large suite linear | M | done by Claude |
+| 7 | A phrase index and a parse cache, with a large-suite benchmark (done) | ~1 to 3 s now; keeps a very large suite linear | M | done by Claude |
 | 8 | Cheaper browser calls (the 2026-10-21 review's Html items left) | ~20 to 30 % of the browser's 337 s of calls | M to L | done by Claude |
 | 9 | Squash the six migrations into one `Initial` | 1 to 2 s, fresh builds only | S | the owner: the dev database's history |
 | 10 | Scenario-scoped settings, so `@own-database` can run in parallel | ~33 s bUnit, ~55 s browser | L | the owner: a game design change |
@@ -259,3 +259,20 @@ its own.
   once in two runs; its cause is not found. With the panel fixed, two full browser runs passed 165 of 165 (2 m 39 s and
   2 m 35 s, against about 2 m 44 s before). The in-browser wait goes to Tomorrow with the next pointer bump.
 - Stopping a test run leaves the sample app it started running, holding its `bin`: the next build fails or waits.
+
+### Item 7, done (2026-10-25)
+
+- **The benchmark:** `BddLargeSuiteBenchmarkTests`, run with `BRINELL_BENCHMARK=1` (skipped otherwise): 5,000 phrases
+  shaped as Tomorrow's, 10,000 steps, and one file of 200 scenarios read once per scenario.
+- **The phrase index:** `BddCommandCatalog` keys each pattern by its keyword and its first one or two whole literal words
+  (`IndexKey`); a step tries the buckets its own first one and two words name, and the phrases that begin with a
+  parameter, in registration order. Two words because by the first alone "the" holds 44% of Tomorrow's 1,105 phrases and
+  "I" 35%; by two the largest bucket ("I open") holds 62. `BddCommandCatalogIndexTests` checks the index finds what trying
+  every pattern finds, in order, on awkward phrases and on the benchmark's catalog.
+- **The parse cache:** `BddMarkdownParser.ParseFile` keeps one result per file while its last write and length stay; the
+  model is immutable records, so it is shared.
+- **Numbers:** matching 2.47 s to 0.84 s (247 to 84 µs a step); 200 reads of one file 300 to 64 ms; registering 5,000
+  phrases 48 to 80 ms. What is left in matching is the parameter-first bucket every step tries (5% of the synthetic
+  phrases, 2% of Tomorrow's). For Tomorrow's size this is the 1 to 3 s the plan named; item 11 stays not needed.
+- Green: Bdd 260, Uat 233, Workspace 69, Blazor and Html suites and Todo web on both heads, Todo web UAT in the browser.
+  Todo web UAT on bUnit fails as widely before the change: that suite was never made to run there.

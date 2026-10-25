@@ -5,6 +5,12 @@ namespace Brinell.Bdd;
 public sealed class BddCommandCatalog
 {
     private readonly List<BddCommandPattern> _patterns = [];
+
+    // The patterns by keyword and their leading whole words (BddCommandPattern.IndexKey): a step tries only those its own
+    // first one and two words name, and those that begin with a parameter, not every pattern of its keyword (next-plan
+    // item 7). Each list in registration order, by the pattern's place in _patterns.
+    private readonly Dictionary<(BddEffectiveStepKeyword Keyword, string Words), List<int>> _index = [];
+
     private readonly List<BddUnmatchableDeclaration> _unmatchable = [];
     private readonly List<BddHook> _hooks = [];
 
@@ -62,6 +68,13 @@ public sealed class BddCommandCatalog
             ControlVerb = controlVerb,
             Namespace = BddNamespaces.Normalize(phraseNamespace),
         };
+        var key = (keyword, pattern.IndexKey);
+        if (!_index.TryGetValue(key, out var bucket))
+        {
+            _index[key] = bucket = [];
+        }
+
+        bucket.Add(_patterns.Count);
         _patterns.Add(pattern);
         return pattern;
     }
@@ -75,13 +88,29 @@ public sealed class BddCommandCatalog
 
     public IReadOnlyList<BddCommandMatch> Match(BddStep step) => Select(Candidates(step));
 
-    /// <summary>Every pattern the step's text fits, before <see cref="Select"/> picks among them.</summary>
+    /// <summary>
+    /// Every pattern the step's text fits, in registration order, before <see cref="Select"/> picks among them. Only the
+    /// patterns its first words could fit are tried: the same matches as trying them all.
+    /// </summary>
     public IReadOnlyList<BddCommandMatch> Candidates(BddStep step)
-        => _patterns
-            .Where(x => x.Keyword == step.EffectiveKeyword)
-            .Select(x => x.TryMatch(step))
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        var (one, two) = BddCommandPattern.LeadingWords(step.Text);
+        var tried = new List<int>();
+        foreach (var words in (ReadOnlySpan<string?>)[string.Empty, one, two])
+        {
+            if (words is not null && _index.TryGetValue((step.EffectiveKeyword, words), out var bucket))
+            {
+                tried.AddRange(bucket);
+            }
+        }
+
+        tried.Sort();
+        return tried
+            .Select(at => _patterns[at].TryMatch(step))
             .OfType<BddCommandMatch>()
             .ToArray();
+    }
 
     /// <summary>
     /// The matches a step binds to: exact phrases before parameterised ones, then the most
@@ -136,9 +165,77 @@ public sealed class BddCommandPattern
         (_regex, _parameterNames) = Compile(Phrase);
         IsExact = _parameterNames.Count == 0;
         Specificity = CalculateSpecificity(Phrase);
+        IndexKey = KeyOf(Phrase);
     }
 
     public BddEffectiveStepKeyword Keyword { get; }
+
+    /// <summary>
+    /// The catalog's index key: the phrase's first one or two whole literal words, a space between; empty for a phrase that
+    /// begins with a parameter. A step this pattern matches begins with exactly these words, since the regex is
+    /// <c>^</c>, the literal text and <c>\s+</c> between words.
+    /// </summary>
+    public string IndexKey { get; }
+
+    /// <summary>
+    /// A step's first word and its first two (a space between), split on whitespace as a phrase's <c>\s+</c> matches it;
+    /// null where it has none, or where it begins with whitespace, which only a phrase that begins with a parameter matches.
+    /// </summary>
+    public static (string? One, string? Two) LeadingWords(string text)
+    {
+        if (text.Length == 0 || char.IsWhiteSpace(text[0]))
+        {
+            return (null, null);
+        }
+
+        var first = EndOfWord(text, 0);
+        var one = text[..first];
+        var second = first;
+        while (second < text.Length && char.IsWhiteSpace(text[second]))
+        {
+            second++;
+        }
+
+        return second < text.Length ? (one, $"{one} {text[second..EndOfWord(text, second)]}") : (one, null);
+    }
+
+    private static int EndOfWord(string text, int from)
+    {
+        while (from < text.Length && !char.IsWhiteSpace(text[from]))
+        {
+            from++;
+        }
+
+        return from;
+    }
+
+    // A word is whole when whitespace follows it in the phrase, or when it ends a phrase with no parameter: "I open {page}"
+    // is "I open", "I{x}" begins with a parameter as far as the index knows, "Done" is "Done".
+    private static string KeyOf(string phrase)
+    {
+        var parameter = Regex.Match(phrase, @"\{[A-Za-z][A-Za-z0-9_-]*\}");
+        var literal = parameter.Success ? phrase[..parameter.Index] : phrase;
+        var words = new List<string>(2);
+        var at = 0;
+        while (words.Count < 2 && at < literal.Length && !char.IsWhiteSpace(literal[at]))
+        {
+            var end = EndOfWord(literal, at);
+            var whole = end < literal.Length || !parameter.Success;
+            if (!whole)
+            {
+                break;
+            }
+
+            words.Add(literal[at..end]);
+            at = end;
+            while (at < literal.Length && char.IsWhiteSpace(literal[at]))
+            {
+                at++;
+            }
+        }
+
+        return string.Join(' ', words);
+    }
 
     public string Phrase { get; }
 

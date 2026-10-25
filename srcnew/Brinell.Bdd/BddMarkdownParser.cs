@@ -19,11 +19,30 @@ public static partial class BddMarkdownParser
         return parser.Parse();
     }
 
+    /// <summary>
+    /// Parses a feature file: once while it stays as it is (its last write and length), since a suite reads each file once
+    /// per scenario and its lanes and skips again (next-plan item 7). The result is immutable, so it is shared; a file that
+    /// changed is parsed anew, which keeps an IDE's and a warm runner's reads current.
+    /// </summary>
     public static BddParseResult ParseFile(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        return Parse(File.ReadAllText(filePath), filePath);
+        var full = Path.GetFullPath(filePath);
+        var info = new FileInfo(full);
+        var stamp = (info.LastWriteTimeUtc.Ticks, info.Length);
+        if (Parsed.TryGetValue(full, out var kept) && kept.Stamp == stamp && kept.Path == filePath)
+        {
+            return kept.Result;
+        }
+
+        var result = Parse(File.ReadAllText(filePath), filePath);
+        Parsed[full] = (stamp, filePath, result);
+        return result;
     }
+
+    // One parse per file, by its full path; the path as asked, since a result's locations carry it.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ((long Ticks, long Length) Stamp, string Path, BddParseResult Result)> Parsed =
+        new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Parses a <c>*.steps.md</c> file: one <c># Steps:</c> heading and only step sections.</summary>
     /// <param name="markdown">The file's text.</param>
