@@ -46,8 +46,9 @@
 
   <!-- The recorder and voice for Record, which a net10.0-windows suite cannot reference (they need
        the Windows 10 SDK's projections): built here, and copied into recorders\ beside the server,
-       which the recording run is pointed at (BRINELL_RECORDERS). -->
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+       which the recording run is pointed at (BRINELL_RECORDERS). -p:BrinellRecorders=false leaves them out, for a
+       build that only selects or checks (Tomorrow's tools/Select-Tests.ps1, into its own artifacts folder). -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' And '$(BrinellRecorders)' != 'false'">
     <ProjectReference Include="..\..\srcnew\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows10.0.19041.0" Private="false" />
   </ItemGroup>
 
@@ -59,11 +60,11 @@
     <RecorderFile Include="$(RecordersOutput)Brinell.Narrator.Windows.dll;$(RecordersOutput)Microsoft.Windows.SDK.NET.dll;$(RecordersOutput)WinRT.Runtime.dll" />
   </ItemGroup>
 
-  <Target Name="CopyRecorders" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+  <Target Name="CopyRecorders" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT' And '$(BrinellRecorders)' != 'false'">
     <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(OutDir)recorders" SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="PublishRecorders" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT'">
+  <Target Name="PublishRecorders" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT' And '$(BrinellRecorders)' != 'false'">
     <Copy SourceFiles="@(RecorderFile)" DestinationFolder="$(PublishDir)recorders" SkipUnchangedFiles="true" />
   </Target>
 
