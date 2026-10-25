@@ -2,7 +2,7 @@
 
 Agent document. Builds [proposal.md](proposal.md). Status: step 0 in progress: 0.1 to 0.5 done; P2, P3a pass, P4 fails (8 of 10 changes re-record
 every recording; see [spike-results.md](spike-results.md)); then columns matched as a set, no start-page
-render on bUnit and the stamp per table (built); next P3b (the browser), then the proposal amended. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
+render on bUnit, the stamp per table and the schema snapshot with procedures and views (built); next P3b (the browser), then the proposal amended. Steps 1 to 8 are an outline, detailed after the spike reports. Each step ends green:
 `dotnet build Brinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Brinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 

@@ -238,24 +238,41 @@ and SqlClient's versions stay in the stamp for every recording. The sample has a
 Before, each of the three made all five stale. On a schema of 2000 tables this is the
 difference that counts: a migration stales only the tests that touch its tables.
 
+## The schema from a snapshot, procedures and views included
+
+For a legacy system the schema now comes from a checked-in snapshot, not the EF model. Recording
+reads the database's tables, views, procedures and functions into `Recordings/schema.json`: each
+with a hash (columns, indexes and foreign keys for a table or view; the body for a view,
+procedure or function) and what its body references, from `sys.sql_expression_dependencies`.
+Replay reads only the file. A recording's stamp lists the objects its commands name, procedures
+after `EXEC` included, and follows their references through views and procedures to the tables.
+After a schema change, `BRINELL_SQL_REPLAY=Snapshot` rewrites the snapshot without re-recording,
+and the changed file shows in the diff.
+
+The sample has a view, `dbo.KindCounts`, read by the list page, and a procedure, `dbo.VisitCount`,
+called by the detail page. The detail tests' stamps reach `dbo.visits` only through the procedure;
+the list tests' reach `dbo.places` through the view as well as directly.
+
+Each check ran on a fresh database of its own, the snapshot rewritten, then replayed with none:
+
+| Change | Stale |
+| --- | --- |
+| Nothing (a fresh database) | 0 of 5: the snapshot comes out the same |
+| The procedure's body | 2 of 5, the detail tests: "dbo.visitcount changed" |
+| A column on `Visits`, by plain SQL | 2 of 5: "dbo.visits changed", reached only through the procedure |
+| The view's body | 4 of 5, the tests that open the list: "dbo.kindcounts changed" |
+| A new table nothing reads | 0 of 5 |
+
+Two of these the EF-model stamp couldn't have seen: a column added by plain SQL, and a procedure's
+body. A command of type `StoredProcedure`, as ADO.NET code calls one, is kept as its `EXEC`, so it
+is keyed and stamped the same way; EF never sends one, so that path is written but not run here.
+
 What it doesn't cover yet:
 
-- **Stored procedures and views name no table** in the command text. Their tables would come
-  from the database's dependencies (`sys.sql_expression_dependencies`), read when recording.
-- **A system without EF** has no model to hash. Its schema would come from a checked-in snapshot
-  (a SQL project, or a schema file written at recording), hashed the same way per table.
-- **Data changed by a migration** (seed rows) isn't in the hash: the test's own data is the
-  fixture's, but reference data a migration writes would replay as it was recorded.
-
-## What P4 changes before step 2
-
-- **Match a query's columns as a set.** Compare `SELECT` lists without their order and give the
-  recorded columns back in the order asked for. That takes change 4's kind of miss away, and needs
-  a light parse of the projection.
-- **No start-page render on bUnit.** The bUnit context renders its root at the start address before
-  the first navigation; skipping that render when a navigation follows at once takes the list
-  query out of every recording, and helps the bUnit head's speed too.
-- **Say the cost plainly in the proposal.** With those two, changes 4 and 6 would hit one or two
-  recordings instead of five; but migrations and upgrades still re-record everything. Replay pays
-  where the schema is quiet and the database is expensive to have, not where the model changes
-  every week.
+- **Dynamic SQL** inside a procedure (`sp_executesql`, `EXEC (@sql)`) has no dependencies to read;
+  such a procedure would need its tables listed by hand.
+- **Triggers** change what a write does but aren't in the snapshot; a trigger's body would belong
+  in its table's hash.
+- **Reference data** written by a script isn't in the hash: replay gives back the rows it recorded.
+- **Unqualified names** in a body are taken as `dbo`, which is wrong for a schema with users'
+  default schemas.
