@@ -118,17 +118,23 @@ public sealed class BunitHtmlElement : IHtmlElement
     #region Actions
 
     // A browser's click: the handler if there is one; else a submit button submits its form and a link
-    // follows its href, which Blazor's script does in a browser and nothing does here.
+    // follows its href, which Blazor's script does in a browser and nothing does here. A disabled control
+    // gets no click, as in a browser.
     public void Click()
     {
         var node = Node;
+        if (node.HasAttribute("disabled"))
+        {
+            return;
+        }
+
         if (Handles(node, "onclick"))
         {
-            node.Click();
+            Raise(node, "onclick", new MouseEventArgs { Type = "click", Detail = 1 });
         }
-        else if (node is IHtmlButtonElement { Type: "submit" or "" } or IHtmlInputElement { Type: "submit" } && node.Closest("form") is { } form && Handles(form, "onsubmit"))
+        else if (node is IHtmlButtonElement { Type: "submit" or "" } or IHtmlInputElement { Type: "submit" } && node.Closest("form") is { } form)
         {
-            form.Submit();
+            Raise(form, "onsubmit", EventArgs.Empty);
         }
         else if (node.Closest("a") is { } link && link.GetAttribute("href") is { Length: > 0 } href && !href.StartsWith('#'))
         {
@@ -138,47 +144,37 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     public void ClickAt(double x, double y) => throw new BrowserOnlyException(nameof(ClickAt));
 
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Fill(InputValue + text);
+    // Keys: each character's key events where the element listens, then the value as Fill sets it.
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
+    {
+        if (method == TextInputMethod.Keys)
+        {
+            foreach (var character in text)
+            {
+                var key = character.ToString();
+                Raise(Node, "onkeydown", new KeyboardEventArgs { Key = key, Type = "keydown" });
+                Raise(Node, "onkeyup", new KeyboardEventArgs { Key = key, Type = "keyup" });
+            }
+        }
+
+        Fill(InputValue + text);
+    }
 
     public void PressKey(string key)
     {
-        var node = Node;
-        var args = new KeyboardEventArgs { Key = key, Code = key, Type = "keydown" };
-        if (Handles(node, "onkeydown"))
+        Raise(Node, "onkeydown", new KeyboardEventArgs { Key = key, Code = key, Type = "keydown" });
+        Raise(Node, "onkeyup", new KeyboardEventArgs { Key = key, Code = key, Type = "keyup" });
+        if (key == "Enter" && Node is IHtmlInputElement && Node.Closest("form") is { } form)
         {
-            node.KeyDown(args);
-        }
-
-        if (Handles(node, "onkeyup"))
-        {
-            node.KeyUp(new KeyboardEventArgs { Key = key, Code = key, Type = "keyup" });
-        }
-
-        if (key == "Enter" && node.Closest("form") is { } form && Handles(form, "onsubmit"))
-        {
-            form.Submit();
+            Raise(form, "onsubmit", EventArgs.Empty);
         }
     }
 
     public void Clear() => Fill(string.Empty);
 
-    public void DoubleClick()
-    {
-        var node = Node;
-        if (Handles(node, "ondblclick"))
-        {
-            node.DoubleClick();
-        }
-    }
+    public void DoubleClick() => Raise(Node, "ondblclick", new MouseEventArgs { Type = "dblclick", Detail = 2 });
 
-    public void RightClick()
-    {
-        var node = Node;
-        if (Handles(node, "oncontextmenu"))
-        {
-            node.ContextMenu();
-        }
-    }
+    public void RightClick() => Raise(Node, "oncontextmenu", new MouseEventArgs { Type = "contextmenu", Button = 2 });
 
     public void Hover() => throw new BrowserOnlyException(nameof(Hover));
 
@@ -191,13 +187,10 @@ public sealed class BunitHtmlElement : IHtmlElement
 
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => throw new BrowserOnlyException(nameof(Swipe));
 
-    public void Submit()
-    {
-        var form = Node.Closest("form") ?? Node;
-        form.Submit();
-    }
+    public void Submit() => Raise(Node.Closest("form") ?? Node, "onsubmit", EventArgs.Empty);
 
-    // What @bind sees: the input event where it listens to one, then the change event.
+    // What @bind sees: the input event where it listens to one, then the change event; an element that
+    // listens to neither just holds the value.
     public void Fill(string value)
     {
         var node = Node;
@@ -205,12 +198,12 @@ public sealed class BunitHtmlElement : IHtmlElement
         var change = Handles(node, "onchange");
         if (input)
         {
-            node.Input(new ChangeEventArgs { Value = value });
+            Raise(node, "oninput", new ChangeEventArgs { Value = value });
         }
 
         if (change)
         {
-            Node.Change(new ChangeEventArgs { Value = value });
+            Raise(Node, "onchange", new ChangeEventArgs { Value = value });
         }
 
         if (!input && !change)
@@ -219,31 +212,17 @@ public sealed class BunitHtmlElement : IHtmlElement
         }
     }
 
-    public void SelectOption(string value) => Node.Change(new ChangeEventArgs { Value = value });
+    public void SelectOption(string value) => Raise(Node, "onchange", new ChangeEventArgs { Value = value });
 
-    public void SelectOption(string[] values) => Node.Change(new ChangeEventArgs { Value = values });
+    public void SelectOption(string[] values) => Raise(Node, "onchange", new ChangeEventArgs { Value = values });
 
     public void Check() => SetChecked(true);
 
     public void Uncheck() => SetChecked(false);
 
-    public void Focus()
-    {
-        var node = Node;
-        if (Handles(node, "onfocus"))
-        {
-            node.Focus();
-        }
-    }
+    public void Focus() => Raise(Node, "onfocus", new FocusEventArgs { Type = "focus" });
 
-    public void Blur()
-    {
-        var node = Node;
-        if (Handles(node, "onblur"))
-        {
-            node.Blur();
-        }
-    }
+    public void Blur() => Raise(Node, "onblur", new FocusEventArgs { Type = "blur" });
 
     public void Evaluate(string expression) => throw new BrowserOnlyException(nameof(Evaluate));
 
@@ -277,19 +256,40 @@ public sealed class BunitHtmlElement : IHtmlElement
     private void SetChecked(bool value)
     {
         var node = Node;
-        if (IsChecked == value)
+        if (IsChecked == value || node.HasAttribute("disabled"))
         {
             return;
         }
 
         if (Handles(node, "onchange"))
         {
-            node.Change(new ChangeEventArgs { Value = value });
+            Raise(node, "onchange", new ChangeEventArgs { Value = value });
         }
-        else if (Handles(node, "onclick"))
+        else
         {
-            node.Click();
+            Raise(node, "onclick", new MouseEventArgs { Type = "click", Detail = 1 });
         }
+    }
+
+    // One event, where the element listens to it. A handler that throws is the app failing, as a
+    // browser's circuit ends on it: the call ends at once rather than trying the event again.
+    private void Raise(IElement node, string eventName, EventArgs args)
+    {
+        if (!Handles(node, eventName))
+        {
+            return;
+        }
+
+        try
+        {
+            node.TriggerEvent(eventName, args);
+        }
+        catch (Exception error) when (error is not BrinellException)
+        {
+            throw BunitTestContext.HandlerFailed(eventName, error);
+        }
+
+        _context.ThrowIfAppFailed();
     }
 
     // bUnit writes a handled event as a blazor:on… attribute on the element.

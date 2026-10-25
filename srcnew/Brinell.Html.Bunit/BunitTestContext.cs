@@ -68,7 +68,11 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     private NavigationManager Navigation => _bunit.Services.GetRequiredService<NavigationManager>();
 
-    public ScopeReadiness ProbeReadiness() => ScopeReadiness.Ready(nameof(BunitTestContext));
+    public ScopeReadiness ProbeReadiness()
+    {
+        ThrowIfAppFailed();
+        return ScopeReadiness.Ready(nameof(BunitTestContext));
+    }
 
     public bool WaitReady(int? timeoutMs = null) => ProbeReadiness().IsReady;
 
@@ -138,7 +142,24 @@ public sealed class BunitTestContext : IHtmlTestContext, IHtmlPageProbe, IAsyncD
 
     internal IEnumerable<IElement> Nodes() => _root.Nodes.OfType<IElement>();
 
-    internal IReadOnlyList<IElement> Select(Locator locator) => BunitLocators.FindAll(css => _root.Nodes.QuerySelectorAll(css), locator);
+    internal IReadOnlyList<IElement> Select(Locator locator)
+    {
+        ThrowIfAppFailed();
+        return BunitLocators.FindAll(css => _root.Nodes.QuerySelectorAll(css), locator);
+    }
+
+    // A handler that threw after its first await reaches bUnit's renderer, not the event that raised it:
+    // the next look at the page reports it.
+    internal void ThrowIfAppFailed()
+    {
+        if (_bunit.Renderer.UnhandledException is { IsCompleted: true } failed)
+        {
+            throw HandlerFailed("a handler", failed.Result);
+        }
+    }
+
+    internal static AppUnavailableException HandlerFailed(string handler, Exception error)
+        => new($"the page's {handler} threw {error.GetType().Name}: {error.Message} (in a browser the circuit ends here).", error);
 
     public void Dispose() => _bunit.Dispose();
 

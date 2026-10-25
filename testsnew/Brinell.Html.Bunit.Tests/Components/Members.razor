@@ -1,0 +1,93 @@
+@* One element per driver member (.my/bunit/plan.md step 2); each echoes what reached it. *@
+<input data-testid="name" @bind="name" />
+<span data-testid="name-echo">@name</span>
+
+<input data-testid="live" @bind="live" @bind:event="oninput" />
+<span data-testid="live-echo">@live</span>
+
+<input data-testid="plain" value="first" />
+
+<textarea data-testid="notes" @bind="notes"></textarea>
+<span data-testid="notes-echo">@notes</span>
+
+<input type="checkbox" data-testid="agree" @bind="agree" />
+<span data-testid="agree-echo">@agree</span>
+
+<input type="checkbox" data-testid="tick" checked="@tick" @onclick="() => tick = !tick" />
+<span data-testid="tick-echo">@tick</span>
+
+<select data-testid="colour" @bind="colour">
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+</select>
+<span data-testid="colour-echo">@colour</span>
+
+<select data-testid="sizes" multiple @onchange="Sizes">
+    <option value="s">S</option>
+    <option value="m">M</option>
+    <option value="l">L</option>
+</select>
+<span data-testid="sizes-echo">@string.Join(",", sizes)</span>
+
+<button data-testid="off" disabled @onclick="() => offClicks++">Off</button>
+<span data-testid="off-echo">@offClicks</span>
+
+<div data-testid="pointer" @ondblclick="Double" @oncontextmenu="Right">Pointer</div>
+<span data-testid="pointer-echo">@pointer</span>
+
+<input data-testid="keys" @onkeydown="e => keys += e.Key" @onfocus="FocusIn" @onblur="FocusOut" />
+<span data-testid="keys-echo">@keys</span>
+<span data-testid="focus-echo">@focus</span>
+
+<form data-testid="form" @onsubmit="() => submitted++">
+    <input data-testid="form-field" />
+    <button data-testid="form-submit">Send</button>
+</form>
+<span data-testid="submit-echo">@submitted</span>
+
+<a data-testid="link" href="/elsewhere">Elsewhere</a>
+
+<div data-testid="hidden" hidden>Hidden</div>
+<div style="display: none"><span data-testid="hidden-child">Hidden child</span></div>
+<div data-testid="invisible" style="visibility:hidden">Invisible</div>
+
+<ul data-testid="list">
+    <li class="item first" id="one" name="one" data-automation-id="auto-one">Apple pie</li>
+    <li class="item">Banana <b>split</b></li>
+</ul>
+
+<button data-testid="throws" @onclick="Throws">Throws</button>
+<button data-testid="throws-later" @onclick="ThrowsLater">Throws later</button>
+
+@code {
+    private string name = string.Empty;
+    private string live = string.Empty;
+    private string notes = string.Empty;
+    private bool agree;
+    private bool tick;
+    private string colour = "red";
+    private string[] sizes = [];
+    private int offClicks;
+    private string pointer = string.Empty;
+    private string keys = string.Empty;
+    private string focus = string.Empty;
+    private int submitted;
+
+    private void Double() => pointer = "double";
+
+    private void Right() => pointer = "right";
+
+    private void FocusIn() => focus = "in";
+
+    private void FocusOut() => focus = "out";
+
+    private void Sizes(ChangeEventArgs e) => sizes = e.Value as string[] ?? [];
+
+    private void Throws() => throw new InvalidOperationException("the handler broke");
+
+    private async Task ThrowsLater()
+    {
+        await Task.Delay(50);
+        throw new InvalidOperationException("the handler broke later");
+    }
+}

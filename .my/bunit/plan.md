@@ -1,6 +1,6 @@
 # bUnit head: development plan
 
-Agent document. Builds [proposal.md](proposal.md). Status: step 1 (the spike) done, go; step 2 next. Each step ends
+Agent document. Builds [proposal.md](proposal.md). Status: steps 1 (the spike) and 2 (the driver) done; step 3 next. Each step ends
 green: `dotnet build Brinell.sln -p:NuGetAudit=false`, its own unit tests, and the Blazor suite on
 every head the step touches.
 
@@ -178,6 +178,45 @@ Found, for the next steps:
 - **The UAT scenarios did not run on bUnit:** `Uat/BlazorUatFixture` still makes a browser; step 4.
 - **The two `Directory.Packages.props`** (root, `srcnew`) both carry `bunit`; `Brinell.Html.Bunit`
   targets `net10.0` only.
+
+## Step 2 results
+
+2026-10-25, one run each.
+
+| Run | Result |
+| --- | --- |
+| `Brinell.Html.Bunit.Tests` | 54 of 54 in 0.54 s: `MemberTests` (49, a test per member or pattern of the step 2 table) and `SpikeTests` (5) |
+| `Brinell.Blazor.UITests` controls and pages, `BRINELL_HEAD=bunit` | 33 of 33 in 0.43 s |
+| `Brinell.Blazor.UITests`, the browser head, whole suite | 35 of 35 in 44 s |
+| Unit suites over the changed `Poller` | Core 51, Html 74, Blazor 173, MAUI 210 (1 skipped), native Android 69: all green |
+| `dotnet build Brinell.sln -p:NuGetAudit=false` | Every project compiled (7 m 32 s); the only errors were copies into `tools/Brinell.Cli/bin`, locked by nine running `brinell` MCP server processes, left running |
+
+What changed:
+
+- **Browser-only ends the call at once.** `Brinell.Core.Exceptions.IEndsCall`, a marker a driver puts on
+  its own errors; `Poller.IsFatal` (and so `Confirmer`) treats it as it treats `AppUnavailableException`.
+  `BrowserOnlyException` carries it. `BrowserOnly_InAControlCall_EndsTheCallAtOnce`: a `Hover` with a 3 s
+  budget fails under 1 s.
+- **A handler that throws is the app failing.** Every event goes through `BunitHtmlElement.Raise`: only
+  where the element listens (`blazor:on…`), bUnit's exception turned into `AppUnavailableException`
+  ("the page's onclick threw …; in a browser the circuit ends here"), so the call ends instead of
+  clicking again. A throw after the handler's first await reaches bUnit's renderer
+  (`Renderer.UnhandledException`); `BunitTestContext.ThrowIfAppFailed` reports it on the next lookup or
+  readiness probe.
+- **A disabled control gets no click,** nor a check, as in a browser.
+- **`SendKeys` with `TextInputMethod.Keys`** raises `onkeydown`/`onkeyup` per character, then sets the value
+  as `Fill`; `PressKey("Enter")` in a form field submits the form.
+- **Locators:** test id, id, name, class, CSS, tag, automation id, text (innermost, any case), link text,
+  scoped to a parent; XPath and the accessible name throw `LocatorNotSupportedException`.
+
+Found, for the next steps:
+
+- **A component without a router does not re-render on navigation:** `Click` on a link changes
+  `CurrentUrl`, but only a `Routes` root shows the new page. Suites render their `Routes` (step 3).
+- **A button with its own `onclick` inside a form** raises only the click; a browser would submit the
+  form after it unless the button is `type="button"`. Not met in the sample; left for step 3's tests.
+- **`Read_AfterAReset_FindsTheElementAgain`:** an element found before `ResetAppState` is found again
+  in the new render, as a Playwright locator is. A truly gone element is `StaleElementException`.
 
 ## Step 5 results
 
