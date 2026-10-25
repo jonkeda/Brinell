@@ -228,7 +228,9 @@ public sealed class BddCommandPattern
         pattern += EscapeLiteral(phrase[lastIndex..]);
         pattern += "$";
 
-        return (new Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant), parameterNames);
+        // Interpreted, not compiled: every step is tried against every pattern, so a compiled one cost its compile and JIT on a
+        // catalog's first walk, seconds for a suite's hundreds of phrases (speed plan, iteration 4), to match one short line.
+        return (new Regex(pattern, RegexOptions.CultureInvariant), parameterNames);
     }
 
     private static int CalculateSpecificity(string phrase)
