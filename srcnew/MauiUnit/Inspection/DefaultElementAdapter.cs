@@ -1,0 +1,84 @@
+using System.Globalization;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+
+namespace MauiUnit.Inspection;
+
+/// <summary>
+/// How MauiUnit reads MAUI's own controls: the page a container shows, a page's toolbar, the rows an
+/// items view would show, and each control's text.
+/// </summary>
+public sealed class DefaultElementAdapter : IElementAdapter
+{
+    public static readonly DefaultElementAdapter Instance = new();
+
+    public bool CanAdapt(Element element) => true;
+
+    public IEnumerable<Element> GetChildren(Element element)
+    {
+        switch (element)
+        {
+            case Window window:
+                // An open dialog is over the page, and first in reading order as it is on screen.
+                return Dialogs.DialogRequests.Of(window).Reverse<Element>()
+                    .Concat(window.Page is { } root ? [Screen.VisiblePage(root, window)] : []);
+            case NavigationPage navigation:
+                return navigation.CurrentPage is { } current ? [current] : [];
+            case Shell shell:
+                return ShellChildren(shell);
+            case ShellTabBar tabBar:
+                return tabBar.Tabs;
+            case ShellFlyoutList flyoutList:
+                return flyoutList.Items;
+            case BaseShellItem:
+                // A tab or a flyout entry: its pages are reached through the Shell's current page.
+                return [];
+            case TabbedPage tabbed:
+                return tabbed.CurrentPage is { } tab ? [tab] : [];
+            case FlyoutPage flyout:
+                return flyout.IsPresented ? [flyout.Flyout, flyout.Detail] : [flyout.Detail];
+            case ItemsView items:
+                return ItemRealizer.Realize(items);
+            case Page page:
+                return page.ToolbarItems.Cast<Element>().Concat(VisualChildren(page));
+            default:
+                return VisualChildren(element);
+        }
+    }
+
+    public string? GetText(Element element) => element switch
+    {
+        Label { FormattedText: { } formatted } => string.Concat(formatted.Spans.Select(span => span.Text)),
+        Label label => label.Text,
+        Span span => span.Text,
+        Button button => button.Text,
+        RadioButton radio => radio.Content as string ?? radio.ContentAsString(),
+        InputView input => input.Text,
+        Picker picker => picker.SelectedIndex >= 0 && picker.SelectedIndex < picker.Items.Count
+            ? picker.Items[picker.SelectedIndex]
+            : null,
+        DatePicker date => date.Date?.ToString(date.Format, CultureInfo.CurrentCulture),
+        TimePicker time => time.Time is { } value
+            ? DateTime.Today.Add(value).ToString(time.Format, CultureInfo.CurrentCulture)
+            : null,
+        MenuItem item => item.Text,
+        BaseShellItem shellItem => shellItem.Title,
+        Page page => page.Title,
+        IText text => text.Text,
+        _ => null,
+    };
+
+    // What a user sees of a Shell: the flyout while it is open, the tab bar, then the page.
+    private static IEnumerable<Element> ShellChildren(Shell shell)
+    {
+        if (shell.FlyoutIsPresented)
+            yield return ShellChromeNodes.Flyout(shell);
+        if (ShellChromeNodes.TabBar(shell).Tabs.Any())
+            yield return ShellChromeNodes.TabBar(shell);
+        if (Screen.CurrentPage(shell) is { } shown)
+            yield return shown;
+    }
+
+    private static IEnumerable<Element> VisualChildren(Element element)
+        => ((IVisualTreeElement)element).GetVisualChildren().OfType<Element>();
+}

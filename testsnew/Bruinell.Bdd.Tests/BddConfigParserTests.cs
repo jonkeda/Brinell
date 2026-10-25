@@ -178,21 +178,21 @@ public sealed class BddConfigParserTests
     }
 
     [Fact]
-    public void EvaluateSkip_DeviceTagOnTheMunitHead_Skips()
+    public void EvaluateSkip_DeviceTagOnTheMauiUnitHead_Skips()
     {
         var config = BddConfigParser.Parse("# UAT Config");
 
-        var decision = config.EvaluateSkip(["@device"], name => name == "BRUINELL_HEAD" ? "munit" : null);
+        var decision = config.EvaluateSkip(["@device"], name => name == "BRUINELL_HEAD" ? "mauiunit" : null);
 
         Assert.True(decision.ShouldSkip);
         Assert.Contains("@device", decision.Reason);
-        Assert.Contains("MUnit", decision.Reason);
+        Assert.Contains("MauiUnit", decision.Reason);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("bunit")]
-    public void EvaluateSkip_DeviceTagOffTheMunitHead_Runs(string? head)
+    public void EvaluateSkip_DeviceTagOffTheMauiUnitHead_Runs(string? head)
     {
         var config = BddConfigParser.Parse("# UAT Config");
 

@@ -71,11 +71,11 @@ public sealed record BddConfig(
                 Rule: null);
         }
 
-        if (normalizedTags.Contains(BddTagConventions.Device) && MauiHeads.Parse(getEnvironmentVariable(MauiHeads.Variable)) == MauiHead.Munit)
+        if (normalizedTags.Contains(BddTagConventions.Device) && MauiHeads.Parse(getEnvironmentVariable(MauiHeads.Variable)) == MauiHead.MauiUnit)
         {
             return new BddSkipDecision(
                 ShouldSkip: true,
-                Reason: $"Scenario is tagged @{BddTagConventions.Device}; this run uses the MUnit head ({MauiHeads.Variable}=munit).",
+                Reason: $"Scenario is tagged @{BddTagConventions.Device}; this run uses the MauiUnit head ({MauiHeads.Variable}=mauiunit).",
                 Rule: null);
         }
 
@@ -212,7 +212,7 @@ public static class BddTagConventions
     /// <summary>A scenario that needs a browser: skipped on the bUnit head (<see cref="WebHeads"/>).</summary>
     public const string Browser = "browser";
 
-    /// <summary>A MAUI scenario that needs a device: skipped on the MUnit head (<see cref="MauiHeads"/>).</summary>
+    /// <summary>A MAUI scenario that needs a device: skipped on the MauiUnit head (<see cref="MauiHeads"/>).</summary>
     public const string Device = "device";
     public const string OpenAiLive = "openai-live";
 

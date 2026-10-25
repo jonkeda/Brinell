@@ -14,9 +14,9 @@
          compile-time reference is optional but the assembly must reach the output directory;
          without it an APPIUM_PLATFORM=android run fails in the fixture constructor. -->
     <ProjectReference Include="..\..\srcnew\Bruinell.Maui.Appium\Bruinell.Maui.Appium.csproj" />
-    <!-- The MUnit head (BRUINELL_HEAD=munit, .my/mUnit): both sample apps compiled for plain net10.0,
+    <!-- The MauiUnit head (BRUINELL_HEAD=mauiunit, .my/mUnit): both sample apps compiled for plain net10.0,
          their files linked from the apps, rendered in memory by the fixtures' CreateInMemoryOptions. -->
-    <ProjectReference Include="..\..\srcnew\Bruinell.Maui.Munit\Bruinell.Maui.Munit.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinell.Maui.MauiUnit\Bruinell.Maui.MauiUnit.csproj" />
     <ProjectReference Include="..\..\samples\Bruinell.Samples.Maui.App.Headless\Bruinell.Samples.Maui.App.Headless.csproj" />
     <ProjectReference Include="..\..\samples\Bruinell.Samples.Maui.ShellApp.Headless\Bruinell.Samples.Maui.ShellApp.Headless.csproj" />
   </ItemGroup>

@@ -17,7 +17,7 @@
     <PackageVersion Include="AutoFixture.Xunit2" Version="4.18.1" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
-    <!-- MUnit's examples on NUnit and MSTest: MUnit itself depends on no test framework (.my/mUnit). -->
+    <!-- MauiUnit's examples on NUnit and MSTest: MauiUnit itself depends on no test framework (.my/mUnit). -->
     <PackageVersion Include="NUnit" Version="4.3.2" />
     <PackageVersion Include="NUnit3TestAdapter" Version="5.0.0" />
     <PackageVersion Include="MSTest.TestFramework" Version="3.9.3" />

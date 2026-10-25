@@ -18,7 +18,7 @@
       MAUI layouts lack an AutomationPeer on Windows, which is the problem this project
       exists to solve. Android and iOS expose AutomationId natively and need nothing.
     -->
-    <!-- net10.0: the MUnit head compiles the sample app's views without a platform (.my/mUnit). -->
+    <!-- net10.0: the MauiUnit head compiles the sample app's views without a platform (.my/mUnit). -->
     <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios;net10.0</TargetFrameworks>
     <RootNamespace>Bruinell.Maui.AppSupport</RootNamespace>
     <UseMaui>true</UseMaui>

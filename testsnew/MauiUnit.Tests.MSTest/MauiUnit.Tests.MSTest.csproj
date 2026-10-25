@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MauiUnit on MSTest: the same examples, to show MauiUnit needs no xUnit. -->
+  <PropertyGroup>
+    <RootNamespace>MauiUnit.Tests.MSTest</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- testsnew/Directory.Build.props adds xUnit to every test project. -->
+    <PackageReference Remove="xunit" />
+    <PackageReference Remove="xunit.runner.visualstudio" />
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="MSTest.TestAdapter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\MauiUnit\MauiUnit.csproj" />
+    <ProjectReference Include="..\..\samples\MauiUnit.Samples.App\MauiUnit.Samples.App.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MauiUnit on xUnit: the examples, and MauiUnit's own behaviour (dispatcher, clock, tree, errors). -->
+  <PropertyGroup>
+    <RootNamespace>MauiUnit.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\MauiUnit\MauiUnit.csproj" />
+    <ProjectReference Include="..\..\samples\MauiUnit.Samples.App\MauiUnit.Samples.App.csproj" />
+  </ItemGroup>
+
+</Project>

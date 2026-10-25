@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- MAUI 10's plain assemblies are net10.0 only. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinell.Maui.MauiUnit</RootNamespace>
+    <Description>MauiUnit implementation for Bruinell.Maui: the same page objects and controls on a page rendered in memory, without a device, emulator or window (.my/mUnit).</Description>
+    <PackageId>Bruinell.Maui.MauiUnit</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinell.Maui\Bruinell.Maui.csproj" />
+    <ProjectReference Include="..\MauiUnit\MauiUnit.csproj" />
+  </ItemGroup>
+
+</Project>

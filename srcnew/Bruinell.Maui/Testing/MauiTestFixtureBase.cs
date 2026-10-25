@@ -103,7 +103,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         }
 
         // In memory a restart is a fresh app; on a device the first launch's options are kept.
-        _context = new MauiTestContext(MauiHeads.IsMunit ? CreateInMemoryOptions() : _options);
+        _context = new MauiTestContext(MauiHeads.IsMauiUnit ? CreateInMemoryOptions() : _options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
         OnRestarted();
@@ -210,19 +210,19 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     #region Heads
 
-    // The device unless BRUINELL_HEAD=munit (MauiHeads).
+    // The device unless BRUINELL_HEAD=mauiunit (MauiHeads).
     private MauiTestContextOptions Options()
-        => MauiHeads.IsMunit ? CreateInMemoryOptions() : CreateTestContextOptions();
+        => MauiHeads.IsMauiUnit ? CreateInMemoryOptions() : CreateTestContextOptions();
 
     /// <summary>
-    /// The suite's MUnit head (<see cref="MauiHeads"/>, .my/mUnit): its app's first page rendered in
-    /// memory, the options from <c>Bruinell.Maui.Munit</c>'s <c>MunitHead.InMemory</c>. A suite that has
-    /// one overrides this; by default an MUnit run of the suite says it has none.
+    /// The suite's MauiUnit head (<see cref="MauiHeads"/>, .my/mUnit): its app's first page rendered in
+    /// memory, the options from <c>Bruinell.Maui.MauiUnit</c>'s <c>MauiUnitHead.InMemory</c>. A suite that has
+    /// one overrides this; by default an MauiUnit run of the suite says it has none.
     /// </summary>
     /// <remarks>Asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.</remarks>
     protected virtual MauiTestContextOptions CreateInMemoryOptions()
         => throw new InvalidOperationException(
-            $"{GetType().Name} has no MUnit head: override CreateInMemoryOptions, or run it without {MauiHeads.Variable}=munit.");
+            $"{GetType().Name} has no MauiUnit head: override CreateInMemoryOptions, or run it without {MauiHeads.Variable}=mauiunit.");
 
     #endregion
 

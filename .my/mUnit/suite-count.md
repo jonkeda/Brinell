@@ -1,9 +1,9 @@
-# The MAUI device suite on the MUnit head: the count
+# The MAUI device suite on the MauiUnit head: the count
 
-## Now: the suite on its own MUnit head
+## Now: the suite on its own MauiUnit head
 
 Since 2026-10-26 the device suite runs on either head itself.
-`$env:BRUINELL_HEAD='munit'; dotnet test testsnew/Bruinell.Maui.UITests` gives **325 passed, 35
+`$env:BRUINELL_HEAD='mauiunit'; dotnet test testsnew/Bruinell.Maui.UITests` gives **325 passed, 35
 skipped, 0 failed, in 7 s**. The 35 skipped are:
 - the 33 tests below, now marked `[DeviceFact]` or `[WindowsOnlyFact(Device = ...)]`, each skip naming what it needs the device for;
 - the suite's own 2 probe and stress skips.
@@ -33,8 +33,8 @@ can run in memory, 319 passed.
 | The Windows tree and bridge | 7 | What Windows' tree leaves out (a BoxView, menu items, a SwipeView), the bridge's own refusal messages, and its rule against physical input |
 | The FlaUI driver itself | 6 | The test casts the driver to `FlaUIMauiDriver` |
 | Layout and pixels | 6 | Scroll offsets and extents, a label below the fold, screenshots, input logged in physical pixels |
-| Popup virtualization | 1 | It shows that a long picker's popup realizes only some items; MUnit realizes them all |
-| Known difference | 1 | Windows reports every carousel card as on screen; MUnit, like a phone, shows only the current one, so an off-screen card's text is not readable |
+| Popup virtualization | 1 | It shows that a long picker's popup realizes only some items; MauiUnit realizes them all |
+| Known difference | 1 | Windows reports every carousel card as on screen; MauiUnit, like a phone, shows only the current one, so an off-screen card's text is not readable |
 | Skipped | 2 | The suite's own probe and stress tests, skipped there too |
 
 ## Speed

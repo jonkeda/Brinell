@@ -1,6 +1,6 @@
-# The 33 that fail on the MUnit head, by group (agent document)
+# The 33 that fail on the MauiUnit head, by group (agent document)
 
-Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 passed, 2 skipped, these 33 failed. All 33 are now marked `DeviceFact` or `WindowsOnlyFact(Device = ...)` and skip on the MUnit head. Each line is the test and its first message line.
+Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 passed, 2 skipped, these 33 failed. All 33 are now marked `DeviceFact` or `WindowsOnlyFact(Device = ...)` and skip on the MauiUnit head. Each line is the test and its first message line.
 
 ## 1 MediaElement: no type on plain net10.0 (12)
 
@@ -19,12 +19,12 @@ Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 pas
 
 ## 2 The FlaUI driver itself (6)
 
-- `Tests.Background.FocusVerbTests.Bridge_PublishesTheFocusVerbs`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.AccessibilityAuditTests.Audit_LeavesReadOnlyElementsOffTheBacklog`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.AccessibilityAuditTests.Audit_ReportsWhatEachInstrumentedElementOffersWithoutAPointer`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.BridgeTreeDumpTests.DumpRawTreeBelowTheWindow`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.BridgeTreeDumpTests.DumpSwipeViewAfterOpening`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.ForegroundWatchdogTests.Navigating_DoesNotTakeTheForeground`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.Munit.MunitMauiDriver' to type 'Bruinell.Maui
+- `Tests.Background.FocusVerbTests.Bridge_PublishesTheFocusVerbs`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Diagnostics.AccessibilityAuditTests.Audit_LeavesReadOnlyElementsOffTheBacklog`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Diagnostics.AccessibilityAuditTests.Audit_ReportsWhatEachInstrumentedElementOffersWithoutAPointer`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Diagnostics.BridgeTreeDumpTests.DumpRawTreeBelowTheWindow`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Diagnostics.BridgeTreeDumpTests.DumpSwipeViewAfterOpening`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Diagnostics.ForegroundWatchdogTests.Navigating_DoesNotTakeTheForeground`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
 
 ## 3 The Windows tree and bridge (7)
 
@@ -38,9 +38,9 @@ Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 pas
 
 ## 4 Layout and pixels (6)
 
-- `Tests.Background.ScrollVerbTests.ScrollPosition_ReportsExtentAsWellAsOffset`: Bruinell.Maui.Munit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MUnit head has no layout, pixels or p
-- `Tests.Background.ScrollVerbTests.ScrollTo_MovesTheViewport_WithoutPhysicalInput`: Bruinell.Maui.Munit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MUnit head has no layout, pixels or p
-- `Tests.Background.ScrollVerbTests.ScrollTo_PutsTheNamedElementOnScreen`: Bruinell.Maui.Munit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollPosition_ReportsExtentAsWellAsOffset`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollTo_MovesTheViewport_WithoutPhysicalInput`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollTo_PutsTheNamedElementOnScreen`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
 - `Tests.Diagnostics.OccludedScreenshotTests.Screenshot_OfOccludedWindow_ShowsTheApp`: System.ArgumentException : Parameter is not valid.
 - `Tests.Gestures.RecordedInteractionTests.ATap_AndAPullToRefresh_AreLogged_OverTheirControls_InPhysicalPixels`: Assert.Equal() Failure: Collections differ
 - `Tests.Scroll.ScrollTests.BottomLabel_IsVisible_IsFalseUntilScrolledTo`: Assert.False() Failure

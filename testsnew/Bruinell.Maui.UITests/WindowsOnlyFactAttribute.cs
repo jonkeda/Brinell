@@ -31,7 +31,7 @@ public sealed class WindowsOnlyFactAttribute : FactAttribute
     }
 
     /// <summary>
-    /// What the test needs the Windows device for, when it does: also skipped on the MUnit head, as
+    /// What the test needs the Windows device for, when it does: also skipped on the MauiUnit head, as
     /// <see cref="DeviceFactAttribute"/> is. Unset, the test runs in memory too, where the head
     /// calls the app's bridge sinks as Windows does.
     /// </summary>
@@ -41,9 +41,9 @@ public sealed class WindowsOnlyFactAttribute : FactAttribute
         set
         {
             _device = value;
-            if (value is not null && MauiHeads.IsMunit)
+            if (value is not null && MauiHeads.IsMauiUnit)
             {
-                Skip = $"Device only: {value}; this run uses the MUnit head ({MauiHeads.Variable}=munit).";
+                Skip = $"Device only: {value}; this run uses the MauiUnit head ({MauiHeads.Variable}=mauiunit).";
             }
         }
     }

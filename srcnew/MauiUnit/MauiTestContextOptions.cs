@@ -1,0 +1,32 @@
+using Microsoft.Maui.Controls;
+using MauiUnit.Inspection;
+
+namespace MauiUnit;
+
+/// <summary>How a <see cref="MauiTestContext"/> is set up.</summary>
+public sealed class MauiTestContextOptions
+{
+    /// <summary>
+    /// Makes the application the rendered windows belong to: the app's own <c>App</c>, for its resources
+    /// and styles. Null gives an empty <see cref="Application"/>. The factory runs with
+    /// <see cref="Application.Current"/> set to the new application, under MauiUnit's application lock.
+    /// </summary>
+    public Func<IServiceProvider, Application>? Application { get; set; }
+
+    /// <summary>
+    /// Whether <see cref="Application.Current"/> is the context's application while MauiUnit runs the
+    /// context's work, so app code that reads it (<c>Shell.Current</c>, <c>Application.Current.Resources</c>)
+    /// works. On by default. It is process-wide, so contexts in parallel take turns running work;
+    /// turn it off for an app that never reads it, and contexts run fully in parallel.
+    /// </summary>
+    public bool SetApplicationCurrent { get; set; } = true;
+
+    /// <summary>The adapters asked before the default one, for controls MAUI's own interfaces do not describe.</summary>
+    public IList<IElementAdapter> Adapters { get; } = [];
+
+    /// <summary>
+    /// How long <c>WaitForAssertion</c> and <c>WaitForState</c> wait by default on the wall clock, for work
+    /// that real asynchrony has yet to post back. Virtual time never needs it.
+    /// </summary>
+    public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(2);
+}
