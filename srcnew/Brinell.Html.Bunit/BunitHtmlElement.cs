@@ -282,6 +282,7 @@ public sealed class BunitHtmlElement : IHtmlElement
         try
         {
             // Raised as a browser does: returns when the handler awaits, a refusal seen here rather than by the renderer later.
+            var rendersBefore = _context.RenderCount;
             var raised = _context.Dispatch(() =>
             {
                 var target = levels is { } up ? Up(_resolve(), up) : node;
@@ -292,7 +293,7 @@ public sealed class BunitHtmlElement : IHtmlElement
 
                 return target.TriggerEventAsync(eventName, args);
             });
-            Settle(raised);
+            Settle(raised, rendersBefore);
         }
         catch (AggregateException error) when (error.InnerExceptions.Count == 1)
         {
@@ -391,18 +392,20 @@ public sealed class BunitHtmlElement : IHtmlElement
         return element;
     }
 
-    // Waits for the handler as a browser's event returns: until it is done, or until it awaits and the renderer has been quiet
-    // for QuietMs, at most DispatchWaitMs. A handler that awaits the user (a dialog's answer) goes on at once, where waiting out
-    // the whole 100 ms made each such click cost it (next-plan item 12); one that awaits a quick task still finishes first.
-    // A fault, its own or a gone handler's, is thrown here as Wait throws it.
-    private void Settle(Task raised)
+    // Waits for the handler as a browser's event returns: until it is done, or until it has rendered and then awaited with the
+    // renderer quiet for QuietMs, at most DispatchWaitMs. A handler that shows a dialog and awaits the user's answer goes on
+    // just after the dialog renders, where waiting out the whole 100 ms made each such click cost it (next-plan item 12). One
+    // that awaits work before it renders anything (a query, a save) is waited for as before: going on early let the next step
+    // race it (the studio's PLT.23.6 and PLT.39.2). A fault, its own or a gone handler's, is thrown here as Wait throws it.
+    // before: the render count as the event was raised; a render inside the dispatch (the dialog) counts.
+    private void Settle(Task raised, int before)
     {
         var waited = System.Diagnostics.Stopwatch.StartNew();
-        var renders = _context.RenderCount;
+        var renders = before;
         while (!raised.Wait(QuietMs) && waited.ElapsedMilliseconds < DispatchWaitMs)
         {
             var now = _context.RenderCount;
-            if (now == renders)
+            if (now == renders && now != before)
             {
                 return;
             }
