@@ -49,12 +49,13 @@ internal static class SqlCommands
         var connection = Connection();
         var folder = new Option<string?>("--folder") { Description = "A folder on the server for the session's files. Default: the server's log folder." };
         var state = State();
-        var command = new Command("start", "Start the session on the connection's database and send the marker that lines the clocks up. Needs ALTER ANY EVENT SESSION.") { connection, folder, state };
+        var like = new Option<string?>("--database-like") { Description = "Capture every database whose name is LIKE this (TestDb_%), for a suite that makes one per run; default: the connection's." };
+        var command = new Command("start", "Start the session on the connection's database and send the marker that lines the clocks up. Needs ALTER ANY EVENT SESSION.") { connection, folder, state, like };
         command.Action(io, async (parsed, cancellationToken) =>
         {
             await using var sql = await OpenAsync(parsed.GetValue(connection)!, cancellationToken);
             var where = parsed.GetValue(folder) ?? await DefaultFolderAsync(sql, cancellationToken);
-            var started = await ExtendedEvents.StartAsync(sql, where, cancellationToken);
+            var started = await ExtendedEvents.StartAsync(sql, where, cancellationToken, parsed.GetValue(like));
             var to = Path.GetFullPath(parsed.GetValue(state)!, io.CurrentDirectory);
             started.Save(to);
             io.Error.WriteLine($"Session {started.Session} on {started.Database}, its files {started.Files}; state in {to}");

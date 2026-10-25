@@ -135,7 +135,7 @@ internal sealed class SqlReport
             using var reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
             var header = reader.ReadLine()?.Split(';') ?? [];
             int Column(string name) => Array.IndexOf(header, name);
-            var (test, kind, name, start, duration) = (Column("Test"), Column("Kind"), Column("Name"), Column("StartMs"), Column("DurationMs"));
+            var (test, scenario, kind, name, start, duration) = (Column("Test"), Column("Scenario"), Column("Kind"), Column("Name"), Column("StartMs"), Column("DurationMs"));
             DateTime? zero = null;
             while (reader.ReadLine() is { } line)
             {
@@ -149,15 +149,19 @@ internal sealed class SqlReport
                 {
                     zero = DateTime.Parse(cells[name], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
                 }
-                else if (cells[kind] == "test" && zero is { } at && cells[test].Length > 0)
+                else if (cells[kind] == "test" && zero is { } at && (scenario >= 0 && cells[scenario].Length > 0 ? cells[scenario] : cells[test]) is { Length: > 0 } owner)
                 {
+                    // A scenario's span is named by its scenario: every scenario of a suite runs in the one xUnit method.
                     var from = at.AddMilliseconds(long.Parse(cells[start], CultureInfo.InvariantCulture));
-                    windows.Add(new TestWindow(cells[test], from, from.AddMilliseconds(long.Parse(cells[duration], CultureInfo.InvariantCulture))));
+                    windows.Add(new TestWindow(owner, from, from.AddMilliseconds(long.Parse(cells[duration], CultureInfo.InvariantCulture))));
                 }
             }
         }
 
-        return windows;
+        // The innermost windows only: the xUnit method's span wraps the scenario's, which is the test a command belongs to.
+        return windows
+            .Where(outer => !windows.Any(inner => !ReferenceEquals(inner, outer) && inner.Start >= outer.Start && inner.End <= outer.End && (inner.Start > outer.Start || inner.End < outer.End)))
+            .ToList();
     }
 
     /// <summary>The map of each object to the tests that touch it, for selecting tests from a schema change.</summary>

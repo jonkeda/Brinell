@@ -48,19 +48,25 @@ public static class ExtendedEvents
     /// Creates and starts the session on the database <paramref name="connection"/> is open on (an older one of the same
     /// name dropped first), its files in <paramref name="folder"/> on the server, and sends the marker.
     /// </summary>
-    public static async Task<CaptureState> StartAsync(DbConnection connection, string folder, CancellationToken cancellationToken = default)
+    /// <remarks>
+    /// <c>like</c>, a <c>LIKE</c> pattern such as <c>Suite_%</c>, captures every database it matches instead of the
+    /// connection's own, for a suite that makes a database per run; the session is named for the pattern.
+    /// </remarks>
+    public static async Task<CaptureState> StartAsync(DbConnection connection, string folder, CancellationToken cancellationToken = default, string? like = null)
     {
-        var database = connection.Database;
+        var database = like ?? connection.Database;
         var session = SessionName(database);
         // A name of its own per capture: an earlier capture's files stay on the server, and must not be read with this one.
         var files = folder.TrimEnd('\\', '/') + "\\" + session + "_" + DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         var file = files + ".xel";
-        var filter = $"sqlserver.database_name = N'{database.Replace("'", "''")}'";
+        var filter = like is null
+            ? $"sqlserver.database_name = N'{database.Replace("'", "''")}'"
+            : $"sqlserver.like_i_sql_unicode_string(sqlserver.database_name, N'{like.Replace("'", "''")}')";
         await ExecuteAsync(connection, $"""
             IF EXISTS (SELECT 1 FROM sys.server_event_sessions WHERE name = N'{session}') DROP EVENT SESSION [{session}] ON SERVER;
             CREATE EVENT SESSION [{session}] ON SERVER
             ADD EVENT sqlserver.rpc_completed (ACTION (sqlserver.database_name) WHERE ({filter})),
-            ADD EVENT sqlserver.sql_batch_completed (ACTION (sqlserver.database_name) WHERE ({filter}))
+            ADD EVENT sqlserver.sql_batch_completed (ACTION (sqlserver.database_name) WHERE ({filter}) OR (sqlserver.like_i_sql_unicode_string(sqlserver.sql_text, N'%bruinell-marker-%')))
             ADD TARGET package0.event_file (SET filename = N'{file.Replace("'", "''")}', max_file_size = 100)
             WITH (MAX_DISPATCH_LATENCY = 1 SECONDS, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS);
             ALTER EVENT SESSION [{session}] ON SERVER STATE = START;

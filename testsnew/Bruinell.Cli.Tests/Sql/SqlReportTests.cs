@@ -18,6 +18,24 @@ public sealed class SqlReportTests : IDisposable
     }
 
     [Fact]
+    public void Windows_OfScenarios_AreNamedByTheScenario_TheMethodsSpanAroundThemDropped()
+    {
+        var path = Path.Combine(_folder, "timings-scenarios.csv");
+        File.WriteAllLines(path,
+        [
+            "Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;Attempts;Result",
+            $"run;bunit;;;;clock;{Zero:O};;;;0;0;;",
+            "run;bunit;Suite.Scenarios.Run;Opening a place;;test;Opening a place;;;;110;40;;",
+            "run;bunit;Suite.Scenarios.Run;Closing a place;;test;Closing a place;;;;160;30;;",
+            "run;bunit;Suite.Scenarios.Run;;;test;Suite.Scenarios.Run;;;;100;100;;",
+        ]);
+
+        var windows = SqlReport.Windows([path]);
+
+        Assert.Equal(["Opening a place", "Closing a place"], windows.Select(window => window.Test));
+    }
+
+    [Fact]
     public void Commands_GoToTheTestTheyStartedIn_OrTheNextOnesArrange_OrNone()
     {
         var windows = SqlReport.Windows([Timings(("A", 100, 50), ("B", 200, 100))]);
