@@ -45,6 +45,8 @@ invariants behind it - what must stay true when *changing* Bruinell - are in
   runs without a screen, its suite and step definitions
 - [The bUnit Head](guides/bunit.md) - a Blazor suite's page objects and scenarios without a browser
   (`BRUINELL_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
+- [SQL Replay](guides/sql-replay.md) - a UI test without its database: the SQL log, recording and
+  replaying, the app's wiring (EF, ADO.NET, an app in its own process), stale recordings and re-records
 - [BDD Glossary](guides/bdd-glossary.md) - Bruinell's words beside Cucumber's and Reqnroll's
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
   files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario

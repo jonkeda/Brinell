@@ -1,0 +1,118 @@
+# SQL Replay
+
+A UI test can run without its database: Bruinell records what the test sends to SQL Server (or
+SQLite) and what comes back, then answers the same commands from the recording. What it removes is
+having a database at all: making one, seeding it, resetting it before each test, and sharing it
+between tests that then can't run side by side. The real database stays the judge at every gate.
+The decision is [AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md).
+
+## When To Use It
+
+- **During development**, with the bUnit head: a Blazor suite with no browser and no database.
+- **For parallel runs**: a replayed test shares nothing with another, so suites kept serial by a
+  shared test database can run at once.
+- **Not at a gate.** Replay can't prove the database still accepts the commands; the gate runs
+  against it (`BRUINELL_SQL_REPLAY` unset), as the browser judges the bUnit head.
+
+Measure first. The SQL log gives the database's share of each test and how many tests a typical
+change reaches; a small share or a wide reach means replay costs more to keep than it saves.
+
+## The Log
+
+`Bruinell.Mocking.Data` logs every command with its time and the objects it names, never its
+values. EF Core: `options.UseSqlLog(log)`. ADO.NET: wrap the connection in `LoggingDbConnection`.
+An app you can't change is logged by SQL Server itself:
+
+```bash
+bruinell sql capture start --connection "<test database>"
+bruinell sql capture stop --connection "<test database>"
+bruinell sql capture read --connection "<test database>" --out sql-log
+bruinell sql report --log sql-log --timings <timings> --schema schema.json
+```
+
+## Recording And Replaying
+
+A run's mode is `BRUINELL_SQL_REPLAY`: `Record` against the real database, `Replay` with none,
+unset for neither. Each test has a `ReplaySession` and a recording of its own,
+`Recordings/<head>/<test>.json`, kept in git.
+
+Record twice. The second recording finds the values that change from run to run (new ids, clocks)
+and marks them volatile; replay binds them to the live run's values instead of matching them.
+
+```bash
+BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Record dotnet test <suite>
+BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Record dotnet test <suite>
+BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Replay dotnet test <suite>
+```
+
+A command the recording can't answer is a miss: `ReplayMissException` names the command, its
+parameters and where it parted from the recording. A test checks `session.Misses` at its end, as the
+app may have caught one.
+
+## Wiring The App
+
+The session reaches the app's data access through its composition, never through a static.
+
+| The app reaches its database through | Use |
+| --- | --- |
+| EF Core, in the test's process (bUnit, a host per test) | `options.UseSqlReplay(session)` in the test's `ConfigureDbContext` |
+| EF Core with SQL Server's spatial types | also `options.UseSpatialReplay()` (`Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer`) |
+| ADO.NET with a connection it is given | `new ReplayingDbConnection(connection, session)` |
+| ADO.NET connections it makes itself | `ReplayingDbProviderFactory` over its provider's factory; the test enters `ReplayScope.Enter(session)` |
+| An app in a process of its own (IIS, a started exe) | the test-id hook, below |
+
+In replay the real connection is never opened. Output parameters, return values, several result sets
+and errors come back as the provider gives them: a broken key is `SqlException` 2627 again.
+
+## An App In A Process Of Its Own
+
+The app keeps its tests' sessions itself. Give it `BRUINELL_SQL_REPLAY` and
+`BRUINELL_SQL_RECORDINGS=<folder>` in its environment, and the hook in its pipeline:
+`app.UseSqlReplayHook()` (`Bruinell.Mocking.Data.AspNetCore`) or `SqlReplayModule` in web.config
+(`Bruinell.Mocking.Data.SystemWeb`). Its connections come from `ReplayingDbProviderFactory` or EF's
+`UseSqlReplay()`.
+
+A browser test opens `ReplayHook.BeginUrl(app, test)` first; its cookie names the test on every
+request after. An API test calls `ReplayHook.BeginAsync` and sends `X-Bruinell-Test`. At its end the
+test calls `ReplayHook.EndAsync`, which saves the recording or throws the misses. Without
+`BRUINELL_SQL_REPLAY` the hook adds nothing.
+
+## Stale Recordings
+
+A recording is stamped with the objects its commands touched: tables, views and procedures, and the
+tables their bodies reach. The stamp comes from a schema snapshot kept in git:
+
+```bash
+bruinell sql schema --connection "<test database>" --out Recordings/schema.json --data dbo.Kinds --references references.json
+bruinell sql stale --schema Recordings/schema.json --recordings Recordings
+```
+
+`stale` lists the recordings a schema change reached, and why, without replaying them. A table's
+triggers, defaults and checks count as the table. `--data` hashes a reference table's rows with it.
+Dynamic SQL (`sp_executesql`) has no dependencies SQL Server can read: list what it reads in
+`--references`, or a change to those tables is missed. `--default-schema` is the app's user's.
+
+## Re-recording
+
+A re-record changes files nobody reads line by line. Read the summary, then accept it:
+
+```bash
+bruinell sql diff --recordings Recordings
+bruinell sql diff --recordings Recordings --accept
+bruinell sql reviewed --recordings Recordings
+```
+
+`diff` shows each changed test against git: commands added and removed, rows, columns, the columns
+whose values changed, rows affected and errors. `--accept` writes `Recordings/reviewed.json`;
+`reviewed` fails while a recording went in unread, and `RecordingReview.Unreviewed` does the same in
+a test. A re-record that comes out the same needs no review: volatile values and how often a read
+repeats don't count.
+
+## What Replay Can't Do
+
+- Answer a command it didn't record: it never makes up a result. Record again.
+- Test the database itself: a migration, a procedure's logic, locking, timing.
+- Follow code that branches on whether a connection opens (EF's `EnsureCreated` on SQLite): in
+  replay nothing opens.
+- Reach a `new SqlConnection` in the app's code: the app's connections must come from a factory.
+- Share recordings across providers or heads: a recording is one test's, on one head.

@@ -68,5 +68,8 @@ The short list that must not be broken. Each links the decision that explains it
 - **Gherkin is fenced; the rest is prose.** A step is read only inside a ` ```gherkin ` block; any
   other Markdown, step-like text included, is prose. The engine reads the file through Markdig.
   [AD-023](decisions/ad-023-a-feature-file-is-markdown.md)
+- **Replay answers only what it recorded, and the database judges the gate.** A command not recorded
+  is a miss, never a made-up result; a recording is made against the real database, stamped, and
+  reviewed before it goes in. [AD-031](decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Bruinell.Generator`. [control-object](contracts/control-object.md)

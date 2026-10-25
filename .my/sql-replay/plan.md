@@ -8,8 +8,10 @@ the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](
 snapshot's gaps and `bruinell sql stale`, is built and S1 to S6 pass ([stamp-results.md](stamp-results.md)).
 Step 4, the heads, adds the test-id hook for an app in a process of its own; H1 to H6 pass, H6 without IIS
 ([hook-results.md](hook-results.md)). Step 5, maintenance (`bruinell sql diff`, `reviewed` and the
-review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-results.md)). 1.7 waits
-until the owner has the legacy system; next: step 6. Each step ends green:
+review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-results.md)). Step 6 is written:
+[docs/guides/sql-replay.md](../../docs/guides/sql-replay.md) and
+[AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md). Steps 0 to 6
+are done; 1.7, the legacy system's measurement, waits until the owner has the system, then the trial there. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
