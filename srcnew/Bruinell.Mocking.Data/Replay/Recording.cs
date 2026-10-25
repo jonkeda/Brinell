@@ -173,7 +173,10 @@ public sealed class Recording
 
     public List<Exchange> Exchanges { get; set; } = [];
 
-    public static Recording? Load(string path) => File.Exists(path) ? JsonSerializer.Deserialize<Recording>(File.ReadAllText(path), Json) : null;
+    public static Recording? Load(string path) => File.Exists(path) ? Parse(File.ReadAllText(path)) : null;
+
+    /// <summary>A recording from its JSON (a file's, or git's version of it).</summary>
+    public static Recording? Parse(string json) => JsonSerializer.Deserialize<Recording>(json, Json);
 
     public void Save(string path)
     {
@@ -188,7 +191,8 @@ public sealed class Recording
     /// <summary>
     /// Marks as volatile every parameter whose value differs from <paramref name="previous"/>'s: recording twice finds the
     /// GUIDs, clocks and ids nobody configures. Paired as replay matches: the same text, its n-th time between the same two
-    /// writes; a repeat beyond the other run's count is paired with its last one. Throws when a command has no counterpart.
+    /// writes; a repeat beyond the other run's count is paired with its last one. A command with no counterpart (the app
+    /// changed since) is left unmarked: recording it again marks it.
     /// </summary>
     public void MarkVolatile(Recording previous)
     {
@@ -199,7 +203,7 @@ public sealed class Recording
             var now = Exchanges[i];
             if (!Counterpart(earlier, keys[i], out var index))
             {
-                throw new InvalidOperationException($"Command {i} has no counterpart in the other recording:\n{now.Text}");
+                continue;
             }
 
             var before = previous.Exchanges[index];

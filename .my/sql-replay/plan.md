@@ -7,7 +7,9 @@ step 0). Step 1, the log, is built and L1 to L5 pass (L4 in part: see [log-resul
 the package with parallel runs, is built and R1 to R5 pass ([replay-results.md](replay-results.md)). Step 3, the
 snapshot's gaps and `bruinell sql stale`, is built and S1 to S6 pass ([stamp-results.md](stamp-results.md)).
 Step 4, the heads, adds the test-id hook for an app in a process of its own; H1 to H6 pass, H6 without IIS
-([hook-results.md](hook-results.md)). 1.7 waits until the owner has the legacy system; next: step 5. Each step ends green:
+([hook-results.md](hook-results.md)). Step 5, maintenance (`bruinell sql diff`, `reviewed` and the
+review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-results.md)). 1.7 waits
+until the owner has the legacy system; next: step 6. Each step ends green:
 `dotnet build Bruinell.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinell.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -353,6 +355,43 @@ code. 1.7 waits until the owner has the legacy system again; step 4 is proven on
 | H4 | Misses come back | A request not recorded fails in the app, and `EndAsync` throws with the miss |
 | H5 | Off by default | Without `BRUINELL_SQL_REPLAY` the control paths are 404 and the app runs on its database |
 | H6 | System.Web | The module builds for net48; the hook's core and `ReplayScope.Fallback` pass in the net48 tests. Not run under IIS here |
+
+## Step 5: maintenance
+
+A re-record changes files nobody reads line by line. Step 5 makes the change readable and makes
+reading it a gate: a summary of each re-recorded test against git, and a review file the check
+holds the recordings to.
+
+### 5.1 Decisions
+
+| Question | Decision |
+| --- | --- |
+| What the summary compares | Each recording against its version at a git revision (`--base`, default `HEAD`): recordings added and removed; the stamp's objects added, removed and changed; commands added and removed; for a command in both, its rows per result set, its columns, its values (after binding the volatile parameters old to new, as replay does), rows affected, scalar, outputs and error |
+| How commands are paired | By kind and `Statements.Key`, the n-th time with the n-th time, regardless of the writes between them, so one new write doesn't unpair everything after it |
+| How a re-record is read | `bruinell sql diff --recordings <folder>` prints the summary; `--accept` then writes `<folder>/reviewed.json`, each recording's path and content hash |
+| The gate | `bruinell sql reviewed --recordings <folder>` (and `RecordingReview.Unreviewed` for a test in the suite) lists recordings whose hash isn't the reviewed one, exit 1. A re-record that comes out the same keeps its hash, so it needs no review |
+| The bug it found | `Recording.MarkVolatile` threw when a re-record held a command the recording it replaces didn't: after any app change. Such a command is left unmarked; recording it twice marks it |
+
+### 5.2 What is built
+
+| Part | Where |
+| --- | --- |
+| `RecordingDiff.Compare(before, after)`, `RecordingChange` lines | `srcnew/Bruinell.Mocking.Data/Replay/RecordingDiff.cs` |
+| `RecordingReview` (`Hash`, `Unreviewed(folder)`, `Accept(folder)`) | `Replay/RecordingReview.cs` |
+| `MarkVolatile` without counterpart | `Replay/Recording.cs` |
+| `bruinell sql diff --recordings --base --accept`, `bruinell sql reviewed --recordings` | `tools/Bruinell.Cli/Sql/SqlCommands.cs` |
+| The spike's `reviewed.json` and a test holding the spike's recordings to it | `testsnew/Bruinell.Sql.Spike.Tests` |
+
+### 5.3 Checks
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| M1 | Summary | A recording changed by hand shows each kind of change (a command added and removed, rows, columns, values, affected, error, stamp) on one line each |
+| M2 | Binding | Two recordings that differ only in volatile values (a new id in a parameter and the rows that carry it) show no value change |
+| M3 | Pairing | A write added early pairs every later command still, and shows as one added command |
+| M4 | Gate | `reviewed` passes after `--accept`, fails after a recording changes, passes after a re-record that comes out the same |
+| M5 | Re-record after an app change | A session recording over a recording without one of its commands saves, no throw |
+| M6 | On the spike | An unchanged re-record shows no change; a changed seed value shows only the tests that read it, and the gate fails until accepted; the spike's gate test passes on its accepted recordings |
 
 ## Steps 1 to 6: outline
 

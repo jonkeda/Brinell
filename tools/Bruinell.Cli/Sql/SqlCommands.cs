@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics;
 using Bruinell.Cli.Selection;
 using Bruinell.Mocking.Data;
 using Bruinell.Mocking.Data.Replay;
@@ -20,6 +21,8 @@ internal static class SqlCommands
     {
         SchemaCommand(io),
         StaleCommand(io),
+        DiffCommand(io),
+        ReviewedCommand(io),
         new Command("capture", "An Extended Events session on the test database: the app's commands, logged by SQL Server, the app unchanged.")
         {
             StartCommand(io),
@@ -66,6 +69,93 @@ internal static class SqlCommands
             return 0;
         });
         return command;
+    }
+
+    private static Command DiffCommand(CliIo io)
+    {
+        var recordings = new Option<string>("--recordings") { Description = "The folder of recordings (<head>/<test>.json).", Required = true };
+        var since = new Option<string>("--base") { Description = "The git revision to compare with.", DefaultValueFactory = _ => "HEAD" };
+        var accept = new Option<bool>("--accept") { Description = "After the summary, accept every recording as it is now (reviewed.json)." };
+        var command = new Command("diff", "What each re-recorded test changed against git: commands added and removed, rows, columns, values, errors, the stamp. --accept marks them read.") { recordings, since, accept };
+        command.Action(io, (parsed, cancellationToken) =>
+        {
+            var folder = Path.GetFullPath(parsed.GetValue(recordings)!, io.CurrentDirectory);
+            var revision = parsed.GetValue(since)!;
+            var root = GitText(folder, "rev-parse", "--show-toplevel").Trim();
+            var prefix = Path.GetRelativePath(root, folder).Replace('\\', '/').TrimEnd('/') + "/";
+            var before = GitText(folder, "ls-tree", "-r", "--name-only", "--full-name", revision, "--", ":/" + prefix)
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(path => path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                .Select(path => path[prefix.Length..])
+                .ToList();
+            var changed = 0;
+            foreach (var path in RecordingReview.Recordings(folder).Union(before, StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal))
+            {
+                var now = Path.Combine(folder, path);
+                var nowJson = File.Exists(now) ? File.ReadAllText(now) : null;
+                var oldJson = before.Contains(path) ? GitText(folder, "show", $"{revision}:{prefix}{path}") : null;
+                if (nowJson is not null && oldJson is not null && RecordingReview.IsRecording(nowJson) && RecordingReview.IsRecording(oldJson) && RecordingReview.Hash(nowJson) == RecordingReview.Hash(oldJson))
+                {
+                    continue;
+                }
+
+                if (nowJson is not null && !RecordingReview.IsRecording(nowJson) || oldJson is not null && !RecordingReview.IsRecording(oldJson))
+                {
+                    continue;
+                }
+
+                var lines = RecordingDiff.Compare(oldJson is null ? null : Mocking.Data.Replay.Recording.Parse(oldJson), nowJson is null ? null : Mocking.Data.Replay.Recording.Parse(nowJson));
+                changed++;
+                io.Out.WriteLine(path);
+                foreach (var line in lines.DefaultIfEmpty("rewritten, nothing a test reads changed"))
+                {
+                    io.Out.WriteLine("  " + line);
+                }
+            }
+
+            io.Error.WriteLine($"{changed} recordings changed since {revision}");
+            if (parsed.GetValue(accept))
+            {
+                RecordingReview.Accept(folder);
+                io.Error.WriteLine($"accepted: wrote {Path.Combine(folder, RecordingReview.FileName)}");
+            }
+
+            return Task.FromResult(0);
+        });
+        return command;
+    }
+
+    private static Command ReviewedCommand(CliIo io)
+    {
+        var recordings = new Option<string>("--recordings") { Description = "The folder of recordings (<head>/<test>.json).", Required = true };
+        var command = new Command("reviewed", "The gate: recordings that went in unread (changed since bruinell sql diff --accept). Exit 1 when any.") { recordings };
+        command.Action(io, (parsed, cancellationToken) =>
+        {
+            var unread = RecordingReview.Unreviewed(Path.GetFullPath(parsed.GetValue(recordings)!, io.CurrentDirectory));
+            foreach (var line in unread)
+            {
+                io.Out.WriteLine(line);
+            }
+
+            io.Error.WriteLine(unread.Count == 0 ? "every recording reviewed" : $"{unread.Count} recordings unread: bruinell sql diff --recordings <folder>, then --accept");
+            return Task.FromResult(unread.Count == 0 ? 0 : 1);
+        });
+        return command;
+    }
+
+    private static string GitText(string directory, params string[] arguments)
+    {
+        var start = new ProcessStartInfo("git") { WorkingDirectory = directory, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        foreach (var argument in arguments)
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        using var git = Process.Start(start) ?? throw new InvalidOperationException("git did not start.");
+        var output = git.StandardOutput.ReadToEndAsync();
+        var error = git.StandardError.ReadToEnd();
+        git.WaitForExit();
+        return git.ExitCode == 0 ? output.Result : throw new InvalidOperationException($"git {string.Join(' ', arguments)}: {error.Trim()}");
     }
 
     private static Command StaleCommand(CliIo io)
