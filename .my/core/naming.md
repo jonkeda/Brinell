@@ -7,7 +7,7 @@ The full rename table. What replaces what, and what stays.
 - **`ICore` prefix** for every shared interface that used to be generic on `TElement`.
 - **`Core` prefix** for shared classes and enums that are new or renamed.
 - **No prefix change** for types that already worked across every stack: `Locator`,
-  `LocatorStrategy`, `BruinellException`, `ElementNotFoundException`, `AssertionException`,
+  `LocatorStrategy`, `BruinetException`, `ElementNotFoundException`, `AssertionException`,
   `WaitTimeoutException`, `TimeoutSettings`, `ITestLogger`, `LogResult`, `TextInputMethod`,
   `IDiagnosticDriver`, `IScreenshotService`, generator attributes.
 - **Per-stack interfaces keep their `I<Stack>*` names** (`IMauiElement`, `IHtmlElement`,
@@ -16,7 +16,7 @@ The full rename table. What replaces what, and what stays.
 
 ## Interfaces
 
-| Existing (`Bruinell.Core.Interfaces`) | New (`Bruinell.Core.Automation`) | Notes |
+| Existing (`Bruinet.Core.Interfaces`) | New (`Bruinet.Core.Automation`) | Notes |
 | --- | --- | --- |
 | `IElement<TSelf>` | `ICoreElement` | Non-generic; the `TSelf` was only for fluent returns and the calls layer does not need it (?C3) |
 | `IElementScope` + `IElementScope<TElement>` | `ICoreScope` (+ `ICoreScope<TSelf>` for fluent) | One interface; the element type is `ICoreElement` (?C4) |
@@ -34,7 +34,7 @@ The full rename table. What replaces what, and what stays.
 
 ## Capability interfaces (?C2)
 
-All under `Bruinell.Core.Automation`. Members inside unchanged.
+All under `Bruinet.Core.Automation`. Members inside unchanged.
 
 | Existing | New |
 | --- | --- |
@@ -60,16 +60,16 @@ All under `Bruinell.Core.Automation`. Members inside unchanged.
 
 | Existing | New |
 | --- | --- |
-| `PageReadinessSnapshot` (`Bruinell.Core.Interfaces`) | `CoreScopeReadiness` (`Bruinell.Core.Automation`) |
+| `PageReadinessSnapshot` (`Bruinet.Core.Interfaces`) | `CoreScopeReadiness` (`Bruinet.Core.Automation`) |
 | `PageReadinessState` | `CoreScopeReadinessState`, with extra states `NotLoaded`, `ContentNotReady`, `ItemChanged` (all from MAUI's proven design) |
 | `BusySignalPolicy` | `CoreBusySignalPolicy` |
 | default `ProbeReadiness()` on `IPageObject` | Deleted with `IPageObject` in step 10 |
 
 ## Exceptions
 
-| Existing (`Bruinell.Core.Exceptions`) | New (`Bruinell.Core.Automation.Exceptions`) | Fate |
+| Existing (`Bruinet.Core.Exceptions`) | New (`Bruinet.Core.Automation.Exceptions`) | Fate |
 | --- | --- | --- |
-| `BruinellException` | (unchanged) | Kept |
+| `BruinetException` | (unchanged) | Kept |
 | `ElementNotFoundException` | (unchanged) | Kept |
 | `AssertionException` | (unchanged) | Kept |
 | `WaitTimeoutException` | (unchanged) | Kept |
@@ -81,7 +81,7 @@ All under `Bruinell.Core.Automation`. Members inside unchanged.
 | (new) | `CoreAppUnavailableException` | New |
 
 The MAUI-side exceptions `StaleElementException`, `ElementNotReadyException`,
-`ScopeNotReadyException`, `AppUnavailableException` (in `Bruinell.Maui.Exceptions`) become type
+`ScopeNotReadyException`, `AppUnavailableException` (in `Bruinet.Maui.Exceptions`) become type
 aliases or subclasses of the `Core*` set in step 4 of `plan.md`.
 
 ## Calls layer
@@ -90,17 +90,17 @@ Type names stay the same as MAUI's; the namespace disambiguates.
 
 | MAUI name | Core name | Namespace |
 | --- | --- | --- |
-| `ControlCall` | `ControlCall` | `Bruinell.Core.Automation.Calls` |
-| `Poller` | `Poller` | `Bruinell.Core.Automation.Calls` |
-| `Deadline` | `Deadline` | `Bruinell.Core.Automation.Calls` |
-| `AttemptContext` | `AttemptContext` | `Bruinell.Core.Automation.Calls` |
-| `Observation` | `Observation` | `Bruinell.Core.Automation.Calls` |
-| `ObservationLog` | `ObservationLog` | `Bruinell.Core.Automation.Calls` |
-| `ScopeGate` | `ScopeGate` | `Bruinell.Core.Automation.Calls` |
-| `Confirmer` | `Confirmer` | `Bruinell.Core.Automation.Calls` |
-| `Confirmation<T>` | `Confirmation<T>` | `Bruinell.Core.Automation.Calls` |
+| `ControlCall` | `ControlCall` | `Bruinet.Core.Automation.Calls` |
+| `Poller` | `Poller` | `Bruinet.Core.Automation.Calls` |
+| `Deadline` | `Deadline` | `Bruinet.Core.Automation.Calls` |
+| `AttemptContext` | `AttemptContext` | `Bruinet.Core.Automation.Calls` |
+| `Observation` | `Observation` | `Bruinet.Core.Automation.Calls` |
+| `ObservationLog` | `ObservationLog` | `Bruinet.Core.Automation.Calls` |
+| `ScopeGate` | `ScopeGate` | `Bruinet.Core.Automation.Calls` |
+| `Confirmer` | `Confirmer` | `Bruinet.Core.Automation.Calls` |
+| `Confirmation<T>` | `Confirmation<T>` | `Bruinet.Core.Automation.Calls` |
 
-MAUI's copies in `srcnew/Bruinell.Maui/Calls/*.cs` are deleted in step 4 of `plan.md`.
+MAUI's copies in `srcnew/Bruinet.Maui/Calls/*.cs` are deleted in step 4 of `plan.md`.
 
 ## Base classes
 
@@ -144,10 +144,10 @@ For record. These types were considered and left alone.
 | Type | Reason kept |
 | --- | --- |
 | `Locator`, `LocatorStrategy` | Not stack-specific; already shared |
-| `BruinellException` and its non-page subclasses | Shared, and the type identity matters for `catch` |
+| `BruinetException` and its non-page subclasses | Shared, and the type identity matters for `catch` |
 | `TimeoutSettings`, `ITestLogger`, `LogResult`, `NullTestLogger` | Runtime services; already shared |
 | `TextInputMethod` | An input-mode enum; shared |
 | `IDiagnosticDriver`, `IScreenshotService` | Cross-cutting services; shared |
 | `AbsenceTolerantAttribute`, `SkipGenerationAttribute`, `GenerateComparisonsAttribute`, `FluentReturnAttribute` | Generator inputs; shared |
-| `TestPageAttribute` (in `Bruinell.Core.Composition`) | UAT discovery marker; kept while `IPageObject` and `ICorePage` are both accepted (?C7) |
+| `TestPageAttribute` (in `Bruinet.Core.Composition`) | UAT discovery marker; kept while `IPageObject` and `ICorePage` are both accepted (?C7) |
 | `ITestContext` (non-generic) | Already the shared surface (`design.md` 4, ?C6) |

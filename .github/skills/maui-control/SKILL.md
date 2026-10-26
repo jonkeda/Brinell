@@ -1,6 +1,6 @@
 ---
 name: maui-control
-description: Create or extend a Bruinell MAUI ControlObject - a simple control, a container, a component with named parts, or a collection with rows - in the .tpl.cs / .gen.cs generator format. Use when asked to add, write, or extend a control object, container, component, collection, or part for a MAUI or third-party (CommunityToolkit, vendor) control, or when a UI test needs a control member that does not exist yet.
+description: Create or extend a Bruinet MAUI ControlObject - a simple control, a container, a component with named parts, or a collection with rows - in the .tpl.cs / .gen.cs generator format. Use when asked to add, write, or extend a control object, container, component, collection, or part for a MAUI or third-party (CommunityToolkit, vendor) control, or when a UI test needs a control member that does not exist yet.
 ---
 
 # Create a MAUI ControlObject
@@ -21,13 +21,13 @@ follow the rule and mention the disagreement.
    scratch directory that walks the raw UI Automation view (FlaUI or
    `System.Windows.Automation`) is fine. Keep it out of the repo and record what it showed in the
    class remarks. Choose a route per member with [routes.md](references/routes.md).
-3. **Add the sample**: an element in `samples/Bruinell.Samples.Maui.App` with an
+3. **Add the sample**: an element in `samples/Bruinet.Samples.Maui.App` with an
    `AutomationId`, and a status label that shows the visible effect of each action.
 4. **Write the template** `Foo.tpl.cs` to the [generator contract](references/generator-contract.md)
    and the common rules below.
 5. **Generate and build**: `tools\Scripts\CreateMaui.Bat`, read its errors and warnings, diff
    `Foo.gen.cs` against the API you intended, then
-   `dotnet build Bruinell.sln -v:minimal /nr:false`. A plain `.cs` (no Core methods, no
+   `dotnet build Bruinet.sln -v:minimal /nr:false`. A plain `.cs` (no Core methods, no
    shortcuts: R5) skips generation; just build.
 6. **Prove it**: page-object members and UI tests, written with the `maui-ui-test` skill.
    Rebuild the sample app (the solution build above includes it and the Windows exe the fixture
@@ -59,8 +59,8 @@ Tie-breakers:
 
 ### Placement and naming
 
-- Framework controls: `srcnew/Bruinell.Maui/Controls/<Family>/Foo.tpl.cs`. Third-party sources:
-  `srcnew/Bruinell.Maui.<Source>/Controls/<Family>/Foo.tpl.cs`. The namespace follows the folder.
+- Framework controls: `srcnew/Bruinet.Maui/Controls/<Family>/Foo.tpl.cs`. Third-party sources:
+  `srcnew/Bruinet.Maui.<Source>/Controls/<Family>/Foo.tpl.cs`. The namespace follows the folder.
 - `Foo.gen.cs` is generated. Never edit it; never commit a template change without
   regenerating.
 - A `.tpl.cs` class is `partial` (the generator adds the other half); a plain `.cs` class is not.

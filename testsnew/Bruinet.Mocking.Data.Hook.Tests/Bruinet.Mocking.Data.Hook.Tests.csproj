@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Mocking.Data.Hook.Tests</RootNamespace>
+    <Description>The SQL replay test-id hook (.my/sql-replay/plan.md, step 4): the hook sample started as a process of its own, recorded and replayed through HTTP.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+    <!-- Built first, run from its own output folder as a process of its own; not loaded here. -->
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Sql.Hook\Bruinet.Samples.Sql.Hook.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

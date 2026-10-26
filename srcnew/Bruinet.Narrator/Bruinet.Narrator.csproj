@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Narrator</RootNamespace>
+    <Description>Narrated recordings of scenario runs: video scripts (*.video.md), their check against the feature files, and the plan a recording follows.</Description>
+    <PackageId>Bruinet.Narrator</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Bdd\Bruinet.Bdd.csproj" />
+    <ProjectReference Include="..\Bruinet.Recording\Bruinet.Recording.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Narrator.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

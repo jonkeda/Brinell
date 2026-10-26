@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- System.Web runs on .NET Framework only: Windows, so outside Bruinet.sln like the net48 tests; dotnet build this project. -->
+  <PropertyGroup>
+    <TargetFrameworks>net48</TargetFrameworks>
+    <RootNamespace>Bruinet.Mocking.Data.SystemWeb</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Description>The SQL replay test-id hook for a System.Web app on IIS (WebForms, MVC 5): an IHttpModule.</Description>
+    <PackageId>Bruinet.Mocking.Data.SystemWeb</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

@@ -7,9 +7,9 @@ the **calls themselves**: that the right request was sent, with the right method
 path, headers and body, and that the app handles the server's answers —
 including 500, 401 and timeouts.
 
-All of it runs against the [MockApiServer](../../../srcnew/Bruinell.Mocking/MockApiServer.cs)
+All of it runs against the [MockApiServer](../../../srcnew/Bruinet.Mocking/MockApiServer.cs)
 the fixture starts before the app and hands to the app as its `ApiBaseUrl`
-(see [TodoHost](../../../samples/Todo/tests/Bruinell.Samples.Todo.IntegrationTests/TodoHost.cs)).
+(see [TodoHost](../../../samples/Todo/tests/Bruinet.Samples.Todo.IntegrationTests/TodoHost.cs)).
 
 ---
 
@@ -44,7 +44,7 @@ public sealed class ServicePhrases : UatPhraseClassBase
 
 ## Rule 2 — assert the request's shape, not just that it happened
 
-[RecordedRequest](../../../srcnew/Bruinell.Mocking/RecordedRequest.cs) exposes the
+[RecordedRequest](../../../srcnew/Bruinet.Mocking/RecordedRequest.cs) exposes the
 method, path, query, headers, and body (`BodyAs<T>`, `BodyMatchesJson`). Assert
 what the contract requires.
 
@@ -129,7 +129,7 @@ public void AssertNoWrites()
 > The `GET` assertion between the clear and the count is deliberate: it **waits**
 > for the second sync to actually run before the count is read, so the "no writes"
 > check is not a race (AD-004). Ordering and idempotence are really **integration** concerns
-> ([TodoHost](../../../samples/Todo/tests/Bruinell.Samples.Todo.IntegrationTests/TodoHost.cs)
+> ([TodoHost](../../../samples/Todo/tests/Bruinet.Samples.Todo.IntegrationTests/TodoHost.cs)
 > reads the request log without a UI). Put them in UAT only when a *screen state*
 > is the point — e.g. the pending marker disappearing after the push.
 

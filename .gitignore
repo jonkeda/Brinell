@@ -11,7 +11,7 @@
 *.sln.docstates
 *.env
 
-# Bruinell test settings overlays and secrets
+# Bruinet test settings overlays and secrets
 **/TestSettings/testsettings.local.json
 **/TestSettings/**/*.local.json
 **/TestSettings/**/*.local.yaml
@@ -87,8 +87,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-!srcnew/Bruinell.Core/Artifacts/
-!srcnew/Bruinell.Core/Artifacts/**
+!srcnew/Bruinet.Core/Artifacts/
+!srcnew/Bruinet.Core/Artifacts/**
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

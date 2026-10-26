@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Samples.Todo.Uat</RootNamespace>
+    <!-- FlaUI drives the Windows app, same as the UI test project it reuses. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The UAT engine, and the page objects and controls its scenarios drive. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\Bruinet.Samples.Todo.UITests\Bruinet.Samples.Todo.UITests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Callable phrases every scenario can use; the gate reads them from the output. -->
+    <None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Video scripts: BRUINET_RECORD names one, relative to the config, in the run's folder. -->
+    <None Update="Features\**\*.video.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="VideoScripts\**\*.video.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Files that must fail binding: a scenario without the Using its pages need. -->
+    <None Update="ExpectedFailures\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The acceptance backbone the scenarios draw from; shipped with the project, not copied out. -->
+    <None Include="todo-user-journeys.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

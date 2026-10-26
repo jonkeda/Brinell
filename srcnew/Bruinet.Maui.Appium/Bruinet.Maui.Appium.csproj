@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Maui.Appium</RootNamespace>
+    <Description>Appium-based driver implementation for MAUI UI testing on iOS and Android platforms.</Description>
+    <PackageId>Bruinet.Maui.Appium</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Maui\Bruinet.Maui.csproj" />
+    <ProjectReference Include="..\Bruinet.Appium\Bruinet.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+</Project>

@@ -8,7 +8,7 @@
 
     <!-- Emit XML doc files so kept summaries reach IntelliSense/help. CS1591 (missing
          doc on a public member) is suppressed until the public surface has its summaries.
-         CS1710 (duplicate typeparam) is suppressed because Bruinell.Generator copies the
+         CS1710 (duplicate typeparam) is suppressed because Bruinet.Generator copies the
          class-level doc onto the generated .gen.cs partial of every generic control, so both
          partials legitimately carry the same <typeparam>; the doc is authored once in .tpl.cs. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -20,10 +20,10 @@
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     
     <!-- Package metadata -->
-    <Authors>Bruinell Contributors</Authors>
-    <Company>Bruinell</Company>
-    <Product>Bruinell UI Test Framework</Product>
-    <Copyright>Copyright © 2024-$([System.DateTime]::Now.Year) Bruinell Contributors</Copyright>
+    <Authors>Bruinet Contributors</Authors>
+    <Company>Bruinet</Company>
+    <Product>Bruinet UI Test Framework</Product>
+    <Copyright>Copyright © 2024-$([System.DateTime]::Now.Year) Bruinet Contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/exact-mobile-apps/test-tooling</PackageProjectUrl>
     <RepositoryUrl>https://github.com/exact-mobile-apps/test-tooling</RepositoryUrl>

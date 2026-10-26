@@ -6,14 +6,14 @@ Date: 2026-09-28.
 ## 1. Do the UI test runs need the desktop, mouse and keyboard?
 
 **No. The plan is wrong there.** I wrote it out of habit from other UI test tools, not from how
-Bruinell works. The runs in the plan (sections 5 and 6) are the Todo **MAUI** suite on Windows,
-through `Bruinell.Maui.FlaUI`, and that driver was built so a person can keep working while it
+Bruinet works. The runs in the plan (sections 5 and 6) are the Todo **MAUI** suite on Windows,
+through `Bruinet.Maui.FlaUI`, and that driver was built so a person can keep working while it
 runs:
 
 | What the plan feared | What happens |
 | --- | --- |
 | The run moves the mouse or types | It never does. Every action is a UI Automation pattern or a gesture bridge verb, and nothing else is possible: there is no code for pointer, keyboard, clipboard or taking the foreground, and no switch to turn it on ([AD-005](../../../.docs/decisions/ad-005-physical-input-is-opt-in.md), [AD-008](../../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)). |
-| The app needs to be in front | It is kept behind. `QuietWindow` records the window you were using when the app starts, and a watchdog puts your window back if the app takes the foreground (`srcnew/Bruinell.Maui.FlaUI/Windowing/QuietWindow.cs`; the `Stage=Background` tests check it). |
+| The app needs to be in front | It is kept behind. `QuietWindow` records the window you were using when the app starts, and a watchdog puts your window back if the app takes the foreground (`srcnew/Bruinet.Maui.FlaUI/Windowing/QuietWindow.cs`; the `Stage=Background` tests check it). |
 | A failure screenshot needs the app visible (R-7) | It doesn't. `WindowCapture` asks the window to render itself (`PrintWindow`), so it captures the app's own content while it is behind other windows. |
 
 So you can keep typing in Visual Studio, or anywhere else, while a run goes. What is left:
@@ -24,7 +24,7 @@ So you can keep typing in Visual Studio, or anywhere else, while a run goes. Wha
 - **The app's window does appear** (on the taskbar, behind your window). That is expected, not a
   sign that it wants focus.
 - **This holds for MAUI only.** The WPF and WinForms suites still fall back to real input unless
-  `BRUINELL_BACKGROUND_MODE` is set (AD-005). The web suite runs its browser through Playwright,
+  `BRUINET_BACKGROUND_MODE` is set (AD-005). The web suite runs its browser through Playwright,
   without your mouse or keyboard. The plan runs neither of them.
 - **When the debugger stops** (section 6), Visual Studio comes to the front, as usual. That is the
   debugger, not the test run.

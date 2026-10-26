@@ -3,7 +3,7 @@
 ## Now: the suite on its own MauiUnit head
 
 Since 2026-10-26 the device suite runs on either head itself.
-`$env:BRUINELL_HEAD='mauiunit'; dotnet test testsnew/Bruinell.Maui.UITests` gives **325 passed, 35
+`$env:BRUINET_HEAD='mauiunit'; dotnet test testsnew/Bruinet.Maui.UITests` gives **325 passed, 35
 skipped, 0 failed, in 7 s**. The 35 skipped are:
 - the 33 tests below, now marked `[DeviceFact]` or `[WindowsOnlyFact(Device = ...)]`, each skip naming what it needs the device for;
 - the suite's own 2 probe and stress skips.
@@ -12,14 +12,14 @@ skipped, 0 failed, in 7 s**. The 35 skipped are:
 the suite runs on Windows as before.
 
 The count below was made before that, through a linked copy of the suite
-(`Bruinell.Maui.UITests.Munit`, since retired), and is kept as the record of what fails in memory
+(`Bruinet.Maui.UITests.Munit`, since retired), and is kept as the record of what fails in memory
 and why.
 
 ## The count, run 7 (2026-10-25)
 
 The linked copy took the device suite unchanged: `MauiFixture`, `ShellFixture`, 64 test files,
 containers, page objects and UAT scenarios. It ran them against both sample apps compiled for plain
-`net10.0` (`samples/Bruinell.Samples.Maui.App.Headless` and `.ShellApp.Headless`, also linked
+`net10.0` (`samples/Bruinet.Samples.Maui.App.Headless` and `.ShellApp.Headless`, also linked
 unchanged), leaving out only `FlaUIErrorsTests`.
 
 319 of the 354 tests passed, 2 were skipped, and 33 failed, in 6 s. Of those 33, 32 are tests no
@@ -40,7 +40,7 @@ can run in memory, 319 passed.
 ## Speed
 
 The whole run takes 6 s: 5.8 s for the 319 passes (18 ms each) and 0.7 s for the 33 failures. A
-failure on this head refuses at once (`DeviceOnlyException`, a Bruinell refusal) rather than waiting
+failure on this head refuses at once (`DeviceOnlyException`, a Bruinet refusal) rather than waiting
 out a timeout, which is what brought the run down from 3 min.
 
 ## How the count went
@@ -49,7 +49,7 @@ out a timeout, which is what brought the run down from 3 min.
 | --- | --- | --- | --- |
 | 1 | 6 of 6 (Buttons only) | 60 s | Every `Open` waited 10 s: `CurrentRoute()` named the page by type, not by `AutomationId` |
 | 2 | 220 | 3 min 11 s | The first full count |
-| 3 | 278 | 3 min 10 s | State as the bridge answers it; refusals as Bruinell's exceptions; scroll routes; Stepper parts; the app's sinks; swipes |
+| 3 | 278 | 3 min 10 s | State as the bridge answers it; refusals as Bruinet's exceptions; scroll routes; Stepper parts; the app's sinks; swipes |
 | 4 | 295 | 2 min 9 s | The Shell app compiled headless; Shell's tab bar and flyout in the tree; hidden elements out of lookups |
 | 5 | 308 | 2 min 8 s | A sweep no longer answered app-wide (a container's miss had become a hit outside it); focus; one carousel card on screen; the scroll refusal's wording |
 | 6, 7 | 319 | 6 s | Dialogs; off-screen cards back in lookups, as on Windows |
@@ -65,14 +65,14 @@ The full list of the 33, by group, with each one's first message line, is kept i
 
 ## The Todo sample on MauiUnit (2026-10-26)
 
-`$env:BRUINELL_HEAD='mauiunit'` on the Todo sample's two MAUI suites, against its app compiled for
-plain `net10.0` (`samples/Todo/src/Bruinell.Samples.Todo.App.Headless`), a WireMock backend over
+`$env:BRUINET_HEAD='mauiunit'` on the Todo sample's two MAUI suites, against its app compiled for
+plain `net10.0` (`samples/Todo/src/Bruinet.Samples.Todo.App.Headless`), a WireMock backend over
 HTTP and a SQLite database per run:
 
 | Suite | Result | Time |
 | --- | --- | --- |
-| `Bruinell.Samples.Todo.Uat` | 42 scenarios pass, 1 skips (`@service`, for the service head) | about 30 s |
-| `Bruinell.Samples.Todo.UITests` | 44 tests pass, 3 skip (the live-API tier, without `BRUINELL_UAT_LIVE_API`) | about 18 s |
+| `Bruinet.Samples.Todo.Uat` | 42 scenarios pass, 1 skips (`@service`, for the service head) | about 30 s |
+| `Bruinet.Samples.Todo.UITests` | 44 tests pass, 3 skip (the live-API tier, without `BRUINET_UAT_LIVE_API`) | about 18 s |
 
 The first full UAT run passed 0 of 42 and the second 12. The way to green and its fixes are in the
 README's log. Both suites then passed five runs in a row. Without the variable both still run on

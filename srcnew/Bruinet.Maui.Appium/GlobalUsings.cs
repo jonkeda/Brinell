@@ -1,0 +1,9 @@
+global using OpenQA.Selenium.Appium;
+global using OpenQA.Selenium.Appium.Android;
+global using OpenQA.Selenium.Appium.iOS;
+global using Bruinet.Core;
+global using Bruinet.Core.Exceptions;
+global using Bruinet.Core.Interfaces;
+global using Bruinet.Core.Locators;
+global using Bruinet.Maui.Interfaces;
+global using Bruinet.Appium;

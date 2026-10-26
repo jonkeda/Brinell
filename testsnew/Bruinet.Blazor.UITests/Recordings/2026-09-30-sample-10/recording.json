@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:13.2494491+00:00",
+      "location": "http://localhost:5180/navigation",
+      "page": "/navigation",
+      "title": "Navigation - Bruinet Blazor Sample",
+      "snapshot": "001-navigation-bruinet-blazor-sample.nodes.jsonl",
+      "nodes": 187,
+      "displayName": "Navigation - Bruinet Blazor Sample"
+    }
+  ]
+}

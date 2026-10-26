@@ -1,8 +1,8 @@
 # CommunityToolkit.Maui Controls
 
-`Bruinell.Maui.CommunityToolkit` has control objects for the views in
+`Bruinet.Maui.CommunityToolkit` has control objects for the views in
 [CommunityToolkit.Maui](https://github.com/CommunityToolkit/Maui) that a test can drive. Like
-`Bruinell.Maui`, the library does not reference MAUI or the toolkit: the controls wrap automation
+`Bruinet.Maui`, the library does not reference MAUI or the toolkit: the controls wrap automation
 elements, and only the app under test references the toolkit.
 
 Measured against CommunityToolkit.Maui 15.0.1, CommunityToolkit.Maui.MediaElement 10.0.0 and
@@ -12,7 +12,7 @@ Microsoft.Maui.Controls 10.0.90, on Windows.
 
 | Toolkit view | Control | Namespace | Base |
 | --- | --- | --- | --- |
-| `Expander` | `Expander<TScope>` | `Bruinell.Maui.CommunityToolkit.Controls.Views` | `ViewBase` |
+| `Expander` | `Expander<TScope>` | `Bruinet.Maui.CommunityToolkit.Controls.Views` | `ViewBase` |
 | `AvatarView` | `AvatarView<TScope>`, parts `AvatarInitials<TScope>`, `AvatarImage<TScope>` | `...Controls.Views` | `ComponentObjectBase` |
 | `RatingView` | `RatingView<TScope>` | `...Controls.Views` | `RangeControlBase` |
 | `DrawingView` | `DrawingView<TScope>` | `...Controls.Views` | `ViewBase` |
@@ -21,11 +21,11 @@ Microsoft.Maui.Controls 10.0.90, on Windows.
 | `DockLayout` | `DockLayout<TParent>` / `DockLayout<TParent, TSelf>` | `...Controls.Layouts` | `ContainerObjectBase` |
 | `MediaElement` | `MediaElement<TScope>` | `...Controls.Media` | `ComponentObjectBase` |
 
-`MediaElement` moved here from `Bruinell.Maui.Controls.Media`, where it was an empty stub.
+`MediaElement` moved here from `Bruinet.Maui.Controls.Media`, where it was an empty stub.
 
 ## What UI Automation Sees
 
-Probed 2026-09-17 on Windows (`net10.0-windows10.0.19041.0`, Debug, `BRUINELL_UIA_BRIDGE=1`,
+Probed 2026-09-17 on Windows (`net10.0-windows10.0.19041.0`, Debug, `BRUINET_UIA_BRIDGE=1`,
 AppSupport automation handlers on) with a raw-view walk, before any bridge verb was declared.
 Android was not probed. These trees are why each route below is what it is: a control gets a
 bridge verb only where the tree has no pattern for the job and the AD-008 checks pass.
@@ -115,7 +115,7 @@ bridge only where none does.
 
 ### The app side
 
-`Bruinell.Maui.AppSupport` knows MAUI, not the toolkit, so it cannot answer verbs for toolkit
+`Bruinet.Maui.AppSupport` knows MAUI, not the toolkit, so it cannot answer verbs for toolkit
 types. The app declares the verbs and attaches a sink that can:
 
 ```xml
@@ -125,7 +125,7 @@ types. The app declares the verbs and attaches a sink that can:
                   uia:GestureAutomation.Sink="{x:Static automation:ToolkitVerbSink.Instance}" />
 ```
 
-Copy `samples/Bruinell.Samples.Maui.App/Automation/ToolkitVerbSink.cs` into the app. It answers
+Copy `samples/Bruinet.Samples.Maui.App/Automation/ToolkitVerbSink.cs` into the app. It answers
 Expander, RatingView and DrawingView and adds no new verb numbers.
 
 ## Platform Gaps
@@ -145,11 +145,11 @@ own: they are plain layouts, so use `Grid`/`ContentView`-style containers or the
 ## Tests
 
 - Sample pages: `SamplePage.CommunityToolkit`, `CommunityToolkitAlerts`, `CommunityToolkitMedia`.
-- Page objects: `testsnew/Bruinell.Maui.UITests/Pages/CommunityToolkit*TestPage.cs`.
-- Tests: `testsnew/Bruinell.Maui.UITests/Tests/CommunityToolkit`, one class per control, each with
+- Page objects: `testsnew/Bruinet.Maui.UITests/Pages/CommunityToolkit*TestPage.cs`.
+- Tests: `testsnew/Bruinet.Maui.UITests/Tests/CommunityToolkit`, one class per control, each with
   `[Trait("Control", "<Name>")]`.
 
 ```powershell
-# Working directory: Bruinell root
-dotnet test testsnew\Bruinell.Maui.UITests\Bruinell.Maui.UITests.csproj --filter "Control=Expander|Control=RatingView"
+# Working directory: Bruinet root
+dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Expander|Control=RatingView"
 ```

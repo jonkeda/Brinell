@@ -1,6 +1,6 @@
 # .docs
 
-The durable layer to read **before changing Bruinell**: decisions, invariants and
+The durable layer to read **before changing Bruinet**: decisions, invariants and
 contracts - what must stay true. Not a description of the code; that can be regenerated
 from the source and goes stale. The reasoning: [the documentation plan](https://github.com/exact-mobile-apps/test-tooling/blob/fe5d2b66/.my/documentation/plan.md).
 
@@ -8,8 +8,8 @@ How this differs from the other trees:
 
 | Tree | Holds | Reader |
 | --- | --- | --- |
-| **`.docs/`** | decisions, invariants, contracts: what must stay true | someone **changing** Bruinell |
-| `docs/` | getting started, guides, control catalogue, how to run | someone **using** Bruinell |
+| **`.docs/`** | decisions, invariants, contracts: what must stay true | someone **changing** Bruinet |
+| `docs/` | getting started, guides, control catalogue, how to run | someone **using** Bruinet |
 | `.my/` | plans, analyses, reviews for work in flight | whoever is doing that work |
 | `docs2/` | archive | nobody, until needed |
 
@@ -39,7 +39,7 @@ How this differs from the other trees:
 - [AD-018: The Presenter workspace is the UAT project](decisions/ad-018-the-presenter-workspace-is-the-uat-project.md)
 - [AD-019: Phrases have scopes and namespaces](decisions/ad-019-phrases-have-scopes-and-namespaces.md)
 - [AD-020: A tier is a head](decisions/ad-020-a-tier-is-a-head.md)
-- [AD-021: Bruinell.Bdd under Bruinell.Uat](decisions/ad-021-bdd-under-uat.md)
+- [AD-021: Bruinet.Bdd under Bruinet.Uat](decisions/ad-021-bdd-under-uat.md)
 - [AD-022: The IDEs run the gate's engine](decisions/ad-022-the-ides-run-the-gates-engine.md)
 - [AD-023: A feature file is Markdown; Gherkin is fenced](decisions/ad-023-a-feature-file-is-markdown.md)
 - [AD-024: A recording is a paced gate run](decisions/ad-024-a-recording-is-a-paced-gate-run.md)

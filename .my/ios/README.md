@@ -15,7 +15,7 @@ that checks them: what to start, which tests prove each route, and what to chang
 | Scroll into view | `AppiumMauiElement.ScrollIntoViewiOS` | `mobile: scrollToElement`, then `mobile: scroll` to visible, then one swipe down, each after the first only while the call's budget lasts (P5) |
 | IndicatorView | `IndicatorView.ReadPageControl` | a `XCUIElementTypePageIndicator` whose value reads `page 2 of 5` |
 | Session settings | `MauiDriverFactory.SessionDefaults` (2026-10-22, M1) | `waitForQuiescence` false and `settings[waitForIdleTimeout]` 1 (seconds on XCUITest) keep an animating page from costing each command its 10 s; check a command on a page with an ActivityIndicator returns at once |
-| The Shell app | `samples/Bruinell.Samples.Maui.ShellApp` (`net10.0-ios`), `ShellFixture.GetDefaultAppPath` | built like the hub app, into `bin/Debug/net10.0-ios/iossimulator-<arch>/` |
+| The Shell app | `samples/Bruinet.Samples.Maui.ShellApp` (`net10.0-ios`), `ShellFixture.GetDefaultAppPath` | built like the hub app, into `bin/Debug/net10.0-ios/iossimulator-<arch>/` |
 
 ## Run it
 
@@ -23,13 +23,13 @@ Set up as [docs/run/maui-ios.md](../../docs/run/maui-ios.md) says, building both
 at a time, in this order, since each later class leans on the routes before it:
 
 ```bash
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~.ButtonTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~.PickerTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~.DatePickerTests|FullyQualifiedName~.TimePickerTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~AlertReadTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~ShellTabTests|FullyQualifiedName~ShellFlyoutTests|FullyQualifiedName~ShellStackTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile --filter "FullyQualifiedName~.IndicatorViewTests"
-dotnet test testsnew/Bruinell.Maui.UITests.Mobile
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.ButtonTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.PickerTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.DatePickerTests|FullyQualifiedName~.TimePickerTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~AlertReadTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~ShellTabTests|FullyQualifiedName~ShellFlyoutTests|FullyQualifiedName~ShellStackTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.IndicatorViewTests"
+dotnet test testsnew/Bruinet.Maui.UITests.Mobile
 ```
 
 The first sign that the navigation root is right: `ButtonTests` should not spend about 10 s per

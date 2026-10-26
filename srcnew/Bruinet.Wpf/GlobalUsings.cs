@@ -1,0 +1,8 @@
+global using System.Diagnostics;
+global using Bruinet.Core;
+global using Bruinet.Core.Configuration;
+global using Bruinet.Core.Exceptions;
+global using Bruinet.Core.Interfaces;
+global using Bruinet.Core.Locators;
+global using Bruinet.Core.Logging;
+global using Bruinet.Wpf.Interfaces;

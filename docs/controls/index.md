@@ -1,6 +1,6 @@
 # Control Object Index
 
-Bruinell controls wrap platform elements with a consistent, test-friendly API.
+Bruinet controls wrap platform elements with a consistent, test-friendly API.
 
 ## Control Responsibilities
 
@@ -36,17 +36,17 @@ Controls should not:
 
 ## Source Of Truth
 
-- Shared interfaces: `srcnew/Bruinell.Core/Interfaces`
-- Locators: `srcnew/Bruinell.Core/Locators`
-- MAUI controls: `srcnew/Bruinell.Maui/Controls`
-- CommunityToolkit.Maui controls: `srcnew/Bruinell.Maui.CommunityToolkit/Controls` - see
+- Shared interfaces: `srcnew/Bruinet.Core/Interfaces`
+- Locators: `srcnew/Bruinet.Core/Locators`
+- MAUI controls: `srcnew/Bruinet.Maui/Controls`
+- CommunityToolkit.Maui controls: `srcnew/Bruinet.Maui.CommunityToolkit/Controls` - see
   [CommunityToolkit.Maui Controls](community-toolkit.md); for another library, see
   [Adding Controls For A New Control Library](../../.guides/control-library.md)
-- WPF/WinForms controls: `srcnew/Bruinell.Wpf`, `srcnew/Bruinell.WinForms`
-- Web controls: `srcnew/Bruinell.Html/Controls` and `srcnew/Bruinell.Blazor/Controls`. They are
+- WPF/WinForms controls: `srcnew/Bruinet.Wpf`, `srcnew/Bruinet.WinForms`
+- Web controls: `srcnew/Bruinet.Html/Controls` and `srcnew/Bruinet.Blazor/Controls`. They are
   generated from `.tpl.cs` templates like MAUI's and implement the same Core interfaces, so a
-  member has the same name on both stacks. The Playwright driver is `srcnew/Bruinell.Html.Playwright`.
-- Native Android controls: `srcnew/Bruinell.NativeAndroid/Controls`, generated the same way, with
+  member has the same name on both stacks. The Playwright driver is `srcnew/Bruinet.Html.Playwright`.
+- Native Android controls: `srcnew/Bruinet.NativeAndroid/Controls`, generated the same way, with
   Android's widget names (`EditText`, `Spinner`, `RecyclerView`) and the same members and UAT
   verbs. See the [native Android guide](../platform-guides/native-android.md).
 

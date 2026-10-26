@@ -1,0 +1,12 @@
+global using System.Diagnostics;
+global using Bruinet.Core.Calls;
+global using Bruinet.Core.Configuration;
+global using Bruinet.Core.Exceptions;
+global using Bruinet.Core.Interfaces;
+global using Bruinet.Core.Locators;
+global using Bruinet.Core.Logging;
+global using Bruinet.Core.Scopes;
+global using Bruinet.Maui.Controls.Buttons;
+global using Bruinet.Maui.Controls.Text;
+global using Bruinet.Maui.Enums;
+global using Bruinet.Maui.Interfaces;

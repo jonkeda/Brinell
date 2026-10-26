@@ -1,31 +1,31 @@
 # Scenario Preview In Visual Studio
 
-The Bruinell BDD extension shows a feature or step file as readable steps, beside the editor: what
+The Bruinet BDD extension shows a feature or step file as readable steps, beside the editor: what
 each step binds to and on which page, the gate's diagnostic on a step that binds to nothing, a
 callable call unfolded into its body, and each Scenario Outline row. It is the same check the
-xUnit gate and `bruinell data validate` run, on the text as you type it.
+xUnit gate and `bruinet data validate` run, on the text as you type it.
 
-Visual Studio 2022 17.10 or later (2026 too), and the .NET 10 runtime, which a Bruinell suite needs
+Visual Studio 2022 17.10 or later (2026 too), and the .NET 10 runtime, which a Bruinet suite needs
 anyway.
 
 ## Build And Install
 
-The extension needs Visual Studio's MSBuild, so it has a solution of its own. From the Bruinell root:
+The extension needs Visual Studio's MSBuild, so it has a solution of its own. From the Bruinet root:
 
 ```powershell
-& "<Visual Studio>\MSBuild\Current\Bin\MSBuild.exe" tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx -restore
+& "<Visual Studio>\MSBuild\Current\Bin\MSBuild.exe" tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio.slnx -restore
 ```
 
-The build publishes `bruinell` (`tools/Bruinell.Cli`) into the VSIX and deploys the extension to the
+The build publishes `bruinet` (`tools/Bruinet.Cli`) into the VSIX and deploys the extension to the
 experimental instance (`devenv /rootsuffix Exp`); pass `/p:DeployExtension=false` to only build it.
-To install it for everyday use, open `tools\Bruinell.Bdd.VisualStudio\bin\Debug\net48\Bruinell.Bdd.VisualStudio.vsix`.
-Each GitHub release carries both extensions: `Bruinell.Bdd.VisualStudio-<version>.vsix` for Visual
-Studio, and `bruinell-bdd-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
+To install it for everyday use, open `tools\Bruinet.Bdd.VisualStudio\bin\Debug\net48\Bruinet.Bdd.VisualStudio.vsix`.
+Each GitHub release carries both extensions: `Bruinet.Bdd.VisualStudio-<version>.vsix` for Visual
+Studio, and `bruinet-bdd-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
 
-The server checks that a suite is built against its own Bruinell. When a Bruinell assembly the
+The server checks that a suite is built against its own Bruinet. When a Bruinet assembly the
 suite's build references differs from the server's by a major or minor version, the suite's config
 gets a warning (`UATG010`), since the editor may then bind differently from the suite's own run.
-Update the extension, or the suite's Bruinell packages.
+Update the extension, or the suite's Bruinet packages.
 
 ## Use
 
@@ -64,7 +64,7 @@ Each scenario heading has four buttons, and the title the file's **Run**, **Run 
 | Button | What it does | Use it |
 | --- | --- | --- |
 | **▶ Run** | Runs the scenario in the suite's runner, reading the feature, step and config files from the source: no build when only those changed. No stops. | to try an edit; the quickest way to a result |
-| **▷ Run as test** | Builds the suite's project, then `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an outline, or `BddScenario~<file>#` for the file), its output in the **Bruinell BDD** Output pane. | to see what CI will say |
+| **▷ Run as test** | Builds the suite's project, then `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an outline, or `BddScenario~<file>#` for the file), its output in the **Bruinet BDD** Output pane. | to see what CI will say |
 | **● Debug** | Run as test with the testhost under Visual Studio's debugger: it stops at step breakpoints and C# breakpoints. | to debug C# from the start of a test |
 | **⏭ Step** | Step through: the scenario in the suite's runner, paused before each step. | to stop at a step (see below) |
 
@@ -77,7 +77,7 @@ the suite's feature files and again after a build, so Run and Step start at once
 through while it waits. It keeps the app open between runs when the suite's fixture can start a
 scenario clean without a launch (Todo's can, on Windows: it resets the app's data in place);
 otherwise it starts the app for the next run as soon as one ends. It ends ten minutes after
-the suite's last feature file closes. Both are in **Tools > Options > Bruinell BDD > General > Runs**,
+the suite's last feature file closes. Both are in **Tools > Options > Bruinet BDD > General > Runs**,
 read when the solution opens.
 
 While a run goes, the UI test rules hold: a second run is refused, a build started during a Run as
@@ -87,9 +87,9 @@ stops the run and the app it started.
 
 A video script (`*.video.md`) previews as the scenes it will record, and its title has **Record**;
 a scenario heading has **Record** beside **Step**. Record builds the solution, runs the scenes
-with `BRUINELL_RECORD`, and offers to watch the video when it is made; the preview lists the
+with `BRUINET_RECORD`, and offers to watch the video when it is made; the preview lists the
 file's recordings to watch. The folder, the voice, the beat and the touch marks' colour are in
-**Tools > Options > Bruinell BDD > General**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
+**Tools > Options > Bruinet BDD > General**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
 
 ## Stop At A Step
 
@@ -144,7 +144,7 @@ chain; **F11** there goes into the step definition.
 
 ### The Breakpoints File
 
-The breakpoints are a per-user file, `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json`, read by the
+The breakpoints are a per-user file, `%LOCALAPPDATA%\Bruinet\bdd-breakpoints.json`, read by the
 engine while a debugger is attached and by the runner's host between steps (Step through, the
 Presenter); a CI run reads neither:
 
@@ -161,16 +161,16 @@ Presenter); a CI run reads neither:
   extension writes and the engine removes when it stops.
 - A test runs the build output's copy of a feature file; a listed file matches it by its path below
   the `Features` folder.
-The extension starts `dotnet Server\bruinell.dll lsp` from its own folder; its log is
-the **Bruinell BDD** pane of the Output window.
+The extension starts `dotnet Server\bruinet.dll lsp` from its own folder; its log is
+the **Bruinet BDD** pane of the Output window.
 
 ## In The Editor
 
 Feature files, step files and the suite configs (`uat.config.md`, `bdd.config.md`) open in the
-Markdown editor with a language server of their own, the same `bruinell lsp`:
+Markdown editor with a language server of their own, the same `bruinet lsp`:
 
 - **Diagnostics.** The gate's problems show as squiggles and in the Error List, word for word as
-  the xUnit gate and `bruinell data validate` report them: the open file as you type, the whole suite
+  the xUnit gate and `bruinet data validate` report them: the open file as you type, the whole suite
   on save and after a build. A problem inside a callable shows at the call, with the steps it went
   through. A step that failed in the last run is an error at its line (`UATRUN`), with the failure's
   message.
@@ -200,7 +200,7 @@ Markdown editor with a language server of their own, the same `bruinell lsp`:
 
 - **Quick fixes (Ctrl+.).**
   - A value with one right answer (`2026-05-12` for a date) is rewritten, as
-    `bruinell data validate --fix` does.
+    `bruinet data validate --fix` does.
   - Old headings are rewritten, and an old file name (UAT029) is renamed.
   - On a step that binds to nothing, **Create step definition** adds a stub to the suite's
     `[BddStepDefinitions]` class: its phrase has a placeholder for each quoted value and number.
@@ -223,7 +223,7 @@ Markdown editor with a language server of their own, the same `bruinell lsp`:
 - a `Using` namespace nothing is in;
 - a suite that cannot bind, with the reason;
 - a `testdata.schema.json` out of date with the test-data definition. **Ctrl+.** regenerates it, as
-  `bruinell data schema` does.
+  `bruinet data schema` does.
 
 Completion offers the fields of each table and their values (heads, `true`/`false`, test sets),
 the assembly kinds, the namespaces, and the heads in the Apps table. Hover on a field says what it
@@ -263,32 +263,32 @@ VS Code) and any other MCP client:
 It calls no model: it holds the catalog and runs the checks, and Copilot does the writing.
 
 Register it in the solution folder's `.mcp.json` (Visual Studio) or `.vscode/mcp.json` (VS Code).
-From the Bruinell root, for the Todo sample:
+From the Bruinet root, for the Todo sample:
 
 ```json
 {
   "servers": {
-    "bruinell-bdd": {
+    "bruinet-bdd": {
       "type": "stdio",
       "command": "dotnet",
-      "args": ["run", "--project", "tools/Bruinell.Cli", "--", "mcp", "--solution", "samples/Todo"]
+      "args": ["run", "--project", "tools/Bruinet.Cli", "--", "mcp", "--solution", "samples/Todo"]
     }
   }
 }
 ```
 
 Build the suite first; its steps come from its build. Then, in Copilot Chat's agent mode, run the
-prompt `/bruinell-write-scenario` (`.github/prompts/bruinell-write-scenario.prompt.md`). It writes a
+prompt `/bruinet-write-scenario` (`.github/prompts/bruinet-write-scenario.prompt.md`). It writes a
 feature file with only the suite's steps, and checks it with `validate_scenario` until the gate
 passes it. A step with no phrase is left as a marked gap, never an invented phrase.
 
 ## Without Visual Studio
 
-`bruinell scenario preview` renders one file as a page, for a look or a bug report (from the Bruinell
-root; elsewhere, `bruinell` once [installed](../run/cli.md)):
+`bruinet scenario preview` renders one file as a page, for a look or a bug report (from the Bruinet
+root; elsewhere, `bruinet` once [installed](../run/cli.md)):
 
 ```powershell
-pwsh tools\Scripts\bruinell.ps1 scenario preview samples\Todo\tests\Bruinell.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
+pwsh tools\Scripts\bruinet.ps1 scenario preview samples\Todo\tests\Bruinet.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
 ```
 
 `--host` writes the page the IDE's webview loads, with the preview posted into it.

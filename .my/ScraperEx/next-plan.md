@@ -17,7 +17,7 @@ What that means:
 | Its platform | The release job runs on `windows-latest`, so the driver is win-x64. The VS Code extension on macOS or Linux would have the wrong one; it already needs .NET on Windows for the rest (the narrator's recorders), so this is a known limit, said in the guide |
 | A Playwright update | A version bump of `Microsoft.Playwright` in `srcnew/Directory.Packages.props` and an extension release |
 | The browser | Not in the extensions: Chromium is installed per Playwright version into `%LOCALAPPDATA%\ms-playwright`. Today Record fails with "run `playwright.ps1 install chromium`". **Step 3** makes it a button: the server runs Playwright's own installer (`Microsoft.Playwright.Program.Main(["install", "chromium"])`), with progress in the view, and an MCP tool `install_browser` that asks first |
-| Later | The updater designed on 2026-09-30 (the Html source as a process of its own, installed per version under `%LOCALAPPDATA%\Bruinell\scrape-hosts`, with `status`, `install`, `update`, `prune`) is in git at a3763989 (`.my/ScraperEx/next-plan.md`), should the size or the pace start to hurt |
+| Later | The updater designed on 2026-09-30 (the Html source as a process of its own, installed per version under `%LOCALAPPDATA%\Bruinet\scrape-hosts`, with `status`, `install`, `update`, `prune`) is in git at a3763989 (`.my/ScraperEx/next-plan.md`), should the size or the pace start to hurt |
 
 ## 2. The test plan
 
@@ -25,9 +25,9 @@ What that means:
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
-| `testsnew/Bruinell.Scraper.Tests` | 78 (13 with `Category=Browser`, headless Chromium) | snapshot file, config, store, masks, page keys, index; capture on the test site (frames, cross-origin, shadow roots, late rendering, transitions, dialogs, typed text, highlight, pick); the service; outline, signatures, patterns, suggestions, diff; code reading, writing and the build gate |
-| `testsnew/Bruinell.Bdd.LanguageServer.Tests` | 4 Scraper tests of 83 | the MCP tools and the `bruinell/scraper/*` methods over a recording made beforehand |
-| `testsnew/Bruinell.Blazor.UITests` | 2 of 35 | a page object made by the Scraper, driven against the Blazor sample |
+| `testsnew/Bruinet.Scraper.Tests` | 78 (13 with `Category=Browser`, headless Chromium) | snapshot file, config, store, masks, page keys, index; capture on the test site (frames, cross-origin, shadow roots, late rendering, transitions, dialogs, typed text, highlight, pick); the service; outline, signatures, patterns, suggestions, diff; code reading, writing and the build gate |
+| `testsnew/Bruinet.Bdd.LanguageServer.Tests` | 4 Scraper tests of 83 | the MCP tools and the `bruinet/scraper/*` methods over a recording made beforehand |
+| `testsnew/Bruinet.Blazor.UITests` | 2 of 35 | a page object made by the Scraper, driven against the Blazor sample |
 
 **What is missing:** nothing has run the Scraper view inside VS Code or Visual Studio; Pick has
 never had a person's click; no headed recording has been checked by a person.
@@ -68,7 +68,7 @@ refresh. It is a reference for someone who knows what the Scraper is.
 | Troubleshooting | No browser (Install browser); VS Code on macOS or Linux (the driver is Windows'); a page captured too early; a login that does not last; a locator that is only a position (ask for test ids); the build gate fails; a Blazor app without the busy signal; a VSIX that finds no project | the same guide, and a line in `docs/guides/troubleshooting.md` |
 | Help in the view | A **?** button: what each button does, what the Pages, Patterns and Code tabs mean, what "changed" means, with a link to the guide. Empty states that say the next step ("No project here has a `scraper.config.md`: add one", "Nothing recorded yet: Record") | the server's page (`ScraperPage`), so both IDEs get it |
 | The agent's side | The `scrape-pages` skill already is the agent's guide; the MCP server's instructions point to it | no change |
-| The extensions' READMEs | One paragraph each on the Scraper, linking the guide | `tools/Bruinell.Bdd.VsCode/README.md`, the VSIX description |
+| The extensions' READMEs | One paragraph each on the Scraper, linking the guide | `tools/Bruinet.Bdd.VsCode/README.md`, the VSIX description |
 
 ## 4. Steps
 

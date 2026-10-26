@@ -1,6 +1,6 @@
 # Review: the bUnit head (2026-10-25)
 
-A review of `Bruinell.Html.Bunit` (about 1,100 lines), its guide, AD-030, and how Tomorrow's studio suite uses it.
+A review of `Bruinet.Html.Bunit` (about 1,100 lines), its guide, AD-030, and how Tomorrow's studio suite uses it.
 It reads the code against what bUnit 2.12.5 offers and what a browser does.
 
 ## Outcome
@@ -29,7 +29,7 @@ that would turn skipped scenarios into run ones, and nothing that watches the tw
   scenario runs everything around them instead of being skipped whole. Most of the studio's 18 `@browser`
   scenarios skip for one viewer.
 - **Script verification** (`JSInterop.Invocations`, `VerifyInvoke`): "Ruben Smit greets you aloud" could check the
-  audio call was made. A Bruinell probe, "the page called script X", would serve page objects on bUnit.
+  audio call was made. A Bruinet probe, "the page called script X", would serve page objects on bUnit.
 - **Strict mode as a report**: one Strict run lists each page's script calls. Loose mode answers them with
   defaults, which can make a page show a state the browser never would.
 - **Fake time** (`FakeTimeProvider`, where the app takes a `TimeProvider`): the sample's login delay and the Html

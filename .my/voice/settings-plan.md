@@ -3,8 +3,8 @@
 Status: **built**, steps 1-6 (2026-10-06): every question in section 5 settled as its leaning.
 Date: 2026-10-05.
 
-As built: the dogfood scenarios (`testsnew/Bruinell.Presenter.Bdd.Tests/Features/cloud-voice-settings.feature.md`)
-found that Bruinell's MAUI driver set a **password field** through UI Automation's Value pattern,
+As built: the dogfood scenarios (`testsnew/Bruinet.Presenter.Bdd.Tests/Features/cloud-voice-settings.feature.md`)
+found that Bruinet's MAUI driver set a **password field** through UI Automation's Value pattern,
 which WinUI's password box takes without passing it to MAUI's `Entry.Text`: the step passed, the
 app had nothing. A password field now takes its text through the app's `SetText` verb, and fails
 saying so when the app does not declare it (`FlaUIMauiElement`); the key field declares it. The
@@ -19,7 +19,7 @@ In the Presenter's Settings panel (the gear), under **Narrator**, a **Cloud voic
 person:
 
 - sees whether a cloud voice is set up, and **from where** (an environment variable, a suite's file,
-  or `%USERPROFILE%\.bruinell\voice.secrets.json`);
+  or `%USERPROFILE%\.bruinet\voice.secrets.json`);
 - enters the endpoint, deployment, API version, key and default voice, and saves them;
 - tries it: one sample line spoken by the service;
 - removes it;
@@ -29,11 +29,11 @@ person:
 
 | Fact | Where |
 | --- | --- |
-| The Settings panel is part of the page, opened from the gear; its Narrator part has the recordings folder, the Voice picker (`VoiceChoices`: "Default voice" and the Windows voices), Try, the beat and Speak aloud. | `srcnew/Bruinell.Presenter/Views/PresenterPage.xaml` (from line 752), `ViewModels/PresenterShellViewModel.Recording.cs` |
+| The Settings panel is part of the page, opened from the gear; its Narrator part has the recordings folder, the Voice picker (`VoiceChoices`: "Default voice" and the Windows voices), Try, the beat and Speak aloud. | `srcnew/Bruinet.Presenter/Views/PresenterPage.xaml` (from line 752), `ViewModels/PresenterShellViewModel.Recording.cs` |
 | The Presenter's own settings are a JSON file it saves (`PresenterUserSettings`: `Voice`, `Beat`, ...). The key does not belong there: it is the narrator's file, read by every host (`dotnet test`, the IDEs, the Presenter). | `Services/PresenterUserSettings.cs` |
-| `VoiceSecrets.Find(folder, read, home)` and `VoiceSecrets.Places(folder, home)` read the file and the environment; nothing writes the file. | `srcnew/Bruinell.Narrator/VoiceSecrets.cs` |
+| `VoiceSecrets.Find(folder, read, home)` and `VoiceSecrets.Places(folder, home)` read the file and the environment; nothing writes the file. | `srcnew/Bruinet.Narrator/VoiceSecrets.cs` |
 | Try speaks through `IPresenterRecorder.TryVoiceAsync`, which uses `Speech.Find(voice)`: it already works with `azure:<voice>` once the file is there. | `Services/PresenterRecorder.cs` |
-| The Presenter has a UAT suite of its own with page objects. | `testsnew/Bruinell.Presenter.Bdd.Tests` (`Features/`, `PageObjects/`) |
+| The Presenter has a UAT suite of its own with page objects. | `testsnew/Bruinet.Presenter.Bdd.Tests` (`Features/`, `PageObjects/`) |
 
 ## 3. Decisions
 
@@ -46,10 +46,10 @@ So a voice set up in the Presenter is the voice of every recording on the machin
 
 | Choice | When |
 | --- | --- |
-| **For me, on this machine**: `%USERPROFILE%\.bruinell\voice.secrets.json` | the default; outside every repository |
+| **For me, on this machine**: `%USERPROFILE%\.bruinet\voice.secrets.json` | the default; outside every repository |
 | **For this workspace**: beside the open workspace's `uat.config.md` | offered only when `git check-ignore` says git ignores the file there; otherwise the choice is disabled and says which `.gitignore` line is missing (`**/voice.secrets.json`), with a button that adds it to that repository's `.gitignore` |
 
-When an environment variable (`BRUINELL_VOICE_KEY`, `BRUINELL_VOICE_ENDPOINT`) is set, the part says
+When an environment variable (`BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT`) is set, the part says
 so: what it shows comes from there, and a saved file would not be used for those values.
 
 ### S3. The key is entered, never shown
@@ -91,11 +91,11 @@ Each step one commit, with tests; the real service is never called by a test.
 
 | # | Step | Files | Done when |
 | --- | --- | --- | --- |
-| 1 | **`VoiceSecrets.Save`, `Delete`, `Source`** (S3, S6, S7): the whole file through a temporary file; access for the current user only; an empty key keeps the saved one; `Source` names where each value comes from. | `srcnew/Bruinell.Narrator/VoiceSecrets.cs` | Narrator tests: save and read back; the key kept on an empty key; the file's ACL has only the current user; `Source` with the environment, a suite's file, the user's file. |
-| 2 | **Where it may be saved** (S2): `VoiceSecretsPlaces` answers whether git ignores the file in a folder (`git check-ignore`, and "no git" when there is none), and adds the `.gitignore` line on request. | `srcnew/Bruinell.Narrator/VoiceSecretsPlaces.cs` | Tests in a temporary repository: ignored, not ignored, the line added makes it ignored, no git. |
-| 3 | **The view model** (S1-S6): `PresenterShellViewModel.CloudVoice.cs`: the fields, where it is from, the place choice, Save, Try (from the fields), Remove, `VoiceChoices` with the cloud voices. The user's folder is injected, so tests never touch the real one. | `srcnew/Bruinell.Presenter/ViewModels/` | Presenter tests: Save writes the chosen place; the key never in a bindable property; Try uses the fields (a fake recorder); Remove; the picker lists `azure:` voices after Save. |
-| 4 | **The panel**: a "Cloud voice" part under Narrator: a state line ("Set up from %USERPROFILE%\.bruinell\voice.secrets.json" / "from BRUINELL_VOICE_KEY" / "Not set up"), the fields (the key an `IsPassword` entry), the place choice, Try, Save, Remove, the result line. AutomationIds on all of them. | `Views/PresenterPage.xaml` | Built; checked by the step 5 scenarios. |
-| 5 | **Dogfood**: Presenter scenarios and page-object members for the part: set it up for me, it says where; save for a workspace whose repository does not ignore the file is refused and says which line; remove it. The Presenter under test gets a temporary user folder (an environment variable the Presenter reads in its tests only, e.g. `BRUINELL_USERPROFILE`), so the real file is never touched. | `testsnew/Bruinell.Presenter.Bdd.Tests/Features/`, `PageObjects/` | The scenarios pass; the developer's own `voice.secrets.json` is unchanged after the run. |
+| 1 | **`VoiceSecrets.Save`, `Delete`, `Source`** (S3, S6, S7): the whole file through a temporary file; access for the current user only; an empty key keeps the saved one; `Source` names where each value comes from. | `srcnew/Bruinet.Narrator/VoiceSecrets.cs` | Narrator tests: save and read back; the key kept on an empty key; the file's ACL has only the current user; `Source` with the environment, a suite's file, the user's file. |
+| 2 | **Where it may be saved** (S2): `VoiceSecretsPlaces` answers whether git ignores the file in a folder (`git check-ignore`, and "no git" when there is none), and adds the `.gitignore` line on request. | `srcnew/Bruinet.Narrator/VoiceSecretsPlaces.cs` | Tests in a temporary repository: ignored, not ignored, the line added makes it ignored, no git. |
+| 3 | **The view model** (S1-S6): `PresenterShellViewModel.CloudVoice.cs`: the fields, where it is from, the place choice, Save, Try (from the fields), Remove, `VoiceChoices` with the cloud voices. The user's folder is injected, so tests never touch the real one. | `srcnew/Bruinet.Presenter/ViewModels/` | Presenter tests: Save writes the chosen place; the key never in a bindable property; Try uses the fields (a fake recorder); Remove; the picker lists `azure:` voices after Save. |
+| 4 | **The panel**: a "Cloud voice" part under Narrator: a state line ("Set up from %USERPROFILE%\.bruinet\voice.secrets.json" / "from BRUINET_VOICE_KEY" / "Not set up"), the fields (the key an `IsPassword` entry), the place choice, Try, Save, Remove, the result line. AutomationIds on all of them. | `Views/PresenterPage.xaml` | Built; checked by the step 5 scenarios. |
+| 5 | **Dogfood**: Presenter scenarios and page-object members for the part: set it up for me, it says where; save for a workspace whose repository does not ignore the file is refused and says which line; remove it. The Presenter under test gets a temporary user folder (an environment variable the Presenter reads in its tests only, e.g. `BRUINET_USERPROFILE`), so the real file is never touched. | `testsnew/Bruinet.Presenter.Bdd.Tests/Features/`, `PageObjects/` | The scenarios pass; the developer's own `voice.secrets.json` is unchanged after the run. |
 | 6 | **Docs**: the guide's Cloud Voice section gets "or in the Presenter: Settings, Narrator, Cloud voice"; the Presenter's guide its part. | `docs/guides/narrated-recordings.md`, `docs/platform-guides/presenter.md` | |
 
 ## 5. Open questions

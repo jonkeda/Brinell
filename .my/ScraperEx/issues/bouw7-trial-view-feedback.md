@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-02, not yet retried in Visual Studio. Found 2026-10-02, running [bouw7-vs-test-plan.md](../bouw7-vs-test-plan.md) in Visual Studio.
 
-The view is the page in `tools/Bruinell.Cli/Lsp/ScraperPage.cs`, shared by Visual Studio and VS Code.
+The view is the page in `tools/Bruinet.Cli/Lsp/ScraperPage.cs`, shared by Visual Studio and VS Code.
 
 ## 0 General
 

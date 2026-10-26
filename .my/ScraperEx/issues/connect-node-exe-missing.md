@@ -4,7 +4,7 @@ Status: both fixed 2026-10-02, not yet retested in Visual Studio. Packaging: the
 
 ## Steps
 
-1. Open the Scraper tool window in the Visual Studio extension (Bruinell BDD).
+1. Open the Scraper tool window in the Visual Studio extension (Bruinet BDD).
 2. Click **Connect**.
 3. An error message shows for a moment and then disappears.
 4. It says something about `node.exe` not being there.
@@ -19,7 +19,7 @@ Playwright starts its driver from `.playwright\node\win32_x64\node.exe`, looking
 `Microsoft.Playwright.dll`. The extension's `Server\` folder has **no subfolders**, so that path
 does not exist.
 
-`dotnet publish` of `tools/Bruinell.Cli` lays the folder out correctly:
+`dotnet publish` of `tools/Bruinet.Cli` lays the folder out correctly:
 
 - `obj/server/.playwright/node/win32_x64/node.exe` is there.
 - 287 files in total, in subfolders.
@@ -29,10 +29,10 @@ The VSIX flattens it:
 - The VSIX has `Server/node.exe`, not `Server/.playwright/node/win32_x64/node.exe`.
 - It holds only 170 `Server/` entries. Files with the same name in different folders overwrite
   each other: localized `*.resources.dll` satellites, `LICENSE`, `SKILL.md`.
-- The installed extension (`…\18.0_…Exp\Extensions\Bruinell Contributors\Bruinell BDD\0.1.0\Server`)
+- The installed extension (`…\18.0_…Exp\Extensions\Bruinet Contributors\Bruinet BDD\0.1.0\Server`)
   has no subfolders either.
 
-The cause is in `tools/Bruinell.Bdd.VisualStudio/Bruinell.Bdd.VisualStudio.csproj`, target
+The cause is in `tools/Bruinet.Bdd.VisualStudio/Bruinet.Bdd.VisualStudio.csproj`, target
 `PublishLanguageServer`. That target builds the `Content` item inside a target and sets
 `VSIXSubPath` / `Link` from `%(RecursiveDir)`. In that position `%(RecursiveDir)` comes out empty,
 so every file lands directly in `Server\`.
@@ -55,7 +55,7 @@ same bug.
 ## Why the message disappeared
 
 Every `ScraperResult` carries `problem`, null on success, and `answer()` in
-`tools/Bruinell.Cli/Lsp/ScraperPage.cs` passed it to `showProblem`. After a failed call the page
+`tools/Bruinet.Cli/Lsp/ScraperPage.cs` passed it to `showProblem`. After a failed call the page
 refreshes (`checkApp` → `refresh` → `answer("progress")`), and that successful call hid the error
 straight away. Now a problem stays until the same call succeeds, another step opens, or another
 problem replaces it.

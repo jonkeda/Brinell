@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Bruinet.Samples.Todo.Core</RootNamespace>
+    <Description>The Todo app's models, rules and view models. No MAUI: everything here is unit-testable.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The MVVM base the MAUI and WPF samples share: ParentViewModel and the relay commands. -->
+    <ProjectReference Include="..\..\..\Bruinet.Samples.Shared\Bruinet.Samples.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Samples.Todo.UnitTests" />
+  </ItemGroup>
+
+</Project>

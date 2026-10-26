@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:05.4827209+00:00",
+      "location": "http://localhost:5180/form-controls",
+      "page": "/form-controls",
+      "title": "Form Controls - Bruinet Blazor Sample",
+      "snapshot": "001-form-controls-bruinet-blazor-sample.nodes.jsonl",
+      "nodes": 108,
+      "displayName": "Form Controls - Bruinet Blazor Sample"
+    }
+  ]
+}

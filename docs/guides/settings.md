@@ -1,6 +1,6 @@
 # Test Settings
 
-Bruinell test settings live in `srcnew/Bruinell.Core/Settings`.
+Bruinet test settings live in `srcnew/Bruinet.Core/Settings`.
 
 ## Purpose
 
@@ -72,8 +72,8 @@ UAT attaches resolved settings to `BddExecutionContext`; commands can retrieve
 
 ## Source Files
 
-- `srcnew/Bruinell.Core/Settings/TestSettings.cs`
-- `srcnew/Bruinell.Core/Settings/JsonTestSettingsProvider.cs`
-- `srcnew/Bruinell.Core/Settings/TestSettingsRequest.cs`
-- `srcnew/Bruinell.Core/Settings/TestSettingsSectionAttribute.cs`
-- `srcnew/Bruinell.Uat/BddExecutionContextSettingsExtensions.cs`
+- `srcnew/Bruinet.Core/Settings/TestSettings.cs`
+- `srcnew/Bruinet.Core/Settings/JsonTestSettingsProvider.cs`
+- `srcnew/Bruinet.Core/Settings/TestSettingsRequest.cs`
+- `srcnew/Bruinet.Core/Settings/TestSettingsSectionAttribute.cs`
+- `srcnew/Bruinet.Uat/BddExecutionContextSettingsExtensions.cs`

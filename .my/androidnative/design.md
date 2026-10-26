@@ -1,15 +1,15 @@
-# Bruinell.NativeAndroid to the MAUI and Html standard: design
+# Bruinet.NativeAndroid to the MAUI and Html standard: design
 
 What to build. The steps and their status are in [plan.md](plan.md). Where this says "as MAUI"
 or "as Html", the shape is the one recorded in AD-010, AD-013, the
 [call-model](../../.docs/contracts/call-model.md) and
 [control-object](../../.docs/contracts/control-object.md) contracts, and the code under
-`srcnew/Bruinell.Maui` and `srcnew/Bruinell.Html`; this file records only what NativeAndroid
+`srcnew/Bruinet.Maui` and `srcnew/Bruinet.Html`; this file records only what NativeAndroid
 adds or does differently.
 
 ## 1. Where it stands (2026-10-07)
 
-`srcnew/Bruinell.NativeAndroid`: 74 C# files, about 3,700 lines. `testsnew/Bruinell.NativeAndroid.Tests`:
+`srcnew/Bruinet.NativeAndroid`: 74 C# files, about 3,700 lines. `testsnew/Bruinet.NativeAndroid.Tests`:
 16 unit tests (locator mapping and options), all passing, and **not in CI's unit test list**.
 No UI tests, no UAT suite, no sample app. Nothing else in the repo references the project.
 
@@ -18,18 +18,18 @@ No UI tests, no UAT suite, no sample app. Nothing else in the repo references th
 | Interfaces | Own set: `IMaui*` / `IHtml*` element, driver, element scope, scope, page, test context, container (AD-010) | Core's generic `IElement<NativeAndroidElement>`, `IDriver<>`, `IElementScope<>`, `IPageObject<>`, `ITestContext<>`, `IContainerControl<>`; one own `INativeAndroidScope<T>` |
 | Element identity | `InstanceKey`; a `Live` wrapper maps "element gone" and "session gone" | None. Appium exceptions leak or are swallowed |
 | Finds | One attempt, no timeout finds; the call polls | `FindElement(locator, timeoutMs)` with `WebDriverWait`, and finds inside controls with their own timeouts |
-| Calls | `Bruinell.Core.Calls` (`ControlCall`, `Poller`, `Deadline`, `Confirmer`, `ScopeGate`); one log pair per call; near-miss warnings | Private `Poll` loops with `Thread.Sleep` in the control base and page base; `catch (WebDriverException)` and an empty `catch (ElementNotFoundException)` |
+| Calls | `Bruinet.Core.Calls` (`ControlCall`, `Poller`, `Deadline`, `Confirmer`, `ScopeGate`); one log pair per call; near-miss warnings | Private `Poll` loops with `Thread.Sleep` in the control base and page base; `catch (WebDriverException)` and an empty `catch (ElementNotFoundException)` |
 | Act once (R0) | An action runs once and confirms its effect | Not confirmed; `ScrollIntoView` swallows `WebDriverException` and returns |
-| Exceptions | `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`, `RouteUnavailableException` from `Bruinell.Core.Exceptions` | `ElementNotFoundException`, `AssertionException`, `PageLoadException` |
+| Exceptions | `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`, `RouteUnavailableException` from `Bruinet.Core.Exceptions` | `ElementNotFoundException`, `AssertionException`, `PageLoadException` |
 | Scope readiness | `ScopeReadiness`, `ProbeReadiness`, `AppRoot`, a busy signal, a parent asked first | `IsReady` is `true` on the context; a page is "loaded" when its `ReadyLocator` is visible |
-| Controls | `.tpl.cs` with `*Core` methods, `.gen.cs` from `Bruinell.Generator`, MAUI's `Run*` helpers (R8), Core capability interfaces | Hand-written public members on 14 capability bases; `ControlObjectBase<TScope>` |
+| Controls | `.tpl.cs` with `*Core` methods, `.gen.cs` from `Bruinet.Generator`, MAUI's `Run*` helpers (R8), Core capability interfaces | Hand-written public members on 14 capability bases; `ControlObjectBase<TScope>` |
 | Collections | `CollectionObjectBase`, `ItemObjectBase`, `ItemKey`, waiting `Item(index)`, answering `TryItem` (R7) | `AndroidRecyclerView` with no item model; 5 collection types that are one class each with no members |
 | Containers | `ContainerObjectBase`, `ComponentObjectBase` | `AndroidContainerBase` and five flavours (scrollable, expandable, refreshable, ...) |
 | Control names | MAUI's control names on MAUI; HTML element names on Html | Mostly **MAUI's** names (`Entry`, `Editor`, `CarouselView`, `FlyoutItem`, `TableView`, `RoundButton`, `MediaElement`, ...), which a native Android app does not have |
 | Page objects | `PageObjectBase` with Core's `[TestPage]`, found by UAT discovery | `NativeAndroidPageObjectBase` with about 90 control factory methods; no `[TestPage]` |
 | UAT | A fixture base registered in `UatTargetConventions`; a head in `BddTagConventions` | Neither |
 | Recording | `IRecordable`; touch marks (`Interactions`, AD-024) | Neither |
-| Strays | - | `MauiOptions.cs`, a copy of MAUI's options declared in Core's namespace `Bruinell.Core.Configuration` |
+| Strays | - | `MauiOptions.cs`, a copy of MAUI's options declared in Core's namespace `Bruinet.Core.Configuration` |
 
 ## 2. Target shape
 
@@ -44,25 +44,25 @@ The same layers as MAUI and Html, named for the stack:
 | Page | `INativeAndroidPage`, `INativeAndroidPage<TSelf>` | As `IHtmlPage`; the title is the activity, or a toolbar title when the page names one |
 | Test context | `INativeAndroidTestContext : ITestContext, INativeAndroidElementScope` | `Driver`, `Name`, `NearMiss`, `Timeouts`, `Logger` |
 | Container | `INativeAndroidContainer<TParent, TSelf>` | `Parent`, `ContainerRoot` |
-| Bases | `ViewBase<TScope>` (`.tpl.cs`), the capability bases, `PageObjectBase<TSelf>`, `ContainerObjectBase`, `ComponentObjectBase`, `CollectionObjectBase`, `ItemObjectBase`, `ItemKey`, `AppRoot` | Folders as `Bruinell.Maui`: `Interfaces/`, `Controls/Base/`, `Controls/<Family>/`, `Containers/`, `Pages/`, `Context/`, `Testing/` |
+| Bases | `ViewBase<TScope>` (`.tpl.cs`), the capability bases, `PageObjectBase<TSelf>`, `ContainerObjectBase`, `ComponentObjectBase`, `CollectionObjectBase`, `ItemObjectBase`, `ItemKey`, `AppRoot` | Folders as `Bruinet.Maui`: `Interfaces/`, `Controls/Base/`, `Controls/<Family>/`, `Containers/`, `Pages/`, `Context/`, `Testing/` |
 
 The class names follow MAUI's (`PageObjectBase`, `ViewBase`, `ClickableControlBase`), in the
-`Bruinell.NativeAndroid.*` namespaces, so the skills and the generator read the same on every stack.
+`Bruinet.NativeAndroid.*` namespaces, so the skills and the generator read the same on every stack.
 
 What does **not** come over: `Shell` chrome, the gesture bridge (section 6), `MauiPlatform`
 switches, `IsoPaneView` and anything else that exists because of MAUI.
 
 ## 3. Calls, exceptions and the element
 
-**Calls.** NativeAndroid uses `Bruinell.Core.Calls` as it is, with no copy (AD-010: the leaf
+**Calls.** NativeAndroid uses `Bruinet.Core.Calls` as it is, with no copy (AD-010: the leaf
 layer has one home). `ScopeGate` and the other internal types need
-`[assembly: InternalsVisibleTo("Bruinell.NativeAndroid")]` and `("Bruinell.NativeAndroid.Tests")`
-in `srcnew/Bruinell.Core/AssemblyInfo.cs`, beside the MAUI and Html lines. That is the only change
-to `Bruinell.Core`.
+`[assembly: InternalsVisibleTo("Bruinet.NativeAndroid")]` and `("Bruinet.NativeAndroid.Tests")`
+in `srcnew/Bruinet.Core/AssemblyInfo.cs`, beside the MAUI and Html lines. That is the only change
+to `Bruinet.Core`.
 
 **Exceptions.** Appium's errors map once, in the element's `Live` wrapper and the driver:
 
-| Appium says | Bruinell raises | The call |
+| Appium says | Bruinet raises | The call |
 | --- | --- | --- |
 | `StaleElementReferenceException` | `StaleElementException` | re-resolves on the next attempt |
 | `NoSuchElementException` from a one-attempt find | nothing: the find answers `null` | polls on |
@@ -96,7 +96,7 @@ content readiness after it, `ScopeNotReadyException` when the budget ends.
 - **A page** is ready when its `ReadyLocator` is visible and its activity matches, when the page
   names an activity.
 - **Busy.** A native app has no standard busy flag. **?N3** decides the convention. The proposal: a
-  view whose content description or resource id is a well-known name (`bruinell_busy`), present
+  view whose content description or resource id is a well-known name (`bruinet_busy`), present
   while the app is busy, read the way Html reads `data-busy`, plus any visible
   `ProgressBar` or `SwipeRefreshLayout` the page declares as its busy indicator. A page with
   neither is never busy.
@@ -106,7 +106,7 @@ content readiness after it, `ScopeNotReadyException` when the budget ends.
 ## 5. Controls
 
 **Generated, as Html.** Every control is a `.tpl.cs` with `*Core` methods and a `.gen.cs` written by
-`bruinell controls generate`. `ViewBase` has MAUI's `RunDo`, `RunDoWithElement` and `RunWait`, name
+`bruinet controls generate`. `ViewBase` has MAUI's `RunDo`, `RunDoWithElement` and `RunWait`, name
 for name and signature for signature (R8), so the generator needs no Android branch (AD-013's
 "broken when" applies here too). The bases implement the same Core capability interfaces
 (`IClickableControlObject`, `IEditableTextControlObject`, `IToggleControlObject`,
@@ -193,13 +193,13 @@ scrolls. So:
 
 There is no native Android app in the repo (**?N2**). The proposal:
 
-- **`samples/Bruinell.Samples.NativeAndroid.App`**: a .NET for Android app (`net10.0-android`) using
+- **`samples/Bruinet.Samples.NativeAndroid.App`**: a .NET for Android app (`net10.0-android`) using
   AndroidX and Material views, no MAUI. It builds with the same SDK, workload and commands as the
   MAUI samples' Android heads, so no Gradle or JDK toolchain joins the repo. A control gallery:
   one screen per family in section 5, a login screen with a button that can be made to stay
   disabled (the R0 proof), a long `RecyclerView` with stable ids and one without, a busy state, a
   permission request, and dialogs.
-- **`testsnew/Bruinell.NativeAndroid.UITests`**: one test class per family, through page objects
+- **`testsnew/Bruinet.NativeAndroid.UITests`**: one test class per family, through page objects
   and controls only (the "Never in tests" list in AGENTS.md applies), an Appium fixture that
   installs and starts the sample on the emulator, and the platform's UAT suite inside it
   (`uat.config.md`, `Features/`, `Uat/`, AD-026). UI tests stay local, like every `*.UITests`
@@ -218,20 +218,20 @@ one app has a native head beside another head.
 
 ## 9. Shared Appium code
 
-`Bruinell.Maui.Appium` already has what NativeAndroid needs and lacks: `AppiumErrors` (internal),
+`Bruinet.Maui.Appium` already has what NativeAndroid needs and lacks: `AppiumErrors` (internal),
 the `Live` pattern, `AndroidHost` (emulator address, `adb reverse`), `AndroidRecorder`, and the
-Android scroll-into-view and picker code. `Bruinell.Maui.Appium` references `Bruinell.Maui`, so
+Android scroll-into-view and picker code. `Bruinet.Maui.Appium` references `Bruinet.Maui`, so
 NativeAndroid cannot reference it without taking MAUI in (AD-026 R3 rules that out).
 
 Options (**?N1**):
 
 | | What | For | Against |
 | --- | --- | --- | --- |
-| A | **A `Bruinell.Appium` project**: `AppiumErrors`, `AndroidHost`, `AndroidRecorder` (built in step 1; the locator mapping stayed per stack, since MAUI's maps MAUI's AutomationId). `Bruinell.Maui.Appium` and `Bruinell.NativeAndroid` both reference it | One copy. AD-026 R4: a layer two stacks build on without each other, and R3: Appium stays out of everything else | One project more; `AndroidRecorder` moves assembly, so the `recorders` folder discovery and `[assembly: ScreenRecorder]` move with it |
+| A | **A `Bruinet.Appium` project**: `AppiumErrors`, `AndroidHost`, `AndroidRecorder` (built in step 1; the locator mapping stayed per stack, since MAUI's maps MAUI's AutomationId). `Bruinet.Maui.Appium` and `Bruinet.NativeAndroid` both reference it | One copy. AD-026 R4: a layer two stacks build on without each other, and R3: Appium stays out of everything else | One project more; `AndroidRecorder` moves assembly, so the `recorders` folder discovery and `[assembly: ScreenRecorder]` move with it |
 | B | Copy the pieces into NativeAndroid | No new project | Two copies of the error mapping and the recorder, which is what AD-010 forbids for the calls layer |
-| C | NativeAndroid references `Bruinell.Maui.Appium` | Nothing to move | A native suite gets MAUI. Ruled out by AD-026 R3 |
+| C | NativeAndroid references `Bruinet.Maui.Appium` | Nothing to move | A native suite gets MAUI. Ruled out by AD-026 R3 |
 
-Proposed: **A**, and the extraction is its own step (plan step 1) with `Bruinell.Maui.Appium`'s
+Proposed: **A**, and the extraction is its own step (plan step 1) with `Bruinet.Maui.Appium`'s
 tests and the MAUI Android baseline unchanged, before NativeAndroid uses any of it.
 
 ## 10. Decisions
@@ -241,21 +241,21 @@ one wrong says so in its step note and here.
 
 | # | Question | Decided |
 | --- | --- | --- |
-| **?N1** | Where the shared Appium code lives | A `Bruinell.Appium` project (section 9, option A) |
+| **?N1** | Where the shared Appium code lives | A `Bruinet.Appium` project (section 9, option A) |
 | **?N2** | What the test app is | A .NET for Android gallery app in `samples/` (section 8); a Kotlin app is closer to `exact-bouw-android` but adds a Gradle toolchain; the Todo native head later |
-| **?N3** | The busy convention for native apps | A `bruinell_busy` view (content description or resource id), plus per-page declared progress indicators (section 4) |
+| **?N3** | The busy convention for native apps | A `bruinet_busy` view (content description or resource id), plus per-page declared progress indicators (section 4) |
 | **?N4** | Control names | Android's widget names; MAUI-named classes removed (section 5) |
 | **?N5** | UAT target and head tag | Target `NATIVEANDROID`; head `native`, added to `BddTagConventions.Heads` when the first two-head app needs it |
 | **?N6** | Skills | Generalize `maui-control` and `maui-ui-test` with a NativeAndroid reference page each, or add `android-control` and `android-ui-test` as Html did. Proposed: two new skills, so each stack's skill names only its own types |
 | **?N7** | Own interfaces now, or wait for `.my/core/` L2 | Now, as Html did. Core step 6 then becomes the same mechanical move as MAUI's step 4; `.my/core/migration.md` gets a note |
 | **?N8** | Jetpack Compose | Later (plan step C1). `exact-bouw-android` has 280 layout files and 6 composable files; Compose needs `testTagsAsResourceId` in the app and its own readiness (`waitForIdle`) |
-| **?N9** | What CI runs | `Bruinell.NativeAndroid.Tests` joins CI's unit test list now. The UI tests stay local: they need an emulator |
+| **?N9** | What CI runs | `Bruinet.NativeAndroid.Tests` joins CI's unit test list now. The UI tests stay local: they need an emulator |
 
 ## 11. What building it changed (2026-10-07)
 
 Measured on the emulator while building; where this differs from sections 3-9, this wins.
 
-- **Busy signal (section 4):** the resource id `bruinell_busy` only. A content-description or
+- **Busy signal (section 4):** the resource id `bruinet_busy` only. A content-description or
   XPath lookup on every attempt of every call cost too much; each Appium round trip is 100-200 ms.
 - **App in front (section 4):** `getCurrentPackage`, not `queryAppState` (an adb shell call,
   about 470 ms). `IsAppRunning` keeps `queryAppState` for when it is needed.

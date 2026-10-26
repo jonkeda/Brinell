@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+    <RootNamespace>Bruinet.Maui.FlaUI</RootNamespace>
+    <Description>FlaUI-based driver implementation for MAUI UI testing on Windows platform.</Description>
+    <PackageId>Bruinet.Maui.FlaUI</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Maui.UITests" />
+    <ProjectReference Include="..\Bruinet.Maui\Bruinet.Maui.csproj" />
+
+    <!--
+      The wire contract for the UI Automation bridge. Referenced here rather than linked,
+      because unlike the app under test this assembly is ours and a dependency costs nothing.
+      The app under test links the same sources instead - see Bruinet.Maui.AppSupport.
+    -->
+    <ProjectReference Include="..\Bruinet.Uia.Contracts\Bruinet.Uia.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FlaUI.Core" />
+    <PackageReference Include="FlaUI.UIA3" />
+  </ItemGroup>
+
+</Project>

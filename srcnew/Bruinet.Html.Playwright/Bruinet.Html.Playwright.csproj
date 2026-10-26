@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Html.Playwright</RootNamespace>
+    <Description>Playwright-based implementation for Bruinet.Html. Provides PlaywrightHtmlElement and PlaywrightTestContext for browser automation.</Description>
+    <PackageId>Bruinet.Html.Playwright</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Html\Bruinet.Html.csproj" />
+    <!-- PlaywrightRecorder: a page recorded through Chromium's screencast (the narrator). -->
+    <ProjectReference Include="..\Bruinet.Recording\Bruinet.Recording.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Recording.Tests" />
+    <InternalsVisibleTo Include="Bruinet.Html.Tests" />
+  </ItemGroup>
+
+</Project>

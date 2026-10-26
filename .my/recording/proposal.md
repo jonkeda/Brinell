@@ -114,7 +114,7 @@ Several `input` events on one field without another action between them become t
 | Scenario | `Features/Recorded/<name>.feature.md` | `## Scenario:`, `Given I am on the <first> page`, one step per resolved action, `Then` per assert, and gaps as prose. Checked with `validate_scenario`. Bound only by catalog phrases |
 
 Both targets come from the same resolved list. The default is a setting in the project's config:
-`## Tests` → `Target: xunit | scenario | both`. `bruinell scrape new` and the view's create write it
+`## Tests` → `Target: xunit | scenario | both`. `bruinet scrape new` and the view's create write it
 (`scenario` when the project has a `uat.config.md`, otherwise `xunit`), so it is always visible and the
 person changes it in one place. When it is missing, the same rule applies. The person can override it
 per recording in the view, and `draft-test --target` on the command line.
@@ -130,8 +130,8 @@ data, and the draft says which.
 | Scraper view | A **Tests** step after Verify. It has **Record a test** (the browser opens on the start URL or the current page, with a small toolbar: **Assert**, **Stop**, a counter), the list of recorded tests with their resolved steps, each gap with **Fix with the agent**, **Draft** (xUnit, scenario or both), and **Run once** |
 | Feature file | A CodeLens **Record steps here** on a scenario heading. It records from the page the scenario reaches and puts the resolved steps after the last step. Later step |
 | MCP | `start_recording` gets `actions: true`. New tools: `list_recorded_actions` (a session's events), `resolve_actions` (the steps and gaps), `draft_test` (target, name), and `test_brief` (one gap as a brief). `check_code` and `validate_scenario` are unchanged |
-| Command line | `bruinell scrape resolve <session>` and `bruinell scrape draft-test <session> --target both`, model-free (AD-028) |
-| Agent | The `bruinell-scraper` agent and the `scrape-pages` skill get a "tests from a recording" section. The view sends gap briefs as it sends control briefs (agent and model from the header) |
+| Command line | `bruinet scrape resolve <session>` and `bruinet scrape draft-test <session> --target both`, model-free (AD-028) |
+| Agent | The `bruinet-scraper` agent and the `scrape-pages` skill get a "tests from a recording" section. The view sends gap briefs as it sends control briefs (agent and model from the header) |
 
 ## 7. Steps
 
@@ -169,10 +169,10 @@ Steps 1 to 5 need no IDE and no model. They make the whole pipeline testable fro
 | 1 | Event model | Actions also carry `capture` (the page event their node is in) and `accepted` (a dialog); `CaptureOf` falls back to the latest capture of the page |
 | 2 | `recorder.js`, `Acted` | An action's own capture is taken unsettled and kept only while still on its page; else the path (R2). Browser tests run on the test site's `pages/form.html`, not on the Blazor sample's User Form |
 | 3 | R7 | A secret never leaves the browser: `recorder.js` sends its placeholder. `## Secrets` has `Field` and an optional `Placeholder` |
-| 4 | Resolution | Verbs come from Bruinell.Html's controls by reflection (Bruinell.Blazor's share their names); the step-name rule moved to `Bruinell.Core` (`StepNames`) |
+| 4 | Resolution | Verbs come from Bruinet.Html's controls by reflection (Bruinet.Blazor's share their names); the step-name rule moved to `Bruinet.Core` (`StepNames`) |
 | 5 | Drafting | `## Tests` also has `Base`, the class an xUnit draft's person's part derives from. A secret is an environment variable in the xUnit test and a gap in the scenario: a step cannot name a setting yet. Checked on the Blazor sample: built, ran green, `validate_scenario` valid |
 | 6 | Assert | The toolbar is in a shadow root; Assert is also on the view's strip |
-| 7 | The view's Tests step | **Run once runs in the server** (`dotnet test` with the class, or the scenario's address from `bruinell/runTarget`), not the IDE's test UI: the view, MCP and the command line run a draft the same way. A suite whose scenario class is `[Theory]` cannot run one scenario; the view says so. Tried through a stand-in host; not inside VS Code or Visual Studio |
+| 7 | The view's Tests step | **Run once runs in the server** (`dotnet test` with the class, or the scenario's address from `bruinet/runTarget`), not the IDE's test UI: the view, MCP and the command line run a draft the same way. A suite whose scenario class is `[Theory]` cannot run one scenario; the view says so. Tried through a stand-in host; not inside VS Code or Visual Studio |
 | 8 | Briefs, MCP, CLI, agent | Also `run_test` (MCP). Checked with Claude in the agent's place over MCP on the User Form (a contact radio with no member); not with Copilot or Claude Code as the agent |
 
 Open: step 9 (Bouw7 in Visual Studio, by hand); the Tests step tried inside both IDEs; step 10.

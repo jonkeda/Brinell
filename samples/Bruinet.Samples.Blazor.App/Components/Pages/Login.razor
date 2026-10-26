@@ -1,0 +1,133 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Login - Bruinet Blazor Sample</PageTitle>
+
+<h1 data-testid="login-title">Login</h1>
+
+<div class="row" data-testid="login-form">
+    <div class="col-md-6">
+        <EditForm Model="_loginModel" OnValidSubmit="HandleValidSubmit" FormName="LoginForm">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="username-input" class="form-label">Username</label>
+                <InputText data-testid="username-input"
+                           class="form-control"
+                           @bind-Value="_loginModel.Username"
+                           placeholder="Enter your username"
+                           disabled="@_isLoading" />
+            </div>
+
+            <div class="mb-3">
+                <label for="email-input" class="form-label">Email</label>
+                <InputText data-testid="email-input"
+                           class="form-control"
+                           @bind-Value="_loginModel.Email"
+                           placeholder="Enter your email"
+                           disabled="@_isLoading" />
+                <ValidationMessage For="() => _loginModel.Email" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password-input" class="form-label">Password</label>
+                <InputText data-testid="password-input"
+                           type="password"
+                           class="form-control"
+                           @bind-Value="_loginModel.Password"
+                           placeholder="Enter your password"
+                           disabled="@_isLoading" />
+                <ValidationMessage For="() => _loginModel.Password" class="text-danger" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert" data-testid="error-message">
+                    @_errorMessage
+                </div>
+            }
+
+            @if (_isSuccess)
+            {
+                <div class="alert alert-success" role="alert" data-testid="success-message">
+                    Login successful! Redirecting...
+                </div>
+            }
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    data-testid="login-btn"
+                    disabled="@(_isLoading || _stuck)">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" data-testid="loading-spinner"></span>
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <span>Login</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Test Credentials</h3>
+    <p data-testid="test-credentials-info">
+        Use <strong>test@example.com</strong> with password <strong>password123</strong> to login successfully.
+    </p>
+</div>
+
+@code {
+    /// <summary>
+    /// A known bug to put back on purpose (.my/html/sample-app.md item 2): <c>stuck-disabled</c>
+    /// leaves the Login button disabled for good after the first submit, like the MAUI Todo
+    /// toolbar Cancel whose command never re-enabled. The R0 proofs launch with it.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "login-bug")]
+    public string? LoginBug { get; set; }
+
+    private bool _stuck;
+    private LoginModel _loginModel = new();
+    private bool _isLoading = false;
+    private bool _isSuccess = false;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _isSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AuthService.LoginAsync(_loginModel.Email!, _loginModel.Password!);
+
+            if (result.Success)
+            {
+                _isSuccess = true;
+                StateHasChanged();
+
+                // Brief delay to show success message before redirect
+                await Task.Delay(1000);
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Login failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            _stuck = LoginBug == "stuck-disabled";
+        }
+    }
+}

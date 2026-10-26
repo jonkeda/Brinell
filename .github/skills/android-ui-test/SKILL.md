@@ -1,6 +1,6 @@
 ---
 name: android-ui-test
-description: Write or fix Bruinell native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in testsnew/Bruinell.NativeAndroid.UITests, or a control unit test in testsnew/Bruinell.NativeAndroid.Tests.
+description: Write or fix Bruinet native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in testsnew/Bruinet.NativeAndroid.UITests, or a control unit test in testsnew/Bruinet.NativeAndroid.Tests.
 ---
 
 # Write native Android UI tests
@@ -16,12 +16,12 @@ needs something they do not offer, add it there first with the `android-control`
    carries `[TestPage("Sign In")]` so UAT scenarios find it under that name.
 2. **Write the test** with page-object members only (shape below), in the `Gallery` collection:
    one Appium session for the whole suite.
-3. **If the sample lacks what the test needs**, add it to `samples/Bruinell.Samples.NativeAndroid.App`
+3. **If the sample lacks what the test needs**, add it to `samples/Bruinet.Samples.NativeAndroid.App`
    with a resource id and a visible effect (a status line), and rebuild it: the fixture installs
    the APK just built.
-4. **Run the smallest filter that can fail**, from the Bruinell root, with the emulator and Appium
+4. **Run the smallest filter that can fail**, from the Bruinet root, with the emulator and Appium
    up (`docs/run/native-android.md`):
-   `dotnet test testsnew\Bruinell.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"`.
+   `dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"`.
    One UI test process at a time; no build while one runs.
 
 ## Test shape
@@ -48,7 +48,7 @@ public sealed class LoginTests(GalleryFixture gallery)
 
 - Open a screen by its deep link (`gallery.Open("login")`), then `AssertIdle` on its page.
 - Assert with the controls' `Assert*` members, which wait. No FluentAssertions.
-- **The app's busy view waits for you.** A view with resource id `bruinell_busy` that is shown
+- **The app's busy view waits for you.** A view with resource id `bruinet_busy` that is shown
   makes the page busy; the next call waits it out. Never wait for a spinner by hand.
 - **Something that leaves by itself** (a snackbar) is asserted first after the action that shows it.
 

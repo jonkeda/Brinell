@@ -1,6 +1,6 @@
 ---
 name: convert-control
-description: Convert a hand-written Bruinell MAUI control object (e.g. ImageButton.cs, Entry.cs, Label.cs) to the generatable .tpl.cs / .gen.cs format used under srcnew/Bruinell.Maui*/Controls. Use when asked to "convert", "migrate", or "update to the new generatable format" a MAUI control object, or to make a control work with Bruinell.Generator.
+description: Convert a hand-written Bruinet MAUI control object (e.g. ImageButton.cs, Entry.cs, Label.cs) to the generatable .tpl.cs / .gen.cs format used under srcnew/Bruinet.Maui*/Controls. Use when asked to "convert", "migrate", or "update to the new generatable format" a MAUI control object, or to make a control work with Bruinet.Generator.
 ---
 
 # Convert a control object to the generatable format
@@ -19,7 +19,7 @@ conversion procedure.
 ## Steps
 
 1. **Read the control and its base class.** Know which members are inherited before deciding
-   what to convert. Base templates live in `srcnew/Bruinell.Maui/Controls/Base/`.
+   what to convert. Base templates live in `srcnew/Bruinet.Maui/Controls/Base/`.
 
 2. **Rename to `.tpl.cs`** (`git mv`, to keep history) and make the class `partial`.
 
@@ -61,14 +61,14 @@ conversion procedure.
    `Confirm(read, done, timeoutMs)`; move part behaviour to the part (see the
    component reference).
 
-8. **Generate and build** (from the Bruinell root; for an Html or Blazor control run
+8. **Generate and build** (from the Bruinet root; for an Html or Blazor control run
    `tools\Scripts\CreateHtml.Bat` instead):
    ```
    tools\Scripts\CreateMaui.Bat
-   dotnet build Bruinell.sln -v:minimal /nr:false
+   dotnet build Bruinet.sln -v:minimal /nr:false
    ```
    `CreateMaui.Bat` rebuilds the generator and regenerates every `.tpl.cs` under the `Controls`
-   folders of `Bruinell.Maui` and `Bruinell.Maui.CommunityToolkit`. For a file elsewhere, run the
+   folders of `Bruinet.Maui` and `Bruinet.Maui.CommunityToolkit`. For a file elsewhere, run the
    CLI directly (see the contract).
 
 9. **Diff the public surface against the original.** The generated API must match what the old
@@ -92,7 +92,7 @@ behaviour.
 ## Report
 
 Say which members were generated, which stayed hand-written and why, and any public API that
-changed shape. Then run the control's tests: `Bruinell.Maui.Tests` for unit tests, and tier 1 of
+changed shape. Then run the control's tests: `Bruinet.Maui.Tests` for unit tests, and tier 1 of
 the UI tests (`--filter "Control=Foo"`) after rebuilding the sample app.
 
 ## Worked example

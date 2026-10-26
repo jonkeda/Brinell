@@ -16,7 +16,7 @@ inside it.
 | Way | How | Best for |
 | --- | --- | --- |
 | **A. Separate read connection** | open the app's `DatabasePath` from the test with a read-only connection | UAT: the app is a live process; you cannot share its objects |
-| **B. In-process repository** | resolve the app's `ITodoRepository` from the DI scope | Integration ([TodoHost](../../../samples/Todo/tests/Bruinell.Samples.Todo.IntegrationTests/TodoHost.cs)), where the test *is* the composition |
+| **B. In-process repository** | resolve the app's `ITodoRepository` from the DI scope | Integration ([TodoHost](../../../samples/Todo/tests/Bruinet.Samples.Todo.IntegrationTests/TodoHost.cs)), where the test *is* the composition |
 
 In UAT the app runs in its own process, so way **B** is not available — the test
 cannot reach into another process's objects. Use way **A**: the fixture told the

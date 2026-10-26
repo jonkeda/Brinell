@@ -1,0 +1,17 @@
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<main>
+    @Body
+</main>
+
+@code {
+    // The app is interactive now: set the busy signal, which Blazor page objects wait for (bruinet-busy.js).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("bruinetBusy.set", false);
+        }
+    }
+}

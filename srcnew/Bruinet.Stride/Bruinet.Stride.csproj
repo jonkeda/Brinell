@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Stride</RootNamespace>
+    <Description>Stride game engine UI testing client. Provides controls and page objects for communicating with Stride applications via Bruinet.Stride.Automation.</Description>
+    <PackageId>Bruinet.Stride</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+    <ProjectReference Include="..\Bruinet.Core.Legacy\Bruinet.Core.Legacy.csproj" />
+  </ItemGroup>
+
+</Project>

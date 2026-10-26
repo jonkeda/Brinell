@@ -1,9 +1,9 @@
-# MauiUnit: a bUnit for .NET MAUI, and a Bruinell head on it
+# MauiUnit: a bUnit for .NET MAUI, and a Bruinet head on it
 
 A proposal with a working proof of concept, 2026-10-25. MauiUnit (MUnit until 2026-10-26) renders MAUI
 pages, views and view models in memory inside a unit test. It drives them through the controls' own
 entry points and asserts on what a user would see. It needs no emulator, simulator, WinUI host or
-device runner, and it works under xUnit, NUnit and MSTest. `Bruinell.Maui.MauiUnit` puts Bruinell's
+device runner, and it works under xUnit, NUnit and MSTest. `Bruinet.Maui.MauiUnit` puts Bruinet's
 existing MAUI page objects on top of it. The API, interfaces and internals are in
 [design.md](design.md); the facts it rests on are in [findings.md](findings.md).
 
@@ -15,8 +15,8 @@ It is feasible, and the proof of concept is green:
 | --- | --- | --- |
 | `MauiUnit.Tests` (xUnit) | 41 | The six example kinds; the dispatcher, virtual clock, tree, errors and parallel contexts; Shell chrome, swipes, focus and dialogs |
 | `MauiUnit.Tests.NUnit`, `MauiUnit.Tests.MSTest` | 2 + 2 | The same API under the other two frameworks |
-| `Bruinell.Maui.MauiUnit.Tests` | 3 | The sample app's real XAML pages, driven by the device suite's page objects, unchanged |
-| `Bruinell.Maui.UITests` with `BRUINELL_HEAD=mauiunit` | 325 pass, 35 skip, 0 fail | The whole MAUI device suite on both sample apps compiled headless; what skips needs a device ([suite-count.md](suite-count.md)) |
+| `Bruinet.Maui.MauiUnit.Tests` | 3 | The sample app's real XAML pages, driven by the device suite's page objects, unchanged |
+| `Bruinet.Maui.UITests` with `BRUINET_HEAD=mauiunit` | 325 pass, 35 skip, 0 fail | The whole MAUI device suite on both sample apps compiled headless; what skips needs a device ([suite-count.md](suite-count.md)) |
 
 Each MauiUnit suite runs in about 0.2 s, and the device suite in 6 s. The pages are real MAUI: XAML
 compiled by XamlC, compiled bindings, `Command`, `NavigationPage`, Shell routes and `CollectionView`.
@@ -69,7 +69,7 @@ flowchart TB
   X --> V
   V --> N[VisualNode tree]
   N --> P[TreeSnapshot text]
-  B[Bruinell.Maui.MauiUnit driver] --> V
+  B[Bruinet.Maui.MauiUnit driver] --> V
   B --> I
 ```
 
@@ -90,7 +90,7 @@ There are six layers, as the brief asked for:
 - **Interactions refuse what a user could not do.** A hidden or disabled element throws `ElementNotInteractableException`. A button whose command cannot execute counts as disabled, because MAUI disables it.
 - **No test-framework dependency.** Assertions throw `MauiUnitAssertionException`, which all three frameworks report as a failure with its message.
 - **`Application.Current` is set only while a context runs its work.** It is process-wide, and `Shell.Current` and resource lookups read it. A lock keeps parallel contexts correct; `SetApplicationCurrent = false` removes that serialization for apps that never read it.
-- **The Bruinell head reports `MauiPlatform.Windows`.** Bruinell's driver defaults are the UI Automation answers, and MauiUnit's tree behaves like that one. A `Headless` value is open below.
+- **The Bruinet head reports `MauiPlatform.Windows`.** Bruinet's driver defaults are the UI Automation answers, and MauiUnit's tree behaves like that one. A `Headless` value is open below.
 
 ## Handler strategy
 
@@ -141,14 +141,14 @@ So there are three groups:
 5. **Snapshot testing.** The formatter is done. Remaining: `ShouldMatchSnapshot()` with `__snapshots__/<Test>.txt` beside the test, a `.received.txt` on mismatch, and an accept switch (environment variable), as Verify does. Design in [design.md](design.md).
 6. **Optional handler integration.** Fake leaf handlers with a sizer, so `Measure`, bounds, `Loaded` and `SizeChanged` work. This is off by default, because it costs speed and determinism.
 
-For Bruinell, the head follows the bUnit head's plan:
+For Bruinet, the head follows the bUnit head's plan:
 1. Done: the device suite runs on MauiUnit, 319 of 354 in 6 s; the other 33 are device-only or platform media, and one is a known difference ([suite-count.md](suite-count.md)).
-2. Done: a head choice in `MauiTestFixtureBase` (`BRUINELL_HEAD=mauiunit`, the fixture's `CreateInMemoryOptions`), with `DeviceFact`, `WindowsOnlyFact(Device = ...)` and `@device` skipped on MauiUnit.
+2. Done: a head choice in `MauiTestFixtureBase` (`BRUINET_HEAD=mauiunit`, the fixture's `CreateInMemoryOptions`), with `DeviceFact`, `WindowsOnlyFact(Device = ...)` and `@device` skipped on MauiUnit.
 3. Write a decision record once the owner has seen the counts.
 
 ## Open questions, each with a proposal
 
-- **The name.** Settled on 2026-10-26: MauiUnit, for the framework (`srcnew/MauiUnit`, package `MauiUnit`), the head (`Bruinell.Maui.MauiUnit`) and the head value (`BRUINELL_HEAD=mauiunit`). MUnit collided with Scala's MUnit test library.
+- **The name.** Settled on 2026-10-26: MauiUnit, for the framework (`srcnew/MauiUnit`, package `MauiUnit`), the head (`Bruinet.Maui.MauiUnit`) and the head value (`BRUINET_HEAD=mauiunit`). MUnit collided with Scala's MUnit test library.
 - **A `MauiPlatform.Headless` value.** Proposal: not yet. Every exhaustive switch on the platform would need a case, and Windows semantics fit today. Revisit after the sample suite's count.
-- **Where MauiUnit lives.** It is in Bruinell's `srcnew` for now. Proposal: keep it there until it has its own users; it depends on nothing from Bruinell, so it can move out unchanged.
+- **Where MauiUnit lives.** It is in Bruinet's `srcnew` for now. Proposal: keep it there until it has its own users; it depends on nothing from Bruinet, so it can move out unchanged.
 - **Default for `SetApplicationCurrent`.** Proposal: keep it on. Correctness beats a parallel speed-up nobody has measured a need for.

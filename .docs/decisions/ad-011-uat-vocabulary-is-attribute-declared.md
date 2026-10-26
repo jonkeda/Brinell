@@ -1,7 +1,7 @@
 # AD-011: UAT Step Vocabulary Is Declared By Attributes
 
 Every UAT step is declared by one of three attributes: `[BddGiven]`, `[BddWhen]` and
-`[BddThen]`. They derive from the abstract `BddStepAttribute` in `Bruinell.Core.Testing`,
+`[BddThen]`. They derive from the abstract `BddStepAttribute` in `Bruinet.Core.Testing`,
 which is the type discovery reads. There is no other way to declare a step, and no attribute
 for `And` or `But`: those take the keyword of the step before them, so a check written after
 `But` is a `[BddThen]`.
@@ -9,7 +9,7 @@ for `And` or `But`: those take the keyword of the step before them, so a check w
 What a step is follows from the method it sits on, not from the attribute:
 
 - On a control method it is a **control verb**. The built-in vocabulary lives on the
-  `Bruinell.Core` control interfaces (`IClickableControlObject`, `IEditableTextControlObject`,
+  `Bruinet.Core` control interfaces (`IClickableControlObject`, `IEditableTextControlObject`,
   `IToggleControlObject`, `ISelectorControlObject`, `ITextControlObject`, `IElementObject`);
   an app adds its own on its control types. `CommandId`, `Literal` and `HasLiteral` belong to
   control verbs.
@@ -19,7 +19,7 @@ What a step is follows from the method it sits on, not from the attribute:
 - On a page-object method it is a **page phrase**, valid on that page only (AD-019).
 
 The engine discovers the vocabulary by reflection over those attributes and projects it into
-every catalog it needs: `Bruinell.Bdd` the step definitions, `Bruinell.Uat` the control verbs and
+every catalog it needs: `Bruinet.Bdd` the step definitions, `Bruinet.Uat` the control verbs and
 page phrases (AD-021).
 
 The three intrinsic page-graph verbs (`I am on the {page} page`,

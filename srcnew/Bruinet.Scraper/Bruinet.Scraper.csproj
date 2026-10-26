@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Scraper</RootNamespace>
+    <Description>The Scraper's engine: recordings of an app's pages, pattern detection, matching, diff and code output for Bruinet page objects and controls. No UI, no model call.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <!-- The Html source; moves to a project of its own with the second source (AD-026, R3). -->
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+    <!-- Bruinet's controls, read for the verbs a recorded action resolves to (Bruinet.Blazor's share their names). -->
+    <ProjectReference Include="..\Bruinet.Html\Bruinet.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Html\Scripts\*.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Scraper.Tests" />
+  </ItemGroup>
+
+</Project>

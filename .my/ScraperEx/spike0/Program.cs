@@ -94,7 +94,7 @@ static async Task<JsonObject> CaptureAsync(IPage page)
     {
         if (!roots.TryGetValue(frame, out var child) || !roots.TryGetValue(frame.ParentFrame!, out var parent)) continue;
         var element = await frame.FrameElementAsync();
-        var id = await element.EvaluateAsync<int>("el => window.__bruinellScrape.get(el)");
+        var id = await element.EvaluateAsync<int>("el => window.__bruinetScrape.get(el)");
         var host = Find(parent, id);
         if (host is null) { Console.WriteLine($"  no host for {frame.Url}"); continue; }
         host["frame"] = new JsonObject { ["url"] = frame.Url, ["name"] = frame.Name };
@@ -199,7 +199,7 @@ public partial class Program
     // shadow roots are captured as a node of their own kind.
     const string CaptureScript = """
         () => {
-            const ids = window.__bruinellScrape = new WeakMap();
+            const ids = window.__bruinetScrape = new WeakMap();
             let next = 0;
             function capture(el) {
                 const rect = el.getBoundingClientRect();

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Bruinet.Samples.Blazor.App</RootNamespace>
+    <Description>Blazor Server sample application for Bruinet UI testing framework</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Samples.Shared\Bruinet.Samples.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

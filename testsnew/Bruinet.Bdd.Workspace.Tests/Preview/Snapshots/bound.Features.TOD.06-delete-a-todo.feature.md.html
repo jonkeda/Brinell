@@ -1,0 +1,142 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.06-delete-a-todo.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.06 Delete a todo</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinet.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Delete</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.06</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>one-todo</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, delete</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.06.1</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@delete</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.06.1 Delete asks for confirmation"><span class="uat-kw">Scenario</span> TOD.06.1 Delete asks for confirmation</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step uat-bound" data-line="18" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="19" data-binds="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="20">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="22"><td>Sell the sofa</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="23" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="24" data-binds="binds to Builtin.AssertRow" title="binds to Builtin.AssertRow"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Sell the sofa&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="25" data-binds="binds to Builtin.Open &#183; page Todo List" title="binds to Builtin.Open &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Sell the sofa&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="26" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step uat-bound" data-line="27" data-binds="binds to Builtin.Control.Tap &#183; page Todo Detail" title="binds to Builtin.Control.Tap &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I tap Delete</span>
+</li>
+<li class="uat-step uat-bound" data-line="28" data-binds="binds to Builtin.Dialog.AssertAsks" title="binds to Builtin.Dialog.AssertAsks"><span class="uat-kw">Then</span><span class="uat-text">the dialog should ask <span class="uat-value">&quot;Delete todo?&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="29" data-binds="binds to Builtin.Dialog.Choose &#183; page Todo Detail" title="binds to Builtin.Dialog.Choose &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I choose <span class="uat-value">&quot;Cancel&quot;</span> in the dialog</span>
+</li>
+<li class="uat-step uat-bound" data-line="30" data-binds="binds to Builtin.Dialog.AssertNone" title="binds to Builtin.Dialog.AssertNone"><span class="uat-kw">Then</span><span class="uat-text">no dialog should be shown</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="33"><span class="uat-tag">@TOD.06.2</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@delete</span></p>
+<h2 class="uat-scenario" data-line="34" data-scenario="TOD.06.2 Confirming returns to the list and the row is gone"><span class="uat-kw">Scenario</span> TOD.06.2 Confirming returns to the list and the row is gone</h2>
+<ol class="uat-steps" data-line="36">
+<li class="uat-step uat-bound" data-line="37" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="38" data-binds="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="39">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="41"><td>Cancel gym</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="42" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="43" data-binds="binds to Builtin.AssertRow" title="binds to Builtin.AssertRow"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Cancel gym&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="44" data-binds="binds to Builtin.Open &#183; page Todo List" title="binds to Builtin.Open &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Cancel gym&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="45" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step uat-bound" data-line="46" data-binds="binds to Builtin.Control.Tap &#183; page Todo Detail" title="binds to Builtin.Control.Tap &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I tap Delete</span>
+</li>
+<li class="uat-step uat-bound" data-line="47" data-binds="binds to Builtin.Dialog.AssertAsks" title="binds to Builtin.Dialog.AssertAsks"><span class="uat-kw">Then</span><span class="uat-text">the dialog should ask <span class="uat-value">&quot;Delete todo?&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="48" data-binds="binds to Builtin.Dialog.Choose &#183; page Todo Detail" title="binds to Builtin.Dialog.Choose &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I choose <span class="uat-value">&quot;Delete&quot;</span> in the dialog</span>
+</li>
+<li class="uat-step uat-bound" data-line="49" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="50" data-binds="binds to Builtin.AssertNoRow &#183; page Todo List" title="binds to Builtin.AssertNoRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Cancel gym&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="51" data-binds="binds to Builtin.AssertRow &#183; page Todo List" title="binds to Builtin.AssertRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Buy milk&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="54"><span class="uat-tag">@TOD.06.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@delete</span></p>
+<h2 class="uat-scenario" data-line="55" data-scenario="TOD.06.3 Cancelling keeps the todo and stays on the detail"><span class="uat-kw">Scenario</span> TOD.06.3 Cancelling keeps the todo and stays on the detail</h2>
+<ol class="uat-steps" data-line="57">
+<li class="uat-step uat-bound" data-line="58" data-binds="binds to Builtin.Page.Open" title="binds to Builtin.Page.Open"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="59" data-binds="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend" title="binds to Bruinet.Samples.Todo.TestSupport.Uat.BackendPhrases.ServerAlsoHas &#183; Backend"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="60">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="62"><td>Keep the piano</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step uat-bound" data-line="63" data-binds="binds to Builtin.Control.Tap &#183; page Todo List" title="binds to Builtin.Control.Tap &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step uat-bound" data-line="64" data-binds="binds to Builtin.AssertRow" title="binds to Builtin.AssertRow"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Keep the piano&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="65" data-binds="binds to Builtin.Open &#183; page Todo List" title="binds to Builtin.Open &#183; page Todo List"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Keep the piano&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="66" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step uat-bound" data-line="67" data-binds="binds to Builtin.Control.Tap &#183; page Todo Detail" title="binds to Builtin.Control.Tap &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I tap Delete</span>
+</li>
+<li class="uat-step uat-bound" data-line="68" data-binds="binds to Builtin.Dialog.AssertAsks" title="binds to Builtin.Dialog.AssertAsks"><span class="uat-kw">Then</span><span class="uat-text">the dialog should ask <span class="uat-value">&quot;Delete todo?&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="69" data-binds="binds to Builtin.Dialog.Choose &#183; page Todo Detail" title="binds to Builtin.Dialog.Choose &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I choose <span class="uat-value">&quot;Cancel&quot;</span> in the dialog</span>
+</li>
+<li class="uat-step uat-bound" data-line="70" data-binds="binds to Builtin.Dialog.AssertNone" title="binds to Builtin.Dialog.AssertNone"><span class="uat-kw">Then</span><span class="uat-text">no dialog should be shown</span>
+</li>
+<li class="uat-step uat-bound" data-line="71" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">And</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step uat-bound" data-line="72" data-binds="binds to Builtin.Control.AssertText &#183; page Todo Detail" title="binds to Builtin.Control.AssertText &#183; page Todo Detail"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Keep the piano&quot;</span></span>
+</li>
+<li class="uat-step uat-bound" data-line="73" data-binds="binds to Builtin.Control.Tap &#183; page Todo Detail" title="binds to Builtin.Control.Tap &#183; page Todo Detail"><span class="uat-kw">When</span><span class="uat-text">I tap Back</span>
+</li>
+<li class="uat-step uat-bound" data-line="74" data-binds="binds to Builtin.Page.AssertOpen" title="binds to Builtin.Page.AssertOpen"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step uat-bound" data-line="75" data-binds="binds to Builtin.AssertRow &#183; page Todo List" title="binds to Builtin.AssertRow &#183; page Todo List"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Keep the piano&quot;</span></span>
+</li>
+</ol>
+</article>

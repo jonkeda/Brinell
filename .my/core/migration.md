@@ -13,7 +13,7 @@ Every stack move has these six sub-steps:
 3. **Switch the stack's control base.** `<Stack>ViewBase<TScope>` extends
    `CoreViewBase<TScope>` (or if nothing stack-specific remains, is removed).
 4. **Switch the stack's page/container/collection bases** to the `Core*` bases.
-5. **Delete the stack's private calls layer.** Use `Bruinell.Core.Automation.Calls`.
+5. **Delete the stack's private calls layer.** Use `Bruinet.Core.Automation.Calls`.
 6. **Prove it.** The stack's tests green against the baseline; no new failures.
 
 ## MAUI (plan step 4)
@@ -32,20 +32,20 @@ Sub-steps:
    and disappear from `IMaui*`.
 4. `MauiViewBase<TScope>` becomes `CoreViewBase<TScope>` (renamed), or a subclass with only
    MAUI-specific helpers.
-5. `Bruinell.Maui/Calls/*.cs` deleted; call sites `using Bruinell.Core.Automation.Calls;`.
-6. `Bruinell.Maui.Exceptions.*` become subclasses of `Core*Exception` (a caught
+5. `Bruinet.Maui/Calls/*.cs` deleted; call sites `using Bruinet.Core.Automation.Calls;`.
+6. `Bruinet.Maui.Exceptions.*` become subclasses of `Core*Exception` (a caught
    `StaleElementException` still catches). Or use type aliases (`using StaleElementException =
-   Bruinell.Core.Automation.Exceptions.CoreStaleElementException;` in `GlobalUsings.cs`).
-7. **Verify.** `Bruinell.Maui.Tests`, `Bruinell.Maui.Uat.Tests`, `Bruinell.Maui.UITests` full
-   Windows run; the Android baseline subset; `Bruinell.Presenter.Bdd.Tests`.
+   Bruinet.Core.Automation.Exceptions.CoreStaleElementException;` in `GlobalUsings.cs`).
+7. **Verify.** `Bruinet.Maui.Tests`, `Bruinet.Maui.Uat.Tests`, `Bruinet.Maui.UITests` full
+   Windows run; the Android baseline subset; `Bruinet.Presenter.Bdd.Tests`.
 
 **Skills:** `.github/skills/maui-control/references/*` and `.github/skills/maui-ui-test/`
 update their type references from `IMauiElement` to `ICoreElement` where the member is the
 Core one, and keep `IMauiElement` where the member is MAUI-specific.
 
-**Expected diff size:** small. `srcnew/Bruinell.Maui/Interfaces/*.cs`: base-change lines only.
-`srcnew/Bruinell.Maui/Controls/Base/*.cs`: rename `ViewBase` -> `CoreViewBase` (or a shim).
-`srcnew/Bruinell.Maui/Calls/*.cs`: deleted (~1,500 lines). Net removal.
+**Expected diff size:** small. `srcnew/Bruinet.Maui/Interfaces/*.cs`: base-change lines only.
+`srcnew/Bruinet.Maui/Controls/Base/*.cs`: rename `ViewBase` -> `CoreViewBase` (or a shim).
+`srcnew/Bruinet.Maui/Calls/*.cs`: deleted (~1,500 lines). Net removal.
 
 ## Html (plan step 5)
 
@@ -65,12 +65,12 @@ Sub-steps:
    extends `CorePageObjectBase<TSelf>` and adds the URL check.
 4. `PlaywrightHtmlElement : IHtmlElement`, `PlaywrightHtmlDriver : IHtmlDriver`,
    `PlaywrightTestContext : IHtmlTestContext`. `Live<T>` wrapper as `../html/design.md` 5.
-5. Html's `Bruinell.Html/Calls/*` is not created; Html uses
-   `Bruinell.Core.Automation.Calls` from the start.
+5. Html's `Bruinet.Html/Calls/*` is not created; Html uses
+   `Bruinet.Core.Automation.Calls` from the start.
 6. `HtmlPageObjectBase.AssertLoaded` and `AssertTitle` throw `CoreScopeNotReadyException`
    instead of `PageLoadException`.
-7. **Verify.** `Bruinell.Html.Tests`, `Bruinell.Html.Uat.Tests`, `Bruinell.Blazor.Tests`,
-   `Bruinell.Blazor.Uat.Tests`, `Bruinell.Html.UITests`, `Bruinell.Blazor.UITests`.
+7. **Verify.** `Bruinet.Html.Tests`, `Bruinet.Html.Uat.Tests`, `Bruinet.Blazor.Tests`,
+   `Bruinet.Blazor.Uat.Tests`, `Bruinet.Html.UITests`, `Bruinet.Blazor.UITests`.
 
 **Skills:** the `html-control` and `html-ui-test` skills (in `../html/skills.md`) name
 `ICoreElement` as the element type in their references from the start; the Playwright- and
@@ -82,10 +82,10 @@ Blazor-specific helpers are the `IHtmlElement` extension.
 
 > **2026-10-07:** superseded by [../androidnative/](../androidnative/README.md). NativeAndroid now has
 > its own `INativeAndroid*` interfaces, `ViewBase` and `PageObjectBase` on the Core calls layer, and
-> `Bruinell.Appium` for the shared Appium code, so its move to `ICore*` has MAUI's shape (step 4).
+> `Bruinet.Appium` for the shared Appium code, so its move to `ICore*` has MAUI's shape (step 4).
 > The sub-steps below describe the stack as it was.
 
-NativeAndroid currently uses `Bruinell.Core.Interfaces.IElement<TElement>` and friends directly
+NativeAndroid currently uses `Bruinet.Core.Interfaces.IElement<TElement>` and friends directly
 (no per-stack extension interfaces). Its move creates the per-stack interfaces at the same time
 as it switches to `ICore*`.
 
@@ -101,9 +101,9 @@ Sub-steps:
    the new interfaces. UIA-style `InstanceKey` from the Appium element id.
 4. `NativeAndroidViewBase<TScope>` extends `CoreViewBase<TScope>`.
    `NativeAndroidPageObjectBase<TSelf>` extends `CorePageObjectBase<TSelf>`.
-5. Calls layer: `Bruinell.Core.Automation.Calls`.
+5. Calls layer: `Bruinet.Core.Automation.Calls`.
 6. `PageLoadException` → `CoreScopeNotReadyException` throughout.
-7. **Verify.** `Bruinell.NativeAndroid.Tests` against the baseline; the Android UI suite
+7. **Verify.** `Bruinet.NativeAndroid.Tests` against the baseline; the Android UI suite
    subset; the Appium adapter unit tests.
 
 **Sample app:** any Android sample project used by the fixture. If none exists as a working
@@ -111,7 +111,7 @@ target, ship one; but that is scope for the NativeAndroid move-down slice, not t
 
 ## WPF and WinForms (plan step 7)
 
-Both stacks currently use `Bruinell.Core.Interfaces.IElement<TElement>` and Core's
+Both stacks currently use `Bruinet.Core.Interfaces.IElement<TElement>` and Core's
 `PageObjectBase`. Both use FlaUI. Their move is similar to NativeAndroid's.
 
 Sub-steps:
@@ -125,10 +125,10 @@ Sub-steps:
    `FlaUIWpfTestContext : IWpfTestContext`. Same for the WinForms drivers.
 4. `WpfViewBase<TScope>` extends `CoreViewBase<TScope>`. Same for
    `WinFormsViewBase<TScope>`.
-5. Calls layer: `Bruinell.Core.Automation.Calls`.
+5. Calls layer: `Bruinet.Core.Automation.Calls`.
 6. `PageLoadException` → `CoreScopeNotReadyException` throughout both stacks.
-7. **Verify.** `Bruinell.Wpf.Tests`, `Bruinell.Wpf.UITests`, `Bruinell.Wpf.Uat.Tests`,
-   `Bruinell.WinForms.Tests`, `Bruinell.WinForms.UITests`, `Bruinell.WinForms.Uat.Tests`.
+7. **Verify.** `Bruinet.Wpf.Tests`, `Bruinet.Wpf.UITests`, `Bruinet.Wpf.Uat.Tests`,
+   `Bruinet.WinForms.Tests`, `Bruinet.WinForms.UITests`, `Bruinet.WinForms.Uat.Tests`.
    Against the recorded baseline; the 2 WPF login failures must still be exactly the same 2
    failures.
 
@@ -139,13 +139,13 @@ out in `plan.md` step 11.
 
 ## Stride (plan step 8)
 
-Stride uses a pipe-based automation handshake through `Bruinell.Stride.Automation`. The pipe
+Stride uses a pipe-based automation handshake through `Bruinet.Stride.Automation`. The pipe
 name is shared across every test fixture in the suite; orphaned Stride game processes block
 new connections (memory: pipe orphan-kill rule).
 
 Sub-steps:
 
-1. Baseline: `Bruinell.Stride.Tests`, `Bruinell.Stride.UITests`, `Bruinell.Stride.Uat.Tests`
+1. Baseline: `Bruinet.Stride.Tests`, `Bruinet.Stride.UITests`, `Bruinet.Stride.Uat.Tests`
    current passing/failing counts.
 2. Define `IStrideElement : ICoreElement`, `IStrideDriver : ICoreDriver`,
    `IStrideElementScope : ICoreScope`, `IStridePage : ICorePage`,
@@ -154,7 +154,7 @@ Sub-steps:
 3. `StridePipeElement`, `StridePipeDriver`, `StridePipeTestContext` switch to the new
    interfaces.
 4. `StrideViewBase<TScope>` extends `CoreViewBase<TScope>`.
-5. Calls layer: `Bruinell.Core.Automation.Calls`. `WaitHelper` polling in `PageObjectBase.IsReady`
+5. Calls layer: `Bruinet.Core.Automation.Calls`. `WaitHelper` polling in `PageObjectBase.IsReady`
    is replaced by `CoreScopeReadiness.ProbeReadiness`.
 6. `PageLoadException` → `CoreScopeNotReadyException`.
 7. **Verify.** With the orphan-kill script run first:
@@ -164,7 +164,7 @@ Sub-steps:
    Get-Process -Name "Stride*" -EA SilentlyContinue | Stop-Process -Force
    ```
 
-   Then `Bruinell.Stride.Tests` and one class of `Bruinell.Stride.UITests` at a time, with
+   Then `Bruinet.Stride.Tests` and one class of `Bruinet.Stride.UITests` at a time, with
    `isBackground=false` and per-class timeouts of 120000 ms.
 
 ## UAT (plan step 9)
@@ -174,9 +174,9 @@ about the new page/element interfaces.
 
 Sub-steps:
 
-1. `Bruinell.Core.Composition.TestComposition` recognizes `ICorePage` alongside `IPageObject`.
+1. `Bruinet.Core.Composition.TestComposition` recognizes `ICorePage` alongside `IPageObject`.
    Both are accepted while any stack still uses the old interface (?C7).
-2. `Bruinell.Uat.UatDiscovery`'s name-inference (if any) and its `IControlObject<>`
+2. `Bruinet.Uat.UatDiscovery`'s name-inference (if any) and its `IControlObject<>`
    recognition switch to `ICoreControlObject<>`.
 3. **Verify.** Every stack's UAT test project. The number of pages discovered is unchanged.
 
@@ -184,7 +184,7 @@ Sub-steps:
 
 Nothing built; only removed. In order:
 
-1. `Bruinell.Core.Interfaces.IElement<TSelf>` (delete file).
+1. `Bruinet.Core.Interfaces.IElement<TSelf>` (delete file).
 2. `IElementScope`, `IElementScope<TElement>` (delete file).
 3. `IPageObject`, `IPageObject<TElement>` (delete file).
 4. `ITestContext<TElement>` (edit `ITestContext.cs`, leaving the non-generic
@@ -199,11 +199,11 @@ Nothing built; only removed. In order:
 11. `PageReadinessSnapshot`, `PageReadinessState`, `BusySignalPolicy` (delete file).
 12. `PageLoadException` (delete file).
 13. `ElementGeometryExtensions`, `ElementScopeExtensions` (delete files; the geometry and
-    scope helpers now live under `Bruinell.Core.Automation.Helpers`).
+    scope helpers now live under `Bruinet.Core.Automation.Helpers`).
 14. `ControlObjectBase<TScope>` (delete file).
 15. `ObjectBase` (delete file).
 
-After each delete, `dotnet build srcnew\Bruinell.sln`; any consumer that fails is a stack that
+After each delete, `dotnet build srcnew\Bruinet.sln`; any consumer that fails is a stack that
 did not fully move, and the delete is reverted until that stack moves.
 
 **Verify.** Full solution build; every stack's `Tests` and `Uat.Tests` project; grep finds no
@@ -211,7 +211,7 @@ occurrence of any deleted type.
 
 ## What is not migrated
 
-- `TestPageAttribute` on `Bruinell.Core.Composition`. Kept as-is; UAT uses it and it costs
+- `TestPageAttribute` on `Bruinet.Core.Composition`. Kept as-is; UAT uses it and it costs
   nothing.
-- The generator (`Bruinell.Generator`). R8 says the generator does not change. Its inputs
+- The generator (`Bruinet.Generator`). R8 says the generator does not change. Its inputs
   (attributes, method conventions) are already stack-agnostic.

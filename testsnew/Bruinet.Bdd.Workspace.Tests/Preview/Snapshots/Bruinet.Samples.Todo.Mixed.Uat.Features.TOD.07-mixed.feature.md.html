@@ -1,0 +1,160 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.07-mixed.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.07 Sync between apps of several heads</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinet.Samples.Todo</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Sync</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MIXED</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.07</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>mixed, sync, multi-app</td>
+</tr>
+<tr>
+<td>Apps</td>
+<td>apps.md: Daan and Gus on Windows, Finn in a browser. Each step runs on the app of the user it names.</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.07.11</span> <span class="uat-tag">@mixed</span> <span class="uat-tag">@sync</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.07.11 A todo Daan creates on Windows reaches Finn&#39;s browser"><span class="uat-kw">Scenario</span> TOD.07.11 A todo Daan creates on Windows reaches Finn&#39;s browser</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step" data-line="18"><span class="uat-kw">Given</span><span class="uat-text">Daan is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="19"><span class="uat-kw">And</span><span class="uat-text">Finn is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="20"><span class="uat-kw">When</span><span class="uat-text">Daan taps Add</span>
+</li>
+<li class="uat-step" data-line="21"><span class="uat-kw">Then</span><span class="uat-text">Daan should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="22"><span class="uat-kw">When</span><span class="uat-text">Daan sets Title to <span class="uat-value">&quot;Pack for the trip&quot;</span></span>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">And</span><span class="uat-text">Daan taps Save</span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">Then</span><span class="uat-text">Daan should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">When</span><span class="uat-text">Daan taps Sync</span>
+</li>
+<li class="uat-step" data-line="26"><span class="uat-kw">Then</span><span class="uat-text">the server should have received the todo <span class="uat-value">&quot;Pack for the trip&quot;</span> from Daan</span>
+</li>
+<li class="uat-step" data-line="27"><span class="uat-kw">And</span><span class="uat-text">Finn should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="28"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Pack for the trip&quot;</span></span>
+</li>
+<li class="uat-step" data-line="29"><span class="uat-kw">When</span><span class="uat-text">Finn taps Sync</span>
+</li>
+<li class="uat-step" data-line="30"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Pack for the trip&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="33"><span class="uat-tag">@TOD.07.12</span> <span class="uat-tag">@mixed</span> <span class="uat-tag">@sync</span></p>
+<h2 class="uat-scenario" data-line="34" data-scenario="TOD.07.12 A todo Gus creates reaches Daan&#39;s PC and Finn&#39;s browser"><span class="uat-kw">Scenario</span> TOD.07.12 A todo Gus creates reaches Daan&#39;s PC and Finn&#39;s browser</h2>
+<ol class="uat-steps" data-line="36">
+<li class="uat-step" data-line="37"><span class="uat-kw">Given</span><span class="uat-text">Daan is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="38"><span class="uat-kw">And</span><span class="uat-text">Gus is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="39"><span class="uat-kw">And</span><span class="uat-text">Finn is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="40"><span class="uat-kw">When</span><span class="uat-text">Gus taps Add</span>
+</li>
+<li class="uat-step" data-line="41"><span class="uat-kw">Then</span><span class="uat-text">Gus should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="42"><span class="uat-kw">When</span><span class="uat-text">Gus sets Title to <span class="uat-value">&quot;Water the plants&quot;</span></span>
+</li>
+<li class="uat-step" data-line="43"><span class="uat-kw">And</span><span class="uat-text">Gus taps Save</span>
+</li>
+<li class="uat-step" data-line="44"><span class="uat-kw">Then</span><span class="uat-text">Gus should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="45"><span class="uat-kw">When</span><span class="uat-text">Gus taps Sync</span>
+</li>
+<li class="uat-step" data-line="46"><span class="uat-kw">Then</span><span class="uat-text">the server should have received the todo <span class="uat-value">&quot;Water the plants&quot;</span> from Gus</span>
+</li>
+<li class="uat-step" data-line="47"><span class="uat-kw">When</span><span class="uat-text">Daan taps Sync</span>
+</li>
+<li class="uat-step" data-line="48"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Water the plants&quot;</span></span>
+</li>
+<li class="uat-step" data-line="49"><span class="uat-kw">When</span><span class="uat-text">Finn taps Sync</span>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Water the plants&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="53"><span class="uat-tag">@TOD.07.14</span> <span class="uat-tag">@mixed</span> <span class="uat-tag">@sync</span></p>
+<h2 class="uat-scenario" data-line="54" data-scenario="TOD.07.14 Finn&#39;s browser, offline, gets Daan&#39;s todo once it is back online"><span class="uat-kw">Scenario</span> TOD.07.14 Finn&#39;s browser, offline, gets Daan&#39;s todo once it is back online</h2>
+<ol class="uat-steps" data-line="56">
+<li class="uat-step" data-line="57"><span class="uat-kw">Given</span><span class="uat-text">Daan is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="58"><span class="uat-kw">And</span><span class="uat-text">Finn is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="59"><span class="uat-kw">And</span><span class="uat-text">Finn is offline</span>
+</li>
+<li class="uat-step" data-line="60"><span class="uat-kw">Then</span><span class="uat-text">Sync should be disabled</span>
+</li>
+<li class="uat-step" data-line="61"><span class="uat-kw">When</span><span class="uat-text">Daan taps Add</span>
+</li>
+<li class="uat-step" data-line="62"><span class="uat-kw">Then</span><span class="uat-text">Daan should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="63"><span class="uat-kw">When</span><span class="uat-text">Daan sets Title to <span class="uat-value">&quot;Renew the insurance&quot;</span></span>
+</li>
+<li class="uat-step" data-line="64"><span class="uat-kw">And</span><span class="uat-text">Daan taps Save</span>
+</li>
+<li class="uat-step" data-line="65"><span class="uat-kw">Then</span><span class="uat-text">Daan should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="66"><span class="uat-kw">When</span><span class="uat-text">Daan taps Sync</span>
+</li>
+<li class="uat-step" data-line="67"><span class="uat-kw">Then</span><span class="uat-text">the server should have received the todo <span class="uat-value">&quot;Renew the insurance&quot;</span> from Daan</span>
+</li>
+<li class="uat-step" data-line="68"><span class="uat-kw">When</span><span class="uat-text">Finn is back online</span>
+</li>
+<li class="uat-step" data-line="69"><span class="uat-kw">Then</span><span class="uat-text">Sync should be enabled</span>
+</li>
+<li class="uat-step" data-line="70"><span class="uat-kw">When</span><span class="uat-text">Finn taps Sync</span>
+</li>
+<li class="uat-step" data-line="71"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Renew the insurance&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="74"><span class="uat-tag">@TOD.07.15</span> <span class="uat-tag">@mixed</span> <span class="uat-tag">@sync</span> <span class="uat-tag">@android</span></p>
+<h2 class="uat-scenario" data-line="75" data-scenario="TOD.07.15 A todo Eva creates on her phone reaches Daan&#39;s PC"><span class="uat-kw">Scenario</span> TOD.07.15 A todo Eva creates on her phone reaches Daan&#39;s PC</h2>
+<ol class="uat-steps" data-line="77">
+<li class="uat-step" data-line="78"><span class="uat-kw">Given</span><span class="uat-text">Eva is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="79"><span class="uat-kw">And</span><span class="uat-text">Daan is on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="80"><span class="uat-kw">When</span><span class="uat-text">Eva taps Add</span>
+</li>
+<li class="uat-step" data-line="81"><span class="uat-kw">Then</span><span class="uat-text">Eva should be on the Todo Edit page</span>
+</li>
+<li class="uat-step" data-line="82"><span class="uat-kw">When</span><span class="uat-text">Eva sets Title to <span class="uat-value">&quot;Call the plumber&quot;</span></span>
+</li>
+<li class="uat-step" data-line="83"><span class="uat-kw">And</span><span class="uat-text">Eva taps Save</span>
+</li>
+<li class="uat-step" data-line="84"><span class="uat-kw">Then</span><span class="uat-text">Eva should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="85"><span class="uat-kw">When</span><span class="uat-text">Eva taps Sync</span>
+</li>
+<li class="uat-step" data-line="86"><span class="uat-kw">Then</span><span class="uat-text">the server should have received the todo <span class="uat-value">&quot;Call the plumber&quot;</span> from Eva</span>
+</li>
+<li class="uat-step" data-line="87"><span class="uat-kw">When</span><span class="uat-text">Daan taps Sync</span>
+</li>
+<li class="uat-step" data-line="88"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Call the plumber&quot;</span></span>
+</li>
+</ol>
+</article>

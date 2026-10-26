@@ -7,20 +7,20 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | Project | Path | TFM | References |
 | --- | --- | --- | --- |
 | `MauiUnit` (PackageId `MauiUnit`) | `srcnew/MauiUnit` | net10.0 | `Microsoft.Maui.Controls` 10.0.110, `Microsoft.Extensions.DependencyInjection` |
-| `Bruinell.Maui.MauiUnit` | `srcnew/Bruinell.Maui.MauiUnit` | net10.0 | `Bruinell.Maui`, `MauiUnit` |
+| `Bruinet.Maui.MauiUnit` | `srcnew/Bruinet.Maui.MauiUnit` | net10.0 | `Bruinet.Maui`, `MauiUnit` |
 | `MauiUnit.Samples.App` | `samples/MauiUnit.Samples.App` | net10.0, `UseMaui` | `Microsoft.Maui.Controls` |
 | `MauiUnit.Tests` | `testsnew/MauiUnit.Tests` | net10.0, xUnit 2.9.3 | `MauiUnit`, samples |
 | `MauiUnit.Tests.NUnit` | `testsnew/MauiUnit.Tests.NUnit` | NUnit 4.3.2 + adapter 5.0.0 | `MauiUnit`, samples |
 | `MauiUnit.Tests.MSTest` | `testsnew/MauiUnit.Tests.MSTest` | MSTest 3.9.3 | `MauiUnit`, samples |
-| `Bruinell.Maui.MauiUnit.Tests` | `testsnew/Bruinell.Maui.MauiUnit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinell.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
-| `Bruinell.Samples.Maui.App.Headless`, `.ShellApp.Headless` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
-| `Bruinell.Maui.UITests` (the device suite) | `testsnew/Bruinell.Maui.UITests` | net10.0-windows, xUnit | Also references `Bruinell.Maui.MauiUnit` and both headless apps; `BRUINELL_HEAD=mauiunit` runs it in memory through the fixtures' `CreateInMemoryOptions` |
+| `Bruinet.Maui.MauiUnit.Tests` | `testsnew/Bruinet.Maui.MauiUnit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinet.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
+| `Bruinet.Samples.Maui.App.Headless`, `.ShellApp.Headless` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
+| `Bruinet.Maui.UITests` (the device suite) | `testsnew/Bruinet.Maui.UITests` | net10.0-windows, xUnit | Also references `Bruinet.Maui.MauiUnit` and both headless apps; `BRUINET_HEAD=mauiunit` runs it in memory through the fixtures' `CreateInMemoryOptions` |
 
 ## Dependency analysis
 
-- **MauiUnit:** MAUI Controls (plain net10.0 assemblies: Controls.Core, Maui.Core, Essentials, Graphics, Controls.Xaml) and MS DI. No test framework, no AI SDK, no Bruinell.
-- **Bruinell.Maui.MauiUnit:** Bruinell.Maui, which brings Appium.WebDriver and xunit.extensibility.core (an existing Bruinell.Maui cost, not the head's), plus MauiUnit.
-- **An app's test project:** MauiUnit, its framework of choice, and a MAUI class library of the app's pages, view models and services on `net10.0`. A platform-only app project cannot be referenced; its pages move to a library, or are linked as `Bruinell.Maui.MauiUnit.Tests` does.
+- **MauiUnit:** MAUI Controls (plain net10.0 assemblies: Controls.Core, Maui.Core, Essentials, Graphics, Controls.Xaml) and MS DI. No test framework, no AI SDK, no Bruinet.
+- **Bruinet.Maui.MauiUnit:** Bruinet.Maui, which brings Appium.WebDriver and xunit.extensibility.core (an existing Bruinet.Maui cost, not the head's), plus MauiUnit.
+- **An app's test project:** MauiUnit, its framework of choice, and a MAUI class library of the app's pages, view models and services on `net10.0`. A platform-only app project cannot be referenced; its pages move to a library, or are linked as `Bruinet.Maui.MauiUnit.Tests` does.
 - **Packages added to the root `Directory.Packages.props`:** `NUnit`, `NUnit3TestAdapter`, `MSTest.TestFramework`, `MSTest.TestAdapter`.
 
 ## Namespaces and types
@@ -36,7 +36,7 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MauiUnit.Assertions` | `ShouldExtensions`, `ElementAssertions<T>`, `MauiUnitAssertionException` | |
 | `MauiUnit.Snapshots` | `TreeSnapshot`, `SnapshotOptions` | |
 | `MauiUnit.Internals` | | `MauiInternals` |
-| `Bruinell.Maui.MauiUnit` | `MauiUnitDriver`, `MauiUnitElement`, `MauiUnitHead`, `DeviceOnlyException` | `MauiUnitLocators`, `MauiUnitState`, `MauiUnitAppBridge`, `MauiUnitRefusals` |
+| `Bruinet.Maui.MauiUnit` | `MauiUnitDriver`, `MauiUnitElement`, `MauiUnitHead`, `DeviceOnlyException` | `MauiUnitLocators`, `MauiUnitState`, `MauiUnitAppBridge`, `MauiUnitRefusals` |
 
 The tree a window shows, top down:
 1. Open dialogs, top first.
@@ -93,8 +93,8 @@ el.Should().HaveText(s).And.ContainText(s).BeVisible().NotBeVisible().BeEnabled(
    .HaveAutomationId(s).HaveBindingContext<TVm>(pred?).BeBoundTo(Label.TextProperty, "Path").Satisfy(pred, "why")
 switch.Should().BeOn()/BeOff()   checkBox.Should().BeChecked()/NotBeChecked()   items.Should().HaveItemCount(n)
 
-// Bruinell head
-IMauiTestContext ctx2 = ctx.Render<ButtonsPage>().AsBruinellContext(timeouts?);
+// Bruinet head
+IMauiTestContext ctx2 = ctx.Render<ButtonsPage>().AsBruinetContext(timeouts?);
 new ButtonsTestPage(ctx2).TestButton.Click();
 ```
 
@@ -108,7 +108,7 @@ new ButtonsTestPage(ctx2).TestButton.Click();
 | MAUI's `IDispatcherProvider` | Process-wide; returns the running context's dispatcher | `TestDispatcherProvider` |
 | MAUI's `IPreferences`, `ISecureStorage` | Essentials storage | `InMemoryPreferences`, `InMemorySecureStorage` |
 | MAUI's `IViewHandler`, `IMauiContext` | Carry services to Shell and the application; map nothing | `HeadlessHandler`, `HeadlessMauiContext` |
-| Bruinell's `IMauiDriver`, `IMauiElement` | The head | `MauiUnitDriver`, `MauiUnitElement` |
+| Bruinet's `IMauiDriver`, `IMauiElement` | The head | `MauiUnitDriver`, `MauiUnitElement` |
 
 ## Render sequence
 
@@ -130,9 +130,9 @@ new ButtonsTestPage(ctx2).TestButton.Click();
 - `AdvanceTime(by)` runs scheduled entries in (due, sequence) order, draining after each.
 - `WaitFor(cond, timeout)` drains and checks inside the scope, then waits on the signal outside it.
 
-## Bruinell head mapping
+## Bruinet head mapping
 
-Every action runs through `MauiUnitRefusals`: a refusal for a hidden element is an `ElementNotReadyException` (`NotVisible`), one for a disabled element is `ElementNotReadyException` (`Disabled`), and any other refusal is a `BruinellException` with MauiUnit's reason.
+Every action runs through `MauiUnitRefusals`: a refusal for a hidden element is an `ElementNotReadyException` (`NotVisible`), one for a disabled element is `ElementNotReadyException` (`Disabled`), and any other refusal is a `BruinetException` with MauiUnit's reason.
 
 | `IMauiElement` member | On MauiUnit |
 | --- | --- |
@@ -162,8 +162,8 @@ Every action runs through `MauiUnitRefusals`: a refusal for a hidden element is 
 | App element flyout members | `Shell.FlyoutIsPresented` or `FlyoutPage.IsPresented` |
 | `IMauiDriver.FindElements` | `MauiUnitLocators`, leaving out `IsVisible="False"` elements as the device trees do |
 | `ShellChrome` | `ClassName` `ShellTabBar`, `ShellSection`, `ShellFlyoutList` and `ShellItem` |
-| `InvokeMenuItem`, `InvokeToolbarItem` | Menu bar and context menu items, toolbar items of the page and its containers; missing is a `BruinellException`, disabled an `ElementNotReadyException` |
-| `NavigateTo`, `NavigateBack` | `Shell.GoToAsync`; `TestNavigator.GoBack` (nothing behind is a `BruinellException`) |
+| `InvokeMenuItem`, `InvokeToolbarItem` | Menu bar and context menu items, toolbar items of the page and its containers; missing is a `BruinetException`, disabled an `ElementNotReadyException` |
+| `NavigateTo`, `NavigateBack` | `Shell.GoToAsync`; `TestNavigator.GoBack` (nothing behind is a `BruinetException`) |
 | `CurrentRoute` | Shell's location, else the top page's `AutomationId` |
 | `CurrentWindowHandle` | `mauiunit-N`, one per rendered window |
 | `GetPageSource` | `TreeSnapshot` |
@@ -187,7 +187,7 @@ Locator strategies:
 | `VisualElement.IsFocusedPropertyKey` | `SetFocus`, `ClearFocus` | Used (reflection) |
 | `Page._pendingActions`, the closures holding `AlertArguments`, `PromptArguments`, `ActionSheetArguments` | Dialogs (`TestDialog`) | Used (reflection); the arguments and their `SetResult` are public |
 | `Page.SendAppearing` and `SendDisappearing`, `Button.SendClicked`, `SendPressed` and `SendReleased`, `Entry.SendCompleted`, `ISearchBarController`, `ISliderController`, `IMenuItemController`, `IShellContentController.GetOrCreateContent`, `SwipeGestureRecognizer.SendSwiped` | Interactions, lifecycle | Public (`EditorBrowsable(Never)`) |
-| `Bruinell.Maui.AppSupport.Uia.GestureAutomation.SinkProperty` and a sink's `Verbs`, `Invoke` and `Exchange` | The head calling the app's own verb sinks | Found by name, so a copied-in AppSupport works too |
+| `Bruinet.Maui.AppSupport.Uia.GestureAutomation.SinkProperty` and a sink's `Verbs`, `Invoke` and `Exchange` | The head calling the app's own verb sinks | Found by name, so a copied-in AppSupport works too |
 | `BindingDiagnostics.BindingFailed` | Turning binding errors into test failures | Explore in Phase 3 |
 | `GroupableItemsView` grouping and `ListView` `TemplatedItemsList` | Realizing grouped rows and cells | Explore in Phase 1 |
 | `VisualElement.IsLoaded`, `SendLoaded` and `OnLoaded` | `Loaded` and `Unloaded` | Explore in Phase 6 |
@@ -263,5 +263,5 @@ internal sealed class HeadlessViewHandler(IHeadlessSizer sizer) : ViewHandler<IV
 | `MauiUnit.Tests/Framework/DialogTests.cs` | An alert over the page answered; a prompt typed into; an action sheet's choice |
 | `MauiUnit.Tests.NUnit/SettingsPageTests.cs` | Save through SetUp and TearDown; MauiUnit failure message under NUnit |
 | `MauiUnit.Tests.MSTest/GreetingAndShellTests.cs` | Click; Shell help route; method-level parallel |
-| `Bruinell.Maui.MauiUnit.Tests/SamplePagesOnMauiUnitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |
-| `Bruinell.Maui.UITests` with `BRUINELL_HEAD=mauiunit` | 360 tests; 325 pass, 35 skip as device-only ([suite-count.md](suite-count.md)) |
+| `Bruinet.Maui.MauiUnit.Tests/SamplePagesOnMauiUnitTests.cs` | `ButtonsTestPage`: command and status; `ToggleTestPage`: check, switch, radio; page root found |
+| `Bruinet.Maui.UITests` with `BRUINET_HEAD=mauiunit` | 360 tests; 325 pass, 35 skip as device-only ([suite-count.md](suite-count.md)) |

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Visual Studio extension in a real Visual Studio, driven from outside: DTE over COM, the
+       preview over CDP (Bruinet.Html). Opt-in: BRUINET_IDE_TESTS=1 and a desktop; the fixture builds
+       with Visual Studio's MSBuild (tools\Bruinet.Bdd.VisualStudio). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Bruinet.Bdd.VisualStudio.UITests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinet.Core\Bruinet.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinet.Html\Bruinet.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinet.Html.Playwright\Bruinet.Html.Playwright.csproj" />
+  </ItemGroup>
+
+  <!-- The preview's page object, shared with the page's own tests in Chromium. -->
+  <ItemGroup>
+    <Compile Include="..\Bruinet.Bdd.Workspace.UITests\PageObjects\ScenarioPreviewPage.cs" Link="PageObjects\ScenarioPreviewPage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

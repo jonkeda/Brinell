@@ -1,0 +1,164 @@
+{"platform":"html","location":"http://localhost:5180/userform","title":"User Form - Bruinet Blazor Sample","capturedAt":"2026-09-30T18:28:16.8273431+00:00","nodes":163}
+{"n":1,"p":0,"type":"html","box":[0,0,1521,1019]}
+{"n":2,"p":1,"type":"body","box":[8,8,1505,1003],"attr":{"data-busy":"false"}}
+{"n":3,"p":2,"type":"div","box":[8,8,1505,1003],"attr":{"class":"page"}}
+{"n":4,"p":3,"type":"div","box":[8,8,283,1003],"attr":{"class":"sidebar"}}
+{"n":5,"p":4,"type":"div","box":[24,24,250,504],"attr":{"class":"nav-menu","data-automation-id":"NavMenu"}}
+{"n":6,"p":5,"type":"nav","box":[24,24,250,504],"attr":{"class":"flex-column"}}
+{"n":7,"p":6,"type":"div","box":[24,24,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":8,"p":7,"type":"a","text":"Home","box":[24,32,250,34],"attr":{"class":"nav-link","data-automation-id":"NavHome","href":"","id":"nav-home"}}
+{"n":9,"p":8,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-house-door-fill"}}
+{"n":10,"p":6,"type":"div","box":[24,74,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":11,"p":10,"type":"a","text":"Counter","box":[24,82,250,34],"attr":{"class":"nav-link","data-automation-id":"NavCounter","href":"counter","id":"nav-counter"}}
+{"n":12,"p":11,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-plus-square-fill"}}
+{"n":13,"p":6,"type":"div","box":[24,125,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":14,"p":13,"type":"a","text":"Login","box":[24,133,250,34],"attr":{"class":"nav-link","data-automation-id":"NavLogin","href":"login","id":"nav-login"}}
+{"n":15,"p":14,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-fill"}}
+{"n":16,"p":6,"type":"div","box":[24,175,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":17,"p":16,"type":"a","text":"Dashboard","box":[24,183,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDashboard","href":"dashboard","id":"nav-dashboard"}}
+{"n":18,"p":17,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-speedometer2"}}
+{"n":19,"p":6,"type":"div","box":[24,226,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":20,"p":19,"type":"a","text":"User Form","box":[24,234,250,34],"attr":{"aria-current":"page","class":"nav-link active","data-automation-id":"NavUserForm","href":"userform","id":"nav-userform"}}
+{"n":21,"p":20,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-lines-fill"}}
+{"n":22,"p":6,"type":"div","box":[24,276,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":23,"p":22,"type":"a","text":"Data Table","box":[24,284,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDataTable","href":"datatable","id":"nav-datatable"}}
+{"n":24,"p":23,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-table"}}
+{"n":25,"p":6,"type":"div","box":[24,326,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":26,"p":25,"type":"a","text":"Media Gallery","box":[24,334,250,34],"attr":{"class":"nav-link","data-automation-id":"NavMediaGallery","href":"mediagallery","id":"nav-mediagallery"}}
+{"n":27,"p":26,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-images"}}
+{"n":28,"p":6,"type":"div","box":[24,377,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":29,"p":28,"type":"a","text":"Navigation","box":[24,385,250,34],"attr":{"class":"nav-link","data-automation-id":"NavNavigation","href":"navigation","id":"nav-navigation"}}
+{"n":30,"p":29,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-signpost-split-fill"}}
+{"n":31,"p":6,"type":"div","box":[24,427,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":32,"p":31,"type":"a","text":"Validation","box":[24,435,250,34],"attr":{"class":"nav-link","data-automation-id":"NavValidation","href":"validation","id":"nav-validation"}}
+{"n":33,"p":32,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-check-circle-fill"}}
+{"n":34,"p":6,"type":"div","box":[24,478,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":35,"p":34,"type":"a","text":"Advanced","box":[24,486,250,34],"attr":{"class":"nav-link","data-automation-id":"NavAdvanced","href":"advanced","id":"nav-advanced"}}
+{"n":36,"p":35,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-gear-wide-connected"}}
+{"n":37,"p":3,"type":"main","box":[291,8,1222,1003]}
+{"n":38,"p":37,"type":"article","box":[291,8,1222,1003],"attr":{"class":"content px-4"}}
+{"n":39,"p":38,"type":"div","box":[291,47,1222,964],"attr":{"data-automation-id":"UserFormPage"}}
+{"n":40,"p":39,"type":"h1","text":"User Registration","box":[291,47,1222,36],"attr":{"data-automation-id":"UserFormTitle","tabindex":"-1"}}
+{"n":41,"p":39,"type":"p","text":"Complete the form below to register","box":[291,104,1222,18],"attr":{"class":"text-muted","data-automation-id":"UserFormSubtitle"}}
+{"n":42,"p":39,"type":"form","box":[291,145,1222,866]}
+{"n":43,"p":42,"type":"div","box":[291,145,1222,218],"attr":{"class":"card mb-4","data-automation-id":"TextInputSection"}}
+{"n":44,"p":43,"type":"div","box":[291,145,1222,16],"attr":{"class":"card-header"}}
+{"n":45,"p":44,"type":"h5","text":"Personal Information","box":[291,145,1222,16],"attr":{"data-automation-id":"PersonalInfoLabel"}}
+{"n":46,"p":43,"type":"div","box":[291,183,1222,180],"attr":{"class":"card-body"}}
+{"n":47,"p":46,"type":"div","box":[291,183,1222,42],"attr":{"class":"row"}}
+{"n":48,"p":47,"type":"div","box":[291,183,1222,21],"attr":{"class":"col-md-6 mb-3"}}
+{"n":49,"p":48,"type":"label","text":"First Name","box":[776,183,78,18],"attr":{"class":"form-label","for":"firstName"}}
+{"n":50,"p":48,"type":"input","box":[858,183,170,21],"attr":{"class":"form-control","data-automation-id":"FirstNameInput","id":"firstName","placeholder":"Enter first name","type":"text"}}
+{"n":51,"p":47,"type":"div","box":[291,204,1222,21],"attr":{"class":"col-md-6 mb-3"}}
+{"n":52,"p":51,"type":"label","text":"Last Name","box":[776,205,77,18],"attr":{"class":"form-label","for":"lastName"}}
+{"n":53,"p":51,"type":"input","box":[858,204,170,21],"attr":{"class":"form-control","data-automation-id":"LastNameInput","id":"lastName","placeholder":"Enter last name","type":"text"}}
+{"n":54,"p":46,"type":"div","box":[291,226,1222,42],"attr":{"class":"row"}}
+{"n":55,"p":54,"type":"div","box":[291,226,1222,21],"attr":{"class":"col-md-6 mb-3"}}
+{"n":56,"p":55,"type":"label","text":"Email","box":[795,226,40,18],"attr":{"class":"form-label","for":"email"}}
+{"n":57,"p":55,"type":"input","box":[839,226,170,21],"attr":{"class":"form-control","data-automation-id":"EmailInput","id":"email","placeholder":"user@example.com","type":"email"}}
+{"n":58,"p":54,"type":"div","box":[291,247,1222,21],"attr":{"class":"col-md-6 mb-3"}}
+{"n":59,"p":58,"type":"label","text":"Phone","box":[792,247,46,18],"attr":{"class":"form-label","for":"phone"}}
+{"n":60,"p":58,"type":"input","box":[842,247,170,21],"attr":{"class":"form-control","data-automation-id":"PhoneInput","id":"phone","placeholder":"123-456-7890","type":"tel"}}
+{"n":61,"p":46,"type":"div","box":[291,268,1222,55],"attr":{"class":"mb-3"}}
+{"n":62,"p":61,"type":"label","text":"Bio","box":[804,305,23,18],"attr":{"class":"form-label","for":"bio"}}
+{"n":63,"p":61,"type":"textarea","box":[832,268,168,51],"attr":{"class":"form-control","data-automation-id":"BioTextarea","id":"bio","placeholder":"Tell us about yourself..."}}
+{"n":64,"p":46,"type":"div","box":[291,323,1222,40],"attr":{"class":"mb-3"}}
+{"n":65,"p":64,"type":"label","text":"Search Users","box":[853,323,97,18],"attr":{"class":"form-label","for":"search"}}
+{"n":66,"p":64,"type":"div","box":[291,342,1222,21],"attr":{"class":"input-group"}}
+{"n":67,"p":66,"type":"input","box":[786,342,170,21],"attr":{"class":"form-control","data-automation-id":"SearchInput","id":"search","placeholder":"Search...","type":"search"}}
+{"n":68,"p":66,"type":"button","text":"Search","box":[960,342,57,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"SearchButton","type":"button"}}
+{"n":69,"p":42,"type":"div","box":[291,385,1222,255],"attr":{"class":"card mb-4","data-automation-id":"ToggleSection"}}
+{"n":70,"p":69,"type":"div","box":[291,385,1222,16],"attr":{"class":"card-header"}}
+{"n":71,"p":70,"type":"h5","text":"Preferences","box":[291,385,1222,16],"attr":{"data-automation-id":"PreferencesLabel"}}
+{"n":72,"p":69,"type":"div","box":[291,423,1222,217],"attr":{"class":"card-body"}}
+{"n":73,"p":72,"type":"div","box":[291,423,1222,20],"attr":{"class":"form-check form-switch mb-3"}}
+{"n":74,"p":73,"type":"input","box":[809,426,13,13],"attr":{"class":"form-check-input","data-automation-id":"NewsletterSwitch","id":"newsletter","type":"checkbox"}}
+{"n":75,"p":73,"type":"label","text":"Subscribe to Newsletter","box":[830,425,169,18],"attr":{"class":"form-check-label","for":"newsletter"}}
+{"n":76,"p":72,"type":"div","box":[291,443,1222,20],"attr":{"class":"form-check mb-2"}}
+{"n":77,"p":76,"type":"input","box":[791,446,13,13],"attr":{"class":"form-check-input","data-automation-id":"TermsCheckbox","id":"terms","type":"checkbox"}}
+{"n":78,"p":76,"type":"label","text":"I accept the Terms of Service","box":[811,445,206,18],"attr":{"class":"form-check-label","for":"terms"}}
+{"n":79,"p":72,"type":"div","box":[291,463,1222,20],"attr":{"class":"form-check mb-3"}}
+{"n":80,"p":79,"type":"input","box":[800,466,13,13],"attr":{"class":"form-check-input","data-automation-id":"PrivacyCheckbox","id":"privacy","type":"checkbox"}}
+{"n":81,"p":79,"type":"label","text":"I accept the Privacy Policy","box":[821,465,187,18],"attr":{"class":"form-check-label","for":"privacy"}}
+{"n":82,"p":72,"type":"label","text":"Subscription Tier","box":[842,483,119,18],"attr":{"class":"form-label"}}
+{"n":83,"p":72,"type":"div","box":[291,502,1222,60],"attr":{"class":"mb-3","data-automation-id":"SubscriptionRadioGroup"}}
+{"n":84,"p":83,"type":"div","box":[291,502,1222,20],"attr":{"class":"form-check"}}
+{"n":85,"p":84,"type":"input","box":[875,505,13,13],"attr":{"class":"form-check-input","data-automation-id":"BasicRadio","id":"basic","name":"subscription","type":"radio"}}
+{"n":86,"p":84,"type":"label","text":"Basic","box":[895,503,39,18],"attr":{"class":"form-check-label","for":"basic"}}
+{"n":87,"p":83,"type":"div","box":[291,522,1222,20],"attr":{"class":"form-check"}}
+{"n":88,"p":87,"type":"input","box":[850,525,13,13],"attr":{"class":"form-check-input","data-automation-id":"ProfessionalRadio","id":"professional","name":"subscription","type":"radio"}}
+{"n":89,"p":87,"type":"label","text":"Professional","box":[871,523,88,18],"attr":{"class":"form-check-label","for":"professional"}}
+{"n":90,"p":83,"type":"div","box":[291,542,1222,20],"attr":{"class":"form-check"}}
+{"n":91,"p":90,"type":"input","box":[858,545,13,13],"attr":{"class":"form-check-input","data-automation-id":"EnterpriseRadio","id":"enterprise","name":"subscription","type":"radio"}}
+{"n":92,"p":90,"type":"label","text":"Enterprise","box":[878,543,73,18],"attr":{"class":"form-check-label","for":"enterprise"}}
+{"n":93,"p":72,"type":"label","text":"Contact Preference","box":[833,562,138,18],"attr":{"class":"form-label"}}
+{"n":94,"p":72,"type":"div","box":[291,580,1222,60],"attr":{"class":"mb-3","data-automation-id":"ContactRadioGroup"}}
+{"n":95,"p":94,"type":"div","box":[291,580,1222,20],"attr":{"class":"form-check form-check-inline"}}
+{"n":96,"p":95,"type":"input","box":[874,583,13,13],"attr":{"class":"form-check-input","data-automation-id":"ContactEmailRadio","id":"contactEmail","name":"contact","type":"radio"}}
+{"n":97,"p":95,"type":"label","text":"Email","box":[895,582,40,18],"attr":{"class":"form-check-label","for":"contactEmail"}}
+{"n":98,"p":94,"type":"div","box":[291,600,1222,20],"attr":{"class":"form-check form-check-inline"}}
+{"n":99,"p":98,"type":"input","box":[871,603,13,13],"attr":{"class":"form-check-input","data-automation-id":"ContactPhoneRadio","id":"contactPhone","name":"contact","type":"radio"}}
+{"n":100,"p":98,"type":"label","text":"Phone","box":[891,602,46,18],"attr":{"class":"form-check-label","for":"contactPhone"}}
+{"n":101,"p":94,"type":"div","box":[291,620,1222,20],"attr":{"class":"form-check form-check-inline"}}
+{"n":102,"p":101,"type":"input","box":[877,623,13,13],"attr":{"class":"form-check-input","data-automation-id":"ContactSmsRadio","id":"contactSms","name":"contact","type":"radio"}}
+{"n":103,"p":101,"type":"label","text":"SMS","box":[897,622,35,18],"attr":{"class":"form-check-label","for":"contactSms"}}
+{"n":104,"p":42,"type":"div","box":[291,662,1222,168],"attr":{"class":"card mb-4","data-automation-id":"SelectionSection"}}
+{"n":105,"p":104,"type":"div","box":[291,662,1222,16],"attr":{"class":"card-header"}}
+{"n":106,"p":105,"type":"h5","text":"Selection Controls","box":[291,662,1222,16],"attr":{"data-automation-id":"SelectionLabel"}}
+{"n":107,"p":104,"type":"div","box":[291,700,1222,129],"attr":{"class":"card-body"}}
+{"n":108,"p":107,"type":"div","box":[291,700,1222,38],"attr":{"class":"row"}}
+{"n":109,"p":108,"type":"div","box":[291,700,1222,19],"attr":{"class":"col-md-6 mb-3"}}
+{"n":110,"p":109,"type":"label","text":"Country","box":[812,700,56,18],"attr":{"class":"form-label","for":"country"}}
+{"n":111,"p":109,"type":"select","box":[872,701,119,18],"attr":{"class":"form-select","data-automation-id":"CountrySelect","id":"country"}}
+{"n":112,"p":111,"type":"option","text":"Select Country..."}
+{"n":113,"p":111,"type":"option","text":"United States","attr":{"data-automation-id":"CountryOption_United States"}}
+{"n":114,"p":111,"type":"option","text":"Canada","attr":{"data-automation-id":"CountryOption_Canada"}}
+{"n":115,"p":111,"type":"option","text":"United Kingdom","attr":{"data-automation-id":"CountryOption_United Kingdom"}}
+{"n":116,"p":111,"type":"option","text":"Germany","attr":{"data-automation-id":"CountryOption_Germany"}}
+{"n":117,"p":111,"type":"option","text":"France","attr":{"data-automation-id":"CountryOption_France"}}
+{"n":118,"p":111,"type":"option","text":"Australia","attr":{"data-automation-id":"CountryOption_Australia"}}
+{"n":119,"p":111,"type":"option","text":"Japan","attr":{"data-automation-id":"CountryOption_Japan"}}
+{"n":120,"p":108,"type":"div","box":[291,720,1222,19],"attr":{"class":"col-md-6 mb-3"}}
+{"n":121,"p":120,"type":"label","text":"Department","box":[786,720,84,18],"attr":{"class":"form-label","for":"department"}}
+{"n":122,"p":120,"type":"select","box":[874,720,143,18],"attr":{"class":"form-select","data-automation-id":"DepartmentSelect","id":"department"}}
+{"n":123,"p":122,"type":"option","text":"Select Department..."}
+{"n":124,"p":122,"type":"option","text":"Engineering","attr":{"data-automation-id":"DeptOption_Engineering"}}
+{"n":125,"p":122,"type":"option","text":"Sales","attr":{"data-automation-id":"DeptOption_Sales"}}
+{"n":126,"p":122,"type":"option","text":"Marketing","attr":{"data-automation-id":"DeptOption_Marketing"}}
+{"n":127,"p":122,"type":"option","text":"Human Resources","attr":{"data-automation-id":"DeptOption_Human Resources"}}
+{"n":128,"p":122,"type":"option","text":"Finance","attr":{"data-automation-id":"DeptOption_Finance"}}
+{"n":129,"p":122,"type":"option","text":"Operations","attr":{"data-automation-id":"DeptOption_Operations"}}
+{"n":130,"p":107,"type":"div","box":[291,739,1222,91],"attr":{"class":"row"}}
+{"n":131,"p":130,"type":"div","box":[291,739,1222,21],"attr":{"class":"col-md-6 mb-3"}}
+{"n":132,"p":131,"type":"label","text":"Birth Date","box":[802,739,71,18],"attr":{"class":"form-label","for":"birthdate"}}
+{"n":133,"p":131,"type":"input","box":[878,739,123,21],"attr":{"class":"form-control","data-automation-id":"BirthDateInput","id":"birthdate","type":"date"}}
+{"n":134,"p":130,"type":"div","box":[291,759,1222,70],"attr":{"class":"col-md-6 mb-3"}}
+{"n":135,"p":134,"type":"label","text":"Multiple Select","box":[812,811,104,18],"attr":{"class":"form-label"}}
+{"n":136,"p":134,"type":"select","box":[920,759,71,70],"attr":{"class":"form-select","data-automation-id":"MultiSelect"}}
+{"n":137,"p":136,"type":"option","text":"Option 1","box":[921,760,54,17],"attr":{"data-automation-id":"MultiOpt1"}}
+{"n":138,"p":136,"type":"option","text":"Option 2","box":[921,777,54,17],"attr":{"data-automation-id":"MultiOpt2"}}
+{"n":139,"p":136,"type":"option","text":"Option 3","box":[921,794,54,17],"attr":{"data-automation-id":"MultiOpt3"}}
+{"n":140,"p":136,"type":"option","text":"Option 4","box":[921,811,54,17],"attr":{"data-automation-id":"MultiOpt4"}}
+{"n":141,"p":42,"type":"div","box":[291,852,1222,122],"attr":{"class":"card mb-4","data-automation-id":"RangeSection"}}
+{"n":142,"p":141,"type":"div","box":[291,852,1222,16],"attr":{"class":"card-header"}}
+{"n":143,"p":142,"type":"h5","text":"Range Controls","box":[291,852,1222,16],"attr":{"data-automation-id":"RangeLabel"}}
+{"n":144,"p":141,"type":"div","box":[291,890,1222,84],"attr":{"class":"card-body"}}
+{"n":145,"p":144,"type":"div","box":[291,890,1222,22],"attr":{"class":"mb-3"}}
+{"n":146,"p":145,"type":"label","text":"Font Size: 14 pt","box":[777,894,112,18],"attr":{"class":"form-label","for":"fontSize"}}
+{"n":147,"p":145,"type":"input","box":[896,892,129,16],"attr":{"class":"form-range","data-automation-id":"FontSizeSlider","id":"fontSize","type":"range"}}
+{"n":148,"p":144,"type":"div","box":[291,912,1222,22],"attr":{"class":"mb-3"}}
+{"n":149,"p":148,"type":"label","text":"Volume: 50%","box":[786,916,94,18],"attr":{"class":"form-label","for":"volume"}}
+{"n":150,"p":148,"type":"input","box":[887,914,129,16],"attr":{"class":"form-range","data-automation-id":"VolumeSlider","id":"volume","type":"range"}}
+{"n":151,"p":144,"type":"div","box":[291,934,1222,40],"attr":{"class":"mb-3"}}
+{"n":152,"p":151,"type":"label","text":"Quantity","box":[872,934,60,18],"attr":{"class":"form-label","for":"quantity"}}
+{"n":153,"p":151,"type":"div","box":[291,952,150,21],"attr":{"class":"input-group","data-automation-id":"QuantityStepper"}}
+{"n":154,"p":153,"type":"button","text":"-","box":[308,952,20,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"DecrementButton","type":"button"}}
+{"n":155,"p":153,"type":"input","box":[332,952,65,21],"attr":{"class":"form-control text-center","data-automation-id":"QuantityInput","id":"quantity","type":"number"}}
+{"n":156,"p":153,"type":"button","text":"+","box":[401,952,23,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"IncrementButton","type":"button"}}
+{"n":157,"p":42,"type":"div","box":[291,990,1222,21],"attr":{"class":"d-flex gap-2","data-automation-id":"ActionButtons"}}
+{"n":158,"p":157,"type":"button","text":"Submit","box":[291,990,57,21],"attr":{"class":"btn btn-primary","data-automation-id":"SubmitButton","type":"submit"}}
+{"n":159,"p":157,"type":"button","text":"Save Draft","box":[352,990,78,21],"attr":{"class":"btn btn-secondary","data-automation-id":"SaveDraftButton","type":"button"}}
+{"n":160,"p":157,"type":"button","text":"Clear","box":[435,990,47,21],"attr":{"class":"btn btn-outline-danger","data-automation-id":"ClearButton","type":"button"}}
+{"n":161,"p":2,"type":"div","text":"An unhandled error has occurred.","attr":{"data-nosnippet":"","id":"blazor-error-ui"}}
+{"n":162,"p":161,"type":"a","text":"Reload","attr":{"class":"reload","href":"."}}
+{"n":163,"p":161,"type":"span","text":"\uD83D\uDDD9","attr":{"class":"dismiss"}}

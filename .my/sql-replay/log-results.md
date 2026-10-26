@@ -3,18 +3,18 @@
 Step 1 of [plan.md](plan.md) is built and its five checks pass. The log records every command a
 test sends, without values, from three sources: an EF interceptor, an ADO.NET wrapper that also
 loads in a .NET Framework app, and SQL Server's Extended Events for an app left unchanged.
-`bruinell sql` writes the schema snapshot, runs the capture and writes the report. The legacy
+`bruinet sql` writes the schema snapshot, runs the capture and writes the report. The legacy
 system can now be measured with four commands, as section 1.7 of the plan describes.
 
 ## What was built
 
 | Part | Where |
 | --- | --- |
-| The log, the ADO.NET wrapper, statements, schema snapshot, Extended Events | `srcnew/Bruinell.Mocking.Data` (netstandard2.0, net8.0 to net10.0) |
-| The EF interceptor, `UseSqlLog` | `srcnew/Bruinell.Mocking.Data.EntityFrameworkCore` (net10.0: EF Core 10 runs on .NET 10 only) |
-| `bruinell sql schema`, `capture start`, `stop`, `read`, `report` | `tools/Bruinell.Cli/Sql/` |
-| A clock row in every timings file, a `test` span for every test | `Bruinell.Core.Logging.Timing`, `Bruinell.Uat.TestScopeAttribute` |
-| Tests | `Bruinell.Mocking.Data.Tests` (26, SQL Server ones included), `Bruinell.Cli.Tests/Sql` (5), `Bruinell.Mocking.Data.Net48.Tests` (1) |
+| The log, the ADO.NET wrapper, statements, schema snapshot, Extended Events | `srcnew/Bruinet.Mocking.Data` (netstandard2.0, net8.0 to net10.0) |
+| The EF interceptor, `UseSqlLog` | `srcnew/Bruinet.Mocking.Data.EntityFrameworkCore` (net10.0: EF Core 10 runs on .NET 10 only) |
+| `bruinet sql schema`, `capture start`, `stop`, `read`, `report` | `tools/Bruinet.Cli/Sql/` |
+| A clock row in every timings file, a `test` span for every test | `Bruinet.Core.Logging.Timing`, `Bruinet.Uat.TestScopeAttribute` |
+| Tests | `Bruinet.Mocking.Data.Tests` (26, SQL Server ones included), `Bruinet.Cli.Tests/Sql` (5), `Bruinet.Mocking.Data.Net48.Tests` (1) |
 
 Todo's two repositories now use plain ADO.NET types, and `TodoDatabase.Wrap` lets a test wrap its
 connections; the spike suite logs through `UseSqlLog` and its own `CommandLog` is gone.

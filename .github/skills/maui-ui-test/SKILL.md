@@ -1,6 +1,6 @@
 ---
 name: maui-ui-test
-description: Write or fix Bruinell MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in testsnew/Bruinell.Maui.UITests, or a control unit test in testsnew/Bruinell.Maui.Tests.
+description: Write or fix Bruinet MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in testsnew/Bruinet.Maui.UITests, or a control unit test in testsnew/Bruinet.Maui.Tests.
 ---
 
 # Write MAUI UI tests
@@ -11,26 +11,26 @@ needs something they do not offer, add it there first; never reach past them.
 
 ## Workflow
 
-1. **Find the page object** in `testsnew/Bruinell.Maui.UITests/Pages/`. If it is missing, create
+1. **Find the page object** in `testsnew/Bruinet.Maui.UITests/Pages/`. If it is missing, create
    it ([page-objects.md](references/page-objects.md)). If a control, container, or control
    member is missing, stop writing the test and add it with the `maui-control` skill first.
 2. **Write the test** (shape below) using only page-object members.
-3. **If the sample app lacks what the test needs**, add it to `samples/Bruinell.Samples.Maui.App`
+3. **If the sample app lacks what the test needs**, add it to `samples/Bruinet.Samples.Maui.App`
    with `AutomationId`s and a status label that shows the result, then rebuild the app:
-   `dotnet build Bruinell.sln -v:minimal /nr:false` builds it, including the Windows exe
+   `dotnet build Bruinet.sln -v:minimal /nr:false` builds it, including the Windows exe
    the fixture launches.
 4. **Run the smallest tier that can fail**:
-   `dotnet test testsnew\Bruinell.Maui.UITests\Bruinell.Maui.UITests.csproj --filter "Control=Foo"`.
+   `dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
    One UI test process at a time, and never build while it runs. Tier 2b
-   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Bruinell.sln`
+   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Bruinet.sln`
    builds too.
 
 ## Test shape
 
 ```csharp
-using Bruinell.Maui.UITests.Pages;
+using Bruinet.Maui.UITests.Pages;
 
-namespace Bruinell.Maui.UITests.Tests.CommunityToolkit;
+namespace Bruinet.Maui.UITests.Tests.CommunityToolkit;
 
 /// <summary>UI tests for the CommunityToolkit MediaElement, playing a six-second local tone.</summary>
 [Collection("Maui")]
@@ -104,7 +104,7 @@ public class MediaElementTests
   `RouteUnavailableException` - this element, driver or platform has no route for what was asked,
   reported at once rather than waited out; `AppUnavailableException` - the app exited or the
   session was lost, reported at once. A near-miss
-  warning in the call log means the call passed only after trouble; set `BRUINELL_CALL_LOG` to a
+  warning in the call log means the call passed only after trouble; set `BRUINET_CALL_LOG` to a
   folder to write every call to CSV.
 - Comments follow the policy in
   [.github/instructions/csharp-comments.instructions.md](../../instructions/csharp-comments.instructions.md):
@@ -138,7 +138,7 @@ a model; do not copy them.
 ## Control unit tests
 
 Logic the UI cannot reach cheaply (stale-element recovery, idempotence, error messages,
-null-skip) is tested in `testsnew/Bruinell.Maui.Tests` with mocked elements behind the public
+null-skip) is tested in `testsnew/Bruinet.Maui.Tests` with mocked elements behind the public
 API: [unit-tests.md](references/unit-tests.md).
 
 ## Failures

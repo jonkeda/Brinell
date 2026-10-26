@@ -1,5 +1,5 @@
-# Packs the Bruinell library projects that are part of Bruinell.sln, and the bruinell tool.
-# Working directory: Bruinell root.
+# Packs the Bruinet library projects that are part of Bruinet.sln, and the bruinet tool.
+# Working directory: Bruinet root.
 #
 #   ./tools/Scripts/pack.ps1 -Version 0.2.0 -Output artifacts
 #
@@ -14,20 +14,20 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $libraries = @(
-    'Bruinell.Core',
-    'Bruinell.Stride.Automation',
-    'Bruinell.Mocking',
-    'Bruinell.Uat',
-    'Bruinell.Wpf',
-    'Bruinell.WinForms',
-    'Bruinell.Blazor',
-    'Bruinell.Html',
-    'Bruinell.Html.Playwright',
-    'Bruinell.Stride',
-    'Bruinell.Maui',
-    'Bruinell.Maui.CommunityToolkit',
-    'Bruinell.Maui.FlaUI',
-    'Bruinell.Uia.Contracts'
+    'Bruinet.Core',
+    'Bruinet.Stride.Automation',
+    'Bruinet.Mocking',
+    'Bruinet.Uat',
+    'Bruinet.Wpf',
+    'Bruinet.WinForms',
+    'Bruinet.Blazor',
+    'Bruinet.Html',
+    'Bruinet.Html.Playwright',
+    'Bruinet.Stride',
+    'Bruinet.Maui',
+    'Bruinet.Maui.CommunityToolkit',
+    'Bruinet.Maui.FlaUI',
+    'Bruinet.Uia.Contracts'
 )
 
 foreach ($name in $libraries) {
@@ -35,6 +35,6 @@ foreach ($name in $libraries) {
     if ($LASTEXITCODE -ne 0) { throw "Pack failed: $name" }
 }
 
-# bruinell, the command line (AD-028): a dotnet tool, versioned with the libraries.
-dotnet pack 'tools/Bruinell.Cli/Bruinell.Cli.csproj' -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version"
-if ($LASTEXITCODE -ne 0) { throw 'Pack failed: Bruinell.Cli' }
+# bruinet, the command line (AD-028): a dotnet tool, versioned with the libraries.
+dotnet pack 'tools/Bruinet.Cli/Bruinet.Cli.csproj' -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version"
+if ($LASTEXITCODE -ne 0) { throw 'Pack failed: Bruinet.Cli' }

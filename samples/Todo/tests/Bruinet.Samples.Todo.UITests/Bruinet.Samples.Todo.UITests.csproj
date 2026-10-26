@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Samples.Todo.UITests</RootNamespace>
+    <!-- FlaUI drives the Windows app. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Core\Bruinet.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui\Bruinet.Maui.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.CommunityToolkit\Bruinet.Maui.CommunityToolkit.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj" />
+    <!-- Loaded by name for an Android run; see Bruinet.Maui.UITests.csproj. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.Appium\Bruinet.Maui.Appium.csproj" />
+    <!-- UAT opt-in naming ([UatName]) for controls the name inference does not reach, e.g. Status. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <!-- Scenarios, the database seeder and the WireMock fake backend, shared with the integration tier. -->
+    <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport\Bruinet.Samples.Todo.TestSupport.csproj" />
+    <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
+    <!-- The MauiUnit head (BRUINET_HEAD=mauiunit, .my/mUnit): the app compiled for plain net10.0,
+         rendered in memory by TodoAppFixtureBase.CreateInMemoryOptions. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- RootDirectory null puts artifacts in the repository's TestResults (AD-007); without this
+         file the default is %APPDATA%/bruinet-artifacts. PascalCase on purpose: the loader binds
+         case-sensitively, so the lowercase keys of Bruinet's own config file are ignored. -->
+    <None Include="bruinet.maui.config.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

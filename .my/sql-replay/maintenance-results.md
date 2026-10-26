@@ -14,21 +14,21 @@ M1 to M6 pass on 2026-10-25.
 | M5 | Pass | `Record_OverARecordingWithoutOneOfItsCommands_Saves` |
 | M6 | Pass | On the spike, below; `RecordingReviewTests.Recordings_AreAllReviewed` in the spike suite |
 
-M6 on the spike: re-recorded unchanged on both heads, `bruinell sql diff --recordings Recordings`
+M6 on the spike: re-recorded unchanged on both heads, `bruinet sql diff --recordings Recordings`
 gives 0 of 10 changed. Medemblik's population changed in the seed and bunit re-recorded: 4
 recordings changed, each `~ reader SELECT [p].[Id], ...: values in 1 row (Population)`;
-`bruinell sql reviewed` exit 1 and the suite's gate test fails. Seed and recordings put back: both
+`bruinet sql reviewed` exit 1 and the suite's gate test fails. Seed and recordings put back: both
 pass, and the spike replays twice per head with no server.
 
 ## What was built
 
 | Part | Where |
 | --- | --- |
-| `RecordingDiff.Compare(before, after)` | `srcnew/Bruinell.Mocking.Data/Replay/RecordingDiff.cs` |
+| `RecordingDiff.Compare(before, after)` | `srcnew/Bruinet.Mocking.Data/Replay/RecordingDiff.cs` |
 | `RecordingReview` (`Recordings`, `IsRecording`, `Hash`, `Unreviewed`, `Accept`), `reviewed.json` | `Replay/RecordingReview.cs` |
 | `Recording.Parse`; `MarkVolatile` leaves a command without counterpart unmarked | `Replay/Recording.cs` |
-| `bruinell sql diff --recordings --base --accept`, `bruinell sql reviewed --recordings` | `tools/Bruinell.Cli/Sql/SqlCommands.cs` |
-| The spike's `Recordings/reviewed.json`, `Tests/RecordingReviewTests.cs` | `testsnew/Bruinell.Sql.Spike.Tests` |
+| `bruinet sql diff --recordings --base --accept`, `bruinet sql reviewed --recordings` | `tools/Bruinet.Cli/Sql/SqlCommands.cs` |
+| The spike's `Recordings/reviewed.json`, `Tests/RecordingReviewTests.cs` | `testsnew/Bruinet.Sql.Spike.Tests` |
 
 ## Found while building
 

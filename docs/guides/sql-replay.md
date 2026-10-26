@@ -1,6 +1,6 @@
 # SQL Replay
 
-A UI test can run without its database: Bruinell records what the test sends to SQL Server (or
+A UI test can run without its database: Bruinet records what the test sends to SQL Server (or
 SQLite) and what comes back, then answers the same commands from the recording. What it removes is
 having a database at all: making one, seeding it, resetting it before each test, and sharing it
 between tests that then can't run side by side. The real database stays the judge at every gate.
@@ -12,27 +12,27 @@ The decision is [AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-fr
 - **For parallel runs**: a replayed test shares nothing with another, so suites kept serial by a
   shared test database can run at once.
 - **Not at a gate.** Replay can't prove the database still accepts the commands; the gate runs
-  against it (`BRUINELL_SQL_REPLAY` unset), as the browser judges the bUnit head.
+  against it (`BRUINET_SQL_REPLAY` unset), as the browser judges the bUnit head.
 
 Measure first. The SQL log gives the database's share of each test and how many tests a typical
 change reaches; a small share or a wide reach means replay costs more to keep than it saves.
 
 ## The Log
 
-`Bruinell.Mocking.Data` logs every command with its time and the objects it names, never its
+`Bruinet.Mocking.Data` logs every command with its time and the objects it names, never its
 values. EF Core: `options.UseSqlLog(log)`. ADO.NET: wrap the connection in `LoggingDbConnection`.
 An app you can't change is logged by SQL Server itself:
 
 ```bash
-bruinell sql capture start --connection "<test database>"
-bruinell sql capture stop --connection "<test database>"
-bruinell sql capture read --connection "<test database>" --out sql-log
-bruinell sql report --log sql-log --timings <timings> --schema schema.json
+bruinet sql capture start --connection "<test database>"
+bruinet sql capture stop --connection "<test database>"
+bruinet sql capture read --connection "<test database>" --out sql-log
+bruinet sql report --log sql-log --timings <timings> --schema schema.json
 ```
 
 ## Recording And Replaying
 
-A run's mode is `BRUINELL_SQL_REPLAY`: `Record` against the real database, `Replay` with none,
+A run's mode is `BRUINET_SQL_REPLAY`: `Record` against the real database, `Replay` with none,
 unset for neither. Each test has a `ReplaySession` and a recording of its own,
 `Recordings/<head>/<test>.json`, kept in git.
 
@@ -40,9 +40,9 @@ Record twice. The second recording finds the values that change from run to run 
 and marks them volatile; replay binds them to the live run's values instead of matching them.
 
 ```bash
-BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Record dotnet test <suite>
-BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Record dotnet test <suite>
-BRUINELL_HEAD=bunit BRUINELL_SQL_REPLAY=Replay dotnet test <suite>
+BRUINET_HEAD=bunit BRUINET_SQL_REPLAY=Record dotnet test <suite>
+BRUINET_HEAD=bunit BRUINET_SQL_REPLAY=Record dotnet test <suite>
+BRUINET_HEAD=bunit BRUINET_SQL_REPLAY=Replay dotnet test <suite>
 ```
 
 A command the recording can't answer is a miss: `ReplayMissException` names the command, its
@@ -56,7 +56,7 @@ The session reaches the app's data access through its composition, never through
 | The app reaches its database through | Use |
 | --- | --- |
 | EF Core, in the test's process (bUnit, a host per test) | `options.UseSqlReplay(session)` in the test's `ConfigureDbContext` |
-| EF Core with SQL Server's spatial types | also `options.UseSpatialReplay()` (`Bruinell.Mocking.Data.EntityFrameworkCore.SqlServer`) |
+| EF Core with SQL Server's spatial types | also `options.UseSpatialReplay()` (`Bruinet.Mocking.Data.EntityFrameworkCore.SqlServer`) |
 | ADO.NET with a connection it is given | `new ReplayingDbConnection(connection, session)` |
 | ADO.NET connections it makes itself | `ReplayingDbProviderFactory` over its provider's factory; the test enters `ReplayScope.Enter(session)` |
 | An app in a process of its own (IIS, a started exe) | the test-id hook, below |
@@ -66,16 +66,16 @@ and errors come back as the provider gives them: a broken key is `SqlException` 
 
 ## An App In A Process Of Its Own
 
-The app keeps its tests' sessions itself. Give it `BRUINELL_SQL_REPLAY` and
-`BRUINELL_SQL_RECORDINGS=<folder>` in its environment, and the hook in its pipeline:
-`app.UseSqlReplayHook()` (`Bruinell.Mocking.Data.AspNetCore`) or `SqlReplayModule` in web.config
-(`Bruinell.Mocking.Data.SystemWeb`). Its connections come from `ReplayingDbProviderFactory` or EF's
+The app keeps its tests' sessions itself. Give it `BRUINET_SQL_REPLAY` and
+`BRUINET_SQL_RECORDINGS=<folder>` in its environment, and the hook in its pipeline:
+`app.UseSqlReplayHook()` (`Bruinet.Mocking.Data.AspNetCore`) or `SqlReplayModule` in web.config
+(`Bruinet.Mocking.Data.SystemWeb`). Its connections come from `ReplayingDbProviderFactory` or EF's
 `UseSqlReplay()`.
 
 A browser test opens `ReplayHook.BeginUrl(app, test)` first; its cookie names the test on every
-request after. An API test calls `ReplayHook.BeginAsync` and sends `X-Bruinell-Test`. At its end the
+request after. An API test calls `ReplayHook.BeginAsync` and sends `X-Bruinet-Test`. At its end the
 test calls `ReplayHook.EndAsync`, which saves the recording or throws the misses. Without
-`BRUINELL_SQL_REPLAY` the hook adds nothing.
+`BRUINET_SQL_REPLAY` the hook adds nothing.
 
 ## Stale Recordings
 
@@ -83,8 +83,8 @@ A recording is stamped with the objects its commands touched: tables, views and 
 tables their bodies reach. The stamp comes from a schema snapshot kept in git:
 
 ```bash
-bruinell sql schema --connection "<test database>" --out Recordings/schema.json --data dbo.Kinds --references references.json
-bruinell sql stale --schema Recordings/schema.json --recordings Recordings
+bruinet sql schema --connection "<test database>" --out Recordings/schema.json --data dbo.Kinds --references references.json
+bruinet sql stale --schema Recordings/schema.json --recordings Recordings
 ```
 
 `stale` lists the recordings a schema change reached, and why, without replaying them. A table's
@@ -97,9 +97,9 @@ Dynamic SQL (`sp_executesql`) has no dependencies SQL Server can read: list what
 A re-record changes files nobody reads line by line. Read the summary, then accept it:
 
 ```bash
-bruinell sql diff --recordings Recordings
-bruinell sql diff --recordings Recordings --accept
-bruinell sql reviewed --recordings Recordings
+bruinet sql diff --recordings Recordings
+bruinet sql diff --recordings Recordings --accept
+bruinet sql reviewed --recordings Recordings
 ```
 
 `diff` shows each changed test against git: commands added and removed, rows, columns, the columns

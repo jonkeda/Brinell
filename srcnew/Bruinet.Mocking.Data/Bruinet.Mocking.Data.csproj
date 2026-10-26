@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0, so a .NET Framework app can load the ADO.NET wrapper (.my/sql-replay/plan.md, step 1). -->
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Mocking.Data</RootNamespace>
+    <Description>The SQL log: every command a test sends, its time and the objects it touches, from an ADO.NET wrapper, EF Core or SQL Server's Extended Events; the schema snapshot. No values and no rows are recorded.</Description>
+    <PackageId>Bruinet.Mocking.Data</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Mocking.Data.Tests" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+</Project>

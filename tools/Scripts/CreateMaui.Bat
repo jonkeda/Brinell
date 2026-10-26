@@ -2,14 +2,14 @@
 setlocal
 
 rem Generates .gen.cs files from every .tpl.cs file under the MAUI Controls folders
-rem (Bruinell.Maui and Bruinell.Maui.CommunityToolkit) using the Bruinell ControlObject generator.
+rem (Bruinet.Maui and Bruinet.Maui.CommunityToolkit) using the Bruinet ControlObject generator.
 
 set "SCRIPT_DIR=%~dp0"
-set "CLI_PROJECT=%SCRIPT_DIR%..\Bruinell.Cli\Bruinell.Cli.csproj"
-set "CLI_EXE=%SCRIPT_DIR%..\Bruinell.Cli\bin\Release\net10.0\bruinell.exe"
-set "INPUT=%SCRIPT_DIR%..\..\srcnew\Bruinell.Maui\Controls;%SCRIPT_DIR%..\..\srcnew\Bruinell.Maui.CommunityToolkit\Controls"
+set "CLI_PROJECT=%SCRIPT_DIR%..\Bruinet.Cli\Bruinet.Cli.csproj"
+set "CLI_EXE=%SCRIPT_DIR%..\Bruinet.Cli\bin\Release\net10.0\bruinet.exe"
+set "INPUT=%SCRIPT_DIR%..\..\srcnew\Bruinet.Maui\Controls;%SCRIPT_DIR%..\..\srcnew\Bruinet.Maui.CommunityToolkit\Controls"
 
-echo Building bruinell...
+echo Building bruinet...
 dotnet build "%CLI_PROJECT%" -c Release -v:minimal /nr:false
 if errorlevel 1 (
     echo Build failed.

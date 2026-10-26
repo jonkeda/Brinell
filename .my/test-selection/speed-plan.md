@@ -37,22 +37,22 @@ The full suite runs twice: once at the start (done, above) and once at the end, 
 | S3, the serial collection | `FullyQualifiedName~TomorrowUatScenariosSerial` | The settings and quests resets, run alone |
 | S4, the xUnit tests | `FullyQualifiedName~Tomorrow.App.UITests.Tests.` | Sign-in and the old-link pages, 24 tests |
 
-All sets run with `BRUINELL_HEAD=bunit` while looking, then the change once in the browser head on the same set.
+All sets run with `BRUINET_HEAD=bunit` while looking, then the change once in the browser head on the same set.
 
 ## T1: timings that name the test, the step and the time between calls
 
-Bruinell (`srcnew/Bruinell.Core`, `Bruinell.Uat`):
+Bruinet (`srcnew/Bruinet.Core`, `Bruinet.Uat`):
 
 | Piece | Where | What |
 | --- | --- | --- |
-| `TestScope` | `Bruinell.Core/Testing/TestScope.cs` | `AsyncLocal` run id, head, test (xUnit display name), scenario, step; `TestScope.Current` |
+| `TestScope` | `Bruinet.Core/Testing/TestScope.cs` | `AsyncLocal` run id, head, test (xUnit display name), scenario, step; `TestScope.Current` |
 | xUnit hook | `UiFact`'s runner and `UatScenarioTestBase` | Sets the test; the scenario runner sets scenario and step around each |
-| `Timing.Span(kind, name)` | `Bruinell.Core/Logging/Timing.cs` | `IDisposable`; writes one row on dispose: kind (`host`, `fixture`, `lifecycle`, `arrange`, `navigate`, `bind`, `step`), name, start, duration |
+| `Timing.Span(kind, name)` | `Bruinet.Core/Logging/Timing.cs` | `IDisposable`; writes one row on dispose: kind (`host`, `fixture`, `lifecycle`, `arrange`, `navigate`, `bind`, `step`), name, start, duration |
 | Call phases | `ControlCall.Run`, `ControlCalls` | On exit: readiness wait, lookup, action, confirmation in ms, and attempts, from the attempt log |
-| One file per run | `BRUINELL_TIMINGS=<folder>` | `timings-<run>.csv`, one row per call or span, columns `Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;ReadyMs;LookupMs;ActMs;ConfirmMs;Attempts;Result` |
-| Spans Bruinell owns | the UAT runner | `bind` (parse and bind a scenario), `lifecycle` (`BeforeScenario`, `AfterScenario`), each `step` |
+| One file per run | `BRUINET_TIMINGS=<folder>` | `timings-<run>.csv`, one row per call or span, columns `Run;Head;Test;Scenario;Step;Kind;Name;Page;Control;Action;StartMs;DurationMs;ReadyMs;LookupMs;ActMs;ConfirmMs;Attempts;Result` |
+| Spans Bruinet owns | the UAT runner | `bind` (parse and bind a scenario), `lifecycle` (`BeforeScenario`, `AfterScenario`), each `step` |
 | Spans the contexts own | `PlaywrightTestContext`, `BunitTestContext` | `navigate` (`NavigateTo`, `Refresh`, `ResetAppState`) |
-| Report | `tools/Scripts/Timings.ps1` (or `bruinell timings`) | Per test: total, in steps, in calls, outside calls; per span kind: sum and top 10; per step: slowest 20 |
+| Report | `tools/Scripts/Timings.ps1` (or `bruinet timings`) | Per test: total, in steps, in calls, outside calls; per span kind: sum and top 10; per step: slowest 20 |
 
 Tomorrow (`tests/Tomorrow.App.UITests`, shared with the studio's suite):
 
@@ -65,7 +65,7 @@ Tomorrow (`tests/Tomorrow.App.UITests`, shared with the studio's suite):
 
 T1 is done when S1 on bUnit gives a report whose per-test "outside calls" adds up to the xUnit duration within 5 %.
 
-The same rows are the touch map: test, scenario and step to page and control. `bruinell touch-map` (selection, the
+The same rows are the touch map: test, scenario and step to page and control. `bruinet touch-map` (selection, the
 paper's step 3) reads this file; T1 builds the writer once for both.
 
 ## Leads to look at first, with T1's report
@@ -87,13 +87,13 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | Fewer parallel collections | S2, then the full run | Each scenario stretches from about 6 s alone to about 25 s with ten collections; six may finish sooner | `maxParallelThreads` in the suites' `xunit.runner.json` (10 now) |
 | Rebalance the serial collection | S3 | 48 scenarios run alone at the end, about 5 min | Move the ones that change no shared setting to the parallel collections (`UatCollections.ChangesSettings`) |
 | The start without generating the area | `host` span | Part of the host start is the geo import and `GenerateArea` | A snapshot of the generated test database, restored at the start |
-| A warm host between runs | any small set | A small set skips the start | Bruinell's warm runners (`BddWarmRunners`) for the studio suite |
+| A warm host between runs | any small set | A small set skips the start | Bruinet's warm runners (`BddWarmRunners`) for the studio suite |
 
 ## Fixes already known
 
 | Fix | Where | Note |
 | --- | --- | --- |
-| A skipped scenario reported as Passed in the TRX | `Bruinell.Uat` scenario theory | Report it as skipped (`@browser`, the head skip rules), so a run's counts are true |
+| A skipped scenario reported as Passed in the TRX | `Bruinet.Uat` scenario theory | Report it as skipped (`@browser`, the head skip rules), so a run's counts are true |
 | PLT.40.4 fails on bUnit: "UnauthorizedAccess" on Publish | Tomorrow, the canon folder of the in-process studio | Probably the content root: the in-process host writes where the built app does not; look at `World:CanonFolder` |
 
 ## Iterations
@@ -111,7 +111,7 @@ They hold whatever T1 finds; each is one iteration, kept only if its set is fast
 | 4 | S1 | browser | the same, with the template | 37 s, wall 73 s; start 31.2 s, tests 38.0 s | **17 s**, wall 31 s; start 9.2 s, tests 17.7 s (steps 17.0 s) | yes |
 | 5 | S3 | bUnit | the serial collection split: `@own-database` (settings, regenerated rows) stays serial, after the rest; the `@serial`-only scenarios get lanes of their own, one after another but beside the parts: Avatars (PLT.22, 23: the trader) and World (the World studio's kept levels) (`UatCollections.LaneOf`, `StudioLanes.cs`) | 48 in 1 m 15 s | 48 in 1 m 4 s: World 32.0 s and Avatars 5.4 s beside each other, Serial's 20 in 32.8 s after | yes |
 
-What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Bruinell's runner, so the
+What T1 showed: the binding, not the app, was 91 % of a scenario's time on bUnit, and it is Bruinet's runner, so the
 browser head paid it too. Next, by the S1 reports: the host's start (20 s on bUnit, 31 s in the browser: the host 12 s,
 the geo import 4 to 9 s, the area 3 to 5 s); then S2, to see what parallel collections cost now; then the one warm-up
 left (6.8 s in a collection's first test).
@@ -146,7 +146,7 @@ of one short step line is microseconds. Matching also runs while steps execute: 
 - PLT.40.4, which failed on bUnit before, passes: the earlier failure was the run, not the head.
 
 Then selection: the timings' rows already name test, scenario, step, page and control, the touch map the paper and the
-workflow need; `bruinell touch-map` reads this file (paper, step 3).
+workflow need; `bruinet touch-map` reads this file (paper, step 3).
 
 ### After iteration 5, the full studio suite once more
 

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Samples.Todo.Web.UITests</RootNamespace>
+    <Description>Tiers 3 and 4 for the Todo web head: Html page objects over Playwright, the app hosted per fixture.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html\Bruinet.Html.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html.Playwright\Bruinet.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html.Bunit\Bruinet.Html.Bunit.csproj" />
+    <!-- The SQL log on the bUnit head (BRUINET_SQL_LOG, .my/sql-replay/plan.md step 1). -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Blazor\Bruinet.Blazor.csproj" />
+    <!-- Page objects carry UAT names ([UatName], [UatNavigatesTo]). -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport\Bruinet.Samples.Todo.TestSupport.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
+  </ItemGroup>
+
+  <!-- In the browser the fixtures start it themselves (WebAppHost); on bUnit they render its Routes. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Web\Bruinet.Samples.Todo.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

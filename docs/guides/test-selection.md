@@ -1,6 +1,6 @@
 # Test Selection
 
-A UI suite doesn't need to run whole after every change. Bruinell records which page objects and
+A UI suite doesn't need to run whole after every change. Bruinet records which page objects and
 controls each test used, and from that it picks the tests a change can reach. It prints each test
 with the reason it was picked, and gives you one `--filter` to run them. During development you run
 that pick. At a gate you run the whole suite, which also catches anything the pick missed.
@@ -20,19 +20,19 @@ filter term (`FullyQualifiedName=` or `BddScenario=`) and the page objects and c
 comes from a full run's timings. Commit it.
 
 ```bash
-$env:BRUINELL_TIMINGS = "<folder>"; dotnet test <suite>
-bruinell tests touch-map <folder> --suite <suite>
+$env:BRUINET_TIMINGS = "<folder>"; dotnet test <suite>
+bruinet tests touch-map <folder> --suite <suite>
 ```
 
 Scenarios name themselves in the timings. Plain `[Fact]` tests need `[assembly: TestScope]`
-(`Bruinell.Uat`) in the suite. Without it their rows carry no test name, and they never get picked.
+(`Bruinet.Uat`) in the suite. Without it their rows carry no test name, and they never get picked.
 A new test or page object only gets picked once the map has been written again, so until then put
 it in the filter yourself.
 
 ## What A Change Reaches
 
 ```bash
-bruinell tests affected --suite <suite> [--base <rev> | --files <paths>] [--always "Gate=Smoke"]
+bruinet tests affected --suite <suite> [--base <rev> | --files <paths>] [--always "Gate=Smoke"]
 ```
 
 The command takes the files changed since `--base` (default `HEAD`), including uncommitted
@@ -57,14 +57,14 @@ else. `--json` prints the result for tools.
 
 ## The Scripts
 
-- **Bruinell:** `pwsh tools/Scripts/select-tests.ps1` runs `affected` for the Blazor and Html suites.
+- **Bruinet:** `pwsh tools/Scripts/select-tests.ps1` runs `affected` for the Blazor and Html suites.
   `-Run` runs the pick, on bUnit by default or in the browser with `-Head playwright`.
   `-WriteMap` runs a suite whole and writes its map.
 - **Tomorrow:** `./tools/Select-Tests.ps1` does the same for the studio and game suites, and always
   adds `Gate=Smoke` to the pick.
 
-Both scripts build bruinell into a temp folder, because the agents' MCP servers keep
-`tools/Bruinell.Cli/bin` open.
+Both scripts build bruinet into a temp folder, because the agents' MCP servers keep
+`tools/Bruinet.Cli/bin` open.
 
 ## What It Misses
 

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Mocking</RootNamespace>
+    <Description>API mocking infrastructure for UI tests. Provides WireMock-based mock servers for simulating backend services during testing.</Description>
+    <PackageId>Bruinet.Mocking</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Suppress WireMock transitive dependency vulnerability (System.Linq.Dynamic.Core) -->
+    <NoWarn>$(NoWarn);NU1902;NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WireMock.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- BRUINET001 (AD-012) ships in the package as an analyzer, so every consumer gets it. -->
+    <ProjectReference Include="..\Bruinet.Mocking.Analyzers\Bruinet.Mocking.Analyzers.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="..\Bruinet.Mocking.Analyzers\bin\$(Configuration)\netstandard2.0\Bruinet.Mocking.Analyzers.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

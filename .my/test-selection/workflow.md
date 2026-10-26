@@ -32,7 +32,7 @@ kind.
 ## 2. Working out which tests to run
 
 The tests a change runs are found in four steps, each from something the repository already holds. A script
-(`tools/Select-Tests.ps1` in Tomorrow, Bruinell's selection later) does it from `git diff <base>..HEAD` and prints the `dotnet test` filters with a line on
+(`tools/Select-Tests.ps1` in Tomorrow, Bruinet's selection later) does it from `git diff <base>..HEAD` and prints the `dotnet test` filters with a line on
 why each test is in.
 
 ```mermaid
@@ -57,7 +57,7 @@ flowchart TD
 2. **Pages.** A changed page or component is its own; a changed use case or store reaches the pages that inject it
    (`@inject`, the use cases a page holds), and a component reaches the pages that draw it.
 3. **Scenarios.** A page maps to its page object by its test ids' prefix (`WorldPage_…` to `WorldPlacesPage`);
-   the page object maps to the scenarios that use its phrases (Bruinell's `find_step_usages`), and to the UI test
+   the page object maps to the scenarios that use its phrases (Bruinet's `find_step_usages`), and to the UI test
    classes that build it. Those scenarios run, with the smoke set (`Gate=Smoke`) always.
 4. **Contracts.** A changed adapter route or request shape (`/openai/v1/…`, Meshy's, the importer's sources) maps to
    the fake that mirrors it (`FakeFoundry`'s routes, by the marker each scenario's prompt starts with) and the

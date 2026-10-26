@@ -93,7 +93,7 @@ A new record goes into each scene's `timeline.json`, next to `steps` and `clips`
 
 ### Where Interactions Are Captured
 
-Bruinell owns the hook. Construction tests change nothing.
+Bruinet owns the hook. Construction tests change nothing.
 
 - A reporting decorator around `IMauiElement` (`Click`, `DoubleClick`, `LongPress`, `Swipe`,
   `SendKeys`, `Clear`, `PerformGesture`) and `IMauiDriver.PerformGesture`. It reads `Rect`, then
@@ -101,7 +101,7 @@ Bruinell owns the hook. Construction tests change nothing.
 - The decorator is installed only while a recording is running, exactly like
   `BddExecutionContext.Pacer`. A plain `dotnet test` run has no decorator and no cost (an
   AD-024 "broken when" rule).
-- The log is a small `IInteractionLog` in `Bruinell.Core.Recording`. It is platform-neutral
+- The log is a small `IInteractionLog` in `Bruinet.Core.Recording`. It is platform-neutral
   (AD-001): rectangles and points only.
 - `ScrollIntoView` is not logged. It is an implementation detail, and a mark for it would be
   noise.
@@ -159,7 +159,7 @@ A `*.video.md` header field controls marks. The default is on:
 | TouchColor | #E8111E |   <!-- any #RRGGBB; Exact red when left out -->
 ```
 
-`TouchColor` can also be set where the other recording defaults are (`BRUINELL_TOUCH_COLOR`, the
+`TouchColor` can also be set where the other recording defaults are (`BRUINET_TOUCH_COLOR`, the
 IDEs' and the Presenter's recording settings); the script wins. A value that is not `#RRGGBB` is a
 checker error (`VID0xx`). Like `Touches`, it only affects composition: not in the scene hash.
 
@@ -170,14 +170,14 @@ when the scenes are composed or stitched. As a result:
 - a scene's hash does not include `Touches`, which only affects composition;
 - the timeline keeps the facts, and the pixels of a raw scene never hold derived drawing.
 
-## Effect On The Bruinell Decisions
+## Effect On The Bruinet Decisions
 
 | Decision | Effect |
 | --- | --- |
 | AD-005 (no physical input) | Unchanged. Nothing moves a pointer. |
 | AD-008 (gestures through UIA and the bridge) | Unchanged. No new app-side bridge verbs or sinks. The app is not touched. |
 | AD-024 (recording is a paced gate run) | Extended: the timeline gains `interactions`, and the recorder writes its origin and source size. "Nothing is burned in" must be refined: **captions** stay a separate `.srt`, while touch marks are drawn into the *composed* video only. Raw scenes stay clean. This needs an AD-024 amendment before implementation. |
-| AD-001 (core is platform-neutral) | The log lives in `Bruinell.Core.Recording` with `System.Drawing` rectangles only. |
+| AD-001 (core is platform-neutral) | The log lives in `Bruinet.Core.Recording` with `System.Drawing` rectangles only. |
 
 ## Html
 
@@ -212,9 +212,9 @@ Html specifics:
   than a touch ring. Keep the touch marks for now (one style everywhere); a `TouchStyle` field
   (`touch | pointer`) can come later if the web videos ask for it.
 
-## Implementation Steps (Bruinell)
+## Implementation Steps (Bruinet)
 
-1. **Log:** `IInteractionLog` and `BddTimedInteraction` in `Bruinell.Core.Recording`, plus an
+1. **Log:** `IInteractionLog` and `BddTimedInteraction` in `Bruinet.Core.Recording`, plus an
    `interactions` field in `BddSceneTimeline`, with JSON round-trip tests.
 2. **Capture:** a reporting `IMauiElement`/`IMauiDriver` decorator, and an `IHtmlElement`
    decorator for Html and Blazor, installed when the scene recording starts. Unit tests check that each action logs one interaction, with its bounds

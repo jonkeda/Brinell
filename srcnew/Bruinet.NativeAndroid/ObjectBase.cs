@@ -1,0 +1,52 @@
+using System.Runtime.CompilerServices;
+using Bruinet.Core.Calls;
+using Bruinet.Core.Scopes;
+
+namespace Bruinet.NativeAndroid;
+
+/// <summary>
+/// Base class for native Android page objects, containers, rows and controls.
+/// </summary>
+public abstract class ObjectBase
+{
+    /// <summary>The test context the object belongs to.</summary>
+    public abstract INativeAndroidTestContext Context { get; }
+
+    protected int DefaultTimeoutMs => Context.Timeouts.DefaultWait;
+
+    protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
+
+    /// <summary>The name this object's own calls are logged under.</summary>
+    protected virtual string ScopeName => GetType().Name;
+
+    /// <summary>
+    /// A scope-level wait as one call (R1): polls <paramref name="probe"/> until it reports Done or
+    /// the budget runs out. Answers false when it ran out, or throws what
+    /// <paramref name="fail"/> builds from the last readiness seen.
+    /// </summary>
+    private protected bool RunProbe(
+        Func<Observation> probe,
+        int budgetMs,
+        Func<ScopeReadiness, Exception>? fail = null,
+        [CallerMemberName] string? caller = null)
+    {
+        caller ??= nameof(RunProbe);
+        return new ControlCall(Context.Logger, Context.Name, Context.NearMiss, ScopeName, ScopeName).Run(caller, null, budgetMs, Context.Timeouts.Animation, attempt =>
+        {
+            if (Poller.Until(_ => probe(), attempt, PollingIntervalMs))
+            {
+                return true;
+            }
+
+            var last = attempt.Log.Last;
+            if (fail != null)
+            {
+                throw fail(last.Scope ?? new ScopeReadiness(ScopeName, ScopeReadinessState.NotLoaded, last.ToString()));
+            }
+
+            return last.Kind == ObservationKind.Failed && last.Error is { } error
+                ? throw attempt.Log.Unexpected(error, $"'{ScopeName}'", budgetMs)
+                : false;
+        }, succeeded: ok => ok);
+    }
+}

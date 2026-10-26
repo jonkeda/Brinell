@@ -3,9 +3,9 @@
 A small MAUI todo app, tested the way a real app should be: each behaviour at the lowest tier
 that can prove it, and every test traced back to a user journey. It shows:
 
-- **Bruinell.Maui** driving the app on Windows (FlaUI) and Android (Appium), through page
+- **Bruinet.Maui** driving the app on Windows (FlaUI) and Android (Appium), through page
   objects and ControlObjects only: tests never touch a driver, an element or a sleep.
-- **WireMock** (`Bruinell.Mocking`) standing in for the backend, with the requests it received
+- **WireMock** (`Bruinet.Mocking`) standing in for the backend, with the requests it received
   asserted by waiting for them.
 - **A seeded SQLite database** for the app's local state, built with the app's own migrations.
 - **A test pyramid** from unit tests to manual charters, kept honest by a report that compares
@@ -232,7 +232,7 @@ public async Task ATodoCreatedInTheApp_IsOnTheServerAfterSync()
 ```
 
 It uses the same page objects as tier 3; only the fixture differs. There are three live tests,
-all happy paths, and they skip unless `BRUINELL_UAT_LIVE_API=1`.
+all happy paths, and they skip unless `BRUINET_UAT_LIVE_API=1`.
 
 ### 5. Manual: what a machine cannot judge
 
@@ -245,7 +245,7 @@ charter records where it went.
 
 ## Feature: the journeys, in Markdown
 
-`tests/Bruinell.Samples.Todo.Uat` runs [`Features/*.feature.md`](tests/Bruinell.Samples.Todo.Uat/Features)
+`tests/Bruinet.Samples.Todo.Uat` runs [`Features/*.feature.md`](tests/Bruinet.Samples.Todo.Uat/Features)
 against the same hermetic app tier 3 uses - WireMock backend, seeded database - but the test
 is the Markdown, not C#:
 
@@ -267,7 +267,7 @@ Todo's own: `I advance {control} to {value}` and `{control} should show status {
 declared on `TodoStatus`.
 
 The acceptance backbone is
-[todo-user-journeys.md](tests/Bruinell.Samples.Todo.Uat/todo-user-journeys.md), a plain
+[todo-user-journeys.md](tests/Bruinet.Samples.Todo.Uat/todo-user-journeys.md), a plain
 checklist of what a user must be able to do. It is not `journeys.md`: that one decides *where*
 a behaviour is tested, this one states *what* the user can do. There is one file per
 journey (`Features/TOD.02-create-a-todo.feature.md`, `TOD.04-...`, `TOD.05-...`), with one scenario
@@ -311,24 +311,24 @@ From `samples/Todo`:
 
 ```bash
 # Tiers 1, 2 and the coverage report: no app, seconds.
-dotnet test tests/Bruinell.Samples.Todo.UnitTests
-dotnet test tests/Bruinell.Samples.Todo.IntegrationTests
-dotnet test tests/Bruinell.Samples.Todo.JourneyCoverage
+dotnet test tests/Bruinet.Samples.Todo.UnitTests
+dotnet test tests/Bruinet.Samples.Todo.IntegrationTests
+dotnet test tests/Bruinet.Samples.Todo.JourneyCoverage
 
 # The test sets (TestSupport/TestData), from the command line - see docs/guides/test-data.md.
-cd tests/Bruinell.Samples.Todo.Uat; pwsh ../../../../tools/Scripts/bruinell.ps1 data validate; cd ../..
+cd tests/Bruinet.Samples.Todo.Uat; pwsh ../../../../tools/Scripts/bruinet.ps1 data validate; cd ../..
 
 # Tier 3 on Windows: build the app first; the fixture finds it under src/…App/bin.
-dotnet build src/Bruinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
-dotnet test tests/Bruinell.Samples.Todo.UITests                          # everything, ~30 s
-dotnet test tests/Bruinell.Samples.Todo.UITests --filter Gate=Smoke      # the Smoke gate
-dotnet test tests/Bruinell.Samples.Todo.UITests --filter Journey=TOD.02.3
+dotnet build src/Bruinet.Samples.Todo.App -f net10.0-windows10.0.19041.0
+dotnet test tests/Bruinet.Samples.Todo.UITests                          # everything, ~30 s
+dotnet test tests/Bruinet.Samples.Todo.UITests --filter Gate=Smoke      # the Smoke gate
+dotnet test tests/Bruinet.Samples.Todo.UITests --filter Journey=TOD.02.3
 
 # Tier 4: also start the real API, in process on a free port.
-BRUINELL_UAT_LIVE_API=1 dotnet test tests/Bruinell.Samples.Todo.UITests --filter Pyramid=UiLive
+BRUINET_UAT_LIVE_API=1 dotnet test tests/Bruinet.Samples.Todo.UITests --filter Pyramid=UiLive
 
 # The Markdown UAT scenarios: same app, same build-the-app-first rule.
-dotnet test tests/Bruinell.Samples.Todo.Uat
+dotnet test tests/Bruinet.Samples.Todo.Uat
 ```
 
 To run tier 4 against an API that is already deployed, set `TODO_LIVE_API_BASEURL` and
@@ -337,16 +337,16 @@ To run tier 4 against an API that is already deployed, set `TODO_LIVE_API_BASEUR
 Run one UI test process at a time: two runs fight over the desktop and fail for reasons that
 have nothing to do with the app.
 
-To try the app by hand, start `dotnet run --project src/Bruinell.Samples.Todo.Api` (it listens
+To try the app by hand, start `dotnet run --project src/Bruinet.Samples.Todo.Api` (it listens
 on port 5080) and then run the app.
 
 ## The web head
 
-`src/Bruinell.Samples.Todo.Web` is the same app in the browser: Blazor Server with interactive
+`src/Bruinet.Samples.Todo.Web` is the same app in the browser: Blazor Server with interactive
 server rendering. It reuses the MAUI app's view models, rules, sync and SQLite store unchanged.
 Only navigation, dialogs and the pages are its own. Its test ids are the MAUI AutomationIds
 (`data-testid="TodoEdit_Title"`), so both heads offer page objects the same contract. It exists to
-prove Bruinell.Html on a real app, and later to run the MAUI and web apps against one backend in
+prove Bruinet.Html on a real app, and later to run the MAUI and web apps against one backend in
 one test ([apps in a test](../../.docs/contracts/uat-apps-host.md)).
 
 - **One host process is one device.** It reads the same launch settings as the MAUI app
@@ -360,35 +360,35 @@ one test ([apps in a test](../../.docs/contracts/uat-apps-host.md)).
 To try it, start the API as above, then:
 
 ```bash
-dotnet run --project src/Bruinell.Samples.Todo.Web    # http://localhost:5090
+dotnet run --project src/Bruinet.Samples.Todo.Web    # http://localhost:5090
 ```
 
-Its UI tests are `tests/Bruinell.Samples.Todo.Web.UITests`: the TOD journeys through Html page
+Its UI tests are `tests/Bruinet.Samples.Todo.Web.UITests`: the TOD journeys through Html page
 objects, hermetic (WireMock, a seeded database, a pinned clock) and live (the real `Todo.Api`,
-with `BRUINELL_UAT_LIVE_API=1`). The fixtures start the web head themselves on a free port, so
+with `BRUINET_UAT_LIVE_API=1`). The fixtures start the web head themselves on a free port, so
 nothing needs to be running first:
 
 ```bash
-dotnet test tests/Bruinell.Samples.Todo.Web.UITests
+dotnet test tests/Bruinet.Samples.Todo.Web.UITests
 ```
 
-The UAT scenarios run on the web head too: `tests/Bruinell.Samples.Todo.Web.Uat` runs the same
+The UAT scenarios run on the web head too: `tests/Bruinet.Samples.Todo.Web.Uat` runs the same
 `Features/*.feature.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
 page objects with the MAUI member names. It also has a scenario with two devices on one backend
 (`TOD.07-two-devices.feature.md`: `Alice taps Sync`, then `Bob taps Sync` and sees her todo):
 
 ```bash
-dotnet test tests/Bruinell.Samples.Todo.Web.Uat
+dotnet test tests/Bruinet.Samples.Todo.Web.Uat
 ```
 
 ### Several apps in one test
 
-`tests/Bruinell.Samples.Todo.TestSupport.Apps/apps.md` lists the apps a test can use - Daan and Gus
+`tests/Bruinet.Samples.Todo.TestSupport.Apps/apps.md` lists the apps a test can use - Daan and Gus
 on Windows, Eva on Android, Finn and Hana in a browser - all on one fake backend, each with its
 own database, `X-Todo-Client` and clock (`ClockOffsetMinutes`). `TodoAppsFixture` starts an app
 the first time a test asks for it: two Windows apps go side by side, left and right.
 
-`tests/Bruinell.Samples.Todo.Mixed.UITests` uses them as variables:
+`tests/Bruinet.Samples.Todo.Mixed.UITests` uses them as variables:
 
 ```csharp
 var daan = apps.Maui("Daan");
@@ -398,14 +398,14 @@ apps.WaitForTodoFrom(daan, title);
 finn.List.Sync().Todos.AssertRow(title);
 ```
 
-`tests/Bruinell.Samples.Todo.Mixed.Uat` reads the same table, and each step runs on the app of the
+`tests/Bruinet.Samples.Todo.Mixed.Uat` reads the same table, and each step runs on the app of the
 user it names (`When Daan taps Save`, `Then Finn should be on the Todo List page`); see
 `Features/TOD.07-mixed.feature.md`. A failure captures every started app, one folder each. The
-Android test and scenario run only with the emulator and `BRUINELL_ANDROID=1`.
+Android test and scenario run only with the emulator and `BRUINET_ANDROID=1`.
 
 ```bash
-dotnet test tests/Bruinell.Samples.Todo.Mixed.UITests
-dotnet test tests/Bruinell.Samples.Todo.Mixed.Uat
+dotnet test tests/Bruinet.Samples.Todo.Mixed.UITests
+dotnet test tests/Bruinet.Samples.Todo.Mixed.Uat
 ```
 
 Build the MAUI app for Windows first, as for tier 3.
@@ -416,19 +416,19 @@ Start an emulator and an Appium server (`127.0.0.1:4723`, UiAutomator2 driver). 
 `samples/Todo`:
 
 ```bash
-dotnet build src/Bruinell.Samples.Todo.App -f net10.0-android
-APPIUM_PLATFORM=android dotnet test tests/Bruinell.Samples.Todo.UITests.Mobile
+dotnet build src/Bruinet.Samples.Todo.App -f net10.0-android
+APPIUM_PLATFORM=android dotnet test tests/Bruinet.Samples.Todo.UITests.Mobile
 ```
 
 The app reaches WireMock on the host through `10.0.2.2`. Eight hermetic tests are skipped on
 Android, each for a stated reason (`[WindowsOnlyFact(reason)]`). The two biggest: the device
-cannot open a database file seeded on the host, and Bruinell cannot drive a MAUI Picker's native
+cannot open a database file seeded on the host, and Bruinet cannot drive a MAUI Picker's native
 dialog on Android yet. Charter CH-5 covers those tests by hand until they can run there. The
 rest (26 tests) pass on both platforms.
 
 ## The journey coverage report
 
-`tests/Bruinell.Samples.Todo.JourneyCoverage` reads [journeys.md](journeys.md), reads every
+`tests/Bruinet.Samples.Todo.JourneyCoverage` reads [journeys.md](journeys.md), reads every
 test's traits by reflection and parses every scenario file (nothing runs, nothing launches), and
 fails when:
 

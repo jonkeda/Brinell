@@ -1,13 +1,13 @@
 # Presenter Platform Guide
 
-`Bruinell.Presenter` is a Windows desktop shell (a MAUI app) for loading and running UAT
+`Bruinet.Presenter` is a Windows desktop shell (a MAUI app) for loading and running UAT
 workspaces: a narrow bar docked to one side of the screen, with the app under test (or its browser)
 placed in the rest.
 
 ## Projects
 
-- `srcnew/Bruinell.Presenter`
-- `testsnew/Bruinell.Presenter.Bdd.Tests`: Presenter's own UAT suite
+- `srcnew/Bruinet.Presenter`
+- `testsnew/Bruinet.Presenter.Bdd.Tests`: Presenter's own UAT suite
 
 ## A Minimal Run
 
@@ -15,15 +15,15 @@ Presenter needs three things built: Presenter, the app under test, and the UAT p
 the page objects. The WPF workspace is the cheapest: no Appium, no MAUI workload for the app.
 
 ```powershell
-# Working directory: Bruinell root
-dotnet build samples\Bruinell.Samples.Wpf.App\Bruinell.Samples.Wpf.App.csproj
-dotnet build testsnew\Bruinell.Wpf.UITests\Bruinell.Wpf.UITests.csproj
-dotnet run --project srcnew\Bruinell.Presenter\Bruinell.Presenter.csproj -f net10.0-windows10.0.19041.0
+# Working directory: Bruinet root
+dotnet build samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj
+dotnet build testsnew\Bruinet.Wpf.UITests\Bruinet.Wpf.UITests.csproj
+dotnet run --project srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -f net10.0-windows10.0.19041.0
 ```
 
 Then, in Presenter (the toolbar is icon-only; hover for tooltips):
 
-1. **Open** `testsnew\Bruinell.Wpf.UITests`.
+1. **Open** `testsnew\Bruinet.Wpf.UITests`.
 2. **Validate**, and fix anything the Diagnostics tab reports.
 3. Select a scenario in the tree, for example *Home page is visible*.
 4. **Run**, or **Next** to go one step at a time.
@@ -41,7 +41,7 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
 
 | Field   | Value                             |
 | ---     | ---                               |
-| Project | ./Bruinell.Samples.Todo.Uat.csproj |
+| Project | ./Bruinet.Samples.Todo.Uat.csproj |
 | Fixture | TodoUatFixture                    |
 ```
 
@@ -56,13 +56,13 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
 - **The suite runs in a process of its own**, started from a copy of the suite's output as a test
   host is: a scenario runs from Presenter as it does under `dotnet test`. The Pages assembly has to
   be the suite's test project (its `runtimeconfig.json` is used) and the suite has to reference
-  `Bruinell.Uat`, which is the runner. The runner is started when a built workspace loads and waits
+  `Bruinet.Uat`, which is the runner. The runner is started when a built workspace loads and waits
   between runs, from its copy, so the suite can be rebuilt while Presenter is open, and a long
   session does not grow Presenter. It reads the feature and step files from the workspace, and
   writes its results where the IDEs' preview reads them. A fixture still finds its files from its
   own assembly, with `AssemblyFile.FolderOf(typeof(MyFixture).Assembly)`
-  (`Bruinell.Core.Composition`), which answers with the output the copy was made from.
-- **A suite built with an older Bruinell** than Presenter says so when it is run ("Rebuild the
+  (`Bruinet.Core.Composition`), which answers with the output the copy was made from.
+- **A suite built with an older Bruinet** than Presenter says so when it is run ("Rebuild the
   suite"): the two talk in versioned messages.
 - **A fixture that implements `IUatScenarioLifecycle`** has its `BeforeFile` and `BeforeScenario`
   called by Presenter as by the suite's test class: a scenario starts on its file's `TestData`.
@@ -85,7 +85,7 @@ To build the app with the tests, give the UAT project a reference that builds it
 referencing it:
 
 ```xml
-<ProjectReference Include="..\..\samples\Bruinell.Samples.Wpf.App\Bruinell.Samples.Wpf.App.csproj"
+<ProjectReference Include="..\..\samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj"
                   ReferenceOutputAssembly="false" />
 ```
 
@@ -117,7 +117,7 @@ steps: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**, and **Speed*
 | Command Catalog | every phrase, by keyword |
 
 Presenter checks each feature and step file as the xUnit gate and the IDEs do: against the suite's
-own catalogs, loaded through `Bruinell.Bdd.Workspace` from a shadow copy of its build. The
+own catalogs, loaded through `Bruinet.Bdd.Workspace` from a shadow copy of its build. The
 Diagnostics tab lists the gate's diagnostics, with severity and code. A suite that is not built yet
 is only parsed, and Diagnostics says to build it. A file under an `ExpectedFailures` folder fails
 on purpose: it is reported as "expected failure" and does not make the workspace need attention.
@@ -156,7 +156,7 @@ already be where they lead), **Debug from here** (only while paused before it: W
 debugger to attach to the runner, and the step then stops just before its step definition, so
 Step into goes into it) and **Toggle breakpoint**. The preview's paused bar has the same moves.
 
-Breakpoints are the IDEs' own file, `%LOCALAPPDATA%\Bruinell\bdd-breakpoints.json`: a red dot in the
+Breakpoints are the IDEs' own file, `%LOCALAPPDATA%\Bruinet\bdd-breakpoints.json`: a red dot in the
 list marks one, a breakpoint set in Visual Studio or VS Code stops Run in Presenter, and one set in
 Presenter stops a debugged run in the IDEs. Presenter's own dots are on the feature file's steps
 and calls; a breakpoint an IDE set on a step inside a step file stops Run too, before that step.
@@ -194,7 +194,7 @@ Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
 from where (a file, or the environment), and takes the endpoint, the key, the deployment, the API
 version and the default voice. **Try** speaks a sample line with the fields as they are, before
 anything is saved; **Save** writes `voice.secrets.json` for this machine
-(`%USERPROFILE%\.bruinell`), or beside the open workspace when its repository's `.gitignore`
+(`%USERPROFILE%\.bruinet`), or beside the open workspace when its repository's `.gitignore`
 ignores the file (**Add the line to .gitignore** adds it); **Remove** deletes the file, after a
 second click. The key is typed into a password field and never shown again: after Save the part
 says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
@@ -255,8 +255,8 @@ or WinForms window, or a browser):
 | Where it opens | in front of other windows, not moved |
 | Background | behind everything, as in a test run |
 
-It tells the launcher to leave the window shown (`BRUINELL_AUT_WINDOW=shown`: the MAUI driver no longer
-sends it behind, and a browser is not headless and opens at `BRUINELL_AUT_BOUNDS`). It notes the
+It tells the launcher to leave the window shown (`BRUINET_AUT_WINDOW=shown`: the MAUI driver no longer
+sends it behind, and a browser is not headless and opens at `BRUINET_AUT_BOUNDS`). It notes the
 top-level windows before a run starts, and once the app's window opens it moves it, without taking
 the focus; it tries again after the first step, for an app that opens late. Presenter keeps the keys:
 when the app it showed takes the focus (WPF and WinForms do, for real input), Presenter takes it
@@ -273,17 +273,17 @@ back after the step. A placement that fails does not fail the run; Diagnostics s
 folder that still exists, then the default sample workspace.
 
 ```text
-%LOCALAPPDATA%/Bruinell.Presenter/user-settings.json
+%LOCALAPPDATA%/Bruinet.Presenter/user-settings.json
 ```
 
 ```powershell
-$env:BRUINELL_PRESENTER_SETTINGS_PATH = "path\to\user-settings.json"
+$env:BRUINET_PRESENTER_SETTINGS_PATH = "path\to\user-settings.json"
 ```
 
 ## Build
 
 ```powershell
-# Working directory: Bruinell root
-dotnet build srcnew\Bruinell.Presenter\Bruinell.Presenter.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinell.Presenter.Bdd.Tests\Bruinell.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
+# Working directory: Bruinet root
+dotnet build srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinet.Presenter.Bdd.Tests\Bruinet.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
 ```

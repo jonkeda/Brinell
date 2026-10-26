@@ -1,7 +1,7 @@
 # The generator contract
 
 A ControlObject is a template, `Foo.tpl.cs`, holding constructors, `*Core` methods,
-`*Shortcut` methods and any hand-written members. `Bruinell.Generator` reads it and writes
+`*Shortcut` methods and any hand-written members. `Bruinet.Generator` reads it and writes
 the public API into `Foo.gen.cs`, a second `partial` of the same class. The template holds
 the "how"; the generated file holds the "what".
 
@@ -14,21 +14,21 @@ and `control-source-builder` instructions all point here.
 tools\Scripts\CreateMaui.Bat
 ```
 
-Run from the Bruinell root. It rebuilds the generator CLI, then regenerates every `.tpl.cs`
-under `srcnew\Bruinell.Maui\Controls` and `srcnew\Bruinell.Maui.CommunityToolkit\Controls`,
-recursively. `tools\Scripts\CreateHtml.Bat` does the same for `srcnew\Bruinell.Html\Controls`
-and `srcnew\Bruinell.Blazor\Controls`: the contract below holds for Html controls unchanged, with
-`IHtmlElement` as the element type. For one file or folder elsewhere, run `bruinell controls generate` directly:
+Run from the Bruinet root. It rebuilds the generator CLI, then regenerates every `.tpl.cs`
+under `srcnew\Bruinet.Maui\Controls` and `srcnew\Bruinet.Maui.CommunityToolkit\Controls`,
+recursively. `tools\Scripts\CreateHtml.Bat` does the same for `srcnew\Bruinet.Html\Controls`
+and `srcnew\Bruinet.Blazor\Controls`: the contract below holds for Html controls unchanged, with
+`IHtmlElement` as the element type. For one file or folder elsewhere, run `bruinet controls generate` directly:
 
 ```
-pwsh tools\Scripts\bruinell.ps1 controls generate --input <file-or-folder>[;<file-or-folder>...]
+pwsh tools\Scripts\bruinet.ps1 controls generate --input <file-or-folder>[;<file-or-folder>...]
 ```
 
 Output is always `<name>.gen.cs` beside the input.
 
 `CreateMaui.Bat` rewrites every `.gen.cs`, and about 70 whose content did not change still show
 as modified because of line endings. `git diff --ignore-cr-at-eol --name-only` lists only the
-files with a real change; restore the rest (Git Bash, from the Bruinell root):
+files with a real change; restore the rest (Git Bash, from the Bruinet root):
 
 ```
 comm -23 <(git diff --name-only -- '*.gen.cs' | sort) <(git diff --ignore-cr-at-eol --name-only -- '*.gen.cs' | sort) | xargs -r git checkout --
@@ -100,7 +100,7 @@ Generated setters on a container return the parent (`SetResult`), not `TSelf`.
 ### Comparison variants
 
 A `Get*Core` emits equality only. Add `[GenerateComparisons(...)]` (from
-`Bruinell.Core.Interfaces`) for more:
+`Bruinet.Core.Interfaces`) for more:
 
 ```csharp
 [GenerateComparisons(Comparison.Equals | Comparison.Contains | Comparison.Empty)]
@@ -206,5 +206,5 @@ Mark a Core method `[SkipGeneration("reason")]` when its public member is hand-w
    Every member you meant should be there, nothing extra, each returning the type you meant.
 3. Build the project, then the solution: controls are referenced widely.
    ```
-   dotnet build Bruinell.sln -v:minimal /nr:false
+   dotnet build Bruinet.sln -v:minimal /nr:false
    ```

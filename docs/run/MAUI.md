@@ -1,18 +1,18 @@
 # Run MAUI Tests
 
-Working directory: Bruinell root.
+Working directory: Bruinet root.
 
 ## Unit Tests
 
 ```powershell
-dotnet test testsnew\Bruinell.Maui.Tests\Bruinell.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
 ```
 
 ## Windows FlaUI Adapter
 
 ```powershell
-dotnet build srcnew\Bruinell.Maui.FlaUI\Bruinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet test testsnew\Bruinell.Maui.UITests\Bruinell.Maui.UITests.csproj -f net10.0-windows7.0 -v:minimal /nr:false
+dotnet build srcnew\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -f net10.0-windows7.0 -v:minimal /nr:false
 ```
 
 The Windows run drives the app without mouse, keyboard or foreground, so you can keep
@@ -22,11 +22,11 @@ host the gesture bridge - see the [MAUI platform guide](../platform-guides/maui.
 ## In Memory (MauiUnit Head)
 
 ```powershell
-$env:BRUINELL_HEAD='mauiunit'; dotnet test testsnew\Bruinell.Maui.UITests\Bruinell.Maui.UITests.csproj -v:minimal /nr:false
+$env:BRUINET_HEAD='mauiunit'; dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -v:minimal /nr:false
 ```
 
 The same suite renders both sample apps in memory with MauiUnit, from the apps compiled for plain
-`net10.0` (`samples\Bruinell.Samples.Maui.App.Headless`, `...ShellApp.Headless`). It needs no
+`net10.0` (`samples\Bruinet.Samples.Maui.App.Headless`, `...ShellApp.Headless`). It needs no
 device, no built app and no window, and the whole suite takes seconds. A test that needs a device
 is marked `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]`, and a scenario is
 tagged `@device`; they are skipped on this head with the reason. A fixture names its in-memory

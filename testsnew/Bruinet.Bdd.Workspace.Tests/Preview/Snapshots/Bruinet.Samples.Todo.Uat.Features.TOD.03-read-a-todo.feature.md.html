@@ -1,0 +1,150 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.03-read-a-todo.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.03 Read a todo</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinet.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Detail</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.03</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>one-todo</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, detail</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.03.1</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@detail</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.03.1 Tapping a row opens its detail with all its fields"><span class="uat-kw">Scenario</span> TOD.03.1 Tapping a row opens its detail with all its fields</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step" data-line="18"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="19"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="20">
+<thead><tr><th>Title</th><th>Status</th><th>DueDate</th><th>Notes</th></tr></thead>
+<tbody>
+<tr data-line="22"><td>Plan the party</td><td>InProgress</td><td>+3d</td><td>Invite the neighbours</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Plan the party&quot;</span></span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Plan the party&quot;</span></span>
+</li>
+<li class="uat-step" data-line="26"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="27"><span class="uat-kw">And</span><span class="uat-text">Title should equal <span class="uat-value">&quot;Plan the party&quot;</span></span>
+</li>
+<li class="uat-step" data-line="28"><span class="uat-kw">And</span><span class="uat-text">Status should show status <span class="uat-value">&quot;In progress&quot;</span></span>
+</li>
+<li class="uat-step" data-line="29"><span class="uat-kw">And</span><span class="uat-text">Notes should equal <span class="uat-value">&quot;Invite the neighbours&quot;</span></span>
+</li>
+<li class="uat-step" data-line="30"><span class="uat-kw">And</span><span class="uat-text">Due should exist</span>
+</li>
+<li class="uat-step" data-line="31"><span class="uat-kw">And</span><span class="uat-text">Created should exist</span>
+</li>
+<li class="uat-step" data-line="32"><span class="uat-kw">And</span><span class="uat-text">Updated should exist</span>
+</li>
+<li class="uat-step" data-line="33"><span class="uat-kw">And</span><span class="uat-text">Sync State should equal <span class="uat-value">&quot;Synced&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="36"><span class="uat-tag">@TOD.03.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@detail</span> <span class="uat-tag">@sync</span></p>
+<h2 class="uat-scenario" data-line="37" data-scenario="TOD.03.3 The Sync card shows &quot;Synced&quot;, &quot;Waiting to sync&quot; or &quot;Local only&quot;"><span class="uat-kw">Scenario</span> TOD.03.3 The Sync card shows &quot;Synced&quot;, &quot;Waiting to sync&quot; or &quot;Local only&quot;</h2>
+<ol class="uat-steps" data-line="39">
+<li class="uat-step" data-line="40"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="41"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="42">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="44"><td>Water the ferns</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="45"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="46"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Water the ferns&quot;</span></span>
+</li>
+<li class="uat-step" data-line="47"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Water the ferns&quot;</span></span>
+</li>
+<li class="uat-step" data-line="48"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="49"><span class="uat-kw">And</span><span class="uat-text">Sync State should equal <span class="uat-value">&quot;Synced&quot;</span></span>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">When</span><span class="uat-text">I advance Status to <span class="uat-value">&quot;In progress&quot;</span></span>
+</li>
+<li class="uat-step" data-line="51"><span class="uat-kw">Then</span><span class="uat-text">Sync State should equal <span class="uat-value">&quot;Waiting to sync&quot;</span></span>
+</li>
+<li class="uat-step" data-line="52"><span class="uat-kw">When</span><span class="uat-text">I tap Back</span>
+</li>
+<li class="uat-step" data-line="53"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="54"><span class="uat-kw">When</span><span class="uat-text">I create a todo <span class="uat-value">&quot;Pack a lunch&quot;</span></span>
+</li>
+<li class="uat-step" data-line="55"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="56"><span class="uat-kw">When</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Pack a lunch&quot;</span></span>
+</li>
+<li class="uat-step" data-line="57"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="58"><span class="uat-kw">And</span><span class="uat-text">Sync State should equal <span class="uat-value">&quot;Local only&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="61"><span class="uat-tag">@TOD.03.4</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@detail</span> <span class="uat-tag">@windows</span></p>
+<h2 class="uat-scenario" data-line="62" data-scenario="TOD.03.4 Back returns to the list at the same filter"><span class="uat-kw">Scenario</span> TOD.03.4 Back returns to the list at the same filter</h2>
+<ol class="uat-steps" data-line="64">
+<li class="uat-step" data-line="65"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="66"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="67">
+<thead><tr><th>Title</th><th>Status</th></tr></thead>
+<tbody>
+<tr data-line="69"><td>Fix the fence</td><td>InProgress</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="70"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="71"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Fix the fence&quot;</span></span>
+</li>
+<li class="uat-step" data-line="72"><span class="uat-kw">When</span><span class="uat-text">I select <span class="uat-value">&quot;In progress&quot;</span> from Filter</span>
+</li>
+<li class="uat-step" data-line="73"><span class="uat-kw">And</span><span class="uat-text">I open the todo <span class="uat-value">&quot;Fix the fence&quot;</span></span>
+</li>
+<li class="uat-step" data-line="74"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo Detail page</span>
+</li>
+<li class="uat-step" data-line="75"><span class="uat-kw">When</span><span class="uat-text">I tap Back</span>
+</li>
+<li class="uat-step" data-line="76"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="77"><span class="uat-kw">And</span><span class="uat-text">Filter should have selected <span class="uat-value">&quot;In progress&quot;</span></span>
+</li>
+<li class="uat-step" data-line="78"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Fix the fence&quot;</span></span>
+</li>
+<li class="uat-step" data-line="79"><span class="uat-kw">And</span><span class="uat-text">Todos should not have todo <span class="uat-value">&quot;Buy milk&quot;</span></span>
+</li>
+</ol>
+</article>

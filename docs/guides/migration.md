@@ -1,18 +1,18 @@
 # Migration Notes
 
-These notes help migrate old Bruinell or Oravey-era material to the current
-Bruinell source layout.
+These notes help migrate old Bruinet or Oravey-era material to the current
+Bruinet source layout.
 
 ## Naming
 
-Replace old namespaces and project names with current `Bruinell.*` names.
+Replace old namespaces and project names with current `Bruinet.*` names.
 
 | Old pattern | Current pattern |
 | --- | --- |
-| `Oravey.UITestFramework.*` | `Bruinell.*` |
+| `Oravey.UITestFramework.*` | `Bruinet.*` |
 | numbered docs such as `02-framework-overview.md` | docs under named folders |
-| `src/Bruinell.*` | `srcnew/Bruinell.*` |
-| `tests/Bruinell.*` | `testsnew/Bruinell.*` |
+| `src/Bruinet.*` | `srcnew/Bruinet.*` |
+| `tests/Bruinet.*` | `testsnew/Bruinet.*` |
 
 ## Docs
 
@@ -30,5 +30,5 @@ Replace old namespaces and project names with current `Bruinell.*` names.
 
 ## Artifacts
 
-Move hardcoded output paths to the Bruinell artifact provider where possible.
+Move hardcoded output paths to the Bruinet artifact provider where possible.
 New output should use `TestResults/<run-id>/suites/<suite>/`.

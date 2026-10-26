@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:01.2319119+00:00",
+      "location": "http://localhost:5180/dashboard",
+      "page": "/dashboard",
+      "title": "Dashboard - Bruinet Blazor Sample",
+      "snapshot": "001-dashboard-bruinet-blazor-sample.nodes.jsonl",
+      "nodes": 127,
+      "displayName": "Dashboard - Bruinet Blazor Sample"
+    }
+  ]
+}

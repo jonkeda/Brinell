@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    One root page and four pushed routes (todo detail and edit, users and user edit); no tabs and no flyout, so none of the tab-bar
+    differences between Windows and Android that made the sample app leave Shell apply here.
+-->
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:Bruinet.Samples.Todo.App.Pages"
+       x:Class="Bruinet.Samples.Todo.App.AppShell"
+       Title="Bruinet Todo"
+       FlyoutBehavior="Disabled">
+
+    <ShellContent Route="todos"
+                  Title="Todos"
+                  ContentTemplate="{DataTemplate pages:TodoListPage}" />
+
+</Shell>

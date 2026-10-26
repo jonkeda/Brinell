@@ -1,8 +1,8 @@
-# Bruinell Documentation
+# Bruinet Documentation
 
-Bruinell is a multi-platform .NET UI test automation framework. These docs are
-the active, curated set: guides for someone *using* Bruinell. The decisions and
-invariants behind it - what must stay true when *changing* Bruinell - are in
+Bruinet is a multi-platform .NET UI test automation framework. These docs are
+the active, curated set: guides for someone *using* Bruinet. The decisions and
+invariants behind it - what must stay true when *changing* Bruinet - are in
 [`.docs`](../.docs/README.md).
 
 ## Start Here
@@ -44,25 +44,25 @@ invariants behind it - what must stay true when *changing* Bruinell - are in
 - [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
   runs without a screen, its suite and step definitions
 - [The bUnit Head](guides/bunit.md) - a Blazor suite's page objects and scenarios without a browser
-  (`BRUINELL_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
+  (`BRUINET_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
 - [Test Selection](guides/test-selection.md) - the tests a change reaches: the touch map from a full
-  run, `bruinell tests affected`, what runs the suite whole, and what selection misses
+  run, `bruinet tests affected`, what runs the suite whole, and what selection misses
 - [SQL Replay](guides/sql-replay.md) - a UI test without its database: the SQL log, recording and
   replaying, the app's wiring (EF, ADO.NET, an app in its own process), stale recordings and re-records
-- [BDD Glossary](guides/bdd-glossary.md) - Bruinell's words beside Cucumber's and Reqnroll's
+- [BDD Glossary](guides/bdd-glossary.md) - Bruinet's words beside Cucumber's and Reqnroll's
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
   files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario
-- [Bruinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
+- [Bruinet BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
   preview, Test Explorer on the scenarios' addresses
 - [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
-  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRUINELL_RECORD`
+  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRUINET_RECORD`
 - [The Scraper](guides/scraper.md) - record or explore an app's pages into a UI test project,
   draft page objects from them, and have an agent make controls; from VS Code, Visual Studio, the
   command line or MCP, and unattended with the loop
 - [Adding Controls For A New Control Library](../.guides/control-library.md) - the
   `control-source-builder` agent, step by step: survey, groundwork, probe, build, closeout
-- [Test Data](guides/test-data.md) - test sets, `bruinell data`, `TestData` in UAT
-  files, typed mock bodies (`BRUINELL001`)
+- [Test Data](guides/test-data.md) - test sets, `bruinet data`, `TestData` in UAT
+  files, typed mock bodies (`BRUINET001`)
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
 - [Migration Notes](guides/migration.md)
@@ -81,7 +81,7 @@ invariants behind it - what must stay true when *changing* Bruinell - are in
 ## Run Guides
 
 - [Build And Test](run/build-and-test.md)
-- [The `bruinell` Command Line](run/cli.md) - install it, and every command
+- [The `bruinet` Command Line](run/cli.md) - install it, and every command
 - [MAUI](run/MAUI.md)
 - [MAUI Android](run/maui-android.md)
 - [Native Android](run/native-android.md)
@@ -99,7 +99,7 @@ invariants behind it - what must stay true when *changing* Bruinell - are in
 ## Maintenance Rules
 
 - Keep links relative and valid.
-- Use `Bruinell.*` namespaces only.
+- Use `Bruinet.*` namespaces only.
 - Mark every command with its working directory.
 - Keep guides here; keep decisions and invariants in `.docs/`.
 - Do not add generated test artifacts under `docs/` or `.my/`; they belong under `TestResults/`.

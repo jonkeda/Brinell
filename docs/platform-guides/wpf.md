@@ -1,13 +1,13 @@
 # WPF Platform Guide
 
-Bruinell automates WPF through FlaUI.
+Bruinet automates WPF through FlaUI.
 
 ## Projects
 
-- `srcnew/Bruinell.Wpf`
-- `testsnew/Bruinell.Wpf.Tests`
-- `testsnew/Bruinell.Wpf.UITests` (the UI tests and the UAT suite)
-- `samples/Bruinell.Samples.Wpf.App`
+- `srcnew/Bruinet.Wpf`
+- `testsnew/Bruinet.Wpf.Tests`
+- `testsnew/Bruinet.Wpf.UITests` (the UI tests and the UAT suite)
+- `samples/Bruinet.Samples.Wpf.App`
 
 ## Rules
 

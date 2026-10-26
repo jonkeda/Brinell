@@ -1,0 +1,94 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.09-persistence-and-startup.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.09 Persistence and startup</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Bruinet.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Persistence</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.09</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>one-todo</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, persistence</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.09.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@persistence</span> <span class="uat-tag">@windows</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.09.3 Todos survive an app restart"><span class="uat-kw">Scenario</span> TOD.09.3 Todos survive an app restart</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step" data-line="18"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="19"><span class="uat-kw">When</span><span class="uat-text">I create a todo <span class="uat-value">&quot;Survives restart&quot;</span></span>
+</li>
+<li class="uat-step" data-line="20"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="21"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Survives restart&quot;</span></span>
+</li>
+<li class="uat-step" data-line="22"><span class="uat-kw">When</span><span class="uat-text">I restart the app</span>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Survives restart&quot;</span></span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">And</span><span class="uat-text">the database should have todos</span>
+<table class="uat-table" data-line="26">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="28"><td>Survives restart</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="31"><span class="uat-tag">@TOD.09.3</span> <span class="uat-tag">@service</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@persistence</span></p>
+<h2 class="uat-scenario" data-line="32" data-scenario="TOD.09.3 Stored todos survive a restart"><span class="uat-kw">Scenario</span> TOD.09.3 Stored todos survive a restart</h2>
+<ol class="uat-steps" data-line="34">
+<li class="uat-step" data-line="35"><span class="uat-kw">When</span><span class="uat-text">I restart the app</span>
+</li>
+<li class="uat-step" data-line="36"><span class="uat-kw">Then</span><span class="uat-text">the database should have todos</span>
+<table class="uat-table" data-line="37">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="39"><td>Buy milk</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p class="uat-tags" data-line="42"><span class="uat-tag">@TOD.09.4</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@persistence</span> <span class="uat-tag">@windows</span></p>
+<h2 class="uat-scenario" data-line="43" data-scenario="TOD.09.4 The app starts with the backend unreachable and shows local todos"><span class="uat-kw">Scenario</span> TOD.09.4 The app starts with the backend unreachable and shows local todos</h2>
+<ol class="uat-steps" data-line="45">
+<li class="uat-step" data-line="46"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="47"><span class="uat-kw">When</span><span class="uat-text">I restart the app with the server unreachable</span>
+</li>
+<li class="uat-step" data-line="48"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="49"><span class="uat-kw">And</span><span class="uat-text">the list should show the Content state</span>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Buy milk&quot;</span></span>
+</li>
+<li class="uat-step" data-line="51"><span class="uat-kw">And</span><span class="uat-text">Last Sync should equal <span class="uat-value">&quot;Server unreachable&quot;</span></span>
+</li>
+</ol>
+</article>

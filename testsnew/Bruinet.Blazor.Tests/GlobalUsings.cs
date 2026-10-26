@@ -1,0 +1,10 @@
+global using Xunit;
+global using Moq;
+global using Bruinet.Core.Interfaces;
+global using Bruinet.Core.Locators;
+global using Bruinet.Html.Interfaces;
+global using Bruinet.Html.Pages;
+global using Bruinet.Blazor.Context;
+global using Bruinet.Blazor.Controls;
+global using Bruinet.Blazor.Pages;
+global using Bruinet.Blazor.Tests.Mocks;

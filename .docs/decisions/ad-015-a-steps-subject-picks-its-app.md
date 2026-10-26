@@ -12,7 +12,7 @@ second keyword attribute on the same method:
 void Click(int? timeoutMs = null);
 ```
 
-The engine infers no verb forms. `Bruinell.Core` declares the named form of every built-in `I ...`
+The engine infers no verb forms. `Bruinet.Core` declares the named form of every built-in `I ...`
 control verb, and the runtime declares the named forms of its page steps (`{user} is on the
 {page} page`, `{user} should be on the {page} page`, `{user} should see {text}`).
 
@@ -20,7 +20,7 @@ control verb, and the runtime declares the named forms of its page steps (`{user
   so a later `I` step runs on it. The result JSON records the app of every step.
 - **A user picks an app.** An app name picks that app. A user with one app picks it. A user with
   several apps picks the one used last in the scenario, and before that the step fails at bind
-  time, asking for the app by name. `TestAppSet.Resolve` in `Bruinell.Core.Testing` holds the same
+  time, asking for the app by name. `TestAppSet.Resolve` in `Bruinet.Core.Testing` holds the same
   rules for UI tests.
 - **`{user}` is the acting user.** It receives the subject, or the current app's user when the
   step says `I`, and it is never a control verb's value. In first place it switches apps;

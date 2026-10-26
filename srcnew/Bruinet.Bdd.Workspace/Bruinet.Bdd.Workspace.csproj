@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Bdd.Workspace</RootNamespace>
+    <Description>What every Bruinet tool shares: a suite loaded one way (its config, its catalogs from a shadow copy that can be unloaded), and a feature, step or video file rendered as the preview shows it (what the gate sees, the last run's results, as HTML with a themable stylesheet).</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\Bruinet.TestData\Bruinet.TestData.csproj" />
+    <!-- Video scripts: the preview and the language server show their check like a feature file's. -->
+    <ProjectReference Include="..\Bruinet.Narrator\Bruinet.Narrator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The preview (Bruinet.Bdd.Preview): its stylesheet and host script, by their names in that namespace. -->
+    <EmbeddedResource Include="Preview\preview.css" LogicalName="Bruinet.Bdd.Preview.preview.css" />
+    <EmbeddedResource Include="Preview\preview-host.js" LogicalName="Bruinet.Bdd.Preview.preview-host.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Bdd.Workspace.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+    <Using Include="Bruinet.Uat" />
+  </ItemGroup>
+
+</Project>

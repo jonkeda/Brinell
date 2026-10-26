@@ -1,11 +1,11 @@
 # AD-010: MAUI, Html And Native Android Ahead Of Core, On Purpose
 
-`Bruinell.Maui` owns the interfaces its call model needs (`IMauiElement`,
+`Bruinet.Maui` owns the interfaces its call model needs (`IMauiElement`,
 `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext`) and no longer
 implements Core's element, driver, scope and page interfaces. Since 2026-09-26
-`Bruinell.Html` does the same, with its own set (`IHtmlElement`, `IHtmlDriver`,
+`Bruinet.Html` does the same, with its own set (`IHtmlElement`, `IHtmlDriver`,
 `IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext`), and since 2026-10-07
-`Bruinell.NativeAndroid` (`INativeAndroidElement`, `INativeAndroidDriver`,
+`Bruinet.NativeAndroid` (`INativeAndroidElement`, `INativeAndroidDriver`,
 `INativeAndroidElementScope`, `INativeAndroidPage`, `INativeAndroidTestContext`). The stacks where the model was
 designed and proven keep their own shapes; the other stacks keep Core's until the proven
 shape moves down to Core, one layer at a time, as its own step
@@ -14,21 +14,21 @@ shape moves down to Core, one layer at a time, as its own step
 **The leaf layer has moved down** (2026-09-26, [review at 7162ac7](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/core/review-what-can-move-now.md)).
 It names no element, driver or scope type, so it needed none of the interfaces:
 
-- `Bruinell.Core.Calls`: `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`,
-  `Poller`, `Confirmer`, `ControlCall`, `ScopeGate` (internal, visible to `Bruinell.Maui`,
-  `Bruinell.Html`, `Bruinell.NativeAndroid` and their test projects), and `Confirmation<T>`, `CallBudget`,
+- `Bruinet.Core.Calls`: `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`,
+  `Poller`, `Confirmer`, `ControlCall`, `ScopeGate` (internal, visible to `Bruinet.Maui`,
+  `Bruinet.Html`, `Bruinet.NativeAndroid` and their test projects), and `Confirmation<T>`, `CallBudget`,
   `NearMissSettings` (public);
-- `Bruinell.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException` with
+- `Bruinet.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException` with
   `NotReadyReason`, `ScopeNotReadyException`, `AppUnavailableException`,
   `RouteUnavailableException`;
-- `Bruinell.Core.Scopes`: `ScopeReadiness`, `ScopeReadinessState`.
+- `Bruinet.Core.Scopes`: `ScopeReadiness`, `ScopeReadinessState`.
 
 MAUI, Html and native Android have no copies of these.
 
 **The control layer's calls have moved down** (2026-10-22, the
 [review of 2026-10-21](../../.my/reviews/2026-10-21-review.md), C1). The three control bases
 (Html's `ControlBase`, MAUI's and native Android's `ViewBase`) had the same `Run*` family three
-times, and the copies had started to differ. Now `Bruinell.Core.Calls.ControlCalls<TElement>` runs
+times, and the copies had started to differ. Now `Bruinet.Core.Calls.ControlCalls<TElement>` runs
 every call once for all of them: the attempt, the visibility check, the action once, the waits,
 reads and asserts. Each base is its `IControlHost<TElement>` (internal, like the leaf layer): its
 element lookup, scope probe, settings, and the few places a platform differs (MAUI's sweep and

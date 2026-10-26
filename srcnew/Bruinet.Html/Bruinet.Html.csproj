@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Html</RootNamespace>
+    <Description>HTML/Web UI testing automation abstractions. Provides controls and page objects for general web application testing.</Description>
+    <PackageId>Bruinet.Html</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+  </ItemGroup>
+
+</Project>

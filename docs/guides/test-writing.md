@@ -1,6 +1,6 @@
 # Test Writing
 
-Bruinell tests should read like user workflows. Put mechanics in page objects and
+Bruinet tests should read like user workflows. Put mechanics in page objects and
 controls.
 
 ## Test Shape
@@ -27,7 +27,7 @@ public void SavingValidForm_ShowsSuccess()
 
 ## Control Rules
 
-- Use Bruinell controls instead of raw driver elements.
+- Use Bruinet controls instead of raw driver elements.
 - Move repeated interaction behavior into controls.
 - Prefer semantic methods over driver-specific APIs.
 - Keep app-specific assertions in tests, not controls.
@@ -81,7 +81,7 @@ Assert.True(page.SubmitButton.IsEnabled());
 Assert.Equal("Saved", page.Status.GetText());
 ```
 
-Do not add FluentAssertions to Bruinell test projects.
+Do not add FluentAssertions to Bruinet test projects.
 
 ## Naming
 
@@ -93,4 +93,4 @@ Do not add FluentAssertions to Bruinell test projects.
 ## Artifacts
 
 When a test produces screenshots, logs, UAT output, traces, or videos, route
-them through the Bruinell artifact layout under `TestResults/<run-id>/`.
+them through the Bruinet artifact layout under `TestResults/<run-id>/`.

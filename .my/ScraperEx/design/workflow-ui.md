@@ -57,7 +57,7 @@ action becomes **Re-record the changed pages**, then **Update page objects**.
 
 ```text
 ┌ Scraper ───────────────────────────────────────────────────────────────────────────────────┐
-│ Project [Bruinell.Html.React v] [+]          Next: Make the 3 controls Draft asked for  [Go]│
+│ Project [Bruinet.Html.React v] [+]          Next: Make the 3 controls Draft asked for  [Go]│
 ├──────────────────────┬─────────────────────────────────────────────────────────────────────┤
 │ ✓ 1 Project          │  5  Controls                                                        │
 │ ✓ 2 Connect          │  Parts that repeat become a control first, so page objects use it.  │
@@ -100,7 +100,7 @@ action becomes **Re-record the changed pages**, then **Update page objects**.
 
 ## 5. Where the state comes from
 
-One request, `bruinell/scraper/progress` (project) → per step its state, its count and its next
+One request, `bruinet/scraper/progress` (project) → per step its state, its count and its next
 action; computed from what the server already knows, so it is the same in both IDEs and over MCP:
 
 | Step | Done | Attention | Count |
@@ -121,7 +121,7 @@ The last check (step 2) and the last verify (step 7) are written to `Recordings/
 | Part | Change |
 | --- | --- |
 | `ScraperPage` | The tabs become the step list and panels; the bar becomes the header and the running strip. The existing functions (`loadPages`, `loadPatterns`, `loadExplore`, `loadSettings`, `loadCode`, `showNewProject`) are the panels' bodies, rearranged, not rewritten |
-| Server | `bruinell/scraper/progress`; `bruinell/scraper/check` (step 2: open the start URL headless with the project's profile, report answer, sign-in, host); the state file. Step 3: `config` and `configEdit` as today, several edits in one `configEdit` call (one Save, one write). Step 5: `controlCheck` (a control's parts resolved in each of its pattern's occurrences in the recordings, as Verify resolves a page's members, but against the snapshots, so no browser), `makeControls` (the prompt for the ticked patterns and names), `acceptControl` (kept in the state file). Step 6: `draft` with a list of page keys (today one page or all), `renamePageObject` (class, files, the person's part) |
+| Server | `bruinet/scraper/progress`; `bruinet/scraper/check` (step 2: open the start URL headless with the project's profile, report answer, sign-in, host); the state file. Step 3: `config` and `configEdit` as today, several edits in one `configEdit` call (one Save, one write). Step 5: `controlCheck` (a control's parts resolved in each of its pattern's occurrences in the recordings, as Verify resolves a page's members, but against the snapshots, so no browser), `makeControls` (the prompt for the ticked patterns and names), `acceptControl` (kept in the state file). Step 6: `draft` with a list of page keys (today one page or all), `renamePageObject` (class, files, the person's part) |
 | MCP | `get_scraper_progress`: an agent sees the same next step |
 | IDEs | Nothing new: they relay as today |
 | AutomationIds | The controls keep their ids; steps get `sc-step-<n>`, the primary action `sc-primary` |
@@ -152,7 +152,7 @@ The last check (step 2) and the last verify (step 7) are written to `Recordings/
 | --- | --- | --- |
 | 1 | `progress` and the state file; MCP `get_scraper_progress` | Unit tests: each step's state for a project at each point (new, recorded, drafted, verified, changed) |
 | 2 | The layout: header with next action, step list, panels from today's tabs (the Explore settings in step 3), Code below; the running strip | The page through the stand-in host: every action of section 7 reachable; screenshots wide and narrow, light and dark |
-| 3 | Step 2's **Check the app** (`bruinell/scraper/check`); step 3's settings form with Save (several edits in one write) | Against the test site: answered, a sign-in (its `LoginUrl`), a refused host. The form: each field round-trips, Save writes only what changed |
+| 3 | Step 2's **Check the app** (`bruinet/scraper/check`); step 3's settings form with Save (several edits in one write) | Against the test site: answered, a sign-in (its `LoginUrl`), a refused host. The form: each field round-trips, Save writes only what changed |
 | 3b | Step 5: tick and make in one go, Made, `controlCheck`, the review panel (fix with the agent, accept) | Unit tests: a control's parts found in every occurrence, and one that misses two; the review through the stand-in host |
 | 3c | Step 6: tick and draft those, rename (`renamePageObject`) | Unit tests: drafting two of three pages; a rename keeps the person's part and survives a draft |
 | 4 | Next action and badges for Keep current | A page re-recorded with a change: steps 3, 6, 7 badged, the header says re-record then update |

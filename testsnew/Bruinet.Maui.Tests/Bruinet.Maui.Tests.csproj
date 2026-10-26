@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Maui.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Bruinet.Core\Bruinet.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Bruinet.Maui\Bruinet.Maui.csproj" />
+    <!-- For the Appium locator mapping, the driver's one piece of logic with no device in it. -->
+    <ProjectReference Include="..\..\srcnew\Bruinet.Maui.Appium\Bruinet.Maui.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

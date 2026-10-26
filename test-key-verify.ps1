@@ -1,11 +1,11 @@
 $ErrorActionPreference = "Stop"
-$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinell\samples\Bruinell.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinell.Samples.Stride.App.exe"
+$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinet\samples\Bruinet.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinet.Samples.Stride.App.exe"
 
 $proc = Start-Process -FilePath $gamePath -ArgumentList "--automation" -PassThru
 Start-Sleep -Seconds 6
 
 try {
-    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinell.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
+    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinet.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
     $pipe.Connect(5000)
     $writer = New-Object System.IO.StreamWriter($pipe)
     $writer.AutoFlush = $true

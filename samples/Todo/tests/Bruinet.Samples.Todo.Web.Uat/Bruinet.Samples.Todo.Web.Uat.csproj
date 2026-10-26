@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Samples.Todo.Web.Uat</RootNamespace>
+    <Description>The Todo UAT scenarios on the web head: the MAUI suite's scenario files, run through the web page objects.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The UAT engine, and the web page objects and fixture its scenarios drive. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\Bruinet.Samples.Todo.Web.UITests\Bruinet.Samples.Todo.Web.UITests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- One set of scenario files for both heads: the MAUI suite's, run here where tagged @web. -->
+    <!-- Users (TOD.11) have no web head yet (users-plan Q5): their file stays with the MAUI suite. -->
+    <None Include="..\Bruinet.Samples.Todo.Uat\Features\**\*.feature.md" Exclude="..\Bruinet.Samples.Todo.Uat\Features\TOD.11-*.feature.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Bruinet.Samples.Todo.Uat\Features\**\*.steps.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- And the scenarios only the web head can run yet: several apps in one scenario. -->
+    <None Update="Features\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

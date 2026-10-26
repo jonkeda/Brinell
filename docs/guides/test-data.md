@@ -1,7 +1,7 @@
 # Test Data
 
 Most tests need starting data before the first tap: what the server has, what the device has,
-what time it is. Bruinell keeps that data in **test sets** - named JSON files, read strictly into
+what time it is. Bruinet keeps that data in **test sets** - named JSON files, read strictly into
 the app's real types and checked before any test runs. The decision behind this is
 [AD-012](../../.docs/decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md).
 The [Todo sample](../../samples/Todo/README.md) uses everything on this page.
@@ -70,7 +70,7 @@ public void EveryTestSet_FollowsTheRules()
 }
 ```
 
-## `bruinell data`
+## `bruinet data`
 
 The same engine from the command line, for people and for models editing test data. It loads
 the app's test-support assembly at run time, found through a `TestData` row in the UAT
@@ -79,19 +79,19 @@ project's `uat.config.md`:
 ```markdown
 | Kind | Assembly |
 | --- | --- |
-| TestData | ../Bruinell.Samples.Todo.TestSupport/bin/Debug/net10.0/Bruinell.Samples.Todo.TestSupport.dll |
+| TestData | ../Bruinet.Samples.Todo.TestSupport/bin/Debug/net10.0/Bruinet.Samples.Todo.TestSupport.dll |
 ```
 
-Commands, from the UAT project folder (`samples/Todo/tests/Bruinell.Samples.Todo.Uat`), with
-[`bruinell`](../run/cli.md) installed (inside Bruinell's repository, `pwsh ../../../../tools/Scripts/bruinell.ps1`
-instead of `bruinell`):
+Commands, from the UAT project folder (`samples/Todo/tests/Bruinet.Samples.Todo.Uat`), with
+[`bruinet`](../run/cli.md) installed (inside Bruinet's repository, `pwsh ../../../../tools/Scripts/bruinet.ps1`
+instead of `bruinet`):
 
 ```powershell
-bruinell data validate
-bruinell data validate ../Bruinell.Samples.Todo.TestSupport/TestData/one-todo.json --json
-bruinell data describe TodoDto
-bruinell data list
-bruinell data schema
+bruinet data validate
+bruinet data validate ../Bruinet.Samples.Todo.TestSupport/TestData/one-todo.json --json
+bruinet data describe TodoDto
+bruinet data list
+bruinet data schema
 ```
 
 | Command | Does |
@@ -172,10 +172,10 @@ anonymous object:
 
 ```csharp
 mock.Get(TodoApi.TodosPath).ReturnsJson(new[] { new TodoDto(...) });   // fine
-mock.Get(TodoApi.TodosPath).ReturnsJson(new { titel = "x" });           // BRUINELL001
+mock.Get(TodoApi.TodosPath).ReturnsJson(new { titel = "x" });           // BRUINET001
 ```
 
-`BRUINELL001` is an analyzer shipped in the `Bruinell.Mocking` package. It also reports anonymous
+`BRUINET001` is an analyzer shipped in the `Bruinet.Mocking` package. It also reports anonymous
 items in arrays and lists, and in `MockResponse.Json` inside a `RespondsWith` callback. Tests of
-the mock server itself may suppress it with a reason (`<NoWarn>$(NoWarn);BRUINELL001</NoWarn>`).
+the mock server itself may suppress it with a reason (`<NoWarn>$(NoWarn);BRUINET001</NoWarn>`).
 Prefer a typed fake per API (the Todo sample's `TodoServerStub`) over one stub per test.

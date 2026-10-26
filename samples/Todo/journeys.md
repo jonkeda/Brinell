@@ -6,7 +6,7 @@ and `[Trait("Pyramid", "...")]`; the coverage report ([README](README.md#the-jou
 compares those traits with this file.
 
 Tiers: **U** Unit, **I** Integration (headless, WireMock + SQLite), **C** Contract (real API in
-process), **H** UI hermetic (Bruinell + WireMock + seeded DB), **L** UI live (Bruinell + real API),
+process), **H** UI hermetic (Bruinet + WireMock + seeded DB), **L** UI live (Bruinet + real API),
 **M** Manual. Gates: **S** Smoke, **R** Reviews. A feature scenario counts as **I** when tagged
 `@service` and as **H** on a UI head; tagged `@service @maui`, it counts for both.
 
@@ -95,7 +95,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.07.12 | Two Windows apps side by side: a todo or an edit made in one reaches the other | H | Two FlaUI-driven windows in one test |
 | TOD.07.13 | Conflict between two apps: the newer edit wins on both | H | Each app's clock is pinned apart (`ClockOffsetMinutes` in `apps.md`); the rule itself is TOD.07.6 in U |
 | TOD.07.14 | An app that was offline gets the others' changes once it is back online | H | The network-state file per app |
-| TOD.07.15 | A todo created on Android reaches a Windows app | H | Needs the emulator: skipped unless `BRUINELL_ANDROID=1` |
+| TOD.07.15 | A todo created on Android reaches a Windows app | H | Needs the emulator: skipped unless `BRUINET_ANDROID=1` |
 
 ## TOD.08 Things go wrong
 
@@ -124,7 +124,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | Id | Subtask | Tier | Why there |
 | --- | --- | --- | --- |
 | TOD.10.1 | Every screen loads and its key controls exist | **R** | Reviews crawl: list, detail, edit, empty, error |
-| TOD.10.2 | Interactive controls have AutomationIds and accessible names | **R** + M | Reviews find every control by its AutomationId; a screen reader checks the names (Bruinell's `AccessibilityAudit` covers gesture verbs only, and this app declares none) |
+| TOD.10.2 | Interactive controls have AutomationIds and accessible names | **R** + M | Reviews find every control by its AutomationId; a screen reader checks the names (Bruinet's `AccessibilityAudit` covers gesture verbs only, and this app declares none) |
 | TOD.10.3 | Screenshots per screen for design review | **R** | Artifacts (AD-007) |
 | TOD.10.4 | Dark mode, 200 % font scaling, small-screen keyboard overlap | M | Visual judgement |
 

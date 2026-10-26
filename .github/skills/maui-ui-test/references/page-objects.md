@@ -1,15 +1,15 @@
 # Page objects
 
 Page objects own the page's structure: which controls it has, where they are, and page-level
-intent. They live in `testsnew/Bruinell.Maui.UITests/Pages/`; containers and collections they
-use live in `testsnew/Bruinell.Maui.UITests/Containers/`.
+intent. They live in `testsnew/Bruinet.Maui.UITests/Pages/`; containers and collections they
+use live in `testsnew/Bruinet.Maui.UITests/Containers/`.
 
 ## Shape
 
 ```csharp
-using ToolkitMedia = Bruinell.Maui.CommunityToolkit.Controls.Media;
+using ToolkitMedia = Bruinet.Maui.CommunityToolkit.Controls.Media;
 
-namespace Bruinell.Maui.UITests.Pages;
+namespace Bruinet.Maui.UITests.Pages;
 
 /// <summary>Page object for the CommunityToolkit MediaElement sample page.</summary>
 public class CommunityToolkitMediaTestPage : PageObjectBase<CommunityToolkitMediaTestPage>

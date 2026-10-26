@@ -14,9 +14,9 @@ check as a command. S1 to S6 pass on 2026-10-25.
 | S5 | Pass | `StampTests.Named_UnqualifiedName_IsTakenInTheDefaultSchema_ThenDbo`, `Recording_IsStampedInTheDefaultSchema` |
 | S6 | Pass | `StampTests.Check_ListsOnlyTheRecordingsAChangeReaches_AndSkipsOtherFiles`; by hand on the spike below |
 
-S6 on the spike (re-recorded twice per head on the new hashes): `bruinell sql stale --schema
+S6 on the spike (re-recorded twice per head on the new hashes): `bruinet sql stale --schema
 Recordings/schema.json --recordings Recordings` gives 0 of 10, exit 0. `dbo.VisitCount` changed on a
-worker database and `bruinell sql schema` written again: 4 of 10 stale, exactly `AddPlaceTests` and
+worker database and `bruinet sql schema` written again: 4 of 10 stale, exactly `AddPlaceTests` and
 `PlaceDistanceTests` on both heads (`dbo.visitcount changed`), exit 1. Restored: 0 of 10. The spike
 then replays 3 times per head with no server, no miss.
 
@@ -24,10 +24,10 @@ then replays 3 times per head with no server, no miss.
 
 | Part | Where |
 | --- | --- |
-| Triggers, defaults and checks as lines of their table; a trigger's references its table's; references resolved by `referenced_id`, else the body's schema, else `dbo`; `Dynamic`; data hashes; `DefaultSchema`; `MergeReferences(path)` returning names it doesn't know | `srcnew/Bruinell.Mocking.Data/SchemaSnapshot.cs` (`SnapshotOptions`) |
+| Triggers, defaults and checks as lines of their table; a trigger's references its table's; references resolved by `referenced_id`, else the body's schema, else `dbo`; `Dynamic`; data hashes; `DefaultSchema`; `MergeReferences(path)` returning names it doesn't know | `srcnew/Bruinet.Mocking.Data/SchemaSnapshot.cs` (`SnapshotOptions`) |
 | `Statements.Names` (schema null when not written); `Schema.DefaultSchema`, `Schema.Named(text)`; `ReplaySession.Finish` stamps through it | `Statements.cs`, `Replay/Recording.cs`, `Replay/ReplaySession.cs` |
 | `RecordingCheck.Check(folder, schema)`, `RecordingState` | `Replay/RecordingCheck.cs` |
-| `bruinell sql schema --references --data --default-schema`; `bruinell sql stale --schema --recordings --version name=value` | `tools/Bruinell.Cli/Sql/SqlCommands.cs` |
+| `bruinet sql schema --references --data --default-schema`; `bruinet sql stale --schema --recordings --version name=value` | `tools/Bruinet.Cli/Sql/SqlCommands.cs` |
 
 ## Notes
 

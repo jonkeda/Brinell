@@ -19,12 +19,12 @@ Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 pas
 
 ## 2 The FlaUI driver itself (6)
 
-- `Tests.Background.FocusVerbTests.Bridge_PublishesTheFocusVerbs`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.AccessibilityAuditTests.Audit_LeavesReadOnlyElementsOffTheBacklog`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.AccessibilityAuditTests.Audit_ReportsWhatEachInstrumentedElementOffersWithoutAPointer`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.BridgeTreeDumpTests.DumpRawTreeBelowTheWindow`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.BridgeTreeDumpTests.DumpSwipeViewAfterOpening`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
-- `Tests.Diagnostics.ForegroundWatchdogTests.Navigating_DoesNotTakeTheForeground`: System.InvalidCastException : Unable to cast object of type 'Bruinell.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinell.Maui
+- `Tests.Background.FocusVerbTests.Bridge_PublishesTheFocusVerbs`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
+- `Tests.Diagnostics.AccessibilityAuditTests.Audit_LeavesReadOnlyElementsOffTheBacklog`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
+- `Tests.Diagnostics.AccessibilityAuditTests.Audit_ReportsWhatEachInstrumentedElementOffersWithoutAPointer`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
+- `Tests.Diagnostics.BridgeTreeDumpTests.DumpRawTreeBelowTheWindow`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
+- `Tests.Diagnostics.BridgeTreeDumpTests.DumpSwipeViewAfterOpening`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
+- `Tests.Diagnostics.ForegroundWatchdogTests.Navigating_DoesNotTakeTheForeground`: System.InvalidCastException : Unable to cast object of type 'Bruinet.Maui.MauiUnit.MauiUnitDriver' to type 'Bruinet.Maui
 
 ## 3 The Windows tree and bridge (7)
 
@@ -38,9 +38,9 @@ Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 pas
 
 ## 4 Layout and pixels (6)
 
-- `Tests.Background.ScrollVerbTests.ScrollPosition_ReportsExtentAsWellAsOffset`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
-- `Tests.Background.ScrollVerbTests.ScrollTo_MovesTheViewport_WithoutPhysicalInput`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
-- `Tests.Background.ScrollVerbTests.ScrollTo_PutsTheNamedElementOnScreen`: Bruinell.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollPosition_ReportsExtentAsWellAsOffset`: Bruinet.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollTo_MovesTheViewport_WithoutPhysicalInput`: Bruinet.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
+- `Tests.Background.ScrollVerbTests.ScrollTo_PutsTheNamedElementOnScreen`: Bruinet.Maui.MauiUnit.DeviceOnlyException : 'ReadScrollPosition' needs a device: the MauiUnit head has no layout, pixels or p
 - `Tests.Diagnostics.OccludedScreenshotTests.Screenshot_OfOccludedWindow_ShowsTheApp`: System.ArgumentException : Parameter is not valid.
 - `Tests.Gestures.RecordedInteractionTests.ATap_AndAPullToRefresh_AreLogged_OverTheirControls_InPhysicalPixels`: Assert.Equal() Failure: Collections differ
 - `Tests.Scroll.ScrollTests.BottomLabel_IsVisible_IsFalseUntilScrolledTo`: Assert.False() Failure
@@ -51,5 +51,5 @@ Run 7, 2026-10-25, through the linked copy of the suite (since retired): 319 pas
 
 ## 6 Known difference: carousel cards off screen (1)
 
-- `Tests.Collection.CarouselViewTests.CarouselView_Items_AreTheSeededCardsInOrder`: Bruinell.Core.Exceptions.ElementNotReadyException : The element 'AutomationId:CarouselCardLabel' was found but is not vi
+- `Tests.Collection.CarouselViewTests.CarouselView_Items_AreTheSeededCardsInOrder`: Bruinet.Core.Exceptions.ElementNotReadyException : The element 'AutomationId:CarouselCardLabel' was found but is not vi
 

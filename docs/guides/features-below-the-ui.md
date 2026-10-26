@@ -24,11 +24,11 @@ thing with a step the service head declares (`I sync`).
 
 ## The Suite
 
-In the Todo sample, `Bruinell.Samples.Todo.IntegrationTests` is the service suite:
+In the Todo sample, `Bruinet.Samples.Todo.IntegrationTests` is the service suite:
 
 - `bdd.config.md`, with `Head | service`, `Fixture | TodoServiceFixture` and a `## Using` table;
   the tools read it as they read a `uat.config.md`.
-- The feature files, linked from `Bruinell.Samples.Todo.Uat/Features/`.
+- The feature files, linked from `Bruinet.Samples.Todo.Uat/Features/`.
 - `TodoServiceFixture`, which starts a new headless host per scenario (a database from the file's
   `TestData`, a WireMock backend, online), so no scenario sees another's data.
 - `TodoServiceScenarioTests : UatScenarioTestBase<TodoServiceFixture>`, with the traits
@@ -53,12 +53,12 @@ public sealed class SyncSteps(TodoServiceFixture fixture) : BddStepDefinitionsBa
 
 Steps that reach past the screen on every head (backend, device, stored data) are written once, over
 the fixture's arrangement interface (`ITodoArrangement` in the sample), in a project that references
-`Bruinell.Bdd` only.
+`Bruinet.Bdd` only.
 
 ## Run
 
 From `samples/Todo`:
 
 ```powershell
-dotnet test tests\Bruinell.Samples.Todo.IntegrationTests --filter "FullyQualifiedName~TodoServiceScenarioTests"
+dotnet test tests\Bruinet.Samples.Todo.IntegrationTests --filter "FullyQualifiedName~TodoServiceScenarioTests"
 ```

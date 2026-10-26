@@ -1,17 +1,17 @@
-# Bruinell
+# Bruinet
 
-Bruinell is a cross-platform UI testing framework for .NET applications. It
+Bruinet is a cross-platform UI testing framework for .NET applications. It
 provides shared page-object, control-object, synchronization, artifact, mocking,
 and UAT patterns across desktop, web, MAUI, Stride, native Android, and the
 Presenter shell.
 
 ## Repository
 
-Bruinell lives in [exact-mobile-apps/test-tooling](https://github.com/exact-mobile-apps/test-tooling).
-It was moved there from `jonkeda/Bruinell` with its full history.
+Bruinet lives in [exact-mobile-apps/test-tooling](https://github.com/exact-mobile-apps/test-tooling).
+It was moved there from `jonkeda/Bruinet` with its full history.
 
 ```powershell
-git clone https://github.com/exact-mobile-apps/test-tooling.git Bruinell
+git clone https://github.com/exact-mobile-apps/test-tooling.git Bruinet
 ```
 
 ## Current Docs
@@ -27,37 +27,37 @@ the active docs are rebuilt.
 
 ## Build
 
-Working directory: Bruinell root.
+Working directory: Bruinet root.
 
 ```powershell
-dotnet build Bruinell.sln -v:minimal /nr:false
+dotnet build Bruinet.sln -v:minimal /nr:false
 ```
 
-`Bruinell.sln` holds every project in the repository, in folders by area. The two
+`Bruinet.sln` holds every project in the repository, in folders by area. The two
 Visual Studio extension projects are in it but not built by it: they need Visual Studio's
-MSBuild, and build from `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx`.
+MSBuild, and build from `tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio.slnx`.
 
 ## Packages
 
 | Package | Purpose |
 | --- | --- |
-| `Bruinell.Core` | Core contracts, locators, waits, artifacts, and shared services |
-| `Bruinell.Maui` | MAUI controls and page-object infrastructure |
-| `Bruinell.Appium` | What the Appium stacks share: error mapping, emulator host address, Android screen recorder |
-| `Bruinell.Maui.Appium` | Appium driver adapter for MAUI/mobile |
-| `Bruinell.Maui.FlaUI` | FlaUI driver adapter for Windows MAUI |
-| `Bruinell.Maui.CommunityToolkit` | MAUI Community Toolkit control support |
-| `Bruinell.Wpf` | WPF automation through FlaUI |
-| `Bruinell.WinForms` | WinForms automation through FlaUI |
-| `Bruinell.Html` | HTML/web testing abstractions and Selenium support |
-| `Bruinell.Html.Playwright` | Playwright-backed web automation |
-| `Bruinell.Blazor` | Blazor-focused testing helpers |
-| `Bruinell.Stride` | Stride UI testing integration |
-| `Bruinell.Stride.Automation` | In-app automation hooks used by Stride-style tests |
-| `Bruinell.Mocking` | WireMock and mock sensor helpers |
-| `Bruinell.NativeAndroid` | Native Android apps through Appium: page objects and generated controls in MAUI's and Html's shape |
-| `Bruinell.Uat` | Markdown-driven UAT scenario runtime |
-| `Bruinell.Presenter` | Desktop presenter for UAT workspaces |
+| `Bruinet.Core` | Core contracts, locators, waits, artifacts, and shared services |
+| `Bruinet.Maui` | MAUI controls and page-object infrastructure |
+| `Bruinet.Appium` | What the Appium stacks share: error mapping, emulator host address, Android screen recorder |
+| `Bruinet.Maui.Appium` | Appium driver adapter for MAUI/mobile |
+| `Bruinet.Maui.FlaUI` | FlaUI driver adapter for Windows MAUI |
+| `Bruinet.Maui.CommunityToolkit` | MAUI Community Toolkit control support |
+| `Bruinet.Wpf` | WPF automation through FlaUI |
+| `Bruinet.WinForms` | WinForms automation through FlaUI |
+| `Bruinet.Html` | HTML/web testing abstractions and Selenium support |
+| `Bruinet.Html.Playwright` | Playwright-backed web automation |
+| `Bruinet.Blazor` | Blazor-focused testing helpers |
+| `Bruinet.Stride` | Stride UI testing integration |
+| `Bruinet.Stride.Automation` | In-app automation hooks used by Stride-style tests |
+| `Bruinet.Mocking` | WireMock and mock sensor helpers |
+| `Bruinet.NativeAndroid` | Native Android apps through Appium: page objects and generated controls in MAUI's and Html's shape |
+| `Bruinet.Uat` | Markdown-driven UAT scenario runtime |
+| `Bruinet.Presenter` | Desktop presenter for UAT workspaces |
 
 ## Source Layout
 
@@ -83,4 +83,4 @@ MSBuild, and build from `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStud
 
 ## License
 
-Bruinell is licensed under the MIT License. See [LICENSE](LICENSE).
+Bruinet is licensed under the MIT License. See [LICENSE](LICENSE).

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Recording</RootNamespace>
+    <Description>Screen recording for Bruinet: one recorder API, a registry of recorders per platform, the shared clock and the ffmpeg encoder.</Description>
+    <PackageId>Bruinet.Recording</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Narrator.Windows" />
+    <InternalsVisibleTo Include="Bruinet.Recording.Tests" />
+    <InternalsVisibleTo Include="Bruinet.Narrator" />
+  </ItemGroup>
+
+</Project>

@@ -5,18 +5,18 @@ A plan, 2026-10-25, after [speed-plan.md](speed-plan.md)'s five iterations took 
 costs, so the cheap and valuable come first. Each item is measured the way the speed plan works: a small set, the timings,
 one change, the same set again.
 
-## Bruinell's suites first
+## Bruinet's suites first
 
-The owner's rule from 2026-10-25: what is left is built and measured on Bruinell's own sample apps and test suites first
-(`testsnew/Bruinell.Blazor.UITests`, `testsnew/Bruinell.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
+The owner's rule from 2026-10-25: what is left is built and measured on Bruinet's own sample apps and test suites first
+(`testsnew/Bruinet.Blazor.UITests`, `testsnew/Bruinet.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
 step of its own. A change tried on Tomorrow first, the World lane, failed scenarios there that its one green run had not shown.
 
-| Item | Bruinell's proving ground |
+| Item | Bruinet's proving ground |
 | --- | --- |
-| 1, deal by duration | The Todo suites' collections, and a dealer in `Bruinell.Uat` any suite can use |
-| 3, selection | `bruinell touch-map` and `bruinell affected` on the Blazor and Html suites and their sample |
+| 1, deal by duration | The Todo suites' collections, and a dealer in `Bruinet.Uat` any suite can use |
+| 3, selection | `bruinet touch-map` and `bruinet affected` on the Blazor and Html suites and their sample |
 | 5, a warm host | The Todo UAT suite, whose warm runner keeps the app already |
-| 7, the phrase index | The large-suite benchmark in `Bruinell.Bdd.Tests` |
+| 7, the phrase index | The large-suite benchmark in `Bruinet.Bdd.Tests` |
 | 8, browser calls | The Blazor and Html suites, measured per call kind |
 
 ## The order
@@ -54,7 +54,7 @@ PLT.35.4 and ends last (22 s on bUnit, 65 s in the browser, against 3 to 10 s an
 A scenario skipped by `@browser`, a head rule or a skip rule shows as Passed in the TRX: the theory row passes because
 `IsAcceptableResult` accepts a skipped result. A run's counts should say what ran.
 
-- `Bruinell.Uat`'s scenario theory reports the row as skipped with its reason (xUnit's dynamic skip).
+- `Bruinet.Uat`'s scenario theory reports the row as skipped with its reason (xUnit's dynamic skip).
 - Done when the bUnit run shows 18 more skipped and 18 fewer passed, with their reasons.
 
 ## Items 1 and 2, done (2026-10-25)
@@ -75,7 +75,7 @@ A scenario skipped by `@browser`, a head rule or a skip rule shows as Passed in 
   a fresh database too, and passed inside the serial collection's own run: it depends on state an earlier scenario leaves,
   which bUnit's speed exposes. Its Generate returns at once (no status line), so `model` or `view` is not set when it is
   clicked. To be made to stand alone, in Tomorrow. Done with item 12: Generate was on before the town was read.
-- Bruinell's own suites have no parallel collections of their own to deal yet; the dealer moves to `Bruinell.Uat` when one has.
+- Bruinet's own suites have no parallel collections of their own to deal yet; the dealer moves to `Bruinet.Uat` when one has.
 
 ## 3. Selection
 
@@ -83,7 +83,7 @@ The biggest saving during development: most changes reach a few pages and a hand
 record test, scenario, step, page and control for every call: the touch map the [paper](paper.md) and the
 [workflow](workflow.md) need.
 
-- `bruinell touch-map`: from a run's `timings-*.csv`, which scenarios used which page objects; kept as
+- `bruinet touch-map`: from a run's `timings-*.csv`, which scenarios used which page objects; kept as
   `TestData/touch-map.json`, written by a full run.
 - `tools/Select-Tests.ps1` in Tomorrow: `git diff` to files, files to pages (a page's `.razor` and its test-id prefix to its
   page object), page objects to scenarios through the touch map, plus the smoke set; prints one `--filter` and why each
@@ -92,11 +92,11 @@ record test, scenario, step, page and control for every call: the touch map the 
   suite whole. The owner checks the list.
 - Done when a change to one bench page runs that bench's scenarios and nothing else, with the reasons printed.
 
-## Item 3 on Bruinell's suites, done (2026-10-25)
+## Item 3 on Bruinet's suites, done (2026-10-25)
 
-- **`bruinell tests touch-map <timings>`** writes `touch-map.json` beside the suite: every test and scenario of the run, its
+- **`bruinet tests touch-map <timings>`** writes `touch-map.json` beside the suite: every test and scenario of the run, its
   filter (`FullyQualifiedName=` or `BddScenario=`), and the page objects and controls it reached.
-- **`bruinell tests affected`** follows `git diff <base>` (or `--files`) to the tests it reaches and prints each with why and
+- **`bruinet tests affected`** follows `git diff <base>` (or `--files`) to the tests it reaches and prints each with why and
   one `--filter`. A page reaches the tests that used its `data-testid`s or ids (an id built with `@` counts by its start); a
   page object, the tests that used it; a feature file, its scenarios; a test class, its tests.
 - **The widening rules:** a file in any project the suite references (the libraries), the suite's other code (test base,
@@ -111,18 +111,18 @@ record test, scenario, step, page and control for every call: the touch map the 
   against 56 s whole (green), Html 27 s against 36 s; with the break both took as long, the failures' waits leading.
   The saving shows on a suite like Tomorrow's studio, 172 scenarios.
 - **Two Html tests touch no page** (ResetAppState): they run only with the suite's base or libraries, which is right.
-- **Next, Tomorrow:** `tools/Select-Tests.ps1` calls `bruinell tests affected` per suite (`--app src/Tomorrow.Studio`, the
+- **Next, Tomorrow:** `tools/Select-Tests.ps1` calls `bruinet tests affected` per suite (`--app src/Tomorrow.Studio`, the
   game's for the game suite, `--always "Gate=Smoke"`); `Tomorrow.Web`, `Tomorrow.Game` and the rest widen by reference. A
-  full run with `BRUINELL_TIMINGS` writes each suite's map. Tomorrow's pages use test-id prefixes (`bench-*`), which the
+  full run with `BRUINET_TIMINGS` writes each suite's map. Tomorrow's pages use test-id prefixes (`bench-*`), which the
   id rule covers if the page writes them literally; to be checked on one bench page, the item's done line.
 
 ## Item 3 in Tomorrow, done (2026-10-25)
 
-- **`tools/Select-Tests.ps1`** runs `bruinell tests affected` per suite (studio: `src/Tomorrow.Studio`; game:
+- **`tools/Select-Tests.ps1`** runs `bruinet tests affected` per suite (studio: `src/Tomorrow.Studio`; game:
   `src/Tomorrow.App`), with `Gate=Smoke` joined to any pick; `-Run` runs it, `-WriteMap` makes a suite's map from a full
-  run (and the studio's `durations.json`). bruinell is built into a temp artifacts folder with `-p:BruinellRecorders=false`,
-  because the agents' MCP servers keep `tools/Bruinell.Cli/bin` open.
-- **What Tomorrow needed from Bruinell:** files the suite links from elsewhere are the suite's (the studio links the
+  run (and the studio's `durations.json`). bruinet is built into a temp artifacts folder with `-p:BruinetRecorders=false`,
+  because the agents' MCP servers keep `tools/Bruinet.Cli/bin` open.
+- **What Tomorrow needed from Bruinet:** files the suite links from elsewhere are the suite's (the studio links the
   fixture, the Uat runner and shared pages from the game suite); a component's `TestId="..."` parameter is a test id; a routed
   page reaches every page object that opens its route.
 - **The route rule matters:** `Fights.razor`'s own ids reached 7 of the bench's 16 scenarios; the others use only its panels'
@@ -144,7 +144,7 @@ The owner asked for way fewer (2026-10-25). The bench offers 10 beside 100 and 5
 ## 5. A warm host between runs
 
 For a small set the fixed costs now lead: the test process, discovery, and the studio's start (4 s on bUnit, 10 s in the
-browser). Bruinell's warm runners (`BddWarmRunners`) keep a runner and its fixture ready per suite between runs; applied to the
+browser). Bruinet's warm runners (`BddWarmRunners`) keep a runner and its fixture ready per suite between runs; applied to the
 studio suite, a small set would skip the start. Done when S1 runs a second time in about its tests' own 17 s.
 
 ### Item 5, measured first (2026-10-25)
@@ -173,7 +173,7 @@ Matching tries each step against every phrase of its keyword, about 1 ms a step 
 feature file is parsed again for every scenario in it. Both are small for Tomorrow and would grow for a suite many times its
 size.
 
-- First a benchmark in `Bruinell.Bdd.Tests`: a synthetic catalog of 5,000 phrases and 10,000 steps, timed.
+- First a benchmark in `Bruinet.Bdd.Tests`: a synthetic catalog of 5,000 phrases and 10,000 steps, timed.
 - Then the index (phrases by their first literal word) and the parse cache (one parse per file per run), timed again.
 
 ## 8. Cheaper browser calls
@@ -207,7 +207,7 @@ discard dialog and delete. It is not the database. It looks like a fixed wait in
 code (a poll that waits out its interval, a delay before a dialog, a settle time), and is worth chasing for bUnit speed on
 its own.
 
-- First the timings of the three (`BRUINELL_TIMINGS`, `tools/Scripts/timings.ps1`): which call or span holds the 450 ms,
+- First the timings of the three (`BRUINET_TIMINGS`, `tools/Scripts/timings.ps1`): which call or span holds the 450 ms,
   and its attempts.
 - Then the wait itself: a page object's fixed wait, a poll interval a bUnit render never shortens, or the app's own
   delay. Fixed where it lives, and measured on both heads.
@@ -227,7 +227,7 @@ its own.
 - **Todo web on bUnit:** delete 475 to ~120 ms, discard 470 to ~135 ms. Sync, the first test, 615 to ~530 ms: the rest is
   the app's first render and load, not a wait.
 - **Tomorrow's studio suite on bUnit:** 1 m 4 s to 47 s, 143 passed and 22 skipped both times; in the browser 165 of 165
-  in 2 m 42 s, unchanged. Bruinell's Blazor, Html and Todo web suites green on both heads.
+  in 2 m 42 s, unchanged. Bruinet's Blazor, Html and Todo web suites green on both heads.
 
 ### Item 8, first findings (2026-10-25)
 
@@ -262,7 +262,7 @@ its own.
 
 ### Item 7, done (2026-10-25)
 
-- **The benchmark:** `BddLargeSuiteBenchmarkTests`, run with `BRUINELL_BENCHMARK=1` (skipped otherwise): 5,000 phrases
+- **The benchmark:** `BddLargeSuiteBenchmarkTests`, run with `BRUINET_BENCHMARK=1` (skipped otherwise): 5,000 phrases
   shaped as Tomorrow's, 10,000 steps, and one file of 200 scenarios read once per scenario.
 - **The phrase index:** `BddCommandCatalog` keys each pattern by its keyword and its first one or two whole literal words
   (`IndexKey`); a step tries the buckets its own first one and two words name, and the phrases that begin with a

@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinell\samples\Bruinell.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinell.Samples.Stride.App.exe"
+$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinet\samples\Bruinet.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinet.Samples.Stride.App.exe"
 
 Write-Output "Starting game..."
 $proc = Start-Process -FilePath $gamePath -ArgumentList "--automation" -PassThru
@@ -13,12 +13,12 @@ if ($proc.HasExited) {
 Write-Output "Game is running."
 
 # Check pipe exists
-$pipes = [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*Bruinell*" }
+$pipes = [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*Bruinet*" }
 if ($pipes) { Write-Output "Pipe found: $pipes" } else { Write-Output "NO PIPE FOUND"; Stop-Process -Id $proc.Id -Force; exit 1 }
 
 # Connect and send command
 try {
-    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinell.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
+    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinet.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
     $pipe.Connect(5000)
     Write-Output "Connected to pipe!"
     

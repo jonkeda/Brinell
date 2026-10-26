@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinell\samples\Bruinell.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinell.Samples.Stride.App.exe"
+$gamePath = "e:\repos\Private\Iosk\Oravey\Bruinet\samples\Bruinet.Samples.Stride.App\bin\Debug\net10.0-windows\Bruinet.Samples.Stride.App.exe"
 
 Write-Output "Starting game with console output..."
 $proc = Start-Process -FilePath $gamePath -ArgumentList "--automation" -PassThru -RedirectStandardOutput "$env:TEMP\stride_stdout.txt" -RedirectStandardError "$env:TEMP\stride_stderr.txt"
@@ -13,7 +13,7 @@ Get-Content "$env:TEMP\stride_stderr.txt" -ErrorAction SilentlyContinue
 Write-Output "==="
 
 try {
-    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinell.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
+    $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "Bruinet.Stride.Automation", [System.IO.Pipes.PipeDirection]::InOut)
     $pipe.Connect(5000)
     Write-Output "Connected to pipe!"
     

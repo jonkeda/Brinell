@@ -1,9 +1,9 @@
 # AD-031: A Replayed Test Answers From The Database It Recorded, And The Database Judges The Gate
 
-`Bruinell.Mocking.Data` records the commands a test sends to its database and what came back, and
+`Bruinet.Mocking.Data` records the commands a test sends to its database and what came back, and
 replays them with no database: a test's own recording (`<head>/<test>.json`), matched by command text
 with writes as ordered barriers, values that change between runs bound rather than matched. A run's
-mode is `BRUINELL_SQL_REPLAY`. Replay answers only what was recorded; anything else is a miss that
+mode is `BRUINET_SQL_REPLAY`. Replay answers only what was recorded; anything else is a miss that
 names its command. A recording is made against the real database, recorded twice, stamped with the
 objects it touched, and reviewed before it goes in.
 
@@ -34,5 +34,5 @@ only what it uses.
 
 **Broken when:** replay answers a command it didn't record; a gate passes on replay alone; a test's
 session is found through a static shared by tests in parallel; a recording goes in without its
-review (`bruinell sql reviewed`); or a schema change to an object a recording touched leaves it
+review (`bruinet sql reviewed`); or a schema change to an object a recording touched leaves it
 replaying without a stale report.

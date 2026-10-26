@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Reports where a run's time went, from the timings BRUINELL_TIMINGS wrote.
+    Reports where a run's time went, from the timings BRUINET_TIMINGS wrote.
 
 .DESCRIPTION
     Reads timings-*.csv (one row per control call and per span, .my/test-selection/speed-plan.md T1) and writes
@@ -17,13 +17,13 @@
     scenario and report spans, the part nothing names yet.
 
 .PARAMETER Folder
-    The folder BRUINELL_TIMINGS named.
+    The folder BRUINET_TIMINGS named.
 
 .PARAMETER Top
     How many of the slowest to list per kind. Default 10.
 
 .EXAMPLE
-    $env:BRUINELL_TIMINGS = "$PWD\TestResults\timings"; dotnet test tests\Tomorrow.Studio.UITests --filter ...
+    $env:BRUINET_TIMINGS = "$PWD\TestResults\timings"; dotnet test tests\Tomorrow.Studio.UITests --filter ...
     pwsh tools/Scripts/timings.ps1 -Folder TestResults\timings
 #>
 param(

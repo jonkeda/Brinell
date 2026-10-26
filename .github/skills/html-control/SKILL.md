@@ -1,12 +1,12 @@
 ---
 name: html-control
-description: Create or extend a Bruinell Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in srcnew/Bruinell.Html or srcnew/Bruinell.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet, or a control must work on the bUnit head as well as in a browser.
+description: Create or extend a Bruinet Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in srcnew/Bruinet.Html or srcnew/Bruinet.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet, or a control must work on the bUnit head as well as in a browser.
 ---
 
 # Write an Html ControlObject
 
 Html controls are generated, as MAUI's are: a template `Foo.tpl.cs` holds the constructors,
-`*Core` methods and hand-written members, and `Bruinell.Generator` writes the public API into
+`*Core` methods and hand-written members, and `Bruinet.Generator` writes the public API into
 `Foo.gen.cs`. The rules are MAUI's (`.docs/contracts/call-model.md`,
 `.docs/contracts/control-object.md`), and so is the generator contract
 ([generator-contract.md](../maui-control/references/generator-contract.md)), with `IHtmlElement` as
@@ -30,14 +30,14 @@ the `data-testid`, and the attributes the control reads (`disabled`, `aria-check
 ## Write the members
 
 A simple control is a template: declare `protected virtual` `*Core` methods, element first, and
-generate (from the Bruinell root):
+generate (from the Bruinet root):
 
 ```
 tools\Scripts\CreateHtml.Bat
 ```
 
-It regenerates every `.tpl.cs` under `srcnew\Bruinell.Html\Controls` and
-`srcnew\Bruinell.Blazor\Controls`. A control with no `*Core` methods of its own (only
+It regenerates every `.tpl.cs` under `srcnew\Bruinet.Html\Controls` and
+`srcnew\Bruinet.Blazor\Controls`. A control with no `*Core` methods of its own (only
 constructors) stays a plain `.cs`.
 
 - **`Get*Core` / `Is*Core` give `GetX`/`WaitX`/`AssertX`**, with `[GenerateComparisons]` for
@@ -68,10 +68,10 @@ constructors) stays a plain `.cs`.
 
 ## Prove it
 
-Add a unit test in `testsnew/Bruinell.Html.Tests` against a mocked `IHtmlElement`. A mocked
+Add a unit test in `testsnew/Bruinet.Html.Tests` against a mocked `IHtmlElement`. A mocked
 element must show the effect of an action (a `Callback` that sets the value), or a confirming
 member fails, and that is the point. Then add a UI test on the Blazor sample with the
-`html-ui-test` skill, and run it on both heads: `$env:BRUINELL_HEAD = "bunit"` first, then the
-browser. A control that fails only on bUnit needs a driver member in `srcnew/Bruinell.Html.Bunit`
-(with its test in `testsnew/Bruinell.Html.Bunit.Tests/MemberTests.cs`), or is browser-only and
+`html-ui-test` skill, and run it on both heads: `$env:BRUINET_HEAD = "bunit"` first, then the
+browser. A control that fails only on bUnit needs a driver member in `srcnew/Bruinet.Html.Bunit`
+(with its test in `testsnew/Bruinet.Html.Bunit.Tests/MemberTests.cs`), or is browser-only and
 says so.

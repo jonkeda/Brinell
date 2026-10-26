@@ -5,7 +5,7 @@ using Microsoft.Playwright;
 // the recording browser driven over DevTools as a person would. Args: <repo root> <scratch solution>
 var repo = args[0];
 var scratch = args[1];
-const string SampleBridge = "http://127.0.0.1:8791/";   // solution: the Bruinell root, debug port 9333
+const string SampleBridge = "http://127.0.0.1:8791/";   // solution: the Bruinet root, debug port 9333
 const string ShopBridge = "http://127.0.0.1:8792/";     // solution: the scratch one, debug port 9334
 const string EmptyBridge = "http://127.0.0.1:8793/";    // solution: an empty folder
 const string Site = "http://localhost:8766";
@@ -88,7 +88,7 @@ await Check("V-3", async () =>
     var project = await view.InputValueAsync("#sc-project");
     var pages = await view.Locator("#sc-left .sc-item:not(.sc-sub)").CountAsync();
     var userform = await view.Locator("#sc-left .sc-item:not(.sc-sub)").Filter(new() { HasTextRegex = new Regex("^/userform ") }).InnerTextAsync();
-    Expect(project == "Bruinell.Blazor.UITests", $"project {project}");
+    Expect(project == "Bruinet.Blazor.UITests", $"project {project}");
     Expect(pages == 13, $"{pages} pages");
     Expect(userform.Contains("UserFormPage"), $"'{userform}'");
     return $"{project}, {pages} pages, '{userform.Trim()}'";
@@ -138,8 +138,8 @@ await Check("P-3", async () =>
     await OpenPage("/counter");
     var line = view.Locator("pre.sc-outline span").Filter(new() { HasText = "increment-btn" });
     await line.ClickAsync();
-    await WaitFor(async () => await live!.EvaluateAsync<bool>("() => !!document.getElementById('__bruinell_highlight')"), "the outline in the browser", 10);
-    var box = await live!.EvaluateAsync<string>("() => { const b = document.getElementById('__bruinell_highlight').getBoundingClientRect(); const e = document.querySelector('[data-testid=increment-btn]').getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)} vs ${Math.round(e.x)},${Math.round(e.y)}`; }");
+    await WaitFor(async () => await live!.EvaluateAsync<bool>("() => !!document.getElementById('__bruinet_highlight')"), "the outline in the browser", 10);
+    var box = await live!.EvaluateAsync<string>("() => { const b = document.getElementById('__bruinet_highlight').getBoundingClientRect(); const e = document.querySelector('[data-testid=increment-btn]').getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)} vs ${Math.round(e.x)},${Math.round(e.y)}`; }");
     return $"outline at {box}";
 });
 
@@ -155,7 +155,7 @@ await Check("R-8", async () =>
 {
     var session = (await Status()).Split(' ')[1].TrimEnd(':');
     await Stop();
-    var folder = Path.Combine(repo, "testsnew", "Bruinell.Blazor.UITests", "Recordings", session);
+    var folder = Path.Combine(repo, "testsnew", "Bruinet.Blazor.UITests", "Recordings", session);
     var files = Directory.GetFiles(folder).Select(Path.GetFileName).ToArray();
     Expect(files.Contains("recording.json") && files.Count(f => f!.EndsWith(".nodes.jsonl")) == 4, string.Join(", ", files));
     Expect(!await view.IsDisabledAsync("#sc-start"), "Record enabled");
@@ -166,13 +166,13 @@ await Check("R-9", async () =>
 {
     await Record("cookie-1");
     var first = await Browser(9333);
-    await first.EvaluateAsync("() => { document.cookie = 'bruinell_check=kept; max-age=3600; path=/'; }");
+    await first.EvaluateAsync("() => { document.cookie = 'bruinet_check=kept; max-age=3600; path=/'; }");
     await Stop();
     await Record("cookie-2");
     var second = await Browser(9333);
     var cookie = await second.EvaluateAsync<string>("() => document.cookie");
     await Stop();
-    Expect(cookie.Contains("bruinell_check=kept"), $"cookies '{cookie}'");
+    Expect(cookie.Contains("bruinet_check=kept"), $"cookies '{cookie}'");
     return $"'{cookie}'";
 });
 
@@ -259,7 +259,7 @@ await Check("P-4", async () =>
     await OpenPage("/pages/checkout.html");
     await view.Locator("pre.sc-outline span").Filter(new() { HasText = "[data-testid=card-number]" }).First.ClickAsync();
     var frame = live.Frames.First(f => f.Url.EndsWith("payment-frame.html", StringComparison.Ordinal));
-    await WaitFor(async () => await frame.EvaluateAsync<bool>("() => !!document.getElementById('__bruinell_highlight')"), "the outline in the frame", 10);
+    await WaitFor(async () => await frame.EvaluateAsync<bool>("() => !!document.getElementById('__bruinet_highlight')"), "the outline in the frame", 10);
     return "outlined inside payment-frame.html";
 });
 

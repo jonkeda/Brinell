@@ -15,7 +15,7 @@ When this plan and the guide disagree, note it as a finding.
 - Each check has an ID, what to do, and what you should see. Mark it **Pass**, **Fail** or
   **Blocked**, with a note for anything but a plain pass.
 - When something fails, carry on if you can. Take a screenshot, and copy the language server's
-  output (VS Code: Output, "Bruinell BDD Language Server"; Visual Studio: Output, "Bruinell BDD").
+  output (VS Code: Output, "Bruinet BDD Language Server"; Visual Studio: Output, "Bruinet BDD").
 - Checks marked *(after step N)* wait for that step of the next plan.
 
 ## 1. What you need
@@ -25,29 +25,29 @@ When this plan and the guide disagree, note it as a finding.
 | Visual Studio | 2022 17.10 or later, or 2026, with the **Visual Studio extension development** workload |
 | VS Code | 1.95 or later, Node.js 20 |
 | .NET | the .NET 10 SDK |
-| Repository | Bruinell, branch `move`, at or after this plan's commit |
-| Chromium | Playwright's: from the Bruinell root, `dotnet build testsnew\Bruinell.Html.UITests`, then `pwsh testsnew\Bruinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium` |
+| Repository | Bruinet, branch `move`, at or after this plan's commit |
+| Chromium | Playwright's: from the Bruinet root, `dotnet build testsnew\Bruinet.Html.UITests`, then `pwsh testsnew\Bruinet.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium` |
 
-The project used is `testsnew\Bruinell.Blazor.UITests` (it has a `scraper.config.md`); the app is the
+The project used is `testsnew\Bruinet.Blazor.UITests` (it has a `scraper.config.md`); the app is the
 Blazor sample. A recording adds folders under its `Recordings\`: delete the ones you made when
-you are done (`git clean -fd testsnew\Bruinell.Blazor.UITests\Recordings`, after `git status`).
+you are done (`git clean -fd testsnew\Bruinet.Blazor.UITests\Recordings`, after `git status`).
 
 ## 2. Setup
 
 | ID | Who | Do | You should see | Result |
 | --- | --- | --- | --- | --- |
-| S-1 | O/C | From the Bruinell root: `dotnet build tools\Bruinell.Bdd.LanguageServer`. | It builds. | ☐ |
-| S-2 | O/C | Start the Blazor sample: `dotnet run --project samples\Bruinell.Samples.Blazor.App --urls http://localhost:5180`. | http://localhost:5180 shows the sample's home page. | ☐ |
-| S-3 | O | VS Code: open `tools\Bruinell.Bdd.VsCode`, `npm ci`, `npm run compile`, press **F5**, and in the new window open the Bruinell root folder. | A window titled "[Extension Development Host]" with the Bruinell folder. | ☐ |
-| S-4 | O | Visual Studio: open `tools\Bruinell.Bdd.VisualStudio\Bruinell.Bdd.VisualStudio.slnx`, press **F5**; in the experimental instance open `srcnew\Bruinell.sln`. | The experimental instance with the solution. | ☐ |
+| S-1 | O/C | From the Bruinet root: `dotnet build tools\Bruinet.Bdd.LanguageServer`. | It builds. | ☐ |
+| S-2 | O/C | Start the Blazor sample: `dotnet run --project samples\Bruinet.Samples.Blazor.App --urls http://localhost:5180`. | http://localhost:5180 shows the sample's home page. | ☐ |
+| S-3 | O | VS Code: open `tools\Bruinet.Bdd.VsCode`, `npm ci`, `npm run compile`, press **F5**, and in the new window open the Bruinet root folder. | A window titled "[Extension Development Host]" with the Bruinet folder. | ☐ |
+| S-4 | O | Visual Studio: open `tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio.slnx`, press **F5**; in the experimental instance open `srcnew\Bruinet.sln`. | The experimental instance with the solution. | ☐ |
 
 ## 3. Opening the view
 
 | ID | Who | Do | You should see | Result |
 | --- | --- | --- | --- | --- |
-| V-1 | O | VS Code: Command Palette, **Bruinell BDD: Open Scraper**. Then open `testsnew\Bruinell.Blazor.UITests\scraper.config.md`. | The Scraper opens in an editor tab. The config's title bar has the Scraper's button, which shows the same view. | ☐ |
+| V-1 | O | VS Code: Command Palette, **Bruinet BDD: Open Scraper**. Then open `testsnew\Bruinet.Blazor.UITests\scraper.config.md`. | The Scraper opens in an editor tab. The config's title bar has the Scraper's button, which shows the same view. | ☐ |
 | V-2 | O | Visual Studio: **View > Other Windows > Scraper**. | The Scraper opens in a document tab. | ☐ |
-| V-3 | O/C | Look at the view. | The project picker shows `Bruinell.Blazor.UITests`. The Pages tab lists the sample's recorded pages (13), each with its captures. `/userform` says `UserFormPage`. | C: Pass; O: ☐ |
+| V-3 | O/C | Look at the view. | The project picker shows `Bruinet.Blazor.UITests`. The Pages tab lists the sample's recorded pages (13), each with its captures. `/userform` says `UserFormPage`. | C: Pass; O: ☐ |
 | V-4 | C | The view on a solution with no `scraper.config.md`. | A line says no project here has a `scraper.config.md` and to add one. | Pass (run 1) |
 
 ## 4. Recording
@@ -87,10 +87,10 @@ you are done (`git clean -fd testsnew\Bruinell.Blazor.UITests\Recordings`, after
 
 | ID | Who | Do | You should see | Result |
 | --- | --- | --- | --- | --- |
-| A-1 | O | VS Code: **Generate page object** on `/counter`. | Copilot Chat opens with `/bruinell-scrape-pages Make or update the page object for the recorded page /counter …`, not sent yet. | ☐ |
+| A-1 | O | VS Code: **Generate page object** on `/counter`. | Copilot Chat opens with `/bruinet-scrape-pages Make or update the page object for the recorded page /counter …`, not sent yet. | ☐ |
 | A-2 | O | Visual Studio: the same. | The status bar says the prompt is on the clipboard; pasting it in Copilot Chat gives the same text. | ☐ |
 | A-3 | C | As an agent over MCP: a page object for a recorded page, from `suggest_controls` and `scraped_header`, then `write_code` and `check_code`. | It builds; `match_controls` names it as the page's page object, not changed. | Pass (run 1) |
-| A-4 | O | Optional: send A-1's prompt in agent mode with the `bruinell-bdd` MCP server registered. | The agent follows the skill: controls, a page object, `check_code` until it passes. | ☐ |
+| A-4 | O | Optional: send A-1's prompt in agent mode with the `bruinet-bdd` MCP server registered. | The agent follows the skill: controls, a page object, `check_code` until it passes. | ☐ |
 
 ## 8. Refresh and masks
 
@@ -117,8 +117,8 @@ you are done (`git clean -fd testsnew\Bruinell.Blazor.UITests\Recordings`, after
 
 ## 10a. Explore, its settings, Draft and Verify (auto plan, step 9)
 
-The project for these is a scratch one on the Scraper's test site (`testsnew\Bruinell.Scraper.TestSite`,
-run with `dotnet run --project testsnew\Bruinell.Scraper.TestSite -- --port 8767`), with `StartUrl`
+The project for these is a scratch one on the Scraper's test site (`testsnew\Bruinet.Scraper.TestSite`,
+run with `dotnet run --project testsnew\Bruinet.Scraper.TestSite -- --port 8767`), with `StartUrl`
 `http://localhost:8767/index.html`: its counters (`http://localhost:8767/_counters`) say what Explore did.
 
 | ID | Who | Do | You should see | Result |
@@ -133,7 +133,7 @@ run with `dotnet run --project testsnew\Bruinell.Scraper.TestSite -- --port 8767
 | E-8 | O | While recording, **This page…** > each of its four. | A row in Explore hosts, Aliases, Never visit; StartUrl set. | ☐ |
 | E-9 | O/C | **Draft page objects** (Pages tab, or after a run). | A line per page (Written), "The project builds with them", the patterns to make controls of; the files are `Pages\<Name>.scraped.cs`. | Pass (C, 2026-10-01: 4 written, builds) |
 | E-10 | O/C | **Verify**. | Every member found once, per page. | Pass (C, 2026-10-01: 78 of 78) |
-| E-11 | O | **Improve with the agent**. | The chat opens with `/bruinell-scrape-pages` and the drafts named. | ☐ |
+| E-11 | O | **Improve with the agent**. | The chat opens with `/bruinet-scrape-pages` and the drafts named. | ☐ |
 | E-12 | O | A solution with no `scraper.config.md`: open the view. | **Create config** with the UI test projects and a start URL; after it the project is in the picker. | ☐ |
 
 ## 11. Results
@@ -146,7 +146,7 @@ run with `dotnet run --project testsnew\Bruinell.Scraper.TestSite -- --port 8767
 How run 1 was done: [manual-run/](manual-run/Program.cs). `bridge.py` stands in for an IDE (it serves
 the view's page and relays its requests to a real language server); the script drives the view's
 page in a headless Chromium and the recording browser over DevTools, which the server opens when
-`BRUINELL_SCRAPER_DEBUG_PORT` is set. A second run after the fixes passed all 18 scripted checks,
+`BRUINET_SCRAPER_DEBUG_PORT` is set. A second run after the fixes passed all 18 scripted checks,
 and F-1 in its own run.
 
 What run 1 found, fixed before it passed:

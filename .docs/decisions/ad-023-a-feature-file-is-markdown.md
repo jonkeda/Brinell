@@ -56,7 +56,7 @@ A section the engine does not know is prose, up to the next level-2 heading.
   Data tables, not steps.
 - **A file in the old form loses its steps, and says so.** A section with no gherkin block has no
   steps (`UAT004`, `UAT007`, `UAT014`, `UAT026`); when it holds text that reads like steps, the
-  error says to put them in a gherkin block, and `bruinell data validate --fix` (or the editor's
+  error says to put them in a gherkin block, and `bruinet data validate --fix` (or the editor's
   quick fix) wraps them in one. A heading that looks like a section but is not one (`## scenario:`,
   `### Scenario:`, `## Scenario x`) is a warning, `UAT031`, so a typo is not silently prose.
 

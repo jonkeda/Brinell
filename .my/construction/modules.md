@@ -135,7 +135,7 @@ Ordered roughly by expected value / test density.
 - **Priority**: P3
 - **Phase**: 6
 - **State**: BLOCKED - page objects + smoke test built, but the More→Settings navigation
-  hop is not drivable under the committed Bruinell bundle. `SettingsSmokeTests` is
+  hop is not drivable under the committed Bruinet bundle. `SettingsSmokeTests` is
   `[Fact(Skip=…)]`. See `known-issues.md` #4.
 - **Delivered**: `MorePage` (opens the More overflow, polls `IsOverflowOpen`; best-effort
   gear/menu-row click); `SettingsPage` (root `SettingsPage`, `UserName`/`UserEmail`/
@@ -145,7 +145,7 @@ Ordered roughly by expected value / test density.
   drag region (synthetic physical clicks swallowed) and the menu-list cell's MAUI tap
   gesture ignores synthetic input; the bundle's `IMauiElement` has no coordinate-independent
   `Invoke()`/`Focus()`. Bottom tabs (native GridView) confirm clicks otherwise land.
-  Unblock = refresh Bruinell bundle to gain `Invoke()` (needs collection-control API
+  Unblock = refresh Bruinet bundle to gain `Invoke()` (needs collection-control API
   reconcile) **or** an app-side change to the entry. See `known-issues.md` #4.
 
 ### Journal
@@ -218,7 +218,7 @@ Available to every module (no per-module references needed - it is one project):
   reference already in the host `.csproj`.
 - The host project's own `ConstructionFixture`, `Auth/` (login), `MockBackend/`,
   `Diagnostics/`, `Configuration/`.
-- Bruinell (`Bruinell.Maui`, `Bruinell.Maui.FlaUI`, …) via `eng/bruinell/Bruinell.references.props`.
+- Bruinet (`Bruinet.Maui`, `Bruinet.Maui.FlaUI`, …) via `eng/bruinet/Bruinet.references.props`.
 
 Rules the module template enforces:
 

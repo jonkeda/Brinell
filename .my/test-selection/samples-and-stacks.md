@@ -1,8 +1,8 @@
-# Test selection across Bruinell's stacks: what the samples and suites tell us
+# Test selection across Bruinet's stacks: what the samples and suites tell us
 
 The second paper on test selection, 2026-10-25. The first, [paper.md](paper.md), proposed a
-touch map from Bruinell's call log, widening rules and the full suite at gates, with Tomorrow's
-Blazor suite in mind. This one reads Bruinell's own suites and the Todo sample, on every stack,
+touch map from Bruinet's call log, widening rules and the full suite at gates, with Tomorrow's
+Blazor suite in mind. This one reads Bruinet's own suites and the Todo sample, on every stack,
 to test that proposal and to see whether it carries over to MAUI, Android, WPF, WinForms and
 Stride.
 
@@ -56,7 +56,7 @@ hour loses most of the hour to it; selection there is worth more than anywhere e
 | Stride | The game exe with `--automation`, a named pipe | none found | No |
 | Todo MAUI | One app per data set (seven collections), each with its own SQLite, WireMock and pinned clock | Backend reset, back to the list; `StartOver` restores the database | No |
 
-Two things follow. First, no Bruinell suite runs its app inside the test process (Tomorrow's does,
+Two things follow. First, no Bruinet suite runs its app inside the test process (Tomorrow's does,
 and Todo's integration tier does), so the first paper's coverage option is out of reach here
 without collecting coverage from a child process. The touch map is the method that works on every
 stack. Second, the reset between tests is already cheap everywhere except a data set change, so
@@ -69,9 +69,9 @@ files a page object stands for.
 
 **The first half is the same everywhere,** because every stack's calls go through `ControlCall`
 with a page name and a control id, and `CsvTestLogger` already writes them when
-`BRUINELL_CALL_LOG` is set. The gap is the test's name: the logger takes the context's name, so on
+`BRUINET_CALL_LOG` is set. The gap is the test's name: the logger takes the context's name, so on
 a collection-shared app every row says the same thing. An `AsyncLocal` current-test name, set by
-a Bruinell xUnit hook around each test and read by `ControlCall`, closes it on every stack at once.
+a Bruinet xUnit hook around each test and read by `ControlCall`, closes it on every stack at once.
 UAT scenarios have a second source already: their `__result.json` lists each step's text and
 command id.
 
@@ -87,7 +87,7 @@ objects already use:
 | Native Android | `android:id` to the layout XML and its activity | Manifest, styles to all |
 | Stride | none: scenes and scripts have no ids to read | Always the suite |
 
-A shared view-model project, such as `Bruinell.Samples.Shared` or Todo's `Core`, is code the map
+A shared view-model project, such as `Bruinet.Samples.Shared` or Todo's `Core`, is code the map
 does not reach through the UI. Todo shows the answer: its rules are proved in the unit tier
 (70 tests, 114 cases), and the UI tier checks one example per behaviour. A change in `Core` runs
 the unit tier always and the UI tests whose journeys it serves, by the `Journey` trait.
@@ -100,8 +100,8 @@ a change to a feature's page selects the journeys that page belongs to, and `--f
 Journey=TOD.02*` runs them on any head. Tomorrow names its tests by feature ID in the same spirit.
 
 So the order is: journeys (or feature IDs) as the coarse map every suite can have from day one,
-the touch map as the fine one that follows. Bruinell's own suites use `Pattern=` and `Method=` traits
-instead, which say what a test proves about Bruinell, not which screen it uses; for them the touch
+the touch map as the fine one that follows. Bruinet's own suites use `Pattern=` and `Method=` traits
+instead, which say what a test proves about Bruinet, not which screen it uses; for them the touch
 map is the only source.
 
 ## Cost-aware order
@@ -137,7 +137,7 @@ The full suite stays the gate, but not every gate needs every head:
 
 ## What the samples need first
 
-- Bruinell's own suites have no `Gate=Smoke`; give each UI suite a smoke set of a few tests, as Todo has.
+- Bruinet's own suites have no `Gate=Smoke`; give each UI suite a smoke set of a few tests, as Todo has.
 - `samples/README.md` describes a WinForms suite that no longer exists, and `samples/TestRunner.ps1`
   starts a Stride exe from an old path; neither helps a developer pick tests.
 - Todo's UI suite turns parallelism off and notes that turning it on is "a separate, measured
@@ -150,10 +150,10 @@ This replaces step 3 of the first paper's order; steps 1, 2 and 4 stand.
 1. The current-test name in `ControlCall`, on every stack, so the call log is keyed by test.
 2. A touch map writer over that log, and a page-to-source reader per stack, Blazor and MAUI first
    (Tomorrow's suite and the costly head), then native Android, WPF, WinForms.
-3. `bruinell affected` with start-grouped, last-failed-first order, the widening config per suite,
+3. `bruinet affected` with start-grouped, last-failed-first order, the widening config per suite,
    and a `--head` that applies a map recorded on another head.
 4. Warm runners for UI test projects, so a selected run on desktop skips the app start.
-5. A smoke set in every Bruinell UI suite; a nightly full mobile run, sharded, on a fresh emulator.
+5. A smoke set in every Bruinet UI suite; a nightly full mobile run, sharded, on a fresh emulator.
 
 ## What is unknown
 

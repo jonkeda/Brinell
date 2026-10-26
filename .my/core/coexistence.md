@@ -3,11 +3,11 @@
 For the whole span of the migration - from `plan.md` step 1 (adding the first `ICore*`
 interface) to step 10 (deleting the last old one) - **both layers live in the solution**:
 
-- old: `Bruinell.Core.Interfaces.IElement<TSelf>`, `IElementScope<TElement>`,
+- old: `Bruinet.Core.Interfaces.IElement<TSelf>`, `IElementScope<TElement>`,
   `IPageObject<TElement>`, `IDriver<TElement>`, `ITestContext<TElement>`,
   `IContainerControl<TElement>`, `IContainerObject<TElement>`, `ControlObjectBase<TScope>`, and
   the old capability interfaces;
-- new: `Bruinell.Core.Automation.ICoreElement`, `ICoreScope`, `ICorePage`, `ICoreDriver`,
+- new: `Bruinet.Core.Automation.ICoreElement`, `ICoreScope`, `ICorePage`, `ICoreDriver`,
   `ICoreTestContext`, `ICoreContainer`, `ICoreCollection<TItem>`, `ICoreItem<TCollection>`,
   `CoreViewBase<TScope>`, and the `ICore*` capability interfaces.
 
@@ -27,8 +27,8 @@ nothing collides, nothing is bridged.
    inherits from `ICoreElement` and stops being anywhere near the old `IElement<T>`. Same for
    every other stack.
 
-3. **The calls layer belongs to the new set only.** MAUI's `Bruinell.Maui/Calls/*` is deleted in
-   step 4; nothing outside `Bruinell.Core.Automation.Calls` is a calls-layer type after that.
+3. **The calls layer belongs to the new set only.** MAUI's `Bruinet.Maui/Calls/*` is deleted in
+   step 4; nothing outside `Bruinet.Core.Automation.Calls` is a calls-layer type after that.
 
 4. **UAT recognises both `IPageObject` and `ICorePage`** (?C7) until step 10. Same for
    `IControlObject<>` and `ICoreControlObject<>`. That is the only place with a both-recognition
@@ -42,7 +42,7 @@ nothing collides, nothing is bridged.
 
 | Old type | New type | Why they do not collide |
 | --- | --- | --- |
-| `IElement<TSelf>` | `ICoreElement` | Different names, different namespaces (`Bruinell.Core.Interfaces` vs. `Bruinell.Core.Automation`) |
+| `IElement<TSelf>` | `ICoreElement` | Different names, different namespaces (`Bruinet.Core.Interfaces` vs. `Bruinet.Core.Automation`) |
 | `IElementScope`, `IElementScope<TElement>` | `ICoreScope`, `ICoreScope<TSelf>` | Different names |
 | `IPageObject`, `IPageObject<TElement>` | `ICorePage`, `ICorePage<TSelf>` | Different names |
 | `IDriver<TElement>` | `ICoreDriver` | Different names |
@@ -51,17 +51,17 @@ nothing collides, nothing is bridged.
 | `PageReadinessSnapshot` | `CoreScopeReadiness` | Different names |
 | `PageReadinessState` | `CoreScopeReadinessState` | Different names, and the new one has extra values |
 | `BusySignalPolicy` | `CoreBusySignalPolicy` | Different names |
-| `PageLoadException` | `CoreScopeNotReadyException` | Different names; both are `BruinellException` subclasses so a broad `catch (BruinellException)` still catches both |
+| `PageLoadException` | `CoreScopeNotReadyException` | Different names; both are `BruinetException` subclasses so a broad `catch (BruinetException)` still catches both |
 
 ## What a per-stack file looks like mid-migration
 
 A MAUI element file after step 4 is done and before Html has moved:
 
 ```csharp
-using Bruinell.Core.Automation;                 // ICoreElement, ICoreScope, ...
-using Bruinell.Core.Locators;                   // Locator (unchanged)
+using Bruinet.Core.Automation;                 // ICoreElement, ICoreScope, ...
+using Bruinet.Core.Locators;                   // Locator (unchanged)
 
-namespace Bruinell.Maui.Interfaces;
+namespace Bruinet.Maui.Interfaces;
 
 public interface IMauiElement : ICoreElement   // was: IElement<IMauiElement>
 {
@@ -75,9 +75,9 @@ public interface IMauiElement : ICoreElement   // was: IElement<IMauiElement>
 The same file for WPF, still on the old set (until step 7):
 
 ```csharp
-using Bruinell.Core.Interfaces;                 // IElement<T>, IElementScope<T>, ...
+using Bruinet.Core.Interfaces;                 // IElement<T>, IElementScope<T>, ...
 
-namespace Bruinell.Wpf;
+namespace Bruinet.Wpf;
 
 public class FlaUIWpfElement : IElement<FlaUIWpfElement>
 {
@@ -89,10 +89,10 @@ Both compile in the same solution build.
 
 ## Build order
 
-1. `Bruinell.Core` compiles first, exporting *both* namespaces:
-   - `Bruinell.Core.Interfaces` (unchanged);
-   - `Bruinell.Core.Automation` (new).
-2. Every per-stack project builds against `Bruinell.Core`. A project that has migrated `using`s
+1. `Bruinet.Core` compiles first, exporting *both* namespaces:
+   - `Bruinet.Core.Interfaces` (unchanged);
+   - `Bruinet.Core.Automation` (new).
+2. Every per-stack project builds against `Bruinet.Core`. A project that has migrated `using`s
    the new namespace; a project that has not `using`s the old one. Both work.
 3. If a project has moved partway (some files on old, some on new), both `using` directives
    live in `GlobalUsings.cs` for the transition, and are cleaned up when the project's move is
@@ -117,16 +117,16 @@ A single change that would break coexistence and must be caught in review:
 ## When it ends
 
 Step 10 of `plan.md`. The deletion order is in `migration.md`, section "Delete". The moment the
-last old interface is gone, `Bruinell.Core.Interfaces` still exists as a namespace but only for
+last old interface is gone, `Bruinet.Core.Interfaces` still exists as a namespace but only for
 the untouched types (`ITestContext` non-generic, `IDiagnosticDriver`, `IScreenshotService`, the
-generator attributes). At the next commit those move under `Bruinell.Core.Automation` or into
+generator attributes). At the next commit those move under `Bruinet.Core.Automation` or into
 their own small namespaces if they were misplaced; that is cleanup, not migration.
 
 ## Not in scope
 
 - A per-file `#pragma warning disable` to hide the old interfaces from the new call sites.
   The two sets never appear in the same file after a stack has moved.
-- A `Bruinell.Core.Compatibility` shim project. If a downstream consumer of the *old* Core
+- A `Bruinet.Core.Compatibility` shim project. If a downstream consumer of the *old* Core
   interfaces needs the *new* ones, they migrate their own code the same way a stack does.
-- Publishing a compatibility NuGet package. Bruinell is an internal framework; the migration
+- Publishing a compatibility NuGet package. Bruinet is an internal framework; the migration
   span is the source tree's own timeline.

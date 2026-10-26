@@ -4,7 +4,7 @@
 
 The `Shell<TScope>` control object provides a high-level abstraction for interacting with MAUI Shell containers, particularly those using TabBar navigation.
 
-**Location:** `srcnew/Bruinell.Maui/Controls/Navigation/Shell.cs`
+**Location:** `srcnew/Bruinet.Maui/Controls/Navigation/Shell.cs`
 
 ## Features
 
@@ -19,7 +19,7 @@ The `Shell<TScope>` control object provides a high-level abstraction for interac
 ### Page Object Setup
 
 ```csharp
-using Bruinell.Maui.Controls.Navigation;
+using Bruinet.Maui.Controls.Navigation;
 
 public class AppShellPage : PageObjectBase<AppShellPage>
 {
@@ -191,7 +191,7 @@ public void TestShellTabNavigation()
 For the Shell control to work properly, ensure your AppShell.xaml has the correct AutomationId:
 
 ```xaml
-<Shell x:Class="Bruinell.Samples.Maui.App.AppShell"
+<Shell x:Class="Bruinet.Samples.Maui.App.AppShell"
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        AutomationId="AppShell">

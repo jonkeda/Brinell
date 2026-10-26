@@ -7,7 +7,7 @@ are shared.
 
 ## The run
 
-The suite serially on bUnit (`BRUINELL_HEAD=bunit`, `BRUINELL_TIMINGS`, one test at a time): 143
+The suite serially on bUnit (`BRUINET_HEAD=bunit`, `BRUINET_TIMINGS`, one test at a time): 143
 passed, 22 skipped (browser only), about a minute. The capture watched every
 `TomorrowStudioUITest%` database on `.\MSSQLSERVER01`, as the suite makes one per run: 12,839
 commands, 87 tests and scenarios with commands, 13 commands outside every test.
@@ -57,7 +57,7 @@ wall time (0.8 s), as the studio's background work runs beside the page.
 
 ## What it took
 
-Three changes in Bruinell, all for real suites: the capture takes a database pattern
+Three changes in Bruinet, all for real suites: the capture takes a database pattern
 (`--database-like`), since a suite makes a database per run; the clock marker passes the
 pattern's filter; and the report names a window by its scenario, keeping the innermost, since
 every scenario of a suite runs in the one xUnit method.

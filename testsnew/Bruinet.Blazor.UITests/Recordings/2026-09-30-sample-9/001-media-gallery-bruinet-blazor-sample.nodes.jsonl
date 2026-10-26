@@ -1,0 +1,194 @@
+{"platform":"html","location":"http://localhost:5180/mediagallery","title":"Media Gallery - Bruinet Blazor Sample","capturedAt":"2026-09-30T18:28:11.6839794+00:00","nodes":193}
+{"n":1,"p":0,"type":"html","box":[0,0,1521,3943]}
+{"n":2,"p":1,"type":"body","box":[8,8,1505,3927],"attr":{"data-busy":"false"}}
+{"n":3,"p":2,"type":"div","box":[8,8,1505,3927],"attr":{"class":"page"}}
+{"n":4,"p":3,"type":"div","box":[8,8,283,3927],"attr":{"class":"sidebar"}}
+{"n":5,"p":4,"type":"div","box":[24,24,250,504],"attr":{"class":"nav-menu","data-automation-id":"NavMenu"}}
+{"n":6,"p":5,"type":"nav","box":[24,24,250,504],"attr":{"class":"flex-column"}}
+{"n":7,"p":6,"type":"div","box":[24,24,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":8,"p":7,"type":"a","text":"Home","box":[24,32,250,34],"attr":{"class":"nav-link","data-automation-id":"NavHome","href":"","id":"nav-home"}}
+{"n":9,"p":8,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-house-door-fill"}}
+{"n":10,"p":6,"type":"div","box":[24,74,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":11,"p":10,"type":"a","text":"Counter","box":[24,82,250,34],"attr":{"class":"nav-link","data-automation-id":"NavCounter","href":"counter","id":"nav-counter"}}
+{"n":12,"p":11,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-plus-square-fill"}}
+{"n":13,"p":6,"type":"div","box":[24,125,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":14,"p":13,"type":"a","text":"Login","box":[24,133,250,34],"attr":{"class":"nav-link","data-automation-id":"NavLogin","href":"login","id":"nav-login"}}
+{"n":15,"p":14,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-fill"}}
+{"n":16,"p":6,"type":"div","box":[24,175,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":17,"p":16,"type":"a","text":"Dashboard","box":[24,183,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDashboard","href":"dashboard","id":"nav-dashboard"}}
+{"n":18,"p":17,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-speedometer2"}}
+{"n":19,"p":6,"type":"div","box":[24,226,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":20,"p":19,"type":"a","text":"User Form","box":[24,234,250,34],"attr":{"class":"nav-link","data-automation-id":"NavUserForm","href":"userform","id":"nav-userform"}}
+{"n":21,"p":20,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-lines-fill"}}
+{"n":22,"p":6,"type":"div","box":[24,276,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":23,"p":22,"type":"a","text":"Data Table","box":[24,284,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDataTable","href":"datatable","id":"nav-datatable"}}
+{"n":24,"p":23,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-table"}}
+{"n":25,"p":6,"type":"div","box":[24,326,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":26,"p":25,"type":"a","text":"Media Gallery","box":[24,334,250,34],"attr":{"aria-current":"page","class":"nav-link active","data-automation-id":"NavMediaGallery","href":"mediagallery","id":"nav-mediagallery"}}
+{"n":27,"p":26,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-images"}}
+{"n":28,"p":6,"type":"div","box":[24,377,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":29,"p":28,"type":"a","text":"Navigation","box":[24,385,250,34],"attr":{"class":"nav-link","data-automation-id":"NavNavigation","href":"navigation","id":"nav-navigation"}}
+{"n":30,"p":29,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-signpost-split-fill"}}
+{"n":31,"p":6,"type":"div","box":[24,427,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":32,"p":31,"type":"a","text":"Validation","box":[24,435,250,34],"attr":{"class":"nav-link","data-automation-id":"NavValidation","href":"validation","id":"nav-validation"}}
+{"n":33,"p":32,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-check-circle-fill"}}
+{"n":34,"p":6,"type":"div","box":[24,478,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":35,"p":34,"type":"a","text":"Advanced","box":[24,486,250,34],"attr":{"class":"nav-link","data-automation-id":"NavAdvanced","href":"advanced","id":"nav-advanced"}}
+{"n":36,"p":35,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-gear-wide-connected"}}
+{"n":37,"p":3,"type":"main","box":[291,8,1222,3927]}
+{"n":38,"p":37,"type":"article","box":[291,8,1222,3911],"attr":{"class":"content px-4"}}
+{"n":39,"p":38,"type":"div","box":[291,47,1222,3872],"attr":{"data-automation-id":"MediaGalleryPage"}}
+{"n":40,"p":39,"type":"h1","text":"Media Gallery","box":[291,47,1222,36],"attr":{"data-automation-id":"MediaGalleryTitle","tabindex":"-1"}}
+{"n":41,"p":39,"type":"ul","box":[291,104,1222,154],"attr":{"class":"nav nav-tabs mb-4","data-automation-id":"MediaTabs"}}
+{"n":42,"p":41,"type":"li","box":[331,104,1182,51],"attr":{"class":"nav-item"}}
+{"n":43,"p":42,"type":"button","text":"All","box":[331,112,50,35],"attr":{"class":"nav-link active","data-automation-id":"TabAll"}}
+{"n":44,"p":41,"type":"li","box":[331,156,1182,51],"attr":{"class":"nav-item"}}
+{"n":45,"p":44,"type":"button","text":"Images","box":[331,164,79,35],"attr":{"class":"nav-link ","data-automation-id":"TabImages"}}
+{"n":46,"p":41,"type":"li","box":[331,207,1182,51],"attr":{"class":"nav-item"}}
+{"n":47,"p":46,"type":"button","text":"Videos","box":[331,215,76,35],"attr":{"class":"nav-link ","data-automation-id":"TabVideos"}}
+{"n":48,"p":39,"type":"div","box":[291,280,1222,478],"attr":{"class":"card mb-4","data-automation-id":"ImageViewerSection"}}
+{"n":49,"p":48,"type":"div","box":[291,280,1222,59],"attr":{"class":"card-header d-flex justify-content-between align-items-center"}}
+{"n":50,"p":49,"type":"h5","text":"Image 1","box":[291,280,1222,16],"attr":{"data-automation-id":"ViewerTitle"}}
+{"n":51,"p":49,"type":"div","box":[291,318,1222,21],"attr":{"class":"btn-group","data-automation-id":"ViewerControls"}}
+{"n":52,"p":51,"type":"button","text":"← Previous","box":[291,318,84,21],"attr":{"class":"btn btn-sm btn-outline-secondary","data-automation-id":"PreviousButton","disabled":""}}
+{"n":53,"p":51,"type":"button","text":"Next →","box":[379,318,60,21],"attr":{"class":"btn btn-sm btn-outline-secondary","data-automation-id":"NextButton"}}
+{"n":54,"p":48,"type":"div","box":[291,340,1222,400],"attr":{"class":"card-body text-center","data-automation-id":"ImageContainer"}}
+{"n":55,"p":54,"type":"img","box":[648,340,507,380],"attr":{"alt":"Image 1","class":"img-fluid","data-automation-id":"MainImage"}}
+{"n":56,"p":48,"type":"div","box":[291,740,1222,18],"attr":{"class":"card-footer","data-automation-id":"ImageInfo"}}
+{"n":57,"p":56,"type":"small","text":"Sample image description 1 | Uploaded: 29-Sep-26 20:28","box":[291,742,339,15],"attr":{"class":"text-muted"}}
+{"n":58,"p":39,"type":"div","box":[291,780,1222,2098],"attr":{"class":"card mb-4","data-automation-id":"ThumbnailSection"}}
+{"n":59,"p":58,"type":"div","box":[291,780,1222,16],"attr":{"class":"card-header"}}
+{"n":60,"p":59,"type":"h5","text":"Gallery (15 items)","box":[291,780,1222,16],"attr":{"data-automation-id":"GalleryTitle"}}
+{"n":61,"p":58,"type":"div","box":[291,818,1222,2060],"attr":{"class":"card-body"}}
+{"n":62,"p":61,"type":"div","box":[291,818,1222,2060],"attr":{"class":"row g-3","data-automation-id":"ThumbnailGrid"}}
+{"n":63,"p":62,"type":"div","box":[291,818,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":64,"p":63,"type":"div","box":[291,818,1222,122],"attr":{"class":"card h-100 border-primary","data-automation-id":"Thumbnail_1"}}
+{"n":65,"p":64,"type":"img","box":[852,818,100,100],"attr":{"alt":"Image 1","class":"card-img-top","data-automation-id":"ThumbnailImage_1"}}
+{"n":66,"p":64,"type":"div","box":[291,922,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":67,"p":66,"type":"small","text":"Image 1","box":[878,925,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_1"}}
+{"n":68,"p":62,"type":"div","box":[291,957,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":69,"p":68,"type":"div","box":[291,957,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_2"}}
+{"n":70,"p":69,"type":"img","box":[852,957,100,100],"attr":{"alt":"Image 2","class":"card-img-top","data-automation-id":"ThumbnailImage_2"}}
+{"n":71,"p":69,"type":"div","box":[291,1061,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":72,"p":71,"type":"small","text":"Image 2","box":[878,1063,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_2"}}
+{"n":73,"p":62,"type":"div","box":[291,1095,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":74,"p":73,"type":"div","box":[291,1095,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_3"}}
+{"n":75,"p":74,"type":"img","box":[852,1095,100,100],"attr":{"alt":"Image 3","class":"card-img-top","data-automation-id":"ThumbnailImage_3"}}
+{"n":76,"p":74,"type":"div","box":[291,1199,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":77,"p":76,"type":"small","text":"Image 3","box":[878,1202,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_3"}}
+{"n":78,"p":62,"type":"div","box":[291,1234,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":79,"p":78,"type":"div","box":[291,1234,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_4"}}
+{"n":80,"p":79,"type":"img","box":[852,1234,100,100],"attr":{"alt":"Image 4","class":"card-img-top","data-automation-id":"ThumbnailImage_4"}}
+{"n":81,"p":79,"type":"div","box":[291,1338,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":82,"p":81,"type":"small","text":"Image 4","box":[878,1340,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_4"}}
+{"n":83,"p":62,"type":"div","box":[291,1372,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":84,"p":83,"type":"div","box":[291,1372,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_5"}}
+{"n":85,"p":84,"type":"img","box":[852,1372,100,100],"attr":{"alt":"Image 5","class":"card-img-top","data-automation-id":"ThumbnailImage_5"}}
+{"n":86,"p":84,"type":"div","box":[291,1476,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":87,"p":86,"type":"small","text":"Image 5","box":[878,1478,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_5"}}
+{"n":88,"p":62,"type":"div","box":[291,1510,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":89,"p":88,"type":"div","box":[291,1510,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_6"}}
+{"n":90,"p":89,"type":"img","box":[852,1510,100,100],"attr":{"alt":"Image 6","class":"card-img-top","data-automation-id":"ThumbnailImage_6"}}
+{"n":91,"p":89,"type":"div","box":[291,1614,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":92,"p":91,"type":"small","text":"Image 6","box":[878,1617,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_6"}}
+{"n":93,"p":62,"type":"div","box":[291,1649,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":94,"p":93,"type":"div","box":[291,1649,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_7"}}
+{"n":95,"p":94,"type":"img","box":[852,1649,100,100],"attr":{"alt":"Image 7","class":"card-img-top","data-automation-id":"ThumbnailImage_7"}}
+{"n":96,"p":94,"type":"div","box":[291,1753,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":97,"p":96,"type":"small","text":"Image 7","box":[878,1755,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_7"}}
+{"n":98,"p":62,"type":"div","box":[291,1787,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":99,"p":98,"type":"div","box":[291,1787,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_8"}}
+{"n":100,"p":99,"type":"img","box":[852,1787,100,100],"attr":{"alt":"Image 8","class":"card-img-top","data-automation-id":"ThumbnailImage_8"}}
+{"n":101,"p":99,"type":"div","box":[291,1891,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":102,"p":101,"type":"small","text":"Image 8","box":[878,1894,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_8"}}
+{"n":103,"p":62,"type":"div","box":[291,1926,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":104,"p":103,"type":"div","box":[291,1926,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_9"}}
+{"n":105,"p":104,"type":"img","box":[852,1926,100,100],"attr":{"alt":"Image 9","class":"card-img-top","data-automation-id":"ThumbnailImage_9"}}
+{"n":106,"p":104,"type":"div","box":[291,2030,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":107,"p":106,"type":"small","text":"Image 9","box":[878,2032,48,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_9"}}
+{"n":108,"p":62,"type":"div","box":[291,2064,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":109,"p":108,"type":"div","box":[291,2064,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_10"}}
+{"n":110,"p":109,"type":"img","box":[852,2064,100,100],"attr":{"alt":"Image 10","class":"card-img-top","data-automation-id":"ThumbnailImage_10"}}
+{"n":111,"p":109,"type":"div","box":[291,2168,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":112,"p":111,"type":"small","text":"Image 10","box":[874,2170,56,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_10"}}
+{"n":113,"p":62,"type":"div","box":[291,2202,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":114,"p":113,"type":"div","box":[291,2202,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_11"}}
+{"n":115,"p":114,"type":"img","box":[852,2202,100,100],"attr":{"alt":"Image 11","class":"card-img-top","data-automation-id":"ThumbnailImage_11"}}
+{"n":116,"p":114,"type":"div","box":[291,2306,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":117,"p":116,"type":"small","text":"Image 11","box":[875,2309,55,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_11"}}
+{"n":118,"p":62,"type":"div","box":[291,2341,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":119,"p":118,"type":"div","box":[291,2341,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_12"}}
+{"n":120,"p":119,"type":"img","box":[852,2341,100,100],"attr":{"alt":"Image 12","class":"card-img-top","data-automation-id":"ThumbnailImage_12"}}
+{"n":121,"p":119,"type":"div","box":[291,2445,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":122,"p":121,"type":"small","text":"Image 12","box":[874,2447,56,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_12"}}
+{"n":123,"p":62,"type":"div","box":[291,2479,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":124,"p":123,"type":"div","box":[291,2479,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_13"}}
+{"n":125,"p":124,"type":"img","box":[852,2479,100,100],"attr":{"alt":"Video 1","class":"card-img-top","data-automation-id":"ThumbnailImage_13"}}
+{"n":126,"p":124,"type":"div","box":[291,2583,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":127,"p":126,"type":"small","text":"Video 1","box":[857,2586,45,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_13"}}
+{"n":128,"p":126,"type":"span","text":"Video","box":[902,2583,45,18],"attr":{"class":"badge bg-info","data-automation-id":"VideoBadge_13"}}
+{"n":129,"p":62,"type":"div","box":[291,2618,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":130,"p":129,"type":"div","box":[291,2618,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_14"}}
+{"n":131,"p":130,"type":"img","box":[852,2618,100,100],"attr":{"alt":"Video 2","class":"card-img-top","data-automation-id":"ThumbnailImage_14"}}
+{"n":132,"p":130,"type":"div","box":[291,2722,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":133,"p":132,"type":"small","text":"Video 2","box":[857,2724,45,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_14"}}
+{"n":134,"p":132,"type":"span","text":"Video","box":[902,2722,45,18],"attr":{"class":"badge bg-info","data-automation-id":"VideoBadge_14"}}
+{"n":135,"p":62,"type":"div","box":[291,2756,1222,122],"attr":{"class":"col-6 col-md-3 col-lg-2"}}
+{"n":136,"p":135,"type":"div","box":[291,2756,1222,122],"attr":{"class":"card h-100 ","data-automation-id":"Thumbnail_15"}}
+{"n":137,"p":136,"type":"img","box":[852,2756,100,100],"attr":{"alt":"Video 3","class":"card-img-top","data-automation-id":"ThumbnailImage_15"}}
+{"n":138,"p":136,"type":"div","box":[291,2860,1222,18],"attr":{"class":"card-body p-2"}}
+{"n":139,"p":138,"type":"small","text":"Video 3","box":[857,2862,45,15],"attr":{"class":"card-title text-truncate d-block","data-automation-id":"ThumbnailTitle_15"}}
+{"n":140,"p":138,"type":"span","text":"Video","box":[902,2860,45,18],"attr":{"class":"badge bg-info","data-automation-id":"VideoBadge_15"}}
+{"n":141,"p":39,"type":"div","box":[291,2901,1222,384],"attr":{"class":"card mb-4","data-automation-id":"VideoPlayerSection"}}
+{"n":142,"p":141,"type":"div","box":[291,2901,1222,16],"attr":{"class":"card-header"}}
+{"n":143,"p":142,"type":"h5","text":"Media Player","box":[291,2901,1222,16],"attr":{"data-automation-id":"VideoPlayerTitle"}}
+{"n":144,"p":141,"type":"div","box":[291,2939,1222,346],"attr":{"class":"card-body"}}
+{"n":145,"p":144,"type":"div","box":[291,2939,1222,200],"attr":{"class":"bg-dark text-white d-flex align-items-center justify-content-center","data-automation-id":"VideoContainer"}}
+{"n":146,"p":145,"type":"span","text":"▶","box":[895,2942,14,18],"attr":{"class":"display-4"}}
+{"n":147,"p":144,"type":"div","box":[291,3139,1222,40],"attr":{"class":"mt-3","data-automation-id":"MediaProgress"}}
+{"n":148,"p":147,"type":"div","box":[291,3139,1222,18],"attr":{"class":"d-flex justify-content-between mb-1"}}
+{"n":149,"p":148,"type":"span","text":"0:00","box":[868,3139,31,18],"attr":{"data-automation-id":"CurrentTime"}}
+{"n":150,"p":148,"type":"span","text":"3:00","box":[904,3139,31,18],"attr":{"data-automation-id":"Duration"}}
+{"n":151,"p":147,"type":"input","box":[837,3159,129,16],"attr":{"class":"form-range","data-automation-id":"ProgressSlider","type":"range"}}
+{"n":152,"p":144,"type":"div","box":[291,3179,1222,24],"attr":{"class":"d-flex justify-content-center gap-2 mt-3","data-automation-id":"PlaybackControls"}}
+{"n":153,"p":152,"type":"button","text":"⏹ Stop","box":[818,3179,58,24],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"StopButton"}}
+{"n":154,"p":152,"type":"button","text":"▶ Play","box":[880,3179,56,24],"attr":{"class":"btn btn-primary btn-lg","data-automation-id":"PlayPauseButton"}}
+{"n":155,"p":152,"type":"button","text":"+10s","box":[941,3182,44,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"SkipButton"}}
+{"n":156,"p":144,"type":"div","box":[291,3203,1222,82],"attr":{"class":"row mt-3 align-items-center","data-automation-id":"VolumeSection"}}
+{"n":157,"p":156,"type":"div","box":[291,3203,1222,22],"attr":{"class":"col-auto"}}
+{"n":158,"p":157,"type":"span","text":"\uD83D\uDD0A","box":[891,3206,22,18],"attr":{"data-automation-id":"VolumeIcon"}}
+{"n":159,"p":156,"type":"div","box":[291,3224,1222,22],"attr":{"class":"col-4"}}
+{"n":160,"p":159,"type":"input","box":[837,3226,129,16],"attr":{"class":"form-range","data-automation-id":"VolumeSlider","type":"range"}}
+{"n":161,"p":156,"type":"div","box":[291,3246,1222,18],"attr":{"class":"col-auto"}}
+{"n":162,"p":161,"type":"span","text":"80%","box":[886,3246,32,18],"attr":{"data-automation-id":"VolumeValue"}}
+{"n":163,"p":156,"type":"div","box":[291,3265,1222,20],"attr":{"class":"col-auto"}}
+{"n":164,"p":163,"type":"div","box":[291,3265,1222,20],"attr":{"class":"form-check form-switch"}}
+{"n":165,"p":164,"type":"input","box":[876,3268,13,13],"attr":{"class":"form-check-input","data-automation-id":"MuteSwitch","type":"checkbox"}}
+{"n":166,"p":164,"type":"label","text":"Mute","box":[896,3266,36,18],"attr":{"class":"form-check-label"}}
+{"n":167,"p":39,"type":"div","box":[291,3307,1222,376],"attr":{"class":"card mb-4","data-automation-id":"WebContentSection"}}
+{"n":168,"p":167,"type":"div","box":[291,3307,1222,16],"attr":{"class":"card-header"}}
+{"n":169,"p":168,"type":"h5","text":"Web Content","box":[291,3307,1222,16],"attr":{"data-automation-id":"WebContentTitle"}}
+{"n":170,"p":167,"type":"div","box":[291,3345,1222,338],"attr":{"class":"card-body"}}
+{"n":171,"p":170,"type":"div","box":[291,3345,1222,22],"attr":{"class":"input-group mb-3","data-automation-id":"UrlBar"}}
+{"n":172,"p":171,"type":"button","text":"←","box":[749,3345,29,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"BackButton"}}
+{"n":173,"p":171,"type":"button","text":"→","box":[782,3345,29,21],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"ForwardButton"}}
+{"n":174,"p":171,"type":"button","text":"⟳","box":[815,3345,28,22],"attr":{"class":"btn btn-outline-secondary","data-automation-id":"ReloadButton"}}
+{"n":175,"p":171,"type":"input","box":[847,3345,170,21],"attr":{"class":"form-control","data-automation-id":"UrlInput","placeholder":"Enter URL...","type":"url"}}
+{"n":176,"p":171,"type":"button","text":"Go","box":[1022,3345,33,21],"attr":{"class":"btn btn-primary","data-automation-id":"GoButton"}}
+{"n":177,"p":170,"type":"div","box":[291,3383,1222,300],"attr":{"class":"border rounded p-3","data-automation-id":"WebViewFrame"}}
+{"n":178,"p":177,"type":"p","text":"Web content would be displayed here via iframe","box":[291,3383,1222,18],"attr":{"class":"text-center text-muted mt-5"}}
+{"n":179,"p":177,"type":"p","box":[291,3417,1222,18],"attr":{"class":"text-center"}}
+{"n":180,"p":179,"type":"code","text":"https://dotnet.microsoft.com","box":[802,3420,200,15],"attr":{"data-automation-id":"DisplayedUrl"}}
+{"n":181,"p":39,"type":"div","box":[291,3705,1222,214],"attr":{"class":"card","data-automation-id":"UploadSection"}}
+{"n":182,"p":181,"type":"div","box":[291,3705,1222,16],"attr":{"class":"card-header"}}
+{"n":183,"p":182,"type":"h5","text":"File Upload","box":[291,3705,1222,16],"attr":{"data-automation-id":"UploadTitle"}}
+{"n":184,"p":181,"type":"div","box":[291,3743,1222,176],"attr":{"class":"card-body"}}
+{"n":185,"p":184,"type":"div","box":[291,3743,1222,21],"attr":{"class":"mb-3"}}
+{"n":186,"p":185,"type":"label","text":"Select Files","box":[732,3744,83,18],"attr":{"class":"form-label"}}
+{"n":187,"p":185,"type":"input","box":[819,3743,253,21],"attr":{"class":"form-control","data-automation-id":"FileInput","type":"file"}}
+{"n":188,"p":184,"type":"div","box":[291,3765,1222,134],"attr":{"class":"mb-3","data-automation-id":"DropZone"}}
+{"n":189,"p":188,"type":"p","text":"Drag and drop files here or click to browse","box":[332,3822,1139,18],"attr":{"class":"mb-0 text-muted"}}
+{"n":190,"p":184,"type":"button","text":"Upload Files","box":[857,3898,89,21],"attr":{"class":"btn btn-success","data-automation-id":"UploadButton"}}
+{"n":191,"p":2,"type":"div","text":"An unhandled error has occurred.","attr":{"data-nosnippet":"","id":"blazor-error-ui"}}
+{"n":192,"p":191,"type":"a","text":"Reload","attr":{"class":"reload","href":"."}}
+{"n":193,"p":191,"type":"span","text":"\uD83D\uDDD9","attr":{"class":"dismiss"}}

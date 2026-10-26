@@ -1,14 +1,14 @@
 # Architecture Overview
 
-Bruinell is organized around stable core abstractions and replaceable platform
+Bruinet is organized around stable core abstractions and replaceable platform
 drivers.
 
-> Before changing Bruinell, read the decisions, invariants and contracts in
+> Before changing Bruinet, read the decisions, invariants and contracts in
 > [`.docs/`](../../.docs/README.md) - what must stay true.
 
 ## Core Contracts
 
-`srcnew/Bruinell.Core` owns:
+`srcnew/Bruinet.Core` owns:
 
 - locators;
 - control and page interfaces;
@@ -22,7 +22,7 @@ framework-specific element types.
 
 ## Settings
 
-`srcnew/Bruinell.Core/Settings` owns JSON-backed test settings. Settings are
+`srcnew/Bruinet.Core/Settings` owns JSON-backed test settings. Settings are
 loaded from a configurable root, default file, local override file, scenario
 convention file, and explicit files. UAT scenarios attach resolved settings to
 the execution context.
@@ -31,7 +31,7 @@ the execution context.
 
 Platform packages translate core concepts into driver-specific behavior:
 
-- MAUI controls and page objects in `srcnew/Bruinell.Maui`;
+- MAUI controls and page objects in `srcnew/Bruinet.Maui`;
 - WPF and WinForms through FlaUI;
 - HTML and Blazor through Selenium or Playwright;
 - Stride through automation hooks and named-pipe style integration;
@@ -47,7 +47,7 @@ Tests live under `testsnew/` and follow three broad styles:
 
 ## Artifacts
 
-Bruinell-owned test artifacts should flow through the shared artifact provider:
+Bruinet-owned test artifacts should flow through the shared artifact provider:
 
 ```text
 TestResults/

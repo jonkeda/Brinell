@@ -1,7 +1,7 @@
 # MauiUnit: where it stands
 
 MauiUnit (named so on 2026-10-26; MUnit until then) is a headless component-testing framework for .NET MAUI, a bUnit for
-MAUI. `Bruinell.Maui.MauiUnit` is a Bruinell head on top of it, a third MAUI driver beside FlaUI and
+MAUI. `Bruinet.Maui.MauiUnit` is a Bruinet head on top of it, a third MAUI driver beside FlaUI and
 Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 
 ## Files here
@@ -19,24 +19,24 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 | MauiUnit core | `srcnew/MauiUnit` | Green under its tests; Shell chrome and dialogs added |
 | Sample app (XAML on plain net10.0) | `samples/MauiUnit.Samples.App` | Settings, Greeting, Products, Shell, Countdown |
 | xUnit, NUnit and MSTest tests | `testsnew/MauiUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
-| Bruinell head | `srcnew/Bruinell.Maui.MauiUnit` | Driver, element, state, app sinks, refusals, `MauiUnitHead` |
-| Head's own tests | `testsnew/Bruinell.Maui.MauiUnit.Tests` | 3 of 3 green |
-| The device suite on both heads | `testsnew/Bruinell.Maui.UITests`, both sample apps compiled headless | `BRUINELL_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
-| The Todo sample on both heads | `samples/Todo/tests/Bruinell.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinell.Samples.Todo.App.Headless` | `BRUINELL_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
+| Bruinet head | `srcnew/Bruinet.Maui.MauiUnit` | Driver, element, state, app sinks, refusals, `MauiUnitHead` |
+| Head's own tests | `testsnew/Bruinet.Maui.MauiUnit.Tests` | 3 of 3 green |
+| The device suite on both heads | `testsnew/Bruinet.Maui.UITests`, both sample apps compiled headless | `BRUINET_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
+| The Todo sample on both heads | `samples/Todo/tests/Bruinet.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinet.Samples.Todo.App.Headless` | `BRUINET_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
 | Proposal, design, count | `.my/mUnit` | Written |
 
 How the head is chosen, as the Html suites choose bUnit:
-- `BRUINELL_HEAD=mauiunit` is read by `MauiHeads` in Bruinell.Core; anything else is the device.
+- `BRUINET_HEAD=mauiunit` is read by `MauiHeads` in Bruinet.Core; anything else is the device.
 - `MauiTestFixtureBase` calls the fixture's `CreateInMemoryOptions()` on MauiUnit and `CreateTestContextOptions()` on a device; `MauiFixture` and `ShellFixture` name their app's first page.
 - A test that needs a device is `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]` where it is Windows only too; a scenario is tagged `@device`. They are skipped on MauiUnit with the reason.
 
 Changes outside the new projects:
-- `MauiHeads` and `DeviceFact` in Bruinell.Core, `@device` in Bruinell.Bdd;
+- `MauiHeads` and `DeviceFact` in Bruinet.Core, `@device` in Bruinet.Bdd;
 - the head choice in `MauiTestFixtureBase`;
 - the device suite references the head and both headless apps, and marks 33 tests;
-- `net10.0` added to `Bruinell.Maui.AppSupport`'s targets, which the apps' XAML needs.
+- `net10.0` added to `Bruinet.Maui.AppSupport`'s targets, which the apps' XAML needs.
 
-The work is pushed (2026-10-26, e64b2cc7): `move` on origin and jonkeda/bruinell (its `main` too), and
+The work is pushed (2026-10-26, e64b2cc7): `move` on origin and jonkeda/bruinet (its `main` too), and
 Tomorrow's submodule pointer on `game`.
 
 ## Next
@@ -58,14 +58,14 @@ Tomorrow's submodule pointer on `game`.
   - a Shell root gets a no-op `HeadlessHandler` carrying the services;
   - rendering an instance now also fixes the services.
 - **NUnit and MSTest green.** Plain-exception assertions fail the test with their message in both.
-- **Bruinell head green.** No change to Bruinell.Maui was needed. Visible elements report nominal 1x1 bounds.
+- **Bruinet head green.** No change to Bruinet.Maui was needed. Visible elements report nominal 1x1 bounds.
 - **The device suite linked unchanged.** The whole sample app compiled headless at the first try. The suite needed `net10.0-windows` like the original, and only `FlaUIErrorsTests` is left out.
 - **First count: 10 s per test.** The cause was a head bug: `CurrentRoute()` named the page by type, not by `AutomationId`, so `WaitArrived` timed out on every `Open`. After the fix, `ButtonTests` took 0.1 s instead of 60 s.
 - **Second count: 220 of 354 pass.** The run took 3 min, almost all of it the failing tests waiting out their timeouts.
-- **Brinell became Bruinell.** The rename (c9d220b6, another session) carried every MauiUnit project over; all green after it.
+- **Brinell became Bruinet.** The rename (c9d220b6, another session) carried every MauiUnit project over; all green after it.
 - **Head gaps closed, run 3: 278.**
   - State is answered as the Windows bridge answers it.
-  - Refusals are Bruinell's exceptions.
+  - Refusals are Bruinet's exceptions.
   - The scroll routes succeed at once.
   - A Stepper publishes its two buttons.
   - The app's own verb sinks are called in process.
@@ -81,14 +81,14 @@ Tomorrow's submodule pointer on `game`.
   - Off-screen carousel cards stay in lookups, as on Windows.
   - Failing tests now refuse at once, so the run went from 2 min to 6 s.
 - **The head choice, 2026-10-26.**
-  - `BRUINELL_HEAD=mauiunit` replaces the static seam, and the device suite runs on either head itself, so the linked project `Bruinell.Maui.UITests.Munit` is gone.
+  - `BRUINET_HEAD=mauiunit` replaces the static seam, and the device suite runs on either head itself, so the linked project `Bruinet.Maui.UITests.Munit` is gone.
   - The 33 device-only tests are marked and skip with their reason: 325 pass, 35 skip, 0 fail, in 7 s. `FlaUIErrorsTests` now runs too.
   - Unset, the Windows head runs as before: `ButtonTests`, and two FlaUI-only tests, passed on the built Windows app.
 - **Named MauiUnit, 2026-10-26.** Everything moved to the new name:
   - the framework: `srcnew/MauiUnit`, namespace and package `MauiUnit`;
   - its tests and sample: `MauiUnit.Tests`, `.NUnit`, `.MSTest`, `MauiUnit.Samples.App`;
-  - the head: `Bruinell.Maui.MauiUnit` with `MauiUnitDriver`, `MauiUnitElement` and `MauiUnitHead`, and its tests;
-  - the head value: `BRUINELL_HEAD=mauiunit`, with no alias for `munit`.
+  - the head: `Bruinet.Maui.MauiUnit` with `MauiUnitDriver`, `MauiUnitElement` and `MauiUnitHead`, and its tests;
+  - the head value: `BRUINET_HEAD=mauiunit`, with no alias for `munit`.
 
   This folder keeps its name, `.my/mUnit`. All suites are green after the rename, and the device suite gives 325 pass and 35 skip on MauiUnit, 7 of 7 on the Windows spot check.
 - **The Todo sample, 2026-10-26.** The Todo app (a Shell, a backend over HTTP, SQLite, the toolkit) runs its UAT and UI suites in memory: 42 of 42 scenarios and 44 of 44 tests, with only the `@service` and live-API skips. It took, in order:
@@ -97,7 +97,7 @@ Tomorrow's submodule pointer on `game`.
   - the toolkit's assembly loaded before the first page parses, as `UseMauiCommunityToolkit()` does on a device (Debug parses XAML at run time and only knows loaded namespaces);
   - an `IAnimationManager` in MauiUnit, whose ticker reports animations off, so a toolkit state change or a fade ends at once instead of throwing;
   - the head's timeouts back to the device fixture's (a backend answers after two seconds; the 500 ms ones were a wrong assumption);
-  - `UatRuntime.CreateScope` from the fixture's composition as it is now, not as it was when the runtime was made: a restart in `BeforeFile` had left every later scenario on the old, disposed app. That one is a Bruinell.Uat bug on any head;
+  - `UatRuntime.CreateScope` from the fixture's composition as it is now, not as it was when the runtime was made: a restart in `BeforeFile` had left every later scenario on the old, disposed app. That one is a Bruinet.Uat bug on any head;
   - a back button and a title in MauiUnit's tree (`NavigationBackButton`, `NavigationTitle`), as the title bar shows them, found by the head under WinUI's ids;
   - an element counts as visible only while it is on the driver's window, on the shown page: a container that cached a gone page's element read stale text;
   - `IsIdle` runs the app's work until it is quiet for a moment, and the Todo fixture lets the app settle before resetting the backend, so a test's sync no longer finishes in the next one;

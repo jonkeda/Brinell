@@ -1,12 +1,12 @@
 ---
 name: android-control
-description: Create or extend a Bruinell native Android ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an Android view (a widget, a Material component, a RecyclerView) in srcnew/Bruinell.NativeAndroid. Use when asked to add, write or extend a native Android control object, container, collection or row, or when a native Android UI test needs a control member that does not exist yet.
+description: Create or extend a Bruinet native Android ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an Android view (a widget, a Material component, a RecyclerView) in srcnew/Bruinet.NativeAndroid. Use when asked to add, write or extend a native Android control object, container, collection or row, or when a native Android UI test needs a control member that does not exist yet.
 ---
 
 # Write a native Android ControlObject
 
 Native Android controls are generated, as MAUI's and Html's are: a template `Foo.tpl.cs` holds the
-constructors, `*Core` methods and hand-written members, and `Bruinell.Generator` writes the public
+constructors, `*Core` methods and hand-written members, and `Bruinet.Generator` writes the public
 API into `Foo.gen.cs`. The rules are the call model's (`.docs/contracts/call-model.md`,
 `.docs/contracts/control-object.md`) and the generator contract
 ([generator-contract.md](../maui-control/references/generator-contract.md)), with
@@ -24,7 +24,7 @@ API into `Foo.gen.cs`. The rules are the call model's (`.docs/contracts/call-mod
 
 ## Probe the view
 
-Dump the screen on the emulator (from the Bruinell root):
+Dump the screen on the emulator (from the Bruinet root):
 
 ```
 adb shell uiautomator dump /sdcard/ui.xml; adb pull /sdcard/ui.xml
@@ -45,7 +45,7 @@ Read the class, `resource-id`, `content-desc`, `text`, `checkable`/`checked`, `s
 
 ## Write the members
 
-Declare `protected virtual` `*Core` methods, element first, and generate (from the Bruinell root):
+Declare `protected virtual` `*Core` methods, element first, and generate (from the Bruinet root):
 
 ```
 tools\Scripts\CreateNativeAndroid.Bat
@@ -68,6 +68,6 @@ empty generated partial, or a plain `.cs` for a container.
 
 ## Prove it
 
-Add a unit test in `testsnew/Bruinell.NativeAndroid.Tests` against a mocked `INativeAndroidElement`
+Add a unit test in `testsnew/Bruinet.NativeAndroid.Tests` against a mocked `INativeAndroidElement`
 (`FakeApp`): a mocked view must show the effect of an action, or a confirming member fails. Then
 add a view to the gallery sample and a UI test with the `android-ui-test` skill.

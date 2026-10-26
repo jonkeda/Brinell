@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Bdd</RootNamespace>
+    <Description>Markdown feature files for Bruinet: parse, bind, values, tables, callable steps, namespaces and run, with no UI.</Description>
+    <PackageId>Bruinet.Bdd</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <ProjectReference Include="..\Bruinet.Core\Bruinet.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bruinet.Uat" />
+  </ItemGroup>
+
+</Project>

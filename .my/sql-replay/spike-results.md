@@ -32,16 +32,16 @@ replay's gain is "no database to reset or to have", not faster queries.
 
 ## Todo.Web on the bUnit head (0.3)
 
-Todo.Web's web suite now runs on either head (`BRUINELL_HEAD=bunit`). On bUnit the app's own
+Todo.Web's web suite now runs on either head (`BRUINET_HEAD=bunit`). On bUnit the app's own
 composition is the fallback of the context, so its singletons outlive page loads as they do in the
 host. The ten journey tests pass on both heads: about 1 s on bUnit, 12 s in the browser.
 
-Two gaps in the bUnit head showed up and are fixed in `Bruinell.Html.Bunit`:
+Two gaps in the bUnit head showed up and are fixed in `Bruinet.Html.Bunit`:
 
 - **The page's own `history.back()`.** bUnit's loose mode answered it with nothing, so an app's
   back button stayed put. The context now keeps the circuit's history and goes back in it.
-- **An app's own busy script.** Todo.Web says it's busy through `bruinellTodo.setBusy`, not
-  Bruinell's `bruinellBusy.set`. `BunitTestContextOptions.BusyScript` names it.
+- **An app's own busy script.** Todo.Web says it's busy through `bruinetTodo.setBusy`, not
+  Bruinet's `bruinetBusy.set`. `BunitTestContextOptions.BusyScript` names it.
 
 No test needed `@browser`. The two-device scenarios live in other suites and weren't touched.
 
@@ -68,9 +68,9 @@ the bUnit head's speed on its own.
 
 ## The spike app and its suite (0.1, 0.2)
 
-`samples/Bruinell.Samples.Sql.App`: Blazor Interactive Server with prerendering, EF Core 10.0.12 on
-the local SQL Server (`BruinellSqlSpike`), migration `Initial`, the three pages of the plan.
-`testsnew/Bruinell.Sql.Spike.Tests` runs its five scenarios on either head; the bUnit head renders
+`samples/Bruinet.Samples.Sql.App`: Blazor Interactive Server with prerendering, EF Core 10.0.12 on
+the local SQL Server (`BruinetSqlSpike`), migration `Initial`, the three pages of the plan.
+`testsnew/Bruinet.Sql.Spike.Tests` runs its five scenarios on either head; the bUnit head renders
 its `Routes` with its data composition and `CommandLog` as EF interceptors. All five pass on both:
 about 1 s on bUnit, 20 s in the browser. The unique-key error reaches the page as `SqlException`
 2601 and the distance comes from `geography` on both heads.
@@ -183,7 +183,7 @@ Two changes gave another outcome than the plan expected:
   `[Kind]` comes before `[CreatedAt]` in every query on `Place`. The schema and the behaviour are the
   same; the recordings aren't. This is the failure of P4.
 
-Replayed with the stamp ignored (`BRUINELL_SQL_STAMP=ignore`), changes 1, 3 and 5 each miss on the
+Replayed with the stamp ignored (`BRUINET_SQL_STAMP=ignore`), changes 1, 3 and 5 each miss on the
 first query that loads a `Place`: the new column, join or name is in every projection. So the
 stamp hides nothing that would have survived; it only says it sooner and in one line.
 
@@ -213,7 +213,7 @@ only what its test does: `DistanceIsShown` has three commands, no list query.
 | 1 | New column, stamp ignored | Miss, 5 | Miss, 5 (every query on `Place` selects it) |
 
 Changes 2 and 10 left nothing to fix; the stale ones (1, 3, 5, 8) are the stamp's and unchanged.
-The base replays 20 times without a miss, and the suites on the bUnit head pass (Bruinell's Blazor
+The base replays 20 times without a miss, and the suites on the bUnit head pass (Bruinet's Blazor
 suite 35, Todo.Web 10, the bUnit head's own tests 97 with three new ones).
 
 What's left is the honest cost: a change to a query hits the tests that run it, and a new
@@ -246,7 +246,7 @@ with a hash (columns, indexes and foreign keys for a table or view; the body for
 procedure or function) and what its body references, from `sys.sql_expression_dependencies`.
 Replay reads only the file. A recording's stamp lists the objects its commands name, procedures
 after `EXEC` included, and follows their references through views and procedures to the tables.
-After a schema change, `BRUINELL_SQL_REPLAY=Snapshot` rewrites the snapshot without re-recording,
+After a schema change, `BRUINET_SQL_REPLAY=Snapshot` rewrites the snapshot without re-recording,
 and the changed file shows in the diff.
 
 The sample has a view, `dbo.KindCounts`, read by the list page, and a procedure, `dbo.VisitCount`,
@@ -326,13 +326,13 @@ How nothing is shared:
   the test's instances. EF keeps one internal service provider for them all, so per-test
   interceptors cost nothing.
 - **A database per worker:** a test leases a database no running test holds
-  (`BruinellSqlSpike_w1`, `_w2`, ...), made from the migrations the first time, and returns it when
+  (`BruinetSqlSpike_w1`, `_w2`, ...), made from the migrations the first time, and returns it when
   done. Five tests in parallel made five. The app hosted in the test's process takes its worker's
   database through a setting (`Spike:Connection`). Off, the browser head now uses the same host
   per test, not one process for the run.
 - **The schema snapshot** is written once a run, under a lock, from the first worker database.
 
 One thing parallel recording found: SqlClient names a spatial column's type with its database
-(`BruinellSqlSpike_w4.sys.geography`), so a recording depended on which worker's database made it.
+(`BruinetSqlSpike_w4.sys.geography`), so a recording depended on which worker's database made it.
 The type is now recorded without the database; after that, serial and parallel recordings were
 the same. On a legacy system any user-defined type will do the same.

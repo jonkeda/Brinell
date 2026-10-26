@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:28:16.8273431+00:00",
+      "location": "http://localhost:5180/userform",
+      "page": "/userform",
+      "title": "User Form - Bruinet Blazor Sample",
+      "snapshot": "001-user-form-bruinet-blazor-sample.nodes.jsonl",
+      "nodes": 163,
+      "displayName": "User Form - Bruinet Blazor Sample"
+    }
+  ]
+}

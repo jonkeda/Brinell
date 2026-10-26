@@ -1,0 +1,63 @@
+{"platform":"html","location":"http://localhost:5180/login","title":"Login - Bruinet Blazor Sample","capturedAt":"2026-09-30T18:28:09.1343035+00:00","nodes":62}
+{"n":1,"p":0,"type":"html","box":[0,0,1521,874]}
+{"n":2,"p":1,"type":"body","box":[8,8,1505,858],"attr":{"data-busy":"false"}}
+{"n":3,"p":2,"type":"div","box":[8,8,1505,858],"attr":{"class":"page"}}
+{"n":4,"p":3,"type":"div","box":[8,8,283,858],"attr":{"class":"sidebar"}}
+{"n":5,"p":4,"type":"div","box":[24,24,250,504],"attr":{"class":"nav-menu","data-automation-id":"NavMenu"}}
+{"n":6,"p":5,"type":"nav","box":[24,24,250,504],"attr":{"class":"flex-column"}}
+{"n":7,"p":6,"type":"div","box":[24,24,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":8,"p":7,"type":"a","text":"Home","box":[24,32,250,34],"attr":{"class":"nav-link","data-automation-id":"NavHome","href":"","id":"nav-home"}}
+{"n":9,"p":8,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-house-door-fill"}}
+{"n":10,"p":6,"type":"div","box":[24,74,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":11,"p":10,"type":"a","text":"Counter","box":[24,82,250,34],"attr":{"class":"nav-link","data-automation-id":"NavCounter","href":"counter","id":"nav-counter"}}
+{"n":12,"p":11,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-plus-square-fill"}}
+{"n":13,"p":6,"type":"div","box":[24,125,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":14,"p":13,"type":"a","text":"Login","box":[24,133,250,34],"attr":{"aria-current":"page","class":"nav-link active","data-automation-id":"NavLogin","href":"login","id":"nav-login"}}
+{"n":15,"p":14,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-fill"}}
+{"n":16,"p":6,"type":"div","box":[24,175,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":17,"p":16,"type":"a","text":"Dashboard","box":[24,183,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDashboard","href":"dashboard","id":"nav-dashboard"}}
+{"n":18,"p":17,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-speedometer2"}}
+{"n":19,"p":6,"type":"div","box":[24,226,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":20,"p":19,"type":"a","text":"User Form","box":[24,234,250,34],"attr":{"class":"nav-link","data-automation-id":"NavUserForm","href":"userform","id":"nav-userform"}}
+{"n":21,"p":20,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-person-lines-fill"}}
+{"n":22,"p":6,"type":"div","box":[24,276,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":23,"p":22,"type":"a","text":"Data Table","box":[24,284,250,34],"attr":{"class":"nav-link","data-automation-id":"NavDataTable","href":"datatable","id":"nav-datatable"}}
+{"n":24,"p":23,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-table"}}
+{"n":25,"p":6,"type":"div","box":[24,326,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":26,"p":25,"type":"a","text":"Media Gallery","box":[24,334,250,34],"attr":{"class":"nav-link","data-automation-id":"NavMediaGallery","href":"mediagallery","id":"nav-mediagallery"}}
+{"n":27,"p":26,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-images"}}
+{"n":28,"p":6,"type":"div","box":[24,377,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":29,"p":28,"type":"a","text":"Navigation","box":[24,385,250,34],"attr":{"class":"nav-link","data-automation-id":"NavNavigation","href":"navigation","id":"nav-navigation"}}
+{"n":30,"p":29,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-signpost-split-fill"}}
+{"n":31,"p":6,"type":"div","box":[24,427,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":32,"p":31,"type":"a","text":"Validation","box":[24,435,250,34],"attr":{"class":"nav-link","data-automation-id":"NavValidation","href":"validation","id":"nav-validation"}}
+{"n":33,"p":32,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-check-circle-fill"}}
+{"n":34,"p":6,"type":"div","box":[24,478,250,50],"attr":{"class":"nav-item px-3"}}
+{"n":35,"p":34,"type":"a","text":"Advanced","box":[24,486,250,34],"attr":{"class":"nav-link","data-automation-id":"NavAdvanced","href":"advanced","id":"nav-advanced"}}
+{"n":36,"p":35,"type":"span","attr":{"aria-hidden":"true","class":"bi bi-gear-wide-connected"}}
+{"n":37,"p":3,"type":"main","box":[291,8,1222,858]}
+{"n":38,"p":37,"type":"article","box":[291,8,1222,259],"attr":{"class":"content px-4"}}
+{"n":39,"p":38,"type":"h1","text":"Login","box":[291,47,1222,36],"attr":{"data-testid":"login-title","tabindex":"-1"}}
+{"n":40,"p":38,"type":"div","box":[291,104,1222,85],"attr":{"class":"row","data-testid":"login-form"}}
+{"n":41,"p":40,"type":"div","box":[291,104,1222,85],"attr":{"class":"col-md-6"}}
+{"n":42,"p":41,"type":"form","box":[291,104,1222,85]}
+{"n":43,"p":42,"type":"input","attr":{"name":"__RequestVerificationToken","type":"hidden"}}
+{"n":44,"p":42,"type":"div","box":[291,104,1222,21],"attr":{"class":"mb-3"}}
+{"n":45,"p":44,"type":"label","text":"Username","box":[291,105,74,18],"attr":{"class":"form-label","for":"username-input"}}
+{"n":46,"p":44,"type":"input","box":[369,104,170,21],"attr":{"class":"form-control valid","data-testid":"username-input","name":"_loginModel.Username","placeholder":"Enter your username"}}
+{"n":47,"p":42,"type":"div","box":[291,126,1222,21],"attr":{"class":"mb-3"}}
+{"n":48,"p":47,"type":"label","text":"Email","box":[291,126,40,18],"attr":{"class":"form-label","for":"email-input"}}
+{"n":49,"p":47,"type":"input","box":[335,126,170,21],"attr":{"class":"form-control valid","data-testid":"email-input","name":"_loginModel.Email","placeholder":"Enter your email"}}
+{"n":50,"p":42,"type":"div","box":[291,147,1222,21],"attr":{"class":"mb-3"}}
+{"n":51,"p":50,"type":"label","text":"Password","box":[291,147,70,18],"attr":{"class":"form-label","for":"password-input"}}
+{"n":52,"p":50,"type":"input","box":[366,147,170,21],"attr":{"class":"form-control valid","data-testid":"password-input","name":"_loginModel.Password","placeholder":"Enter your password","type":"password"}}
+{"n":53,"p":42,"type":"button","box":[291,168,48,21],"attr":{"class":"btn btn-primary","data-testid":"login-btn","type":"submit"}}
+{"n":54,"p":53,"type":"span","text":"Login","box":[298,171,33,15]}
+{"n":55,"p":38,"type":"div","box":[291,208,1222,59],"attr":{"class":"mt-4"}}
+{"n":56,"p":55,"type":"h3","text":"Test Credentials","box":[291,208,1222,22]}
+{"n":57,"p":55,"type":"p","text":"Use with password to login successfully.","box":[291,248,1222,18],"attr":{"data-testid":"test-credentials-info"}}
+{"n":58,"p":57,"type":"strong","text":"test@example.com","box":[324,248,145,18]}
+{"n":59,"p":57,"type":"strong","text":"password123","box":[579,248,101,18]}
+{"n":60,"p":2,"type":"div","text":"An unhandled error has occurred.","attr":{"data-nosnippet":"","id":"blazor-error-ui"}}
+{"n":61,"p":60,"type":"a","text":"Reload","attr":{"class":"reload","href":"."}}
+{"n":62,"p":60,"type":"span","text":"\uD83D\uDDD9","attr":{"class":"dismiss"}}

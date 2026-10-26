@@ -1,0 +1,12 @@
+@page "/frames"
+
+<PageTitle>Frames - Bruinet Blazor Sample</PageTitle>
+
+@* A same-origin iframe for FrameScope (.my/html/sample-app.md item 7). The outer page has a
+   status of its own with the same test id as the frame's, so a test proves which document a
+   control was found in. *@
+<h1 data-testid="frames-title">Frames</h1>
+
+<p data-testid="inner-status">Outer page status</p>
+
+<iframe data-testid="inner-frame" src="frames/inner.html" title="Inner frame" style="width: 100%; height: 200px;"></iframe>

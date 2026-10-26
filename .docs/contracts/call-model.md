@@ -21,7 +21,7 @@ and the native Android slice (`.my/androidnative/`, 2026-10). Enforces
 | **R6** | One check that a cached root is still alive, used by every scope that caches a root (`InstanceKey` read through the driver's `Live` helper). |
 | **R7** | Non-`Try` members wait; `Try*` members answer about now. |
 | **R8** | The generator does not change: same `Run*` names and signatures on every hierarchy. |
-| **R9** | MAUI, Html and native Android own the interfaces and bases they change. The calls layer, its exceptions and `ScopeReadiness` are one copy, in Core (`Bruinell.Core.Calls`, `.Exceptions`, `.Scopes`), and so are a control's calls (`ControlCalls<TElement>`, each control base its `IControlHost`). See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
+| **R9** | MAUI, Html and native Android own the interfaces and bases they change. The calls layer, its exceptions and `ScopeReadiness` are one copy, in Core (`Bruinet.Core.Calls`, `.Exceptions`, `.Scopes`), and so are a control's calls (`ControlCalls<TElement>`, each control base its `IControlHost`). See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
 
 ## What a call may absorb, and what it must report (R0)
 
@@ -100,7 +100,7 @@ The rules above hold unchanged. Where Appium and UiAutomator2 differ:
 - **The app root is the app in front.** Another app or a system dialog in front is a not-ready
   reason that names itself; a scope drawn by the system over the app (the permission prompt)
   does not ask the app (`AsksParent => false`).
-- **A page's busy signal is a view with resource id `bruinell_busy`**, shown while the app works.
+- **A page's busy signal is a view with resource id `bruinet_busy`**, shown while the app works.
   Absent or gone is idle, so it is never a configuration error.
 - **A view below the fold is absent from the tree.** A control on a page scrolls it in
   (`UiScrollable`) as part of an attempt, throttled like a scroll into view; a control in a row

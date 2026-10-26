@@ -1,0 +1,444 @@
+{
+  "tests": [
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_AssertEnabled_PassesForEnabledButton",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_AssertEnabled_PassesForEnabledButton",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_TriggersAction",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_TriggersAction",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_WorksOnEnabledButton",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_WorksOnEnabledButton",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_WorksOnVisibleButton",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_Click_WorksOnVisibleButton",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_IsVisible_ReturnsTrueForVisibleButton",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_IsVisible_ReturnsTrueForVisibleButton",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_MultipleClicks_AllRegister",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ButtonClickTests.Button_MultipleClicks_AllRegister",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertEnabled_PassesForEnabledControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertEnabled_PassesForEnabledControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertExists_PassesForExistingControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertExists_PassesForExistingControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertVisible_PassesForVisibleControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_AssertVisible_PassesForVisibleControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027counter-title\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsEnabled_ReturnsTrueForEnabledControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsEnabled_ReturnsTrueForEnabledControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsExists_ReturnsTrueForExistingControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsExists_ReturnsTrueForExistingControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsVisible_ReturnsTrueForVisibleControl",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_IsVisible_ReturnsTrueForVisibleControl",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitEnabled_WaitsForControlToBeEnabled",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitEnabled_WaitsForControlToBeEnabled",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitExists_WaitsForControlToExist",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitExists_WaitsForControlToExist",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitVisible_WaitsForControlToBeVisible",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.ControlStateTests.Control_WaitVisible_WaitsForControlToBeVisible",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027counter-title\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_AssertTextContains_MatchesPartial",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_AssertTextContains_MatchesPartial",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_Clear_RemovesText",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_Clear_RemovesText",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_GetValue_ReturnsCurrentText",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_GetValue_ReturnsCurrentText",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_IsEnabled_ReturnsTrueForEnabledInput",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_IsEnabled_ReturnsTrueForEnabledInput",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_IsVisible_ReturnsTrueForVisibleInput",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_IsVisible_ReturnsTrueForVisibleInput",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_SetText_ReplacesExistingValue",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_SetText_ReplacesExistingValue",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_SetText_SetsValue",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_SetText_SetsValue",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_TypeText_AppendsCharacters",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Controls.TextInputTests.Input_TypeText_AppendsCharacters",
+      "pages": [
+        "LoginPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027username-input\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ClickIncrement_IncreasesCount",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ClickIncrement_IncreasesCount",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ClickReset_ResetsToZero",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ClickReset_ResetsToZero",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_CountDisplay_UpdatesAfterClick",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_CountDisplay_UpdatesAfterClick",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_IncrementButton_IsVisibleAndEnabled",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_IncrementButton_IsVisibleAndEnabled",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_InitialState_ShowsZero",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_InitialState_ShowsZero",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_MultipleIncrements_AccumulatesCorrectly",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_MultipleIncrements_AccumulatesCorrectly",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_NavigateToPage_ShowsCounterTitle",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_NavigateToPage_ShowsCounterTitle",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027counter-title\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ResetButton_IsVisibleAndEnabled",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.CounterPageTests.Counter_ResetButton_IsVisibleAndEnabled",
+      "pages": [
+        "CounterPage",
+        "SampleShell"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-testid=\u0027reset-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.UserFormPageTests.UserForm_ChooseOptions_ShowsThemChosen",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.UserFormPageTests.UserForm_ChooseOptions_ShowsThemChosen",
+      "pages": [
+        "SampleShell",
+        "UserFormPage"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-automation-id=\u0027BasicRadio\u0027]",
+        "[data-automation-id=\u0027CountrySelect\u0027]",
+        "[data-automation-id=\u0027ProfessionalRadio\u0027]",
+        "[data-automation-id=\u0027TermsCheckbox\u0027]"
+      ]
+    },
+    {
+      "name": "Bruinet.Blazor.UITests.Tests.Pages.UserFormPageTests.UserForm_FillPersonalInformation_KeepsTheValues",
+      "filter": "FullyQualifiedName=Bruinet.Blazor.UITests.Tests.Pages.UserFormPageTests.UserForm_FillPersonalInformation_KeepsTheValues",
+      "pages": [
+        "SampleShell",
+        "UserFormPage"
+      ],
+      "controls": [
+        "SampleShell",
+        "[data-automation-id=\u0027EmailInput\u0027]",
+        "[data-automation-id=\u0027FirstNameInput\u0027]",
+        "[data-automation-id=\u0027LastNameInput\u0027]",
+        "[data-automation-id=\u0027UserFormTitle\u0027]"
+      ]
+    },
+    {
+      "name": "Counter increments from the button",
+      "filter": "BddScenario=Features/counter-basic.feature.md#Counter-increments-from-the-button",
+      "file": "Features/counter-basic.feature.md",
+      "pages": [
+        "CounterPage"
+      ],
+      "controls": [
+        "CounterPage",
+        "[data-testid=\u0027count-display\u0027]",
+        "[data-testid=\u0027increment-btn\u0027]"
+      ]
+    },
+    {
+      "name": "Login rejects invalid credentials",
+      "filter": "BddScenario=Features/login-invalid-credentials.feature.md#Login-rejects-invalid-credentials",
+      "file": "Features/login-invalid-credentials.feature.md",
+      "pages": [
+        "LoginPage"
+      ],
+      "controls": [
+        "LoginPage",
+        "[data-testid=\u0027email-input\u0027]",
+        "[data-testid=\u0027error-message\u0027]",
+        "[data-testid=\u0027login-btn\u0027]",
+        "[data-testid=\u0027password-input\u0027]"
+      ]
+    }
+  ]
+}

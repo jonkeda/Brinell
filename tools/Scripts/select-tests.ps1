@@ -2,22 +2,22 @@
 <#
 .SYNOPSIS
     Picks the tests and scenarios of the Html and Blazor UI suites a change reaches, with why, as one dotnet test --filter
-    (`bruinell tests affected`, .my/test-selection/next-plan.md item 3); -Run runs them.
+    (`bruinet tests affected`, .my/test-selection/next-plan.md item 3); -Run runs them.
 
 .DESCRIPTION
-    For each suite with a touch-map.json (testsnew/Bruinell.Blazor.UITests, testsnew/Bruinell.Html.UITests): a sample page
+    For each suite with a touch-map.json (testsnew/Bruinet.Blazor.UITests, testsnew/Bruinet.Html.UITests): a sample page
     reaches the tests that used its test ids or open its route, a page object the tests that used it, a feature file its
     scenarios, a test class its tests. A change to a library the suite references (srcnew/), the suite's test base or
     fixture, the sample's layout or start, or the root build files runs the suite whole; anything else runs nothing.
 
-    bruinell is built from tools/Bruinell.Cli into a temp folder, without the recorders: the agents' MCP servers keep
-    tools/Bruinell.Cli/bin open.
+    bruinet is built from tools/Bruinet.Cli into a temp folder, without the recorders: the agents' MCP servers keep
+    tools/Bruinet.Cli/bin open.
 
 .PARAMETER Base
     Changed since this commit, the working tree and new files included. Default: HEAD.
 
 .PARAMETER Files
-    These changed files, relative to the Bruinell root, instead of git's.
+    These changed files, relative to the Bruinet root, instead of git's.
 
 .PARAMETER Suite
     Blazor, Html or both (default).
@@ -47,33 +47,33 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$cli = Join-Path ([IO.Path]::GetTempPath()) "bruinell-select-cli/$(Split-Path $root -Leaf)"
-dotnet build (Join-Path $root 'tools/Bruinell.Cli') --artifacts-path $cli -p:BruinellRecorders=false --nologo -v quiet | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'bruinell did not build.' }
-$bruinell = Join-Path $cli 'bin/Bruinell.Cli/debug/bruinell.exe'
+$cli = Join-Path ([IO.Path]::GetTempPath()) "bruinet-select-cli/$(Split-Path $root -Leaf)"
+dotnet build (Join-Path $root 'tools/Bruinet.Cli') --artifacts-path $cli -p:BruinetRecorders=false --nologo -v quiet | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'bruinet did not build.' }
+$bruinet = Join-Path $cli 'bin/Bruinet.Cli/debug/bruinet.exe'
 $names = if ($Suite -eq 'both') { 'Blazor', 'Html' } else { , $Suite }
 
 function Test-Suite([string]$project, [string[]]$arguments) {
-    $env:BRUINELL_HEAD = $Head
-    try { dotnet test $project @arguments } finally { Remove-Item Env:BRUINELL_HEAD }
+    $env:BRUINET_HEAD = $Head
+    try { dotnet test $project @arguments } finally { Remove-Item Env:BRUINET_HEAD }
 }
 
 foreach ($name in $names) {
-    $project = Join-Path $root "testsnew/Bruinell.$name.UITests"
+    $project = Join-Path $root "testsnew/Bruinet.$name.UITests"
     Write-Host "== $name"
     if ($WriteMap) {
-        $timings = Join-Path ([IO.Path]::GetTempPath()) "bruinell-timings-$name-$(Get-Date -Format yyyyMMdd-HHmmss)"
-        $env:BRUINELL_TIMINGS = $timings
-        try { Test-Suite $project @() } finally { Remove-Item Env:BRUINELL_TIMINGS }
-        & $bruinell tests touch-map $timings --suite $project
+        $timings = Join-Path ([IO.Path]::GetTempPath()) "bruinet-timings-$name-$(Get-Date -Format yyyyMMdd-HHmmss)"
+        $env:BRUINET_TIMINGS = $timings
+        try { Test-Suite $project @() } finally { Remove-Item Env:BRUINET_TIMINGS }
+        & $bruinet tests touch-map $timings --suite $project
         continue
     }
 
     $arguments = @('tests', 'affected', '--suite', $project)
     $arguments += if ($Files) { @('--files') + ($Files | ForEach-Object { Join-Path $root $_ }) } else { @('--base', $Base) }
     Push-Location $root
-    try { $lines = & $bruinell @arguments } finally { Pop-Location }
-    if ($LASTEXITCODE -ne 0) { throw "bruinell tests affected failed for $name." }
+    try { $lines = & $bruinet @arguments } finally { Pop-Location }
+    if ($LASTEXITCODE -ne 0) { throw "bruinet tests affected failed for $name." }
     $lines | ForEach-Object { Write-Host $_ }
     if (-not $Run) { continue }
     $filter = $lines | Select-String '^--filter "(.*)"$' | Select-Object -First 1

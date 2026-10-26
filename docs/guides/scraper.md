@@ -6,7 +6,7 @@ page objects and controls from them. Html and Blazor apps today. The decisions a
 
 ## The view: eight steps
 
-Open it in **VS Code** with **Bruinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar),
+Open it in **VS Code** with **Bruinet BDD: Open Scraper** (also on a `scraper.config.md`'s title bar),
 in **Visual Studio** with View, Other Windows, **Scraper**. It is a workflow: the steps on the left,
 each with its state (✓ done, its number to do, ! to look at) and a count, the step in the panel on
 the right with one main button, and in the header **Next:** what to do now, with **Go**.
@@ -32,7 +32,7 @@ Explore runs, a strip under the header shows its progress with **Capture**, **Pi
 ## Make a project scrapeable
 
 A new project: **+** beside the Scraper's project picker. The form asks for the name, folder,
-platform, start URL and test ids, and whether Bruinell is referenced as projects (in this repository)
+platform, start URL and test ids, and whether Bruinet is referenced as projects (in this repository)
 or as packages. It writes the `.csproj`, its `scraper.config.md` and an empty `Pages/`, and adds the
 project to the open solution (in a solution folder, `Scraped` unless you name another). Each problem
 shows under its field before anything is written. **Add a config to an existing project instead**
@@ -88,7 +88,7 @@ controls):
 | pin-code | pin |
 ```
 
-- `Platform`: `html` or `blazor` (a Blazor project gets the `Bruinell.Blazor` controls suggested).
+- `Platform`: `html` or `blazor` (a Blazor project gets the `Bruinet.Blazor` controls suggested).
 - `Aliases`: other hosts of the same app; a page elsewhere (a sign-in provider) is not recorded.
 - `Test ids`: the attributes that are test ids, preferred first.
 - `Masks`: text replaced before anything is written. A page capture never records what a user typed;
@@ -106,7 +106,7 @@ controls):
   row), so a draft is drafted again over itself and never over a file you made.
 - `Components` (optional, columns `Match`, `Kind`, `Name`): elements the Scraper cannot tell by itself, named by you. `Match` is `selector: …` or `text: …`; `Kind` is `collection`, `component` or what a test does with it (`text`, `selector`, `toggle`, `range`, `date`, `clickable`, `readable`). They win over its own reading: step 5 offers them by that name, and their brief says so.
 
-`testsnew/Bruinell.Blazor.UITests` is an example: its config, its `Recordings/`, and
+`testsnew/Bruinet.Blazor.UITests` is an example: its config, its `Recordings/`, and
 `PageObjects/UserFormPage.cs`, made from them.
 
 ## Record
@@ -133,14 +133,14 @@ no model.
   with **Explore** (a dry run the first time: links only, it lists what it would click), **Stop**
   and **Continue** in the running strip. Step 4 lists what was captured, skipped and blocked, with
   **Never click**, **Always click** or **Allow this request**. Steps 6 and 7 draft and verify.
-- **The command line** ([`bruinell`](../run/cli.md), from the solution folder or a project's own
+- **The command line** ([`bruinet`](../run/cli.md), from the solution folder or a project's own
   folder, which picks the project):
 
   ```powershell
-  bruinell scrape status
-  bruinell scrape explore --project MyApp.UITests [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--headless] [--yes] [--json]
-  bruinell scrape draft --project MyApp.UITests [--page /orders/{id}]
-  bruinell scrape verify --project MyApp.UITests [--headless]
+  bruinet scrape status
+  bruinet scrape explore --project MyApp.UITests [--dry-run] [--max-pages N] [--max-depth N] [--max-minutes N] [--headless] [--yes] [--json]
+  bruinet scrape draft --project MyApp.UITests [--page /orders/{id}]
+  bruinet scrape verify --project MyApp.UITests [--headless]
   ```
 
   `explore` shows the guards and asks "Go on?" unless `--yes`; with no one at a terminal it does
@@ -237,8 +237,8 @@ every member's locator: once, several times, or not at all.
 
 The view's agent buttons (step 5's **Make *n* controls** and **Fix with the agent**, step 6's **Improve with the agent**, a node's **Make a control**) send a prompt
 into Copilot Chat, in the agent and with the model chosen in the header (**Agent and model**). The
-**Bruinell scraper** agent (`.github/agents/bruinell-scraper.agent.md`) has the Bruinell tools and the
-rules; **Agent** and **Ask** get them from the `/bruinell-scrape-pages` prompt. A control is made from
+**Bruinet scraper** agent (`.github/agents/bruinet-scraper.agent.md`) has the Bruinet tools and the
+rules; **Agent** and **Ask** get them from the `/bruinet-scrape-pages` prompt. A control is made from
 its brief (`control_brief`), at most five per prompt. When the IDE cannot send it, the prompt goes to
 the clipboard and the view says so. When the answer is complete, step 5 or 6 checks again by itself.
 Visual Studio sends it into the open chat session with the chosen model, in the chat window's own
@@ -251,7 +251,7 @@ Your choice is kept per project in `.scraper-state.json`; `## Agent` in the conf
 
 | Field | Value |
 | --- | --- |
-| Agent | bruinell-scraper |
+| Agent | bruinet-scraper |
 | Model | gpt-4.1 |
 ```
 
@@ -288,7 +288,7 @@ object** asks the agent to change only that.
 ## The loop
 
 `tools/Scripts/scrape-loop.ps1` runs everything end to end, unattended, and writes one report. Run
-it after changing the Scraper (from the Bruinell root):
+it after changing the Scraper (from the Bruinet root):
 
 ```powershell
 pwsh tools/Scripts/scrape-loop.ps1 -Target test-site
@@ -307,11 +307,11 @@ judge.
 
 | Stage | Does | Fails when |
 | --- | --- | --- |
-| App | starts the target on a free port: the Scraper's test site (`testsnew/Bruinell.Scraper.TestSite`, with a page of dangerous controls that count each hit) or the Blazor sample | it does not answer |
+| App | starts the target on a free port: the Scraper's test site (`testsnew/Bruinet.Scraper.TestSite`, with a page of dangerous controls that count each hit) or the Blazor sample | it does not answer |
 | Explore | `scrape explore --headless --yes` with the profile's guards | a guard stopped it unexpectedly, or it found fewer pages than the target has |
 | Guards | reads the test site's counters | `careful`: any counter moved. `test-tenant`: anything but delete and update moved, or those were not reached |
 | Draft | `scrape draft` | a draft does not build |
-| Agent | Copilot CLI or Claude Code with only the Bruinell MCP server's tools, to make controls and better names; Copilot CLI by default; skipped for `-Agent none` | `check_code` fails, or it ran past `-AgentMinutes` |
+| Agent | Copilot CLI or Claude Code with only the Bruinet MCP server's tools, to make controls and better names; Copilot CLI by default; skipped for `-Agent none` | `check_code` fails, or it ran past `-AgentMinutes` |
 | Verify | `scrape verify` | a member is not found, or found more than once. A member of the project's own control (`new(this, "Elements")`) is not read: its control makes its locator |
 
 Each run works on a new project under `TestResults/scrape-loop/<date>-<target>/`, never on the

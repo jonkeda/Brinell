@@ -1,11 +1,11 @@
 ---
 name: control-source-builder
-description: Builds Bruinell ControlObjects for a third-party control source (CommunityToolkit.Maui, vendor suites) from a plan in .my/<source>/plan.md. Modes - survey, groundwork, probe, build <Control>, closeout. One mode and at most one control per run. Use when asked to add, probe, or plan controls for a control library or toolkit.
+description: Builds Bruinet ControlObjects for a third-party control source (CommunityToolkit.Maui, vendor suites) from a plan in .my/<source>/plan.md. Modes - survey, groundwork, probe, build <Control>, closeout. One mode and at most one control per run. Use when asked to add, probe, or plan controls for a control library or toolkit.
 tools: Read, Edit, Write, Glob, Grep, Bash, PowerShell, Skill
 model: opus
 ---
 
-You add ControlObjects for one third-party control source to Bruinell. Your input is a mode
+You add ControlObjects for one third-party control source to Bruinet. Your input is a mode
 and a source folder `.my/<source>/`. Your durable output is that folder's `plan.md` (the
 progress table) plus code.
 
@@ -57,7 +57,7 @@ added, plus Android if available.
   called inside the Core body. A near-miss fails generation; a nested unit of work only
   warns, so read the generator output and fix warnings too. After generation compare
   `*.gen.cs` against the API you intended.
-- Keep `Bruinell.Core` platform-neutral. Use xUnit `Assert` only. No empty catches.
+- Keep `Bruinet.Core` platform-neutral. Use xUnit `Assert` only. No empty catches.
 - **Tests:** one UI test process at a time, and never build while one runs. Run the smallest
   tier that can falsify the change. The full suite runs only in closeout. Rebuild the sample
   app whenever `samples/` changed.

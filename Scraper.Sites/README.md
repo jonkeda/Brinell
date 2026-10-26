@@ -6,18 +6,18 @@ and draft is in [the guide](../docs/guides/scraper.md#explore-and-draft).
 
 | Project | Site and page |
 | --- | --- |
-| `Bruinell.Html.Plain` | [the-internet `/tables`](https://the-internet.herokuapp.com/tables) |
-| `Bruinell.Html.React` | [DemoQA `/tabs`](https://demoqa.com/tabs) |
-| `Bruinell.Html.Vue2` | [Element UI tabs](https://element.eleme.io/#/en-US/component/tabs) |
-| `Bruinell.Html.Blazor` | [MudBlazor tabs](https://mudblazor.com/components/tabs) |
+| `Bruinet.Html.Plain` | [the-internet `/tables`](https://the-internet.herokuapp.com/tables) |
+| `Bruinet.Html.React` | [DemoQA `/tabs`](https://demoqa.com/tabs) |
+| `Bruinet.Html.Vue2` | [Element UI tabs](https://element.eleme.io/#/en-US/component/tabs) |
+| `Bruinet.Html.Blazor` | [MudBlazor tabs](https://mudblazor.com/components/tabs) |
 
 Explore, draft and verify one (from this folder):
 
 ```powershell
-$bruinell = '..\tools\Scripts\bruinell.ps1'
-& $bruinell scrape explore --project Bruinell.Html.Plain --solution . --headless
-& $bruinell scrape draft --project Bruinell.Html.Plain --solution .
-& $bruinell scrape verify --project Bruinell.Html.Plain --solution . --headless
+$bruinet = '..\tools\Scripts\bruinet.ps1'
+& $bruinet scrape explore --project Bruinet.Html.Plain --solution . --headless
+& $bruinet scrape draft --project Bruinet.Html.Plain --solution .
+& $bruinet scrape verify --project Bruinet.Html.Plain --solution . --headless
 ```
 
 The sites' recordings stay out of git (their content is not ours); the drafted page objects are
