@@ -36,7 +36,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.02.3 | Empty or whitespace title shows "Title is required" and does not save | U + H | All variants in U; one in H for the error label |
 | TOD.02.4 | Title over 100 characters is refused | U | Boundary values (100 / 101) |
 | TOD.02.5 | A due date is optional; switching it off clears it | U + H | U for the rule; H for Switch + DatePicker interplay |
-| TOD.02.6 | The new todo is stored locally with a client-generated id and "pending" | I | Real repository + SQLite |
+| TOD.02.6 | The new todo is stored locally with a client-generated id and "local only" | I | Real repository + SQLite |
 
 ## TOD.03 Read a todo
 

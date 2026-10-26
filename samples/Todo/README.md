@@ -92,7 +92,7 @@ tier that can prove it:
 | TOD.02.3 | Empty or whitespace title shows "Title is required" and does not save | U + H |
 | TOD.02.4 | Title over 100 characters is refused | U |
 | TOD.02.5 | A due date is optional; switching it off clears it | U + H |
-| TOD.02.6 | The new todo is stored locally with a client-generated id and "pending" | I |
+| TOD.02.6 | The new todo is stored locally with a client-generated id and "local only" | I |
 
 Every test carries its subtask as a trait, so you can find all of TOD.02.3's tests with
 `--filter Journey=TOD.02.3`, in any test project.

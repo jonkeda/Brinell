@@ -33,8 +33,8 @@ So Frainet's first job is the layers above the tests, and tracing rules, not onl
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | `Frainet/specs/todo/TOD.02.spec.md`: intent, rules (`TOD.02.R1`…), examples per rule, what is not in the journey, open questions | The owner reads it and says it is what Todo means. Written: 10 rules, an example per rule in Gherkin, no code names, 4 open questions |
-| 2 | The format written down: `Frainet/docs/spec-format.md`, only what step 1 used | One page |
+| 1 | `Frainet/specs/todo/TOD.02.spec.md`: intent, rules (`TOD.02.R1`…), examples per rule, what is not in the journey, open questions | The owner reads it and says it is what Todo means. Done: accepted 2026-10-26, 11 rules, 2 choices, no open questions |
+| 2 | The format written down: `Frainet/docs/spec-format.md`, only what step 1 used | One page. Done: the file, the six sections, what a spec never holds, the vague words for step 3 |
 | 3 | Spec check, no model: every rule has an id, an example and a subtask; no vague words from a short list ("fast", "should", "appropriate", "etc.") | A console or test project fails on a broken copy of the spec |
 | 4 | Work check: every rule id reached by a test (a `Rule` trait or a scenario tag), every rule trait names a rule; reuse `JourneyCoverage`'s reading of traits and scenarios | Fails when a rule loses its test |
 | 5 | Try it as the factory would: an agent gets only the spec, writes a rule's missing test; the checks judge it | One rule added dark, end to end |

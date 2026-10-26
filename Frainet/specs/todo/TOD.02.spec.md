@@ -5,7 +5,7 @@
 | Product | Todo |
 | Journey | TOD.02 Create a todo |
 | Where | The app on Windows and Android, and the same app on the web |
-| Status | draft |
+| Status | accepted 2026-10-26 |
 
 ## Intent
 
@@ -29,6 +29,7 @@ Each rule holds however a todo is created.
 | TOD.02.R8 | The status may be changed before the first save; the todo keeps the status shown. |
 | TOD.02.R9 | A new todo is kept on the device straight away and shows "Local only" until the next sync. |
 | TOD.02.R10 | A successful save returns to the list, which shows the new todo beside the ones already there. |
+| TOD.02.R11 | A due date in the past is allowed; the todo's status shows "Overdue" until it is Done. |
 
 ## Examples
 
@@ -178,20 +179,31 @@ Then I am on the list
 And the list shows "Write the report" and "Buy milk"
 ```
 
+### R11 A due date may be in the past
+
+Someone may write down what they already missed. The app keeps it and makes clear it is late.
+
+```gherkin
+Given today is 26 October 2026
+And a new todo's form
+When I switch the due date on
+And I pick 20 October 2026
+And I type "Pay the bill" as the title
+And I press Save
+Then the list shows "Pay the bill"
+And "Pay the bill" shows "Overdue"
+```
+
+## Choices
+
+What was decided to leave free, so nobody builds a limit for it.
+
+- A todo's notes have no length limit.
+- Two todos may have the same title.
+
 ## Not in this journey
 
 - Editing, changing the status later, deleting: TOD.04, TOD.05, TOD.06.
 - Sending the todo to the server: TOD.07; R9 only says it waits for a sync.
 - How a todo looks in the list, its order and markers: TOD.01.
 - Giving a todo to someone: not planned yet.
-
-## Open questions
-
-Each needs the owner's yes before the rules change.
-
-- Is a new todo "Local only" or "Waiting to sync"? Proposal: "Local only", as R9 says; "Waiting
-  to sync" is for a todo the server already has, changed since.
-- May a new todo be due in the past? Proposal: yes, shown as past due, added as R11.
-- Do a todo's notes have a length limit? Proposal: no limit for now, recorded here as a choice.
-- May two todos have the same title? Proposal: yes; write it as a rule only if it is ever
-  questioned.
