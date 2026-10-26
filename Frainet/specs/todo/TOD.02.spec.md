@@ -185,15 +185,6 @@ And the list shows "Write the report" and "Buy milk"
 - How a todo looks in the list, its order and markers: TOD.01.
 - Giving a todo to someone: not planned yet.
 
-## Decision boundaries
-
-| An agent may | An agent asks first |
-| --- | --- |
-| Choose how a rule is built, as long as its examples hold | Change a rule, a message's words or the 100 |
-| Add an example to a rule | Remove or soften an example |
-| Answer an open question below with its proposal, recorded here | Add something a todo holds, or drop something |
-| | Change what the app sends to or expects from the server |
-
 ## Open questions
 
 Each needs the owner's yes before the rules change.
