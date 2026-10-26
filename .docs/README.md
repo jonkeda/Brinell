@@ -50,6 +50,7 @@ How this differs from the other trees:
 - [AD-029: The first model is a project of its own](decisions/ad-029-the-first-model-is-a-project-of-its-own.md)
 - [AD-030: A Blazor suite runs without a browser, and the browser judges the gate](decisions/ad-030-a-blazor-suite-runs-without-a-browser.md)
 - [AD-031: A replayed test answers from the database it recorded, and the database judges the gate](decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md)
+- [AD-032: A MAUI suite runs without a device, and the device judges the gate](decisions/ad-032-a-maui-suite-runs-without-a-device.md)
 
 ## Contracts
 

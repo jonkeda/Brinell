@@ -1,6 +1,6 @@
 ---
 name: maui-ui-test
-description: Write or fix Bruinet MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in testsnew/Bruinet.Maui.UITests, or a control unit test in testsnew/Bruinet.Maui.Tests.
+description: Write or fix Bruinet MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in testsnew/Bruinet.Maui.UITests, or a control unit test in testsnew/Bruinet.Maui.Tests; also when a MAUI test must run on the MauiUnit head (BRUINET_HEAD=mauiunit) or be marked DeviceFact or @device.
 ---
 
 # Write MAUI UI tests
@@ -19,7 +19,9 @@ needs something they do not offer, add it there first; never reach past them.
    with `AutomationId`s and a status label that shows the result, then rebuild the app:
    `dotnet build Bruinet.sln -v:minimal /nr:false` builds it, including the Windows exe
    the fixture launches.
-4. **Run the smallest tier that can fail**:
+4. **Run the smallest tier that can fail on the MauiUnit head first**, in seconds and with no app
+   built: `$env:BRUINET_HEAD = "mauiunit"; dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
+   Then the same filter on the device, with the variable removed:
    `dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
    One UI test process at a time, and never build while it runs. Tier 2b
    (`--filter "Stage=Background"`) also launches the Shell sample app, which `Bruinet.sln`
@@ -109,6 +111,37 @@ public class MediaElementTests
 - Comments follow the policy in
   [.github/instructions/csharp-comments.instructions.md](../../instructions/csharp-comments.instructions.md):
   one `<summary>` line on the test class; no `<remarks>` restating what a test does.
+
+## Two heads: the device and MauiUnit
+
+`Bruinet.Maui.UITests` and the Todo sample's `Bruinet.Samples.Todo.UITests` and `.Uat` run on both
+unchanged (AD-032, [docs/run/MAUI.md](../../../docs/run/MAUI.md)): the device (Windows through FlaUI,
+Android and iOS through Appium) and MauiUnit, the app rendered in the test process from its build for
+plain `net10.0` (`samples/*.Headless`). Write every MAUI test so it can run on both.
+
+- **A test that needs a device** says so: `[DeviceFact("why")]` instead of `[Fact]` (it takes the same
+  `Timeout`), `[WindowsOnlyFact(Device = "why")]` for one that is Windows-only as well, `@device` on a
+  scenario. It is skipped on MauiUnit with the reason; the reason names what needs the device
+  (`"it reads scroll offsets, which need layout"`).
+- **What needs one:** layout (sizes, bounds, positions, scroll offsets), pixels and screenshots, real
+  input (keyboard, pointer, focus by the system), native pickers and dialogs as the platform draws them,
+  `#if` platform code, recordings, and tests of a device driver itself. On MauiUnit these end the call
+  at once with `DeviceOnlyException` naming the member, which tells you to mark the test.
+- **Visible on MauiUnit** means on the shown page of the driver's window with no `IsVisible="False"`
+  ancestor, as on Windows: an off-screen carousel card or row is found, and is not shown. Scrolling
+  succeeds at once, since nothing is off screen; elements report nominal 1x1 bounds.
+- **MauiUnit runs the app's work only when a call lets it.** Its dispatcher is a queue each call
+  drains, with a virtual clock, so a wait in a control (`Assert*`, `WaitArrived`) is what moves the app
+  on. Never add a sleep for it: a test that passes on the device and times out on MauiUnit is a head
+  gap.
+- **Platform checks:** the head reports `MauiPlatform.MauiUnit` and otherwise answers as Windows. A page
+  object or fixture that branches on `Context.Platform` for a reason that holds in memory says
+  `Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit`; a branch on Android needs nothing.
+- **Never change what a test checks to make it pass on one head.** A test that passes on the device and
+  fails on MauiUnit is a head gap or a device-only test: mark it, or fix the head in
+  `srcnew/Bruinet.Maui.MauiUnit` (or MauiUnit itself in `srcnew/MauiUnit`). A page added to the sample
+  app is in the headless build already, which links its sources; a new fixture names its in-memory app
+  in `CreateInMemoryOptions`.
 
 ## The never-list
 

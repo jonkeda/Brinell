@@ -41,9 +41,12 @@ Tomorrow's submodule pointer on `game`.
 
 ## Next
 
-1. A decision record once the owner has seen the counts (the device suite, and now the Todo sample): a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
-2. The maui-ui-test skill told when to use `DeviceFact` and `@device`, as html-ui-test was for `BrowserFact`.
+1. A run of the three suites on a real Mac (`dotnet workload install maui`, then `BRUINET_HEAD=mauiunit`).
+2. A CI step on `windows-latest` with `BRUINET_HEAD=mauiunit`; a Linux job after the Mac run.
 3. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
+
+Done 2026-10-26: the decision record (`.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md`)
+and the maui-ui-test skill's "Two heads" section (`DeviceFact`, `@device`, what needs a device).
 
 ## Log
 
