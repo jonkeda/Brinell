@@ -10,6 +10,7 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 - [proposal.md](proposal.md): the architecture proposal, how bUnit maps onto MAUI, the feasibility and the roadmap.
 - [design.md](design.md): namespaces, API, interfaces, the head's mapping, MAUI internals and planned skeletons.
 - [findings.md](findings.md): what the spikes proved about MAUI without a platform.
+- [unskip-plan.md](unskip-plan.md): which of the device suite's skips MauiUnit can take on, and the work for each.
 - [suite-count.md](suite-count.md): the device suite on the MauiUnit head, what passes and why the rest cannot; the full list is in [suite-count-failures.md](suite-count-failures.md).
 
 ## Status
