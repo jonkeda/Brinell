@@ -95,10 +95,18 @@ public sealed class TodoTestSet
     }
 
     /// <summary>Creates the database at <paramref name="path"/> and stores the local half.</summary>
+    /// <remarks>
+    /// In a replayed run (<see cref="TodoSqlReplay"/>) the file is made empty: the app's reads are answered from the
+    /// recording, and one that reached the file would find nothing.
+    /// </remarks>
     public async Task SeedDatabaseAsync(string path, CancellationToken cancellationToken = default)
     {
         var database = new TodoDatabase(path);
         await database.MigrateAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (TodoSqlReplay.ModeOfRun == Bruinet.Mocking.Data.Replay.ReplayMode.Replay)
+        {
+            return;
+        }
 
         var repository = new SqliteTodoRepository(database);
         foreach (var item in Local)

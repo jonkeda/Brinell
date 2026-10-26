@@ -115,6 +115,25 @@ public sealed class RecordingMaintenanceTests : IDisposable
     }
 
     [Fact]
+    public void Review_ATestReadingAnEarlierTestsNewRow_IsTheSameAfterBothAreRecordedAgain()
+    {
+        // Tests sharing an app: B reads the row A made, with A's new id, volatile only in A's recording.
+        void Record(string id)
+        {
+            var a = Recording(null, Write("INSERT INTO todos (id) VALUES ($id)", 1, ("$id", id)));
+            a.Exchanges[0].Volatile = ["$id"];
+            a.Save(Path.Combine(_folder, "A.json"));
+            Recording(null, Read("SELECT id FROM todos", ["id"], [id])).Save(Path.Combine(_folder, "B.json"));
+        }
+
+        Record("11111111-1111-1111-1111-111111111111");
+        RecordingReview.Accept(_folder);
+        Record("22222222-2222-2222-2222-222222222222");
+
+        Assert.Empty(RecordingReview.Unreviewed(_folder));
+    }
+
+    [Fact]
     public void Record_OverARecordingWithoutOneOfItsCommands_Saves()
     {
         var path = Path.Combine(_folder, "B.json");

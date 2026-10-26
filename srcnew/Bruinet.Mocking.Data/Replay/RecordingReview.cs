@@ -41,20 +41,14 @@ public static class RecordingReview
     /// two writes as a set (a browser repeats reads a varying number of times), volatile values blanked (each recording
     /// makes its own ids). Two recordings of an unchanged test hash the same.
     /// </summary>
-    public static string Hash(string json)
+    /// <param name="json">The recording.</param>
+    /// <param name="shared">Values volatile in the suite's other recordings (<see cref="VolatileValues(string)"/>): tests that share an
+    /// app read rows earlier tests made, with those tests' new ids and titles.</param>
+    public static string Hash(string json, IReadOnlyCollection<string>? shared = null)
     {
         var recording = Recording.Parse(json) ?? new Recording();
-        var volatileValues = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var exchange in recording.Exchanges)
-        {
-            foreach (var name in exchange.Volatile)
-            {
-                if (exchange.Parameters.TryGetValue(name, out var value) && Values.Canonical(value) is { } canonical)
-                {
-                    volatileValues.Add(canonical);
-                }
-            }
-        }
+        var volatileValues = new HashSet<string>(VolatileValues([recording]), StringComparer.Ordinal);
+        volatileValues.UnionWith(shared ?? []);
 
         string Show(System.Text.Json.Nodes.JsonNode? value) => Values.Canonical(value) is { } canonical ? (volatileValues.Contains(canonical) ? "~" : canonical) : "null";
 
@@ -108,14 +102,37 @@ public static class RecordingReview
         return BitConverter.ToString(bytes, 0, 8).Replace("-", string.Empty);
     }
 
+    /// <summary>The canonical values of every volatile parameter in <paramref name="recordings"/>.</summary>
+    public static IReadOnlyCollection<string> VolatileValues(IEnumerable<Recording> recordings)
+    {
+        var values = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var exchange in recordings.SelectMany(recording => recording.Exchanges))
+        {
+            foreach (var name in exchange.Volatile)
+            {
+                if (exchange.Parameters.TryGetValue(name, out var value) && Values.Canonical(value) is { } canonical)
+                {
+                    values.Add(canonical);
+                }
+            }
+        }
+
+        return values;
+    }
+
+    /// <summary>The volatile values of every recording under <paramref name="folder"/>.</summary>
+    public static IReadOnlyCollection<string> VolatileValues(string folder)
+        => VolatileValues(Recordings(folder).Select(path => Recording.Load(Path.Combine(folder, path))!));
+
     /// <summary>What went in unread: <c>new</c>, <c>changed</c> or <c>gone</c>, and the recording's path.</summary>
     public static IReadOnlyList<string> Unreviewed(string folder)
     {
         var reviewed = Load(folder);
+        var shared = VolatileValues(folder);
         var lines = new List<string>();
         foreach (var path in Recordings(folder))
         {
-            var hash = Hash(File.ReadAllText(Path.Combine(folder, path)));
+            var hash = Hash(File.ReadAllText(Path.Combine(folder, path)), shared);
             if (!reviewed.TryGetValue(path, out var accepted))
             {
                 lines.Add("new " + path);
@@ -134,9 +151,10 @@ public static class RecordingReview
     public static void Accept(string folder)
     {
         var reviewed = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        var shared = VolatileValues(folder);
         foreach (var path in Recordings(folder))
         {
-            reviewed[path] = Hash(File.ReadAllText(Path.Combine(folder, path)));
+            reviewed[path] = Hash(File.ReadAllText(Path.Combine(folder, path)), shared);
         }
 
         File.WriteAllText(Path.Combine(folder, FileName), JsonSerializer.Serialize(reviewed, Json));

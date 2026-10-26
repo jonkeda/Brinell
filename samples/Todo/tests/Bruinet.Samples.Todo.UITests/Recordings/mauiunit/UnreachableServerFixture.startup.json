@@ -1,0 +1,351 @@
+{
+  "Version": 2,
+  "Stamp": {
+    "Versions": {},
+    "Objects": {
+      "main.todos": "CE98F64209A6"
+    }
+  },
+  "Exchanges": [
+    {
+      "Index": 0,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              {
+                "t": "String",
+                "v": "Oat, not dairy"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Book dentist"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "InProgress"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-02T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-03T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "File taxes"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-20T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-28T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 1,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              {
+                "t": "String",
+                "v": "Oat, not dairy"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Book dentist"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "InProgress"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-02T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-03T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "File taxes"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-20T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-28T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    }
+  ]
+}

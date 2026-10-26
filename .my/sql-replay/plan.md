@@ -12,7 +12,8 @@ review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-r
 [docs/guides/sql-replay.md](../../docs/guides/sql-replay.md) and
 [AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md). Steps 0 to 6
 are done; 1.7, the legacy system's measurement, waits until the owner has the system, then the trial there.
-Step 7, the schema snapshot on SQLite, is built and Q1 to Q6 pass ([sqlite-results.md](sqlite-results.md)). Each step ends green:
+Step 7, the schema snapshot on SQLite, is built and Q1 to Q6 pass ([sqlite-results.md](sqlite-results.md)).
+Step 8, Todo's web suite on bUnit and MAUI suite on MauiUnit replaying their SQLite, T1 to T5 pass ([todo-results.md](todo-results.md)). Each step ends green:
 `dotnet build Bruinet.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinet.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -439,6 +440,36 @@ does. About half a day.
 Q1 to Q5 run in `testsnew/Bruinet.Mocking.Data.Tests` (`SqliteSchemaTests`, no server needed); Q6
 there too, and once through the CLI by hand, recorded in `sqlite-results.md`. The guide's "Stale
 Recordings" section gets `--provider sqlite`.
+
+## Step 8: Todo's suites replay their SQLite
+
+The Todo sample keeps each device's todos in a SQLite file (`TodoDatabase`, raw ADO.NET, its
+`Wrap` hook already used by the log) and syncs with a backend over HTTP (`MockApiServer`). Step 8
+makes the two suites that compose the app in their own process record and replay that file: the web
+suite on bUnit (`Bruinet.Samples.Todo.Web.UITests`, 10 tests, 2 s) and the MAUI suite on MauiUnit
+(`Bruinet.Samples.Todo.UITests`, 44 tests, 19 s). The backend stays a stub, as it is today.
+
+### 8.1 Decisions
+
+| Question | Decision |
+| --- | --- |
+| Where the session reaches the app | `TodoDatabase.Wrap`, set where each head composes the app (`BunitTodoWebHead.Compose`, `TodoAppFixtureBase.CreateMauiUnitOptions`) to a `TodoSqlReplay` the device or fixture owns |
+| A test's session in an app that outlives it | The app lives for a collection; `TodoSqlReplay` holds the session of the test running now, swapped per test, never static. Tests in a collection run one after another; collections each have their own |
+| Where a test begins and ends | Its class's constructor calls `StartTest(output)`: the name from xUnit's output helper (`TestScope` is set only after the constructor), the session begun once the last test's work is quiet. The class's `Dispose` calls `EndTest()`: the recording saved, or its misses thrown into that test |
+| Heads | Only the in-process heads: bUnit and MauiUnit. The browser and Windows heads run the app in a process of their own and stay on the real file (the hook of step 4 would serve them later) |
+| Proof of no database | In replay the test set seeds an empty file (migrated, no rows): a read that reached the file would find nothing |
+| Recordings and stamp | `tests/<suite>/Recordings/<head>/<Class.Method>.json`; `Recordings/schema.json` from a migrated file through the SQLite snapshot (step 7), written when recording |
+| Review | `Recordings/reviewed.json` and a `RecordingReviewTests` per suite (step 5) |
+
+### 8.2 Checks
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| T1 | Web on bUnit | Recorded twice, then 10 of 10 replay 5 times in a row with the empty file, no miss |
+| T2 | MAUI on MauiUnit | Recorded twice, then 44 of 44 replay 5 times with the empty file, no miss |
+| T3 | Off is unchanged | Both suites pass as before with `BRUINET_SQL_REPLAY` unset, and on the browser head |
+| T4 | A miss names its test | A changed query in `SqliteTodoRepository` fails the tests that run it in replay, each naming the command |
+| T5 | Stale and review | `bruinet sql stale` 0 on the checked-in snapshot; `bruinet sql diff` 0 after a re-record; the review tests pass |
 
 ## Steps 1 to 6: outline
 

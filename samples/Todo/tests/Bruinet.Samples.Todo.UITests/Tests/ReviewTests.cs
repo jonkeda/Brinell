@@ -23,14 +23,17 @@ namespace Bruinet.Samples.Todo.UITests.Tests;
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Gate", "Review")]
-public sealed class ReviewTests
+public sealed class ReviewTests : IDisposable
 {
     private readonly ThreeTodosFixture _fixture;
 
-    public ReviewTests(ThreeTodosFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public ReviewTests(ThreeTodosFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
@@ -125,14 +128,17 @@ public sealed class ReviewTests
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Gate", "Review")]
-public sealed class ReviewEmptyTests
+public sealed class ReviewEmptyTests : IDisposable
 {
     private readonly EmptyFixture _fixture;
 
-    public ReviewEmptyTests(EmptyFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public ReviewEmptyTests(EmptyFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

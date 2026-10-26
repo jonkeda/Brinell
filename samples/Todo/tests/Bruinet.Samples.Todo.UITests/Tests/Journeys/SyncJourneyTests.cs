@@ -20,18 +20,21 @@ namespace Bruinet.Samples.Todo.UITests.Tests.Journeys;
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class SyncJourneyTests
+public sealed class SyncJourneyTests : IDisposable
 {
     private const string AnyTodo = TodoApi.TodosPath + "/*";
 
     private readonly ThreeTodosFixture _fixture;
+
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
     private readonly ITestOutputHelper _output;
 
     public SyncJourneyTests(ThreeTodosFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
         _output = output;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

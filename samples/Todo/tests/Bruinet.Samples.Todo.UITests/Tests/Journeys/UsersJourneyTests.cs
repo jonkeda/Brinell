@@ -14,16 +14,19 @@ namespace Bruinet.Samples.Todo.UITests.Tests.Journeys;
 [Trait("Category", "UITest")]
 [Trait("Module", "Users")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class UsersJourneyTests
+public sealed class UsersJourneyTests : IDisposable
 {
     private const string OfflineNotice = "You are offline. Users can be viewed, but not changed.";
 
     private readonly TeamFixture _fixture;
 
-    public UsersJourneyTests(TeamFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public UsersJourneyTests(TeamFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

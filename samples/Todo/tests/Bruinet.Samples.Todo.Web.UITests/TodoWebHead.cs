@@ -29,6 +29,9 @@ public interface ITodoWebHead : IAsyncDisposable
 
     /// <summary>Starts the app with <paramref name="settings"/>, stopping it first if it runs.</summary>
     void Start(LaunchSettings settings);
+
+    /// <summary>SQL replay of the app's file: on bUnit, where the app is composed here; off in the browser.</summary>
+    TodoSqlReplay Replay { get; }
 }
 
 /// <summary>The device's head for this run.</summary>
@@ -42,6 +45,12 @@ public static class TodoWebHeads
 public sealed class BrowserTodoWebHead : ITodoWebHead
 {
     private readonly string _name;
+
+    // The app runs in its own process, on its own file: not replayed here.
+    public TodoSqlReplay Replay { get; } = new(Project, head: null);
+
+    internal const string Project = "Bruinet.Samples.Todo.Web.UITests";
+
     private readonly PlaywrightTestContext _context;
     private WebAppHost? _host;
 
@@ -95,6 +104,8 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
     private ServiceProvider? _services;
     private BunitTestContext? _context;
 
+    public TodoSqlReplay Replay { get; } = new(BrowserTodoWebHead.Project, "bunit", name == "todo-web" ? null : name);
+
     public IHtmlTestContext Context => _context ?? throw new InvalidOperationException($"{name} is not running.");
 
     public string BaseUrl => Address;
@@ -105,7 +116,7 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
     {
         Clock = new DatabaseClock();
         var old = _services;
-        _services = Compose(settings, Clock);
+        _services = Compose(settings, Clock, Replay);
 
         // Started again: the same context with the app's new services, as the browser head keeps its browser context, so
         // what holds it (the UAT scenario's composition, its page objects) is not left with a disposed one.
@@ -133,7 +144,7 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
     }
 
     // Program.cs's registrations, with the repositories timed for the spike's measurement (.my/sql-replay/plan.md, 0.4).
-    private static ServiceProvider Compose(LaunchSettings settings, DatabaseClock clock)
+    private static ServiceProvider Compose(LaunchSettings settings, DatabaseClock clock, TodoSqlReplay replay)
     {
         var services = new ServiceCollection();
         services.AddTodoServices(settings);
@@ -142,11 +153,13 @@ public sealed class BunitTodoWebHead(string name) : ITodoWebHead
         services.AddSingleton<WebDialogs>();
         services.AddSingleton<IDialogs>(provider => provider.GetRequiredService<WebDialogs>());
 
-        // The SQL log (BRUINET_SQL_LOG): every command the repositories send, through Bruinet's ADO.NET wrapper.
-        if (Bruinet.Mocking.Data.SqlLog.FromEnvironment() is { } log)
+        // The SQL log (BRUINET_SQL_LOG): every command the repositories send, through Bruinet's ADO.NET wrapper; and SQL
+        // replay (BRUINET_SQL_REPLAY): the commands answered in the test's session (.my/sql-replay/plan.md, step 8).
+        var log = Bruinet.Mocking.Data.SqlLog.FromEnvironment();
+        services.AddSingleton(new TodoDatabase(settings.DatabasePath)
         {
-            services.AddSingleton(new TodoDatabase(settings.DatabasePath) { Wrap = connection => new Bruinet.Mocking.Data.LoggingDbConnection(connection, log) });
-        }
+            Wrap = connection => replay.Wrap(log is null ? connection : new Bruinet.Mocking.Data.LoggingDbConnection(connection, log)),
+        });
 
         services.AddSingleton(clock);
         services.AddSingleton<SqliteTodoRepository>();

@@ -1,0 +1,443 @@
+{
+  "Version": 2,
+  "Stamp": {
+    "Versions": {},
+    "Objects": {
+      "main.todos": "CE98F64209A6",
+      "main.users": "3928D309AAC3"
+    }
+  },
+  "Exchanges": [
+    {
+      "Index": 0,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 1,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    }
+  ]
+}

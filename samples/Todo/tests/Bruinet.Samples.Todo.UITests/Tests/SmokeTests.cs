@@ -15,14 +15,17 @@ namespace Bruinet.Samples.Todo.UITests.Tests;
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Gate", "Smoke")]
-public sealed class SmokeTests
+public sealed class SmokeTests : IDisposable
 {
     private readonly ThreeTodosFixture _fixture;
 
-    public SmokeTests(ThreeTodosFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public SmokeTests(ThreeTodosFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

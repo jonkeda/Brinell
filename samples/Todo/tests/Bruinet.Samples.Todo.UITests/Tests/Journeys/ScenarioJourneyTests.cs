@@ -9,14 +9,17 @@ namespace Bruinet.Samples.Todo.UITests.Tests.Journeys;
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class EmptyJourneyTests
+public sealed class EmptyJourneyTests : IDisposable
 {
     private readonly EmptyFixture _fixture;
 
-    public EmptyJourneyTests(EmptyFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public EmptyJourneyTests(EmptyFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
@@ -51,14 +54,17 @@ public sealed class EmptyJourneyTests
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class PendingChangesJourneyTests
+public sealed class PendingChangesJourneyTests : IDisposable
 {
     private readonly PendingChangesFixture _fixture;
 
-    public PendingChangesJourneyTests(PendingChangesFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public PendingChangesJourneyTests(PendingChangesFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [WindowsOnlyFact(WindowsOnlyFactAttribute.LocalState)]
@@ -94,14 +100,17 @@ public sealed class PendingChangesJourneyTests
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class OverdueJourneyTests
+public sealed class OverdueJourneyTests : IDisposable
 {
     private readonly OverdueFixture _fixture;
 
-    public OverdueJourneyTests(OverdueFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public OverdueJourneyTests(OverdueFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
@@ -127,14 +136,17 @@ public sealed class OverdueJourneyTests
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class UnreachableServerJourneyTests
+public sealed class UnreachableServerJourneyTests : IDisposable
 {
     private readonly UnreachableServerFixture _fixture;
 
-    public UnreachableServerJourneyTests(UnreachableServerFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public UnreachableServerJourneyTests(UnreachableServerFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [WindowsOnlyFact(WindowsOnlyFactAttribute.LocalState)]

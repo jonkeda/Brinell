@@ -42,6 +42,11 @@ namespace Bruinet.Samples.Todo.UITests;
 public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 {
     private readonly List<TempDatabase> _retired = [];
+
+    // A field initializer, so it is there when the base constructor composes the app. Replayed in memory only: on a
+    // device the app runs in a process of its own, on its own file.
+    private readonly TodoSqlReplay _replay = new("Bruinet.Samples.Todo.UITests", MauiHeads.IsMauiUnit ? "mauiunit" : null);
+    private string? _test;
     private Arrangement? _arrangement;
     private LaunchSettings? _settings;
     private LaunchSettings? _unchangedSettings;
@@ -51,6 +56,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     protected TodoAppFixtureBase()
     {
         WaitForTheList();
+        LetTheStartupSyncFinish();
     }
 
     /// <summary>The test set the app starts in. Answer with a constant: it is read during base construction.</summary>
@@ -78,6 +84,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     public TodoListPage StartTest()
     {
         LetTheLastTestFinish();
+
+        // After the last test's work is quiet, so none of it lands in this test's recording.
+        _replay.Begin(_test);
         Network.SetOnline();
         ResetBackendForTest();
 
@@ -93,6 +102,47 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// <see cref="StartTest()"/> for the test <paramref name="output"/> belongs to, in its own SQL replay session
+    /// (<c>BRUINET_SQL_REPLAY</c>, .my/sql-replay/plan.md step 8); the test class's <c>Dispose</c> calls <see cref="EndTest"/>.
+    /// </summary>
+    public TodoListPage StartTest(Xunit.Abstractions.ITestOutputHelper output)
+    {
+        _test = TodoSqlReplay.TestName(output);
+        return StartTest();
+    }
+
+    /// <summary>Ends the test's SQL replay session: its recording saved, or its misses thrown into it.</summary>
+    public void EndTest()
+    {
+        // The test's own work finished inside its session, so the next test's starts on a quiet app.
+        if (_replay.Mode != Mocking.Data.Replay.ReplayMode.Off)
+        {
+            LetTheLastTestFinish();
+        }
+
+        _test = null;
+        _replay.End();
+    }
+
+    // Replayed in memory, an app that syncs on start finishes that sync (its pushes, pulls and the users' refresh) before the first
+    // test: what it writes then belongs to the start, however long its requests take. Waiting on the dispatcher alone is
+    // fooled while a request is out.
+    private void LetTheStartupSyncFinish()
+    {
+        if (_replay.Mode == Mocking.Data.Replay.ReplayMode.Off || Context.Driver is not MauiUnitDriver head || _settings is not { SyncOnStart: true })
+        {
+            return;
+        }
+
+        var sync = head.TestContext.Services.GetService<Core.Sync.ISyncService>();
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (sync is { LastResult: null } && DateTime.UtcNow < deadline)
+        {
+            head.TestContext.Dispatcher.WaitForQuiet(TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(3));
+        }
     }
 
     /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows and in memory, where the test can write the app's files.</summary>
@@ -236,6 +286,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     {
         var settings = _settings ?? Arrange();
 
+        // What the app does before the first test is recorded too: the first list load reads the file.
+        _replay.BeginStartup(GetType().Name);
+
         // What UseMauiCommunityToolkit() does first on a device: the toolkit's assembly loaded. In
         // Debug, XAML is parsed at run time, and the parser knows only the XAML namespaces of loaded
         // assemblies, so without this toolkit:StateContainer on the list was "not found".
@@ -243,9 +296,15 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         return MauiUnitHead.Options(
             services => services.GetRequiredService<TodoAppShell>(),
             options => options.Application = services => new TodoApp(services.GetRequiredService<TodoAppShell>()),
-            context => context.Services.AddTodoApp(
-                _ => settings,
-                new TodoPlatform(Dispatch: action => context.Dispatcher.Dispatch(action))));
+            context =>
+            {
+                context.Services.AddTodoApp(
+                    _ => settings,
+                    new TodoPlatform(Dispatch: action => context.Dispatcher.Dispatch(action)));
+
+                // The app's file through the test's SQL replay session, when there is one.
+                context.Services.AddSingleton(new Infrastructure.Data.TodoDatabase(settings.DatabasePath) { Wrap = _replay.Wrap });
+            });
     }
 
     // The test set, its database and backend, the network-state and reset files, and the launch settings.

@@ -1,0 +1,12 @@
+{
+  "bunit/EmptyListTests.NoTodos_SaysNothingToDo_AndAddStaysReachable.json": "06DE04B99EFAA1D2",
+  "bunit/JourneyTests.Add_OpensAnEmptyForm_Open_WithoutADueDate.json": "98666CF4D06F64FC",
+  "bunit/JourneyTests.Cancel_WithChanges_AsksFirst_KeepEditingStays_DiscardLeavesItUnchanged.json": "3497AB670D0AA96D",
+  "bunit/JourneyTests.Delete_AsksFirst_ThenRemovesTheRow.json": "CC1AB0D7FEEEBF09",
+  "bunit/JourneyTests.Next_CyclesOpen_InProgress_Done_Open.json": "562A3C42F2BF9CDE",
+  "bunit/JourneyTests.Row_ShowsTitleDueDateAndStatus.json": "73C6E986CC986EC9",
+  "bunit/JourneyTests.Save_AValidTodo_ShowsItInTheList_WaitingToSync.json": "2B43B9608D092FD0",
+  "bunit/JourneyTests.Save_AnEdit_UpdatesDetailAndList_AndWaitsToSync.json": "9FF14A59B88CE577",
+  "bunit/JourneyTests.Save_WithoutATitle_ShowsTitleRequired_AndStays.json": "A418FF49B944C3DA",
+  "bunit/JourneyTests.Sync_PushesTheNewTodo_NamingThisClient_AndClearsTheMarker.json": "52B931DA0ADF7BE2"
+}

@@ -1,0 +1,15 @@
+{
+  "Objects": {
+    "main.todos": {
+      "Kind": "table",
+      "Hash": "CE98F64209A6",
+      "References": []
+    },
+    "main.users": {
+      "Kind": "table",
+      "Hash": "3928D309AAC3",
+      "References": []
+    }
+  },
+  "DefaultSchema": "main"
+}

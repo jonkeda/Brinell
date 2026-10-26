@@ -1,0 +1,2764 @@
+{
+  "Version": 2,
+  "Stamp": {
+    "Versions": {},
+    "Objects": {
+      "main.todos": "CE98F64209A6",
+      "main.users": "3928D309AAC3"
+    }
+  },
+  "Exchanges": [
+    {
+      "Index": 0,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+              },
+              {
+                "t": "String",
+                "v": "Noor f6c43e"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "fa4b5a9a-6748-477e-a7ee-62da6e97508e"
+              },
+              {
+                "t": "String",
+                "v": "Jet d0e7bc"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "465"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "66af5592-7a74-4e5c-a405-01af4b2f456e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "697e0450-e797-46b2-8f3f-ded4c623632e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "4feeaa06-daeb-4bd1-a75a-b23da6ccb7aa"
+              },
+              {
+                "t": "String",
+                "v": "Ivo 1075b3"
+              },
+              {
+                "t": "String",
+                "v": "ivo@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "9af828b9-a331-4cc0-b39d-6092eac10b4b"
+              },
+              {
+                "t": "String",
+                "v": "Kees 6dfcfb"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "31e13a9d-2d2d-4fe3-9a97-766efb1deeb0"
+              },
+              {
+                "t": "String",
+                "v": "Lia c0a482"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-11"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 1,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+              },
+              {
+                "t": "String",
+                "v": "Noor f6c43e"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "fa4b5a9a-6748-477e-a7ee-62da6e97508e"
+              },
+              {
+                "t": "String",
+                "v": "Jet d0e7bc"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "465"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "66af5592-7a74-4e5c-a405-01af4b2f456e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "697e0450-e797-46b2-8f3f-ded4c623632e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "4feeaa06-daeb-4bd1-a75a-b23da6ccb7aa"
+              },
+              {
+                "t": "String",
+                "v": "Ivo 1075b3"
+              },
+              {
+                "t": "String",
+                "v": "ivo@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "9af828b9-a331-4cc0-b39d-6092eac10b4b"
+              },
+              {
+                "t": "String",
+                "v": "Kees 6dfcfb"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "31e13a9d-2d2d-4fe3-9a97-766efb1deeb0"
+              },
+              {
+                "t": "String",
+                "v": "Lia c0a482"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-11"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 2,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+              },
+              {
+                "t": "String",
+                "v": "Noor f6c43e"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "fa4b5a9a-6748-477e-a7ee-62da6e97508e"
+              },
+              {
+                "t": "String",
+                "v": "Jet d0e7bc"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "465"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "66af5592-7a74-4e5c-a405-01af4b2f456e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "697e0450-e797-46b2-8f3f-ded4c623632e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "4feeaa06-daeb-4bd1-a75a-b23da6ccb7aa"
+              },
+              {
+                "t": "String",
+                "v": "Ivo 1075b3"
+              },
+              {
+                "t": "String",
+                "v": "ivo@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "9af828b9-a331-4cc0-b39d-6092eac10b4b"
+              },
+              {
+                "t": "String",
+                "v": "Kees 6dfcfb"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "31e13a9d-2d2d-4fe3-9a97-766efb1deeb0"
+              },
+              {
+                "t": "String",
+                "v": "Lia c0a482"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-11"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 3,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+              },
+              {
+                "t": "String",
+                "v": "Noor f6c43e"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "fa4b5a9a-6748-477e-a7ee-62da6e97508e"
+              },
+              {
+                "t": "String",
+                "v": "Jet d0e7bc"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "465"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "66af5592-7a74-4e5c-a405-01af4b2f456e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "697e0450-e797-46b2-8f3f-ded4c623632e"
+              },
+              {
+                "t": "String",
+                "v": "Mo 5b7520"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "4feeaa06-daeb-4bd1-a75a-b23da6ccb7aa"
+              },
+              {
+                "t": "String",
+                "v": "Ivo 1075b3"
+              },
+              {
+                "t": "String",
+                "v": "ivo@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "9af828b9-a331-4cc0-b39d-6092eac10b4b"
+              },
+              {
+                "t": "String",
+                "v": "Kees 6dfcfb"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "31e13a9d-2d2d-4fe3-9a97-766efb1deeb0"
+              },
+              {
+                "t": "String",
+                "v": "Lia c0a482"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-11"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 4,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "1aa37772-c3de-49c9-abe4-05c75913238f"
+              },
+              {
+                "t": "String",
+                "v": "Welcome Noor 1edaed"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    }
+  ]
+}

@@ -12,16 +12,19 @@ namespace Bruinet.Samples.Todo.Web.UITests.Tests;
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Head", "Web")]
 [Spike.MeasureDatabaseShare]
-public sealed class JourneyTests
+public sealed class JourneyTests : IDisposable
 {
     private readonly ThreeTodosWebFixture _fixture;
     private readonly TodoListPage _list;
 
-    public JourneyTests(ThreeTodosWebFixture fixture)
+    public JourneyTests(ThreeTodosWebFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        _list = fixture.StartTest();
+        _list = fixture.StartTest(output);
     }
+
+    // The test's SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
 
     private static string Unique(string title) => $"{title} {Guid.NewGuid().ToString("N")[..6]}";
 
@@ -174,13 +177,15 @@ public sealed class JourneyTests
 [Trait("Pyramid", "UiHermetic")]
 [Trait("Head", "Web")]
 [Spike.MeasureDatabaseShare]
-public sealed class EmptyListTests(EmptyWebFixture fixture)
+public sealed class EmptyListTests(EmptyWebFixture fixture, Xunit.Abstractions.ITestOutputHelper output) : IDisposable
 {
+    public void Dispose() => fixture.EndTest();
+
     [Fact]
     [Trait("Journey", "TOD.01.3")]
     public void NoTodos_SaysNothingToDo_AndAddStaysReachable()
     {
-        var list = fixture.StartTest();
+        var list = fixture.StartTest(output);
 
         list.EmptyMessage.AssertText("Nothing to do");
         list.AddButton.AssertEnabled(true);

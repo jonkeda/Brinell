@@ -64,6 +64,9 @@ public sealed class TodoWebDevice : ITestApp
     /// <summary>The app's time in its repositories, on a head that measures it (bUnit); else null.</summary>
     public DatabaseClock? Clock => _head.Clock;
 
+    /// <summary>SQL replay of the device's file, per test (<see cref="TodoSqlReplay"/>).</summary>
+    public TodoSqlReplay Replay => _head.Replay;
+
     /// <summary>The device's network: the app reads it from a file.</summary>
     public NetworkStateFile Network => _network;
 

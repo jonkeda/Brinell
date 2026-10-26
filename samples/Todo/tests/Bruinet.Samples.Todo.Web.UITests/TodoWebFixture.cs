@@ -89,6 +89,19 @@ public abstract class TodoWebFixture : IAsyncLifetime, ITodoArrangement
         => TodoWebDevice.StartAsync(name, TestSet, Backend.BaseUrl, clientId, AdjustSettings, definition);
 
     /// <summary>Online, the backend back to the test set, and the list open, showing every todo.</summary>
+    /// <summary>
+    /// <see cref="StartTest()"/> for the test <paramref name="output"/> belongs to, in its own SQL replay session; the
+    /// test class's <c>Dispose</c> calls <see cref="EndTest"/>.
+    /// </summary>
+    public TodoListPage StartTest(Xunit.Abstractions.ITestOutputHelper output)
+    {
+        Device.Replay.Begin(TodoSqlReplay.TestName(output));
+        return StartTest();
+    }
+
+    /// <summary>Ends the test's SQL replay session: its recording saved, or its misses thrown into it.</summary>
+    public void EndTest() => Device.Replay.End();
+
     public virtual TodoListPage StartTest()
     {
         Spike.DatabaseShare.Start(Device.Clock);

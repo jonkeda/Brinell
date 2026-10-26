@@ -95,13 +95,18 @@ internal static class SqlCommands
                 .Where(path => path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 .Select(path => path[prefix.Length..])
                 .ToList();
+            // Tests that share an app read each other's rows: a value volatile in any recording of the suite is volatile in all.
+            var olds = before.ToDictionary(path => path, path => GitText(folder, "show", $"{revision}:{prefix}{path}"), StringComparer.Ordinal);
+            var volatileBefore = RecordingReview.VolatileValues(olds.Values.Where(RecordingReview.IsRecording).Select(json => Mocking.Data.Replay.Recording.Parse(json)!));
+            var volatileAfter = RecordingReview.VolatileValues(folder);
             var changed = 0;
             foreach (var path in RecordingReview.Recordings(folder).Union(before, StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal))
             {
                 var now = Path.Combine(folder, path);
                 var nowJson = File.Exists(now) ? File.ReadAllText(now) : null;
-                var oldJson = before.Contains(path) ? GitText(folder, "show", $"{revision}:{prefix}{path}") : null;
-                if (nowJson is not null && oldJson is not null && RecordingReview.IsRecording(nowJson) && RecordingReview.IsRecording(oldJson) && RecordingReview.Hash(nowJson) == RecordingReview.Hash(oldJson))
+                var oldJson = olds.TryGetValue(path, out var old) ? old : null;
+                if (nowJson is not null && oldJson is not null && RecordingReview.IsRecording(nowJson) && RecordingReview.IsRecording(oldJson)
+                    && RecordingReview.Hash(nowJson, volatileAfter) == RecordingReview.Hash(oldJson, volatileBefore))
                 {
                     continue;
                 }
@@ -111,7 +116,7 @@ internal static class SqlCommands
                     continue;
                 }
 
-                var lines = RecordingDiff.Compare(oldJson is null ? null : Mocking.Data.Replay.Recording.Parse(oldJson), nowJson is null ? null : Mocking.Data.Replay.Recording.Parse(nowJson));
+                var lines = RecordingDiff.Compare(oldJson is null ? null : Mocking.Data.Replay.Recording.Parse(oldJson), nowJson is null ? null : Mocking.Data.Replay.Recording.Parse(nowJson), volatileBefore, volatileAfter);
                 changed++;
                 io.Out.WriteLine(path);
                 foreach (var line in lines.DefaultIfEmpty("rewritten, nothing a test reads changed"))

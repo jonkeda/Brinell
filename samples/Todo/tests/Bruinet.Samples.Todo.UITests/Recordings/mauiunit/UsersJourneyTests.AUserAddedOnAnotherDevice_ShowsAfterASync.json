@@ -1,0 +1,1279 @@
+{
+  "Version": 2,
+  "Stamp": {
+    "Versions": {},
+    "Objects": {
+      "main.set": "?",
+      "main.todos": "CE98F64209A6",
+      "main.users": "3928D309AAC3"
+    }
+  },
+  "Exchanges": [
+    {
+      "Index": 0,
+      "Kind": "non-query",
+      "Text": "DELETE FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 5,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 1,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "77777777-0000-0000-0000-000000000001"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Daan"
+        },
+        "$email": {
+          "t": "String",
+          "v": "daan@example.com"
+        },
+        "$status": {
+          "t": "String",
+          "v": "Active"
+        },
+        "$until": null,
+        "$role": {
+          "t": "String",
+          "v": "Lead"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "40"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "8500"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "510"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "1"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "60"
+        },
+        "$notes": null,
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 2,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "77777777-0000-0000-0000-000000000002"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Eva"
+        },
+        "$email": {
+          "t": "String",
+          "v": "eva@example.com"
+        },
+        "$status": {
+          "t": "String",
+          "v": "Active"
+        },
+        "$until": {
+          "t": "String",
+          "v": "2026-12-31"
+        },
+        "$role": {
+          "t": "String",
+          "v": "Member"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "38"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "125075"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "540"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "1"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "35"
+        },
+        "$notes": {
+          "t": "String",
+          "v": "Works Monday to Thursday"
+        },
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 3,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "77777777-0000-0000-0000-000000000003"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Finn"
+        },
+        "$email": null,
+        "$status": {
+          "t": "String",
+          "v": "Active"
+        },
+        "$until": {
+          "t": "String",
+          "v": "2026-03-01"
+        },
+        "$role": {
+          "t": "String",
+          "v": "Member"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "24"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "4550"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "600"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "1"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "20"
+        },
+        "$notes": null,
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 4,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "77777777-0000-0000-0000-000000000004"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Gus"
+        },
+        "$email": {
+          "t": "String",
+          "v": "gus@example.com"
+        },
+        "$status": {
+          "t": "String",
+          "v": "Inactive"
+        },
+        "$until": null,
+        "$role": {
+          "t": "String",
+          "v": "Admin"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "40"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "7000"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "540"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "1"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "0"
+        },
+        "$notes": null,
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 5,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "77777777-0000-0000-0000-000000000005"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Hana"
+        },
+        "$email": {
+          "t": "String",
+          "v": "hana@example.com"
+        },
+        "$status": {
+          "t": "String",
+          "v": "OnLeave"
+        },
+        "$until": null,
+        "$role": {
+          "t": "String",
+          "v": "Member"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "32"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "5525"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "480"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "0"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "50"
+        },
+        "$notes": null,
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 6,
+      "Kind": "non-query",
+      "Text": "INSERT INTO users (id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at)\nVALUES ($id, $name, $email, $status, $until, $role, $hours, $rate, $start, $reminders, $workload, $notes, $updated)\nON CONFLICT(id) DO UPDATE SET\n    name = excluded.name,\n    email = excluded.email,\n    status = excluded.status,\n    allowed_until = excluded.allowed_until,\n    role = excluded.role,\n    hours_per_week = excluded.hours_per_week,\n    hourly_rate_cents = excluded.hourly_rate_cents,\n    start_minutes = excluded.start_minutes,\n    receives_reminders = excluded.receives_reminders,\n    workload = excluded.workload,\n    notes = excluded.notes,\n    updated_at = excluded.updated_at;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+        },
+        "$name": {
+          "t": "String",
+          "v": "Noor f6c43e"
+        },
+        "$email": null,
+        "$status": {
+          "t": "String",
+          "v": "Active"
+        },
+        "$until": null,
+        "$role": {
+          "t": "String",
+          "v": "Member"
+        },
+        "$hours": {
+          "t": "Int32",
+          "v": "40"
+        },
+        "$rate": {
+          "t": "Int64",
+          "v": "0"
+        },
+        "$start": {
+          "t": "Int32",
+          "v": "540"
+        },
+        "$reminders": {
+          "t": "Int32",
+          "v": "1"
+        },
+        "$workload": {
+          "t": "Int32",
+          "v": "0"
+        },
+        "$notes": null,
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        }
+      },
+      "Volatile": [
+        "$id",
+        "$name"
+      ],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 7,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 8,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 9,
+      "Kind": "non-query",
+      "Text": "INSERT INTO todos (id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted)\r\nVALUES ($id, $title, $notes, $due, $status, $created, $updated, $sync, $deleted)\r\nON CONFLICT(id) DO UPDATE SET\r\n    title = excluded.title,\r\n    notes = excluded.notes,\r\n    due_date = excluded.due_date,\r\n    status = excluded.status,\r\n    created_at = excluded.created_at,\r\n    updated_at = excluded.updated_at,\r\n    sync_state = excluded.sync_state,\r\n    is_deleted = excluded.is_deleted;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "1aa37772-c3de-49c9-abe4-05c75913238f"
+        },
+        "$title": {
+          "t": "String",
+          "v": "Welcome Noor 1edaed"
+        },
+        "$notes": null,
+        "$due": null,
+        "$status": {
+          "t": "String",
+          "v": "Open"
+        },
+        "$created": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        },
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        },
+        "$sync": {
+          "t": "String",
+          "v": "Synced"
+        },
+        "$deleted": {
+          "t": "Int32",
+          "v": "0"
+        }
+      },
+      "Volatile": [
+        "$id",
+        "$title"
+      ],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 10,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "1aa37772-c3de-49c9-abe4-05c75913238f"
+              },
+              {
+                "t": "String",
+                "v": "Welcome Noor 1edaed"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 11,
+      "Kind": "reader",
+      "Text": "SELECT id, name, email, status, allowed_until, role, hours_per_week, hourly_rate_cents, start_minutes, receives_reminders, workload, notes, updated_at FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "name",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "email",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "allowed_until",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "role",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "hours_per_week",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "hourly_rate_cents",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "start_minutes",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "receives_reminders",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "workload",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Daan"
+              },
+              {
+                "t": "String",
+                "v": "daan@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Lead"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "8500"
+              },
+              {
+                "t": "Int64",
+                "v": "510"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "60"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Eva"
+              },
+              {
+                "t": "String",
+                "v": "eva@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-12-31"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "38"
+              },
+              {
+                "t": "Int64",
+                "v": "125075"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "35"
+              },
+              {
+                "t": "String",
+                "v": "Works Monday to Thursday"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "Finn"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "24"
+              },
+              {
+                "t": "Int64",
+                "v": "4550"
+              },
+              {
+                "t": "Int64",
+                "v": "600"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "20"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000004"
+              },
+              {
+                "t": "String",
+                "v": "Gus"
+              },
+              {
+                "t": "String",
+                "v": "gus@example.com"
+              },
+              {
+                "t": "String",
+                "v": "Inactive"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Admin"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "7000"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "77777777-0000-0000-0000-000000000005"
+              },
+              {
+                "t": "String",
+                "v": "Hana"
+              },
+              {
+                "t": "String",
+                "v": "hana@example.com"
+              },
+              {
+                "t": "String",
+                "v": "OnLeave"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "32"
+              },
+              {
+                "t": "Int64",
+                "v": "5525"
+              },
+              {
+                "t": "Int64",
+                "v": "480"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "50"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "dc6ba29d-e86c-4a5f-9554-796692a57856"
+              },
+              {
+                "t": "String",
+                "v": "Noor f6c43e"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Active"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "Member"
+              },
+              {
+                "t": "Int64",
+                "v": "40"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              {
+                "t": "Int64",
+                "v": "540"
+              },
+              {
+                "t": "Int64",
+                "v": "1"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 12,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "55555555-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "1aa37772-c3de-49c9-abe4-05c75913238f"
+              },
+              {
+                "t": "String",
+                "v": "Welcome Noor 1edaed"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    }
+  ]
+}

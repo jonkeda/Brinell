@@ -14,7 +14,12 @@ public static class RecordingDiff
     private const int Shown = 70;
 
     /// <summary>The changes from <paramref name="before"/> to <paramref name="after"/>; either null for a recording added or removed.</summary>
-    public static IReadOnlyList<string> Compare(Recording? before, Recording? after)
+    /// <param name="before">The recording as it was.</param>
+    /// <param name="after">The recording as it is.</param>
+    /// <param name="volatileBefore">Values volatile in the other recordings of the suite as it was (<see cref="RecordingReview.VolatileValues(string)"/>):
+    /// tests that share an app read each other's new ids and titles.</param>
+    /// <param name="volatileAfter">The same, as it is.</param>
+    public static IReadOnlyList<string> Compare(Recording? before, Recording? after, IReadOnlyCollection<string>? volatileBefore = null, IReadOnlyCollection<string>? volatileAfter = null)
     {
         if (before is null || after is null)
         {
@@ -56,14 +61,14 @@ public static class RecordingDiff
             .Select(exchange => $"- {Describe(exchange)}"));
 
         // Volatile values, old to new, from every pair's parameters: an id a write made shows in the rows that read it.
-        var bindings = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var bindings = new Bindings(volatileBefore, volatileAfter);
         foreach (var (old, now) in pairs)
         {
             foreach (var name in now.Volatile.Union(old.Volatile))
             {
                 if (old.Parameters.TryGetValue(name, out var was) && now.Parameters.TryGetValue(name, out var @is) && Values.Canonical(was) is { } from)
                 {
-                    bindings[from] = Values.Canonical(@is);
+                    bindings.Map[from] = Values.Canonical(@is);
                 }
             }
         }
@@ -104,7 +109,7 @@ public static class RecordingDiff
         }
     }
 
-    private static List<string> Changes(Exchange before, Exchange after, Dictionary<string, string?> bindings)
+    private static List<string> Changes(Exchange before, Exchange after, Bindings bindings)
     {
         var changes = new List<string>();
         if (before.Error?.Number != after.Error?.Number)
@@ -149,7 +154,7 @@ public static class RecordingDiff
     }
 
     // Columns by name, whatever their order; rows by position.
-    private static void Results(RecordedResult before, RecordedResult after, Dictionary<string, string?> bindings, string label, List<string> changes)
+    private static void Results(RecordedResult before, RecordedResult after, Bindings bindings, string label, List<string> changes)
     {
         var oldColumns = before.Columns.Select(column => column.Name).ToList();
         var newColumns = after.Columns.Select(column => column.Name).ToList();
@@ -187,10 +192,22 @@ public static class RecordingDiff
         }
     }
 
-    private static bool Same(JsonNode? before, JsonNode? after, Dictionary<string, string?> bindings)
+    private static bool Same(JsonNode? before, JsonNode? after, Bindings bindings)
     {
         var old = Values.Canonical(before);
-        return (old is not null && bindings.TryGetValue(old, out var bound) ? bound : old) == Values.Canonical(after);
+        var now = Values.Canonical(after);
+        return (old is not null && bindings.Map.TryGetValue(old, out var bound) ? bound : old) == now
+            || old is not null && now is not null && bindings.Before.Contains(old) && bindings.After.Contains(now);
+    }
+
+    // Volatile values old to new from this recording's parameters, and the suite's volatile values on either side.
+    private sealed class Bindings(IReadOnlyCollection<string>? before, IReadOnlyCollection<string>? after)
+    {
+        public Dictionary<string, string?> Map { get; } = new(StringComparer.Ordinal);
+
+        public HashSet<string> Before { get; } = new(before ?? [], StringComparer.Ordinal);
+
+        public HashSet<string> After { get; } = new(after ?? [], StringComparer.Ordinal);
     }
 
     private static string Text(Exchange exchange) => exchange.Kind + "|" + Statements.Key(exchange.Text);

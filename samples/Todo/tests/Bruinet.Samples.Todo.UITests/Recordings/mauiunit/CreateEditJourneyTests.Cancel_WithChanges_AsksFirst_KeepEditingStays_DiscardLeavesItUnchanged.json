@@ -1,0 +1,1382 @@
+{
+  "Version": 2,
+  "Stamp": {
+    "Versions": {},
+    "Objects": {
+      "main.set": "?",
+      "main.todos": "CE98F64209A6",
+      "main.users": "3928D309AAC3"
+    }
+  },
+  "Exchanges": [
+    {
+      "Index": 0,
+      "Kind": "non-query",
+      "Text": "DELETE FROM users;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": null,
+      "RecordsAffected": 0,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 1,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              {
+                "t": "String",
+                "v": "Oat, not dairy"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Book dentist"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "InProgress"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-02T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-03T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "File taxes"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-20T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-28T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+              },
+              {
+                "t": "String",
+                "v": "Fix the bike a43689"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Pending"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 2,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+              },
+              {
+                "t": "String",
+                "v": "Fix the bike a43689"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Pending"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 3,
+      "Kind": "non-query",
+      "Text": "INSERT INTO todos (id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted)\r\nVALUES ($id, $title, $notes, $due, $status, $created, $updated, $sync, $deleted)\r\nON CONFLICT(id) DO UPDATE SET\r\n    title = excluded.title,\r\n    notes = excluded.notes,\r\n    due_date = excluded.due_date,\r\n    status = excluded.status,\r\n    created_at = excluded.created_at,\r\n    updated_at = excluded.updated_at,\r\n    sync_state = excluded.sync_state,\r\n    is_deleted = excluded.is_deleted;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+        },
+        "$title": {
+          "t": "String",
+          "v": "Fix the bike a43689"
+        },
+        "$notes": null,
+        "$due": null,
+        "$status": {
+          "t": "String",
+          "v": "Done"
+        },
+        "$created": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        },
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+        },
+        "$sync": {
+          "t": "String",
+          "v": "Synced"
+        },
+        "$deleted": {
+          "t": "Int32",
+          "v": "0"
+        }
+      },
+      "Volatile": [
+        "$id",
+        "$title"
+      ],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 4,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              {
+                "t": "String",
+                "v": "Oat, not dairy"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Book dentist"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "InProgress"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-02T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-03T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "File taxes"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-20T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-28T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+              },
+              {
+                "t": "String",
+                "v": "Fix the bike a43689"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 5,
+      "Kind": "non-query",
+      "Text": "INSERT INTO todos (id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted)\r\nVALUES ($id, $title, $notes, $due, $status, $created, $updated, $sync, $deleted)\r\nON CONFLICT(id) DO UPDATE SET\r\n    title = excluded.title,\r\n    notes = excluded.notes,\r\n    due_date = excluded.due_date,\r\n    status = excluded.status,\r\n    created_at = excluded.created_at,\r\n    updated_at = excluded.updated_at,\r\n    sync_state = excluded.sync_state,\r\n    is_deleted = excluded.is_deleted;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        },
+        "$title": {
+          "t": "String",
+          "v": "Book flights ef9069"
+        },
+        "$notes": null,
+        "$due": null,
+        "$status": {
+          "t": "String",
+          "v": "Open"
+        },
+        "$created": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        },
+        "$updated": {
+          "t": "String",
+          "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+        },
+        "$sync": {
+          "t": "String",
+          "v": "Synced"
+        },
+        "$deleted": {
+          "t": "Int32",
+          "v": "0"
+        }
+      },
+      "Volatile": [
+        "$id",
+        "$title"
+      ],
+      "Results": null,
+      "RecordsAffected": 1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": true
+    },
+    {
+      "Index": 6,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos;",
+      "Parameters": {},
+      "Volatile": [],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000001"
+              },
+              {
+                "t": "String",
+                "v": "Buy milk"
+              },
+              {
+                "t": "String",
+                "v": "Oat, not dairy"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-12"
+              },
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-01T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000002"
+              },
+              {
+                "t": "String",
+                "v": "Book dentist"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "InProgress"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-02T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-03T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "11111111-0000-0000-0000-000000000003"
+              },
+              {
+                "t": "String",
+                "v": "File taxes"
+              },
+              null,
+              {
+                "t": "String",
+                "v": "2026-03-01"
+              },
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-20T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-02-28T08:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "d33f146f-88b9-4a17-a2e4-96c6e901fe53"
+              },
+              {
+                "t": "String",
+                "v": "Fix the bike a43689"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Done"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-10T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ],
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 7,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 8,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 9,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 10,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    },
+    {
+      "Index": 11,
+      "Kind": "reader",
+      "Text": "SELECT id, title, notes, due_date, status, created_at, updated_at, sync_state, is_deleted FROM todos WHERE id = $id;",
+      "Parameters": {
+        "$id": {
+          "t": "String",
+          "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+        }
+      },
+      "Volatile": [
+        "$id"
+      ],
+      "Results": [
+        {
+          "Columns": [
+            {
+              "Name": "id",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "title",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "notes",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "due_date",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "status",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "created_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "updated_at",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "sync_state",
+              "ClrType": "System.String",
+              "DataTypeName": "TEXT"
+            },
+            {
+              "Name": "is_deleted",
+              "ClrType": "System.Int64",
+              "DataTypeName": "INTEGER"
+            }
+          ],
+          "Rows": [
+            [
+              {
+                "t": "String",
+                "v": "53b97ac7-6f59-415f-84b6-7e0c1475ed81"
+              },
+              {
+                "t": "String",
+                "v": "Book flights ef9069"
+              },
+              null,
+              null,
+              {
+                "t": "String",
+                "v": "Open"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "2026-03-09T09:00:00.0000000\u002B00:00"
+              },
+              {
+                "t": "String",
+                "v": "Synced"
+              },
+              {
+                "t": "Int64",
+                "v": "0"
+              }
+            ]
+          ]
+        }
+      ],
+      "RecordsAffected": -1,
+      "Scalar": null,
+      "Outputs": null,
+      "Error": null,
+      "IsWrite": false
+    }
+  ]
+}

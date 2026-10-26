@@ -12,14 +12,17 @@ namespace Bruinet.Samples.Todo.UITests.Tests.Journeys;
 [Trait("Category", "UITest")]
 [Trait("Module", "Todo")]
 [Trait("Pyramid", "UiHermetic")]
-public sealed class ListJourneyTests
+public sealed class ListJourneyTests : IDisposable
 {
     private readonly ThreeTodosFixture _fixture;
 
-    public ListJourneyTests(ThreeTodosFixture fixture)
+    // The test\'s SQL replay session (BRUINET_SQL_REPLAY), ended in the test it belongs to.
+    public void Dispose() => _fixture.EndTest();
+
+    public ListJourneyTests(ThreeTodosFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
-        fixture.StartTest();
+        fixture.StartTest(output);
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
