@@ -2,7 +2,7 @@
 
   <!--
     The Todo app's pages, view models' hosts, services and resources on plain net10.0, for the
-    MauiUnit head (.my/mUnit). Every file is LINKED from Bruinet.Samples.Todo.App, never copied, so
+    MauiUnit head (docs/guides/mauiunit.md). Every file is LINKED from Bruinet.Samples.Todo.App, never copied, so
     the in-memory run tests the app as it is. Platforms\ and MauiProgram (the app builder and its
     handlers) stay out; a test composes the app with TodoAppServices.AddTodoApp, as MauiProgram does.
   -->

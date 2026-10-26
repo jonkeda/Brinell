@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    The Shell sample app's pages and resources on plain net10.0, for the MauiUnit head (.my/mUnit).
+    The Shell sample app's pages and resources on plain net10.0, for the MauiUnit head (docs/guides/mauiunit.md).
     Every file is LINKED from Bruinet.Samples.Maui.ShellApp, never copied, so the MauiUnit run tests
     the app as it is. Platforms\ and MauiProgram stay out, as in Bruinet.Samples.Maui.App.MauiUnit.
   -->

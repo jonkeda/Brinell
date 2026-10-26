@@ -44,6 +44,7 @@ invariants behind it - what must stay true when *changing* Bruinet - are in
 - [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
   runs without a screen, its suite and step definitions
 - [The bUnit Head](guides/bunit.md) - a Blazor suite's page objects and scenarios without a browser
+- [The MauiUnit Head](guides/mauiunit.md) - a MAUI suite's page objects and scenarios without a device
   (`BRUINET_HEAD=bunit`), what needs one (`[BrowserFact]`, `@browser`), and what behaves differently
 - [Test Selection](guides/test-selection.md) - the tests a change reaches: the touch map from a full
   run, `bruinet tests affected`, what runs the suite whole, and what selection misses

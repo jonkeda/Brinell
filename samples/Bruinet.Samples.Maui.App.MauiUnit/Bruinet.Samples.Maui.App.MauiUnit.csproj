@@ -2,7 +2,7 @@
 
   <!--
     The sample app's pages, views, view models and resources on plain net10.0, for the MauiUnit head
-    (.my/mUnit). Every file is LINKED from Bruinet.Samples.Maui.App, never copied, so the MauiUnit
+    (docs/guides/mauiunit.md). Every file is LINKED from Bruinet.Samples.Maui.App, never copied, so the MauiUnit
     run tests the app as it is. What only a platform has stays out: Platforms\, MauiProgram (the
     app builder and its handlers), and the image, font and splash assets the build packages.
   -->

@@ -1,6 +1,6 @@
 namespace Bruinet.Core.Testing;
 
-/// <summary>How a MAUI suite runs its app (.my/mUnit): on a device, or rendered in memory by MauiUnit.</summary>
+/// <summary>How a MAUI suite runs its app (docs/guides/mauiunit.md): on a device, or rendered in memory by MauiUnit.</summary>
 public enum MauiHead
 {
     /// <summary>The built app on Windows (FlaUI), Android or iOS (Appium): the default, and the judge at every gate.</summary>

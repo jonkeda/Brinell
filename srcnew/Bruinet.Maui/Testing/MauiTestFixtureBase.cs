@@ -215,7 +215,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         => MauiHeads.IsMauiUnit ? CreateMauiUnitOptions() : CreateTestContextOptions();
 
     /// <summary>
-    /// The suite's MauiUnit head (<see cref="MauiHeads"/>, .my/mUnit): its app's first page rendered in
+    /// The suite's MauiUnit head (<see cref="MauiHeads"/>, docs/guides/mauiunit.md): its app's first page rendered in
     /// memory, the options from <c>Bruinet.Maui.MauiUnit</c>'s <c>MauiUnitHead.Options</c>. A suite that has
     /// one overrides this; by default an MauiUnit run of the suite says it has none.
     /// </summary>

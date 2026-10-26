@@ -4,7 +4,7 @@ namespace Bruinet.Core.Testing;
 
 /// <summary>
 /// A MAUI test that needs a device (layout, pixels, a platform's own tree or driver): skipped on the
-/// MauiUnit head with the reason, so the run still lists it (.my/mUnit). The scenario's counterpart is
+/// MauiUnit head with the reason, so the run still lists it (docs/guides/mauiunit.md). The scenario's counterpart is
 /// <c>@device</c>; the web's is <see cref="BrowserFactAttribute"/>.
 /// </summary>
 public sealed class DeviceFactAttribute : FactAttribute

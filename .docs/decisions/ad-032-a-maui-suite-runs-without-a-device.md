@@ -24,7 +24,7 @@ deterministic; the app's work runs only when a call lets it.
 **Why:** a device is most of a MAUI test's cost, and the only reason a suite needs Windows, an emulator
 or a Mac with a simulator. In memory the sample device suite ran 325 tests in about 20 s and the Todo
 sample its 42 scenarios in about 40 s, with no app built, no window and no emulator, and the same
-projects build off Windows (`.my/mUnit/`). MAUI already kept its driver behind its own interfaces (AD-010), so a
+projects build off Windows ([the guide](../../docs/guides/mauiunit.md)). MAUI already kept its driver behind its own interfaces (AD-010), so a
 third driver costs two projects and no change to a page object.
 
 **Ruled out:**

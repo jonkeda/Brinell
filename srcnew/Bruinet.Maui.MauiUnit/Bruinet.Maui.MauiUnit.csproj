@@ -4,7 +4,7 @@
     <!-- MAUI 10's plain assemblies are net10.0 only. -->
     <TargetFrameworks>net10.0</TargetFrameworks>
     <RootNamespace>Bruinet.Maui.MauiUnit</RootNamespace>
-    <Description>MauiUnit implementation for Bruinet.Maui: the same page objects and controls on a page rendered in memory, without a device, emulator or window (.my/mUnit).</Description>
+    <Description>MauiUnit implementation for Bruinet.Maui: the same page objects and controls on a page rendered in memory, without a device, emulator or window (docs/guides/mauiunit.md).</Description>
     <PackageId>Bruinet.Maui.MauiUnit</PackageId>
   </PropertyGroup>
 

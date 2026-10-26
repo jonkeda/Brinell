@@ -31,7 +31,7 @@ device, no built app and no window, and the whole suite takes seconds. A test th
 is marked `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]`, and a scenario is
 tagged `@device`; they are skipped on this head with the reason. A fixture names its in-memory
 app in `CreateMauiUnitOptions`. The device heads stay the judge at a gate: no layout or pixels
-here. See `.my/mUnit/` for the design and the count.
+here. See [The MauiUnit Head](../guides/mauiunit.md).
 
 On a Mac or Linux the same command works (`export BRUINET_HEAD=mauiunit` there), for this suite and
 the Todo sample's `Bruinet.Samples.Todo.Uat` and `.UITests`, after `dotnet workload install maui`
