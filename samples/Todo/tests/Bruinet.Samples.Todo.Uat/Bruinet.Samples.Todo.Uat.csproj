@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <RootNamespace>Bruinet.Samples.Todo.Uat</RootNamespace>
-    <!-- FlaUI drives the Windows app, same as the UI test project it reuses. -->
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- The UI test project's target: net10.0-windows with FlaUI on Windows, else plain net10.0. -->
+    <TargetFramework Condition="'$(BruinetWindowsHead)' == 'true'">net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(BruinetWindowsHead)' != 'true'">net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

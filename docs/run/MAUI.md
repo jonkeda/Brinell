@@ -33,6 +33,14 @@ tagged `@device`; they are skipped on this head with the reason. A fixture names
 app in `CreateInMemoryOptions`. The device heads stay the judge at a gate: no layout or pixels
 here. See `.my/mUnit/` for the design and the count.
 
+On a Mac or Linux the same command works (`export BRUINET_HEAD=mauiunit` there), for this suite and
+the Todo sample's `Bruinet.Samples.Todo.Uat` and `.UITests`, after `dotnet workload install maui`
+for the headless apps' XAML. Off Windows those projects build for plain `net10.0` with the MauiUnit
+and Appium heads only: no FlaUI, and without the Windows driver's own tests (`Tests\Diagnostics`,
+`Tests\Background`). `BruinetWindowsHead` in `Directory.Build.props` chooses this, and
+`-p:BruinetWindowsHead=false` builds that shape on Windows. Unset, the head is the Windows app,
+which does not exist there.
+
 ## Appium Setup
 
 Appium drives MAUI on Android and iOS only; Windows always uses FlaUI. Use

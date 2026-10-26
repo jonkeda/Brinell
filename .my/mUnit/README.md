@@ -107,3 +107,7 @@ Tomorrow's submodule pointer on `game`.
   - `MauiDriverFactory` refuses MauiUnit with why: the fixture renders it, there is no app to launch.
   - `Bruinet.Maui.UITests.Mobile` links the fixtures, so it references the head and both headless apps too; it had not built since the head choice. On MauiUnit it runs 267 pass, 36 skip.
   - Counts unchanged: the device suite 325 and 35, Todo UAT 42 of 42, UI tests 44 of 44.
+- **Off Windows, 2026-10-26.** The device suite and both Todo suites build on a Mac or Linux as plain `net10.0`, with MauiUnit and Appium and no FlaUI.
+  - `BruinetWindowsHead` in `Directory.Build.props` is true on Windows; the three projects choose `net10.0-windows` and the FlaUI reference by it, and off Windows the device suite leaves out `Tests/Diagnostics` and `Tests/Background`, as the mobile project does.
+  - `Bruinet.Maui.AppSupport` lists its Windows target only on Windows, as MAUI's template does, so the headless apps restore elsewhere.
+  - Checked here with `-p:BruinetWindowsHead=false`: the device suite 271 pass and 36 skip, Todo UAT 42 of 42, UI tests 44 of 44. The Windows build is unchanged (325 in memory, FlaUI's ButtonTests 17 of 17). Not yet run on a real Mac: the MAUI workload's restore there is the part this machine cannot show.
