@@ -19,9 +19,9 @@ namespace Bruinet.Maui.MauiUnit;
 /// </summary>
 /// <remarks>
 /// <para>
-/// It reports <see cref="MauiPlatform.Windows"/>: Bruinet's driver defaults are the UI Automation
-/// answers, and MauiUnit's tree is like that one (off-screen elements are in it, finding is not
-/// seeing). A <c>Headless</c> platform value is an open question for Bruinet (.my/mUnit/proposal.md).
+/// It reports <see cref="MauiPlatform.MauiUnit"/>. Its answers are otherwise Windows' (the UI Automation
+/// defaults, WinUI's ids for the title bar), since MauiUnit's tree is like that one: off-screen
+/// elements are in it, finding is not seeing.
 /// </para>
 /// <para>Every lookup first runs the work the context has queued, so a poll sees settled state.</para>
 /// </remarks>
@@ -99,7 +99,7 @@ public sealed class MauiUnitDriver : IMauiDriver
 
     public byte[] TakeScreenshot() => [];
 
-    public MauiPlatform Platform => MauiPlatform.Windows;
+    public MauiPlatform Platform => MauiPlatform.MauiUnit;
 
     /// <summary>Shell's tab bar and flyout, as MauiUnit's tree shows them (<see cref="ShellTabBar"/>, <see cref="ShellFlyoutList"/>).</summary>
     public ShellChromeLocators ShellChrome { get; } = new(

@@ -169,9 +169,9 @@ public abstract class MauiTestFixtureBase : IDisposable
     public IScreenshotService ScreenshotService => _screenshotService;
 
     /// <summary>
-    /// Gets the current platform from configuration.
+    /// Gets the current platform: MauiUnit on that head, else the configuration's.
     /// </summary>
-    protected MauiPlatform Platform => Configuration?.Maui?.Platform ?? MauiPlatform.Windows;
+    protected MauiPlatform Platform => MauiHeads.IsMauiUnit ? MauiPlatform.MauiUnit : Configuration?.Maui?.Platform ?? MauiPlatform.Windows;
 
     #region Abstract Methods
 

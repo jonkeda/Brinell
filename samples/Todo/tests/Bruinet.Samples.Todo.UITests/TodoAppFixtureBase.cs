@@ -85,8 +85,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 
         // Windows only. On Android a Picker opens a native dialog the selection controls cannot
         // reach yet (the Picker tests are 0/8 there before any change), and a dialog left open
-        // would take every later test down with it. Tests that use the filter are Windows-only.
-        if (Context.Platform == MauiPlatform.Windows)
+        // would take every later test down with it. Tests that use the filter are Windows-only
+        // (and MauiUnit's, where the Picker is selected in process).
+        if (Context.Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit)
         {
             list.Filter.SelectByText("All");
         }
@@ -94,8 +95,8 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         return list;
     }
 
-    /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows, where the test can write the app's files.</summary>
-    public bool CanStartOverInPlace => Context.Platform == MauiPlatform.Windows;
+    /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows and in memory, where the test can write the app's files.</summary>
+    public bool CanStartOverInPlace => Context.Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit;
 
     // In memory (MauiUnit) the app works only when a test lets it, so a sync the last test started
     // would otherwise finish in this one, after its backend was reset, and show in its request log.

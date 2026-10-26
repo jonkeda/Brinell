@@ -52,4 +52,12 @@ public sealed class SamplePagesOnMauiUnitTests : IDisposable
         Assert.True(page.IsLoaded());
         page.TestImageButton.AssertEnabled();
     }
+
+    [Fact]
+    public void The_context_says_it_runs_on_MauiUnit()
+    {
+        var context = _ctx.Render<ButtonsPage>().AsBruinetContext();
+
+        Assert.Equal(Bruinet.Maui.Enums.MauiPlatform.MauiUnit, context.Platform);
+    }
 }

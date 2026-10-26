@@ -102,3 +102,8 @@ Tomorrow's submodule pointer on `game`.
   - an element counts as visible only while it is on the driver's window, on the shown page: a container that cached a gone page's element read stale text;
   - `IsIdle` runs the app's work until it is quiet for a moment, and the Todo fixture lets the app settle before resetting the backend, so a test's sync no longer finishes in the next one;
   - the test files (network state, reset and its answer) replaced with a short retry, as the app's in-process reads met the moves often enough to fail a run; the swallowed reset answer was the intermittent "started reset, never done".
+- **`MauiPlatform.MauiUnit`, 2026-10-26.** The head reports a platform of its own instead of Windows, and so does the fixture's `Platform` on that head.
+  - Where a test asked "Windows?" for a reason that holds in memory too (the Todo filter and in-place reset, the parallelism probe's window handle), it now says Windows or MauiUnit.
+  - `MauiDriverFactory` refuses MauiUnit with why: the fixture renders it, there is no app to launch.
+  - `Bruinet.Maui.UITests.Mobile` links the fixtures, so it references the head and both headless apps too; it had not built since the head choice. On MauiUnit it runs 267 pass, 36 skip.
+  - Counts unchanged: the device suite 325 and 35, Todo UAT 42 of 42, UI tests 44 of 44.

@@ -18,5 +18,12 @@ public enum MauiPlatform
     /// <summary>
     /// iOS platform (XCUITest).
     /// </summary>
-    iOS
+    iOS,
+
+    /// <summary>
+    /// No device: the app in the test's own process, rendered by MauiUnit (<c>BRUINET_HEAD=mauiunit</c>).
+    /// Its tree answers as Windows' UI Automation does (off-screen elements are in it, finding is not
+    /// seeing), so what holds for Windows usually holds here.
+    /// </summary>
+    MauiUnit
 }

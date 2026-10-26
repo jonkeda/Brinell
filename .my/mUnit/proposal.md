@@ -90,7 +90,7 @@ There are six layers, as the brief asked for:
 - **Interactions refuse what a user could not do.** A hidden or disabled element throws `ElementNotInteractableException`. A button whose command cannot execute counts as disabled, because MAUI disables it.
 - **No test-framework dependency.** Assertions throw `MauiUnitAssertionException`, which all three frameworks report as a failure with its message.
 - **`Application.Current` is set only while a context runs its work.** It is process-wide, and `Shell.Current` and resource lookups read it. A lock keeps parallel contexts correct; `SetApplicationCurrent = false` removes that serialization for apps that never read it.
-- **The Bruinet head reports `MauiPlatform.Windows`.** Bruinet's driver defaults are the UI Automation answers, and MauiUnit's tree behaves like that one. A `Headless` value is open below.
+- **The Bruinet head reports `MauiPlatform.MauiUnit`.** Otherwise it answers as Windows does (the UI Automation defaults, WinUI's ids for the title bar), since MauiUnit's tree behaves like that one; a test that branches on the platform treats MauiUnit as Windows where the reason holds in memory too.
 
 ## Handler strategy
 
@@ -149,6 +149,6 @@ For Bruinet, the head follows the bUnit head's plan:
 ## Open questions, each with a proposal
 
 - **The name.** Settled on 2026-10-26: MauiUnit, for the framework (`srcnew/MauiUnit`, package `MauiUnit`), the head (`Bruinet.Maui.MauiUnit`) and the head value (`BRUINET_HEAD=mauiunit`). MUnit collided with Scala's MUnit test library.
-- **A `MauiPlatform.Headless` value.** Proposal: not yet. Every exhaustive switch on the platform would need a case, and Windows semantics fit today. Revisit after the sample suite's count.
+- **A platform value of its own.** Decided 2026-10-26 by the owner: `MauiPlatform.MauiUnit`. The places that asked "Windows?" were six; each now names MauiUnit beside Windows, and the driver factory says MauiUnit has no app to launch.
 - **Where MauiUnit lives.** It is in Bruinet's `srcnew` for now. Proposal: keep it there until it has its own users; it depends on nothing from Bruinet, so it can move out unchanged.
 - **Default for `SetApplicationCurrent`.** Proposal: keep it on. Correctness beats a parallel speed-up nobody has measured a need for.
