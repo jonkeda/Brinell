@@ -28,7 +28,7 @@ public static class MauiUnitHead
     /// <summary>
     /// The options for a Bruinet context on an app made in memory: a new MauiUnit context, the
     /// <paramref name="root"/> page rendered into it, and the driver over that. For
-    /// a fixture's <c>CreateInMemoryOptions</c>, which runs a device suite on the MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>).
+    /// a fixture's <c>CreateMauiUnitOptions</c>, which runs a device suite on the MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>).
     /// </summary>
     /// <param name="root">The app's first page, as its <c>App</c> would show it.</param>
     /// <param name="configure">The MauiUnit context's options: the app's <c>Application</c>, adapters.</param>
@@ -37,7 +37,7 @@ public static class MauiUnitHead
     /// <c>MauiProgram</c> registers, with the context's dispatcher where the app's needs a main thread.
     /// </param>
     /// <param name="timeouts">Bruinet's timeouts; <see cref="Timeouts"/> by default.</param>
-    public static BruinetMauiTestContextOptions InMemory(
+    public static BruinetMauiTestContextOptions Options(
         Func<IServiceProvider, Microsoft.Maui.Controls.Page> root,
         Action<global::MauiUnit.MauiTestContextOptions>? configure = null,
         Action<global::MauiUnit.MauiTestContext>? arrange = null,

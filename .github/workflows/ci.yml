@@ -79,12 +79,12 @@ jobs:
 
       # The MAUI UI and UAT suites on the MauiUnit head (AD-032): the apps rendered in the test
       # process, no app launched, no window. The device tests skip with their reason.
-      - name: MAUI suites in memory
+      - name: MAUI suites on MauiUnit
         if: always()
         shell: pwsh
         env:
           BRUINET_HEAD: mauiunit
-        run: ./tools/Scripts/test-maui-in-memory.ps1 -NoBuild -Results TestResults/ci
+        run: ./tools/Scripts/test-maui-on-mauiunit.ps1 -NoBuild -Results TestResults/ci
 
       - name: Upload test results
         if: always()
@@ -94,10 +94,10 @@ jobs:
           path: TestResults/ci/*.trx
           if-no-files-found: warn
 
-  # The same MAUI suites in memory on a Mac: off Windows they build for plain net10.0 with the
+  # The same MAUI suites on MauiUnit on a Mac: off Windows they build for plain net10.0 with the
   # MauiUnit and Appium heads only (BruinetWindowsHead, Directory.Build.props).
-  maui-in-memory-macos:
-    name: MAUI suites in memory (macOS)
+  mauiunit-macos:
+    name: MAUI suites on MauiUnit (macOS)
     runs-on: macos-latest
     timeout-minutes: 45
 
@@ -110,16 +110,16 @@ jobs:
         with:
           global-json-file: global.json
 
-      # The headless apps compile MAUI XAML; their AppSupport also targets Android and iOS, which
+      # The apps' MauiUnit builds compile MAUI XAML; their AppSupport also targets Android and iOS, which
       # a restore resolves without building.
       - name: Install the MAUI workload
         run: dotnet workload install maui
 
-      - name: MAUI suites in memory
+      - name: MAUI suites on MauiUnit
         shell: pwsh
         env:
           BRUINET_HEAD: mauiunit
-        run: ./tools/Scripts/test-maui-in-memory.ps1 -Results TestResults/ci-macos
+        run: ./tools/Scripts/test-maui-on-mauiunit.ps1 -Results TestResults/ci-macos
 
       - name: Upload test results
         if: always()

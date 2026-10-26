@@ -116,11 +116,11 @@ public class ShellFixture : MauiTestFixtureBase
     }
 
     /// <summary>
-    /// The MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>): the app's Shell rendered in memory from the app
-    /// compiled headless (<c>Bruinet.Samples.Maui.ShellApp.Headless</c>).
+    /// The MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>): the app's Shell rendered in memory from the app's
+    /// MauiUnit build (<c>Bruinet.Samples.Maui.ShellApp.MauiUnit</c>).
     /// </summary>
-    protected override MauiTestContextOptions CreateInMemoryOptions()
-        => Bruinet.Maui.MauiUnit.MauiUnitHead.InMemory(
+    protected override MauiTestContextOptions CreateMauiUnitOptions()
+        => Bruinet.Maui.MauiUnit.MauiUnitHead.Options(
             _ => new Bruinet.Samples.Maui.ShellApp.AppShell(),
             options => options.Application = _ => new Bruinet.Samples.Maui.ShellApp.App());
 

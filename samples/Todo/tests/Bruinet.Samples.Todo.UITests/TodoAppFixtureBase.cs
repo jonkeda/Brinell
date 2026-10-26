@@ -232,7 +232,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// rather than as launch values, and MauiUnit's dispatcher as the main thread. Asked again on every
     /// restart, so a restart is a new app on the settings of that moment.
     /// </summary>
-    protected override MauiTestContextOptions CreateInMemoryOptions()
+    protected override MauiTestContextOptions CreateMauiUnitOptions()
     {
         var settings = _settings ?? Arrange();
 
@@ -240,7 +240,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         // Debug, XAML is parsed at run time, and the parser knows only the XAML namespaces of loaded
         // assemblies, so without this toolkit:StateContainer on the list was "not found".
         _ = typeof(CommunityToolkit.Maui.Layouts.StateContainer).Assembly;
-        return MauiUnitHead.InMemory(
+        return MauiUnitHead.Options(
             services => services.GetRequiredService<TodoAppShell>(),
             options => options.Application = services => new TodoApp(services.GetRequiredService<TodoAppShell>()),
             context => context.Services.AddTodoApp(
@@ -325,7 +325,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     }
 
     // On a device the settings reach the app as launch values; in memory (MauiUnit) the next app is
-    // composed with them directly (CreateInMemoryOptions), and there are no launch values.
+    // composed with them directly (CreateMauiUnitOptions), and there are no launch values.
     private void PassToTheLaunch(LaunchSettings settings, string runFolder)
     {
         if (_launchValues is not { } launch)

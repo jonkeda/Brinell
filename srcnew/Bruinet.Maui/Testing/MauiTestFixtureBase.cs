@@ -103,7 +103,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         }
 
         // In memory a restart is a fresh app; on a device the first launch's options are kept.
-        _context = new MauiTestContext(MauiHeads.IsMauiUnit ? CreateInMemoryOptions() : _options);
+        _context = new MauiTestContext(MauiHeads.IsMauiUnit ? CreateMauiUnitOptions() : _options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
         OnRestarted();
@@ -212,17 +212,17 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     // The device unless BRUINET_HEAD=mauiunit (MauiHeads).
     private MauiTestContextOptions Options()
-        => MauiHeads.IsMauiUnit ? CreateInMemoryOptions() : CreateTestContextOptions();
+        => MauiHeads.IsMauiUnit ? CreateMauiUnitOptions() : CreateTestContextOptions();
 
     /// <summary>
     /// The suite's MauiUnit head (<see cref="MauiHeads"/>, .my/mUnit): its app's first page rendered in
-    /// memory, the options from <c>Bruinet.Maui.MauiUnit</c>'s <c>MauiUnitHead.InMemory</c>. A suite that has
+    /// memory, the options from <c>Bruinet.Maui.MauiUnit</c>'s <c>MauiUnitHead.Options</c>. A suite that has
     /// one overrides this; by default an MauiUnit run of the suite says it has none.
     /// </summary>
     /// <remarks>Asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.</remarks>
-    protected virtual MauiTestContextOptions CreateInMemoryOptions()
+    protected virtual MauiTestContextOptions CreateMauiUnitOptions()
         => throw new InvalidOperationException(
-            $"{GetType().Name} has no MauiUnit head: override CreateInMemoryOptions, or run it without {MauiHeads.Variable}=mauiunit.");
+            $"{GetType().Name} has no MauiUnit head: override CreateMauiUnitOptions, or run it without {MauiHeads.Variable}=mauiunit.");
 
     #endregion
 

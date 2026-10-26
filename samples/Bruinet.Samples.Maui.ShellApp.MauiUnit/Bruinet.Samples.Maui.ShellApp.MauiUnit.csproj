@@ -2,8 +2,8 @@
 
   <!--
     The Shell sample app's pages and resources on plain net10.0, for the MauiUnit head (.my/mUnit).
-    Every file is LINKED from Bruinet.Samples.Maui.ShellApp, never copied, so the headless run tests
-    the app as it is. Platforms\ and MauiProgram stay out, as in Bruinet.Samples.Maui.App.Headless.
+    Every file is LINKED from Bruinet.Samples.Maui.ShellApp, never copied, so the MauiUnit run tests
+    the app as it is. Platforms\ and MauiProgram stay out, as in Bruinet.Samples.Maui.App.MauiUnit.
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>

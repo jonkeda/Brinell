@@ -22,10 +22,10 @@
          without it an APPIUM_PLATFORM=android run fails in the fixture constructor. -->
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.Appium\Bruinet.Maui.Appium.csproj" />
     <!-- The MauiUnit head (BRUINET_HEAD=mauiunit, .my/mUnit): both sample apps compiled for plain net10.0,
-         their files linked from the apps, rendered in memory by the fixtures' CreateInMemoryOptions. -->
+         their files linked from the apps, rendered in memory by the fixtures' CreateMauiUnitOptions. -->
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App.Headless\Bruinet.Samples.Maui.App.Headless.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp.Headless\Bruinet.Samples.Maui.ShellApp.Headless.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App.MauiUnit\Bruinet.Samples.Maui.App.MauiUnit.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp.MauiUnit\Bruinet.Samples.Maui.ShellApp.MauiUnit.csproj" />
   </ItemGroup>
 
   <ItemGroup>

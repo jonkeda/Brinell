@@ -379,11 +379,11 @@ public class MauiFixture : MauiTestFixtureBase
 
     /// <summary>
     /// The MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>): the app as its <c>App</c> starts it, a
-    /// <c>NavigationPage</c> on the hub, rendered in memory from the app compiled headless
-    /// (<c>Bruinet.Samples.Maui.App.Headless</c>).
+    /// <c>NavigationPage</c> on the hub, rendered in memory from the app's MauiUnit build
+    /// (<c>Bruinet.Samples.Maui.App.MauiUnit</c>).
     /// </summary>
-    protected override MauiTestContextOptions CreateInMemoryOptions()
-        => Bruinet.Maui.MauiUnit.MauiUnitHead.InMemory(
+    protected override MauiTestContextOptions CreateMauiUnitOptions()
+        => Bruinet.Maui.MauiUnit.MauiUnitHead.Options(
             _ => new Microsoft.Maui.Controls.NavigationPage(new Bruinet.Samples.Maui.App.HubPage()),
             options => options.Application = _ => new Bruinet.Samples.Maui.App.App());
 

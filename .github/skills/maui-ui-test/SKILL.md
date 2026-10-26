@@ -117,7 +117,7 @@ public class MediaElementTests
 `Bruinet.Maui.UITests` and the Todo sample's `Bruinet.Samples.Todo.UITests` and `.Uat` run on both
 unchanged (AD-032, [docs/run/MAUI.md](../../../docs/run/MAUI.md)): the device (Windows through FlaUI,
 Android and iOS through Appium) and MauiUnit, the app rendered in the test process from its build for
-plain `net10.0` (`samples/*.Headless`). Write every MAUI test so it can run on both.
+plain `net10.0` (`samples/*.MauiUnit`). Write every MAUI test so it can run on both.
 
 - **A test that needs a device** says so: `[DeviceFact("why")]` instead of `[Fact]` (it takes the same
   `Timeout`), `[WindowsOnlyFact(Device = "why")]` for one that is Windows-only as well, `@device` on a
@@ -140,8 +140,8 @@ plain `net10.0` (`samples/*.Headless`). Write every MAUI test so it can run on b
 - **Never change what a test checks to make it pass on one head.** A test that passes on the device and
   fails on MauiUnit is a head gap or a device-only test: mark it, or fix the head in
   `srcnew/Bruinet.Maui.MauiUnit` (or MauiUnit itself in `srcnew/MauiUnit`). A page added to the sample
-  app is in the headless build already, which links its sources; a new fixture names its in-memory app
-  in `CreateInMemoryOptions`.
+  app is in its MauiUnit build already, which links its sources; a new fixture names its MauiUnit app
+  in `CreateMauiUnitOptions`.
 
 ## The never-list
 

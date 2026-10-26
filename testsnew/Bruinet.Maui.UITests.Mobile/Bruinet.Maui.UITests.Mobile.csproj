@@ -58,8 +58,8 @@
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.Appium\Bruinet.Maui.Appium.csproj" />
     <!-- The linked fixtures' MauiUnit head (BRUINET_HEAD=mauiunit), as in the Windows head. -->
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App.Headless\Bruinet.Samples.Maui.App.Headless.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp.Headless\Bruinet.Samples.Maui.ShellApp.Headless.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App.MauiUnit\Bruinet.Samples.Maui.App.MauiUnit.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp.MauiUnit\Bruinet.Samples.Maui.ShellApp.MauiUnit.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -21,19 +21,19 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 | xUnit, NUnit and MSTest tests | `testsnew/MauiUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
 | Bruinet head | `srcnew/Bruinet.Maui.MauiUnit` | Driver, element, state, app sinks, refusals, `MauiUnitHead` |
 | Head's own tests | `testsnew/Bruinet.Maui.MauiUnit.Tests` | 3 of 3 green |
-| The device suite on both heads | `testsnew/Bruinet.Maui.UITests`, both sample apps compiled headless | `BRUINET_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
-| The Todo sample on both heads | `samples/Todo/tests/Bruinet.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinet.Samples.Todo.App.Headless` | `BRUINET_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
+| The device suite on both heads | `testsnew/Bruinet.Maui.UITests`, both sample apps' MauiUnit builds | `BRUINET_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
+| The Todo sample on both heads | `samples/Todo/tests/Bruinet.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinet.Samples.Todo.App.MauiUnit` | `BRUINET_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
 | Proposal, design, count | `.my/mUnit` | Written |
 
 How the head is chosen, as the Html suites choose bUnit:
 - `BRUINET_HEAD=mauiunit` is read by `MauiHeads` in Bruinet.Core; anything else is the device.
-- `MauiTestFixtureBase` calls the fixture's `CreateInMemoryOptions()` on MauiUnit and `CreateTestContextOptions()` on a device; `MauiFixture` and `ShellFixture` name their app's first page.
+- `MauiTestFixtureBase` calls the fixture's `CreateMauiUnitOptions()` on MauiUnit and `CreateTestContextOptions()` on a device; `MauiFixture` and `ShellFixture` name their app's first page.
 - A test that needs a device is `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]` where it is Windows only too; a scenario is tagged `@device`. They are skipped on MauiUnit with the reason.
 
 Changes outside the new projects:
 - `MauiHeads` and `DeviceFact` in Bruinet.Core, `@device` in Bruinet.Bdd;
 - the head choice in `MauiTestFixtureBase`;
-- the device suite references the head and both headless apps, and marks 33 tests;
+- the device suite references the head and both apps' MauiUnit builds, and marks 33 tests;
 - `net10.0` added to `Bruinet.Maui.AppSupport`'s targets, which the apps' XAML needs.
 
 The work is pushed (2026-10-26, e64b2cc7): `move` on origin and jonkeda/bruinet (its `main` too), and
@@ -41,7 +41,7 @@ Tomorrow's submodule pointer on `game`.
 
 ## Next
 
-1. The first macOS run in CI (job `maui-in-memory-macos`, jonkeda/bruinet's Actions): what it finds off Windows; a Linux job after it.
+1. The first macOS run in CI (job `mauiunit-macos`, jonkeda/bruinet's Actions): what it finds off Windows; a Linux job after it.
 2. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
 
 Done 2026-10-26: the decision record (`.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md`)
@@ -95,7 +95,7 @@ and the maui-ui-test skill's "Two heads" section (`DeviceFact`, `@device`, what 
   This folder keeps its name, `.my/mUnit`. All suites are green after the rename, and the device suite gives 325 pass and 35 skip on MauiUnit, 7 of 7 on the Windows spot check.
 - **The Todo sample, 2026-10-26.** The Todo app (a Shell, a backend over HTTP, SQLite, the toolkit) runs its UAT and UI suites in memory: 42 of 42 scenarios and 44 of 44 tests, with only the `@service` and live-API skips. It took, in order:
   - the app's registrations moved from `MauiProgram` into `TodoAppServices.AddTodoApp`, which `MauiProgram` and the fixture both call, so the in-memory app is composed as the device app is;
-  - `TodoAppFixtureBase.CreateInMemoryOptions`: the same arrangement (database, backend, network-state and reset files), the launch settings handed to the app directly, MauiUnit's dispatcher as the main thread;
+  - `TodoAppFixtureBase.CreateMauiUnitOptions`: the same arrangement (database, backend, network-state and reset files), the launch settings handed to the app directly, MauiUnit's dispatcher as the main thread;
   - the toolkit's assembly loaded before the first page parses, as `UseMauiCommunityToolkit()` does on a device (Debug parses XAML at run time and only knows loaded namespaces);
   - an `IAnimationManager` in MauiUnit, whose ticker reports animations off, so a toolkit state change or a fade ends at once instead of throwing;
   - the head's timeouts back to the device fixture's (a backend answers after two seconds; the 500 ms ones were a wrong assumption);
@@ -113,3 +113,8 @@ and the maui-ui-test skill's "Two heads" section (`DeviceFact`, `@device`, what 
   - `BruinetWindowsHead` in `Directory.Build.props` is true on Windows; the three projects choose `net10.0-windows` and the FlaUI reference by it, and off Windows the device suite leaves out `Tests/Diagnostics` and `Tests/Background`, as the mobile project does.
   - `Bruinet.Maui.AppSupport` lists its Windows target only on Windows, as MAUI's template does, so the headless apps restore elsewhere.
   - Checked here with `-p:BruinetWindowsHead=false`: the device suite 271 pass and 36 skip, Todo UAT 42 of 42, UI tests 44 of 44. The Windows build is unchanged (325 in memory, FlaUI's ButtonTests 17 of 17). Not yet run on a real Mac: the MAUI workload's restore there is the part this machine cannot show.
+- **One name, 2026-10-26.** The head and everything made for it say MauiUnit; "headless" stays the browser's word in Bruinet, and "in memory" is description, not a name.
+  - The apps' builds for it are `*.MauiUnit` (`Bruinet.Samples.Maui.App.MauiUnit`, `.ShellApp.MauiUnit`, `Bruinet.Samples.Todo.App.MauiUnit`), no longer `*.Headless`.
+  - A fixture's hook is `CreateMauiUnitOptions`, the head's factory `MauiUnitHead.Options`; the script is `tools/Scripts/test-maui-on-mauiunit.ps1`, the CI job `mauiunit-macos`.
+  - MauiUnit's internal `HeadlessHandler`, `HeadlessTicker` and `HeadlessMauiContext` keep their names: inside the framework, headless means MAUI without platform handlers.
+  - The log above keeps the names used at the time. Counts unchanged: 325 and 35, 42 of 42, 44 of 44.

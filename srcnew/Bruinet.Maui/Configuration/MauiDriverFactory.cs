@@ -42,7 +42,7 @@ public static class MauiDriverFactory
             MauiPlatform.Android => CreateAppiumDriver(options),
             MauiPlatform.iOS => CreateAppiumDriver(options),
             MauiPlatform.MauiUnit => throw new ArgumentException(
-                "MauiUnit has no app to launch: the fixture renders it in memory (CreateInMemoryOptions, MauiUnitHead.InMemory)."),
+                "MauiUnit has no app to launch: the fixture renders it in memory (CreateMauiUnitOptions, MauiUnitHead.Options)."),
             _ => throw new ArgumentException($"Unsupported platform: {options.Platform}")
         };
     }

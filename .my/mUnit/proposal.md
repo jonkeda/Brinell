@@ -16,7 +16,7 @@ It is feasible, and the proof of concept is green:
 | `MauiUnit.Tests` (xUnit) | 41 | The six example kinds; the dispatcher, virtual clock, tree, errors and parallel contexts; Shell chrome, swipes, focus and dialogs |
 | `MauiUnit.Tests.NUnit`, `MauiUnit.Tests.MSTest` | 2 + 2 | The same API under the other two frameworks |
 | `Bruinet.Maui.MauiUnit.Tests` | 3 | The sample app's real XAML pages, driven by the device suite's page objects, unchanged |
-| `Bruinet.Maui.UITests` with `BRUINET_HEAD=mauiunit` | 325 pass, 35 skip, 0 fail | The whole MAUI device suite on both sample apps compiled headless; what skips needs a device ([suite-count.md](suite-count.md)) |
+| `Bruinet.Maui.UITests` with `BRUINET_HEAD=mauiunit` | 325 pass, 35 skip, 0 fail | The whole MAUI device suite on both sample apps' MauiUnit builds; what skips needs a device ([suite-count.md](suite-count.md)) |
 
 Each MauiUnit suite runs in about 0.2 s, and the device suite in 6 s. The pages are real MAUI: XAML
 compiled by XamlC, compiled bindings, `Command`, `NavigationPage`, Shell routes and `CollectionView`.
@@ -143,7 +143,7 @@ So there are three groups:
 
 For Bruinet, the head follows the bUnit head's plan:
 1. Done: the device suite runs on MauiUnit, 319 of 354 in 6 s; the other 33 are device-only or platform media, and one is a known difference ([suite-count.md](suite-count.md)).
-2. Done: a head choice in `MauiTestFixtureBase` (`BRUINET_HEAD=mauiunit`, the fixture's `CreateInMemoryOptions`), with `DeviceFact`, `WindowsOnlyFact(Device = ...)` and `@device` skipped on MauiUnit.
+2. Done: a head choice in `MauiTestFixtureBase` (`BRUINET_HEAD=mauiunit`, the fixture's `CreateMauiUnitOptions`), with `DeviceFact`, `WindowsOnlyFact(Device = ...)` and `@device` skipped on MauiUnit.
 3. Write a decision record once the owner has seen the counts.
 
 ## Open questions, each with a proposal

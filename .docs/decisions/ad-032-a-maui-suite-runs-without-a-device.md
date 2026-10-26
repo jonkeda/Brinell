@@ -10,7 +10,7 @@ alike. The head reports `MauiPlatform.MauiUnit` and otherwise answers as Windows
 The device heads run every gate.
 
 MauiUnit itself (`srcnew/MauiUnit`) is a framework of its own, a bUnit for MAUI, on xUnit, NUnit and
-MSTest: it references MAUI and nothing of Bruinet's. A fixture names its app in `CreateInMemoryOptions`,
+MSTest: it references MAUI and nothing of Bruinet's. A fixture names its app in `CreateMauiUnitOptions`,
 from the app compiled for plain `net10.0` beside its device heads; the app's composition is one method
 the device's `MauiProgram` and the fixture both call.
 
@@ -39,7 +39,7 @@ third driver costs two projects and no change to a page object.
   projects build for plain `net10.0` without FlaUI (`BruinetWindowsHead`);
 - making the MauiUnit head the gate: it passes a page whose layout hides a button.
 
-**The project earns its place by AD-026's R3:** MauiUnit, and the headless apps, stay out of every
+**The project earns its place by AD-026's R3:** MauiUnit, and the apps' MauiUnit builds, stay out of every
 suite that only drives a device; Bruinet.Maui does not reference them.
 
 **Broken when:** a page object, control or phrase needs a change to run on MauiUnit; `Bruinet.Maui`

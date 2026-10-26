@@ -2,7 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Bruinet.Samples.Todo.Api/Bruinet.Samples.Todo.Api.csproj" />
     <Project Path="src/Bruinet.Samples.Todo.App/Bruinet.Samples.Todo.App.csproj" />
-    <Project Path="src/Bruinet.Samples.Todo.App.Headless/Bruinet.Samples.Todo.App.Headless.csproj" />
+    <Project Path="src/Bruinet.Samples.Todo.App.MauiUnit/Bruinet.Samples.Todo.App.MauiUnit.csproj" />
     <Project Path="src/Bruinet.Samples.Todo.Contracts/Bruinet.Samples.Todo.Contracts.csproj" />
     <Project Path="src/Bruinet.Samples.Todo.Core/Bruinet.Samples.Todo.Core.csproj" />
     <Project Path="src/Bruinet.Samples.Todo.Infrastructure/Bruinet.Samples.Todo.Infrastructure.csproj" />

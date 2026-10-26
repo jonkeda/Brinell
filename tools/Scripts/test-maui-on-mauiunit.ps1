@@ -12,16 +12,16 @@
     Every project runs even when one fails; the script fails at the end, naming them.
 
 .PARAMETER Results
-    Where to write a .trx per project. Default: TestResults/maui-in-memory.
+    Where to write a .trx per project. Default: TestResults/mauiunit.
 
 .PARAMETER NoBuild
     Use the existing build (dotnet test --no-build), as CI does after building the solution.
 
 .EXAMPLE
-    ./tools/Scripts/test-maui-in-memory.ps1
+    ./tools/Scripts/test-maui-on-mauiunit.ps1
 #>
 param(
-    [string] $Results = 'TestResults/maui-in-memory',
+    [string] $Results = 'TestResults/mauiunit',
     [switch] $NoBuild
 )
 

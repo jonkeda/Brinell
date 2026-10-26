@@ -272,7 +272,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit.Tests.MSTest", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Maui.MauiUnit.Tests", "testsnew\Bruinet.Maui.MauiUnit.Tests\Bruinet.Maui.MauiUnit.Tests.csproj", "{07385005-6891-4380-B359-C9C68772F50A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.App.Headless", "samples\Bruinet.Samples.Maui.App.Headless\Bruinet.Samples.Maui.App.Headless.csproj", "{E9E61BA5-E125-43D5-8012-6CE8A5043A3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.App.MauiUnit", "samples\Bruinet.Samples.Maui.App.MauiUnit\Bruinet.Samples.Maui.App.MauiUnit.csproj", "{E9E61BA5-E125-43D5-8012-6CE8A5043A3F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Mocking.Data", "srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj", "{C322C993-DC6C-4070-BE9B-9B7D764DBECA}"
 EndProject
@@ -296,9 +296,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Mocking.Data.Hook.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Sql.Hook", "samples\Bruinet.Samples.Sql.Hook\Bruinet.Samples.Sql.Hook.csproj", "{7C31F65B-4599-4F3C-9FC8-FD233EFF61E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.ShellApp.Headless", "samples\Bruinet.Samples.Maui.ShellApp.Headless\Bruinet.Samples.Maui.ShellApp.Headless.csproj", "{7F0AE2BC-F59E-4746-842F-ED246775CC98}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.ShellApp.MauiUnit", "samples\Bruinet.Samples.Maui.ShellApp.MauiUnit\Bruinet.Samples.Maui.ShellApp.MauiUnit.csproj", "{7F0AE2BC-F59E-4746-842F-ED246775CC98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Todo.App.Headless", "samples\Todo\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj", "{E3A28373-2899-41BD-9706-81DF4A1787A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Todo.App.MauiUnit", "samples\Todo\src\Bruinet.Samples.Todo.App.MauiUnit\Bruinet.Samples.Todo.App.MauiUnit.csproj", "{E3A28373-2899-41BD-9706-81DF4A1787A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

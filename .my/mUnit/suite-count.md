@@ -19,7 +19,7 @@ and why.
 
 The linked copy took the device suite unchanged: `MauiFixture`, `ShellFixture`, 64 test files,
 containers, page objects and UAT scenarios. It ran them against both sample apps compiled for plain
-`net10.0` (`samples/Bruinet.Samples.Maui.App.Headless` and `.ShellApp.Headless`, also linked
+`net10.0` (`samples/Bruinet.Samples.Maui.App.MauiUnit` and `.ShellApp.MauiUnit`, also linked
 unchanged), leaving out only `FlaUIErrorsTests`.
 
 319 of the 354 tests passed, 2 were skipped, and 33 failed, in 6 s. Of those 33, 32 are tests no
@@ -66,7 +66,7 @@ The full list of the 33, by group, with each one's first message line, is kept i
 ## The Todo sample on MauiUnit (2026-10-26)
 
 `$env:BRUINET_HEAD='mauiunit'` on the Todo sample's two MAUI suites, against its app compiled for
-plain `net10.0` (`samples/Todo/src/Bruinet.Samples.Todo.App.Headless`), a WireMock backend over
+plain `net10.0` (`samples/Todo/src/Bruinet.Samples.Todo.App.MauiUnit`), a WireMock backend over
 HTTP and a SQLite database per run:
 
 | Suite | Result | Time |

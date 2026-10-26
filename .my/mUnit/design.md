@@ -13,8 +13,8 @@ The exact names, API and planned skeletons. The why is in [proposal.md](proposal
 | `MauiUnit.Tests.NUnit` | `testsnew/MauiUnit.Tests.NUnit` | NUnit 4.3.2 + adapter 5.0.0 | `MauiUnit`, samples |
 | `MauiUnit.Tests.MSTest` | `testsnew/MauiUnit.Tests.MSTest` | MSTest 3.9.3 | `MauiUnit`, samples |
 | `Bruinet.Maui.MauiUnit.Tests` | `testsnew/Bruinet.Maui.MauiUnit.Tests` | net10.0, `UseMaui`, xUnit | head, `Bruinet.Samples.Shared`; links the sample app's Buttons and Toggle XAML and view models, and UITests' `ButtonsTestPage` and `ToggleTestPage` |
-| `Bruinet.Samples.Maui.App.Headless`, `.ShellApp.Headless` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
-| `Bruinet.Maui.UITests` (the device suite) | `testsnew/Bruinet.Maui.UITests` | net10.0-windows, xUnit | Also references `Bruinet.Maui.MauiUnit` and both headless apps; `BRUINET_HEAD=mauiunit` runs it in memory through the fixtures' `CreateInMemoryOptions` |
+| `Bruinet.Samples.Maui.App.MauiUnit`, `.ShellApp.MauiUnit` | `samples/` | net10.0, `UseMaui` | Both sample apps' sources and XAML linked, minus `Platforms\` and `MauiProgram`; AppSupport (now also `net10.0`), the toolkit |
+| `Bruinet.Maui.UITests` (the device suite) | `testsnew/Bruinet.Maui.UITests` | net10.0-windows, xUnit | Also references `Bruinet.Maui.MauiUnit` and both apps' MauiUnit builds; `BRUINET_HEAD=mauiunit` runs it in memory through the fixtures' `CreateMauiUnitOptions` |
 
 ## Dependency analysis
 

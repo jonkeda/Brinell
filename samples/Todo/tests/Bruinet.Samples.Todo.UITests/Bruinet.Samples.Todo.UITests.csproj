@@ -22,9 +22,9 @@
     <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
     <!-- The MauiUnit head (BRUINET_HEAD=mauiunit, .my/mUnit): the app compiled for plain net10.0,
-         rendered in memory by TodoAppFixtureBase.CreateInMemoryOptions. -->
+         rendered in memory by TodoAppFixtureBase.CreateMauiUnitOptions. -->
     <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj" />
-    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.MauiUnit\Bruinet.Samples.Todo.App.MauiUnit.csproj" />
   </ItemGroup>
 
   <ItemGroup>
