@@ -383,9 +383,14 @@ public class MauiFixture : MauiTestFixtureBase
     /// (<c>Bruinet.Samples.Maui.App.MauiUnit</c>).
     /// </summary>
     protected override MauiTestContextOptions CreateMauiUnitOptions()
-        => Bruinet.Maui.MauiUnit.MauiUnitHead.Options(
+    {
+        // What UseMauiCommunityToolkitMediaElement() does first on a device: the assembly loaded, as
+        // Debug parses XAML at run time and knows only the XAML namespaces of loaded assemblies.
+        _ = typeof(global::CommunityToolkit.Maui.Views.MediaElement).Assembly;
+        return Bruinet.Maui.MauiUnit.MauiUnitHead.Options(
             _ => new Microsoft.Maui.Controls.NavigationPage(new Bruinet.Samples.Maui.App.HubPage()),
             options => options.Application = _ => new Bruinet.Samples.Maui.App.App());
+    }
 
     /// <inheritdoc />
     protected override string GetDefaultAppPath(MauiPlatform platform)

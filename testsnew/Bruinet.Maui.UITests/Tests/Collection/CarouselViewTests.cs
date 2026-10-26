@@ -18,7 +18,8 @@ public class CarouselViewTests
 
     private CollectionModuleTestPage GetPage() => new(_fixture.Context);
 
-    [DeviceFact("it reads cards off screen, which Windows reports as on screen and MauiUnit, like a phone, does not", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    // Each card is read while it is the one shown: only Windows reports the others as on screen.
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Item")]
     public Task CarouselView_Items_AreTheSeededCardsInOrder()
     {
@@ -26,6 +27,7 @@ public class CarouselViewTests
             .AssertItemCount(CollectionModuleTestPage.SeedCount);
 
         carousel.Item(0).Name.AssertText("Alpha");
+        carousel.SwipeNext().SwipeNext().SwipeNext().SwipeNext().AssertPosition(4);
         carousel.Item(4).Name.AssertText("Echo");
         return Task.CompletedTask;
     }

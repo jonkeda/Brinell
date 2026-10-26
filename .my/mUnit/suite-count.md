@@ -29,7 +29,7 @@ can run in memory, 319 passed.
 | Group | Tests | What it means |
 | --- | --- | --- |
 | Passed | 319 | Every control family, containers, collections, the Shell app, navigation, menus and toolbars, dialogs, gestures through the app's sinks, toolkit controls, focus, and the 4 UAT feature files |
-| MediaElement | 12 | The toolkit's `MediaElement` has no type on plain `net10.0`, so its XAML does not load; media playback is a device matter |
+| MediaElement | 11 | The page loads once the fixture loads the MediaElement assembly first (2026-10-26; one test runs now); the 11 drive the platform's transport controls, a device matter |
 | The Windows tree and bridge | 7 | What Windows' tree leaves out (a BoxView, menu items, a SwipeView), the bridge's own refusal messages, and its rule against physical input |
 | The FlaUI driver itself | 6 | The test casts the driver to `FlaUIMauiDriver` |
 | Layout and pixels | 6 | Scroll offsets and extents, a label below the fold, screenshots, input logged in physical pixels |

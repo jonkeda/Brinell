@@ -1,54 +1,42 @@
 # The device suite's skips on MauiUnit: a plan
 
-The device suite skips 35 tests on MauiUnit (2026-10-26, 325 pass). Thirteen can run in memory after
-two pieces of work, one splits into a half that runs and a half that skips, and twenty-one keep
-skipping. Done, the suite would be 339 pass and 22 skip, and the device heads stay the judge at a gate
-(AD-032).
+The device suite skipped 35 tests on MauiUnit (2026-10-26, 325 pass). Steps 1 and 2a are done: it now
+runs 328 and skips 33 (361 tests, one split in two). What still skips needs a real screen or the Windows
+driver itself, and stays with FlaUI and Appium; the device heads stay the judge at a gate (AD-032).
 
 ## What skips, and why
 
 | Group | Tests | Can MauiUnit run them? |
 | --- | --- | --- |
-| MediaElement (`CommunityToolkit/MediaElementTests`) | 12 | Yes, against a fake player: steps 2a to 2d |
+| MediaElement (`CommunityToolkit/MediaElementTests`) | 12 | One (it resolves and is shown); the other 11 drive the platform's transport controls: no |
 | Layout and scrolling (`ScrollVerbTests` 3, `ScrollTests.BottomLabel_IsVisible_IsFalseUntilScrolledTo`) | 4 | No: layout is the device runners' (FlaUI, Appium); step 3 is not planned |
-| Carousel off-screen cards (`CarouselView_Items_AreTheSeededCardsInOrder`) | 1 | Yes, with a test change: step 1 |
-| Long picker (`LongPicker_ReportsEveryItemAndItsOwnIndex`) | 1 | Half of it: step 1 |
+| Carousel off-screen cards (`CarouselView_Items_AreTheSeededCardsInOrder`) | 1 | Yes, done in step 1 |
+| Long picker (`LongPicker_ReportsEveryItemAndItsOwnIndex`) | 1 | Half of it, done in step 1 |
 | Windows' accessibility tree leaves things out (BoxView, SwipeView, menu items) | 3 | No: they prove a Windows fact |
 | The Windows driver and bridge themselves (Diagnostics 5, focus 2, bridge refusals 3, input in physical pixels 1, occluded screenshot 1) | 12 | No: they test FlaUI and the UI Automation bridge |
 | Opt-in measurements (`BRUINET_PROBE`, `BRUINET_STRESS`) | 2 | Not device skips; they stay opt-in on every head |
 
-## Step 1: two test changes, no head change
+## Step 1: two test changes, done
 
-- **Carousel.** The test reads card 4's text while card 0 is shown; it passes on Windows only because
-  Windows reports every card as on screen, and would fail on a phone too. Bring each card on screen first
-  (`SwipeNext` on the control, or whatever member moves the carousel), then read it: the test then holds
-  on Windows, Android and MauiUnit, and `[DeviceFact]` goes.
-- **Long picker.** Split it: the item count, the selected index and its text (true on every head) become
-  a `[Fact]`; the check that the platform's popup realizes fewer than 200 items stays a `[DeviceFact]`,
-  since it demonstrates a platform's virtualization.
-- Gain: 2 passing in memory; 1 skip remains (the popup half).
+- **Carousel.** The test read card 4 while card 0 was shown, which only Windows reports as on screen.
+  It now swipes to card 4 first and is a `[Fact]`: it passes on MauiUnit and on Windows.
+- **Long picker.** Split: `LongPicker_ReportsEveryItemAndItsOwnIndex` (count, index, text) is a `[Fact]`;
+  `LongPicker_Dropdown_RealizesOnlySomeItems` keeps the popup's realization as a `[DeviceFact]`. Both pass
+  on Windows.
 
-## Step 2: MediaElement against a fake player
+## Step 2: MediaElement, stopped after 2a
 
-The skip reason ("no type without one") looks wrong: the toolkit's `net10.0` build has `MediaElement`
-and its handler. The likelier cause is the Todo one: the page's XAML parses before the MediaElement
-assembly is loaded, and the runtime parser knows only loaded assemblies.
-
-- **2a. Load the assembly first.** `MauiFixture.CreateMauiUnitOptions` loads
-  `CommunityToolkit.Maui.MediaElement` before the first page, as `TodoAppFixtureBase` does for the toolkit.
-  Check: the media page opens on MauiUnit. If it does not, stop and rethink this step.
-- **2b. A handler seam in MauiUnit.** `MauiTestContextOptions` lets a test give a view type a handler
-  (for example `Handlers.Add<TView, THandler>()`), set when the view is realized in the tree. MauiUnit stays
-  free of the toolkit; the seam is general.
-- **2c. The head moves the virtual clock.** Today the head only drains the queue, so app timers and
-  delayed work never fire under Bruinet. The head advances MauiUnit's clock by the wall-clock time that
-  passed since its last call, before each drain. MauiUnit's own tests keep the pure virtual clock. This
-  also lets any app timer run under the head.
-- **2d. A fake MediaElement handler** in the device suite (`testsnew/Bruinet.Maui.UITests/MauiUnit/`): play,
-  pause, stop and seek change `CurrentState`; while playing a timer moves `Position`; `Duration` is the
-  clip's length (the fixture says 6 s). It moves to a package of its own only if a second suite needs it.
-- Gain: 12 in memory. They then prove the control object and the page's wiring against a fake player,
-  not playback itself; the device run still proves that.
+- **2a, done.** `MauiFixture.CreateMauiUnitOptions` loads `CommunityToolkit.Maui.MediaElement` before the
+  first page, and the media page opens on MauiUnit: the old reason ("no type without one") was wrong.
+  `MediaElement_ResolvesAndIsVisible` now runs everywhere.
+- **Why it stops there.** The other 11 drive the player's transport controls by WinUI's part ids
+  (`PlayPauseButton`, `ProgressSlider`, `TimeElapsedElement`, `TimeRemainingElement`), which the platform
+  draws. Running them in memory would take a fake player and fake WinUI transport controls in MauiUnit's
+  tree: the platform fake AD-032 rules out. They keep `[DeviceFact]` with that reason.
+- **2b to 2d, dropped.** The handler seam and the fake player have no test left to serve.
+- **2c, kept as a note.** The head never moves MauiUnit's virtual clock, so app timers and delayed work
+  do not fire under Bruinet. No test needs it now; when one does, the head advances the clock by the
+  wall-clock time since its last call.
 
 ## Step 3: layout, not planned
 
@@ -57,15 +45,11 @@ Decided 2026-10-26 by the owner: layout in memory (sized leaf handlers, a window
 real screen, FlaUI and Appium; the four tests keep `[DeviceFact]`, and `ReadScrollPosition` keeps ending
 the call with `DeviceOnlyException`.
 
-## Unknowns
+## What is left
 
-- Whether the media page loads after 2a; it decides step 2.
-- Whether a handler on a MediaElement makes MAUI call into its mapper in ways a null platform view breaks.
-- Whether a carousel move works on MauiUnit through the control as it is, or needs a head route.
+Nothing planned. The 33 skips: 11 MediaElement transport tests, 4 layout and scrolling, 3 Windows
+accessibility-tree facts, 12 Windows driver and bridge tests, the long picker's popup half, and the 2
+opt-in measurements.
 
-## Proposed order
-
-Step 1 first (small, and the carousel test is wrong on a phone today). Step 2 next: 2c helps every app
-with a timer, not only MediaElement.
-
-Expected next action: do step 1, then 2a to see whether the media page loads.
+`TextVerbTests.Paste_LeavesTheClipboardAlone` failed once in a full MauiUnit run and passed three times
+alone: it uses the real Windows clipboard, which any program on the desktop can hold.

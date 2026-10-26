@@ -22,7 +22,7 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 | xUnit, NUnit and MSTest tests | `testsnew/MauiUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
 | Bruinet head | `srcnew/Bruinet.Maui.MauiUnit` | Driver, element, state, app sinks, refusals, `MauiUnitHead` |
 | Head's own tests | `testsnew/Bruinet.Maui.MauiUnit.Tests` | 3 of 3 green |
-| The device suite on both heads | `testsnew/Bruinet.Maui.UITests`, both sample apps' MauiUnit builds | `BRUINET_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
+| The device suite on both heads | `testsnew/Bruinet.Maui.UITests`, both sample apps' MauiUnit builds | `BRUINET_HEAD=mauiunit`: **328 pass, 33 skip with their reason, 0 fail, in about 20 s**. Unset: Windows (FlaUI), as before |
 | The Todo sample on both heads | `samples/Todo/tests/Bruinet.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinet.Samples.Todo.App.MauiUnit` | `BRUINET_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
 | Proposal, design, count | `.my/mUnit` | Written |
 
@@ -42,7 +42,7 @@ Tomorrow's submodule pointer on `game`.
 
 ## Next
 
-1. The skips: [unskip-plan.md](unskip-plan.md), steps 1 (carousel, long picker) and 2 (MediaElement on a fake player).
+1. The skips are settled ([unskip-plan.md](unskip-plan.md)): 328 pass and 33 skip on MauiUnit; what skips needs a real screen or the Windows driver.
 2. A Linux job in CI, now that macOS is green (2026-10-26: 271, 42 and 44 pass, as on Windows).
 3. Snapshot files (Phase 5) only once a test needs them. Layout in memory (Phase 6) is not planned: layout is the device runners' (FlaUI, Appium).
 

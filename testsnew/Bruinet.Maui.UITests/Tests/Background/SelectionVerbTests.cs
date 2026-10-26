@@ -150,12 +150,10 @@ public class SelectionVerbTests
     /// answered confidently about a list that was not the picker's.
     /// </para>
     /// <para>
-    /// The contrast is asserted rather than described: the popup is opened and its realized
-    /// items counted, so if a platform ever does render all two hundred, this says so instead of
-    /// quietly ceasing to demonstrate anything.
+    /// Why the popup is not asked is <see cref="LongPicker_Dropdown_RealizesOnlySomeItems"/>, on a device.
     /// </para>
     /// </remarks>
-    [DeviceFact("it shows that a platform's picker popup realizes only some items", Timeout = TestConstants.LongTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     public Task LongPicker_ReportsEveryItemAndItsOwnIndex()
     {
         var page = Page;
@@ -165,6 +163,21 @@ public class SelectionVerbTests
         Assert.Equal(200, page.LongPicker.GetItemCount());
         Assert.Equal(150, page.LongPicker.GetSelectedIndex());
         Assert.Equal("Item 151", page.LongPicker.GetSelectedText());
+        return Task.CompletedTask;
+    }
+
+    /// <summary>A long picker's open dropdown realizes only some of its items.</summary>
+    /// <remarks>
+    /// The contrast is asserted rather than described: the popup is opened and its realized
+    /// items counted, so if a platform ever does render all two hundred, this says so instead of
+    /// quietly ceasing to demonstrate anything.
+    /// </remarks>
+    [DeviceFact("it shows that a platform's picker popup realizes only some items", Timeout = TestConstants.LongTestTimeoutMs)]
+    public Task LongPicker_Dropdown_RealizesOnlySomeItems()
+    {
+        var page = Page;
+
+        page.LongPicker.SelectByIndex(150);
 
         var realized = RealizedDropdownItems(page);
 

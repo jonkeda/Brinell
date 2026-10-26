@@ -20,7 +20,7 @@ public class MediaElementTests
 
     private CommunityToolkitMediaTestPage GetPage() => new(_fixture.Context);
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsVisible")]
     public Task MediaElement_ResolvesAndIsVisible()
     {
@@ -29,7 +29,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "TransportButtons")]
     public Task MediaElement_TransportButtons_AreControlObjects()
     {
@@ -43,7 +43,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsPlaying")]
     public Task MediaElement_DoesNotAutoPlay()
     {
@@ -54,7 +54,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Play")]
     public Task MediaElement_Play_StartsPlaybackAndAdvances()
     {
@@ -67,7 +67,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Pause")]
     public Task MediaElement_PlayThenPause_Pauses()
     {
@@ -78,7 +78,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "SetPlaying")]
     public Task MediaElement_PauseWhenNotPlaying_IsNoOp()
     {
@@ -88,7 +88,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "SetPlaying")]
     public Task MediaElement_SetPlaying_PlaysAndPauses()
     {
@@ -100,7 +100,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Stop")]
     public Task MediaElement_Stop_PausesAndReturnsToTheStart()
     {
@@ -113,7 +113,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "GetProgress")]
     public Task MediaElement_Progress_StartsAtZero()
     {
@@ -121,7 +121,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "GetDuration")]
     public Task MediaElement_Duration_IsClipLength()
     {
@@ -135,7 +135,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "GetRemaining")]
     public Task MediaElement_BeforePlay_AllOfTheClipRemains()
     {
@@ -145,7 +145,7 @@ public class MediaElementTests
         return Task.CompletedTask;
     }
 
-    [DeviceFact("MediaElement plays through the platform and has no type without one", Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [DeviceFact("it drives the player's transport controls, which the platform draws", Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "PlayPauseButton")]
     public Task MediaElement_PlayPauseButton_ReportsTheSameStateAsTheComponent()
     {
