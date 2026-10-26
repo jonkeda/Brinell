@@ -42,8 +42,9 @@ Tomorrow's submodule pointer on `game`.
 
 ## Next
 
-1. The first macOS run in CI (job `mauiunit-macos`, jonkeda/bruinet's Actions): what it finds off Windows; a Linux job after it.
-2. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
+1. The skips: [unskip-plan.md](unskip-plan.md), steps 1 (carousel, long picker) and 2 (MediaElement on a fake player).
+2. A Linux job in CI, now that macOS is green (2026-10-26: 271, 42 and 44 pass, as on Windows).
+3. Snapshot files (Phase 5) only once a test needs them. Layout in memory (Phase 6) is not planned: layout is the device runners' (FlaUI, Appium).
 
 Done 2026-10-26: the decision record (`.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md`)
 and the maui-ui-test skill's "Two heads" section (`DeviceFact`, `@device`, what needs a device).

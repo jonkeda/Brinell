@@ -1,8 +1,8 @@
 # The device suite's skips on MauiUnit: a plan
 
-The device suite skips 35 tests on MauiUnit (2026-10-26, 325 pass). Seventeen can run in memory after
-three pieces of work, one splits into a half that runs and a half that skips, and seventeen keep
-skipping. Done, the suite would be 343 pass and 18 skip, and the device heads stay the judge at a gate
+The device suite skips 35 tests on MauiUnit (2026-10-26, 325 pass). Thirteen can run in memory after
+two pieces of work, one splits into a half that runs and a half that skips, and twenty-one keep
+skipping. Done, the suite would be 339 pass and 22 skip, and the device heads stay the judge at a gate
 (AD-032).
 
 ## What skips, and why
@@ -10,7 +10,7 @@ skipping. Done, the suite would be 343 pass and 18 skip, and the device heads st
 | Group | Tests | Can MauiUnit run them? |
 | --- | --- | --- |
 | MediaElement (`CommunityToolkit/MediaElementTests`) | 12 | Yes, against a fake player: steps 2a to 2d |
-| Layout and scrolling (`ScrollVerbTests` 3, `ScrollTests.BottomLabel_IsVisible_IsFalseUntilScrolledTo`) | 4 | Yes, with layout: step 3 |
+| Layout and scrolling (`ScrollVerbTests` 3, `ScrollTests.BottomLabel_IsVisible_IsFalseUntilScrolledTo`) | 4 | No: layout is the device runners' (FlaUI, Appium); step 3 is not planned |
 | Carousel off-screen cards (`CarouselView_Items_AreTheSeededCardsInOrder`) | 1 | Yes, with a test change: step 1 |
 | Long picker (`LongPicker_ReportsEveryItemAndItsOwnIndex`) | 1 | Half of it: step 1 |
 | Windows' accessibility tree leaves things out (BoxView, SwipeView, menu items) | 3 | No: they prove a Windows fact |
@@ -50,36 +50,22 @@ assembly is loaded, and the runtime parser knows only loaded assemblies.
 - Gain: 12 in memory. They then prove the control object and the page's wiring against a fake player,
   not playback itself; the device run still proves that.
 
-## Step 3: layout (the proposal's Phase 6)
+## Step 3: layout, not planned
 
-The scroll tests need content taller than a viewport, an offset that moves, and "visible" meaning inside
-the viewport.
-
-- **3a.** No-op leaf handlers whose `GetDesiredSize` comes from a sizer: `WidthRequest` and
-  `HeightRequest` when set, else text length times a character width and a line height, a fixed size for
-  buttons and switches.
-- **3b.** A window size on `MauiTestContextOptions` (default a phone's, 400 x 800); the page measured and
-  arranged after each drain.
-- **3c.** The head's bounds from the arranged frames instead of the nominal 1 x 1, and `IsOnScreen` from
-  the viewport and the scroll offsets of the scroll views above an element.
-- **3d.** `ScrollTo` sets the scroll view's offset (and raises `Scrolled`); `ReadScrollPosition` answers
-  from offset, content size and viewport instead of throwing `DeviceOnlyException`.
-- **3e.** Behind an option first (`Layout = true`); the default once the 325 stay green with it.
-- Gain: 4 in memory, and "visible" in memory then means what it means on a device.
+Decided 2026-10-26 by the owner: layout in memory (sized leaf handlers, a window, bounds, scroll offsets,
+"visible" from the viewport) is too much for what it buys. Layout and scrolling are for the runners with a
+real screen, FlaUI and Appium; the four tests keep `[DeviceFact]`, and `ReadScrollPosition` keeps ending
+the call with `DeviceOnlyException`.
 
 ## Unknowns
 
 - Whether the media page loads after 2a; it decides step 2.
-- Whether a handler on leaf views makes MAUI call into its mapper in ways a null platform view breaks.
-- How many of today's 325 change once visibility comes from bounds (step 3): those were passing
-  because everything was on screen. Each one is a fidelity gain to fix in the test or the head, not a
-  reason to keep layout off.
+- Whether a handler on a MediaElement makes MAUI call into its mapper in ways a null platform view breaks.
 - Whether a carousel move works on MauiUnit through the control as it is, or needs a head route.
 
 ## Proposed order
 
 Step 1 first (small, and the carousel test is wrong on a phone today). Step 2 next: 2c helps every app
-with a timer, not only MediaElement. Step 3 last: the largest, and it changes the meaning of "visible"
-in memory, so it lands behind its option.
+with a timer, not only MediaElement.
 
 Expected next action: do step 1, then 2a to see whether the media page loads.
