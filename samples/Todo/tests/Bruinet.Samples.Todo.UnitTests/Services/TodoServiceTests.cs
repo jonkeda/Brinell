@@ -15,6 +15,8 @@ public sealed class TodoServiceTests
 
     [Fact]
     [Trait("Journey", "TOD.02.6")]
+    [Trait("Rule", "TOD.02.R6")]
+    [Trait("Rule", "TOD.02.R9")]
     public async Task Create_StoresATrimmedTodo_LocalOnly_WithAClientId()
     {
         var created = await _service.CreateAsync("  Buy milk  ", "  ", null, TodoStatus.Open);
@@ -30,6 +32,7 @@ public sealed class TodoServiceTests
 
     [Fact]
     [Trait("Journey", "TOD.02.3")]
+    [Trait("Rule", "TOD.02.R2")]
     public async Task Create_WithAnInvalidTitle_Throws_AndStoresNothing()
     {
         await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateAsync(" ", null, null, TodoStatus.Open));

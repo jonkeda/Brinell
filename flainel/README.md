@@ -27,11 +27,16 @@ dotnet run --project src/Flainel.Cli -- check specs
 ```
 
 ```bash
+dotnet run --project src/Flainel.Cli -- trace specs/todo/TOD.02.spec.md ../samples/Todo/tests
+```
+
+```bash
 dotnet test Flainel.slnx
 ```
 
 The first checks every spec against the [format](docs/spec-format.md) and says what breaks it,
-line by line. The second runs the same check on the specs and on broken copies of them.
+line by line. The second lists each rule of a spec with the tests that reach it, and fails on a
+rule no test reaches. The third runs both checks on the specs and on broken copies.
 
 ## How it grows
 

@@ -44,6 +44,18 @@ public static partial class SpecCheck
         return findings.OrderBy(finding => finding.Line).ToList();
     }
 
+    /// <summary>The journey id from a spec's title, such as <c>TOD.02</c>; <c>null</c> without one.</summary>
+    public static string? JourneyId(string text) => Read(text.ReplaceLineEndings("\n").Split('\n')).JourneyId;
+
+    /// <summary>The ids in a spec's rules table, in their order, such as <c>TOD.02.R1</c>.</summary>
+    public static IReadOnlyList<string> RuleIds(string text)
+    {
+        var spec = Read(text.ReplaceLineEndings("\n").Split('\n'));
+        return spec.Section("Rules") is { } rules
+            ? TableRows(rules.Body).Skip(1).Select(row => row.Cells[0]).Where(id => id.Length > 0).ToList()
+            : [];
+    }
+
     private static void CheckTitle(Spec spec, List<SpecFinding> findings)
     {
         if (spec.JourneyId is null)

@@ -59,6 +59,14 @@ title and table, the sections and their order, the rule ids, a sentence per rule
 rule with a paragraph and Given, When and Then in order, a proposal per open question, and the
 words below. It names each finding with its line.
 
+## The trace
+
+`flainel trace <spec> <tests folder>...` reads the test sources as text, without building or running
+them, and lists each rule with the tests that name it. A C# test names a rule with
+`[Trait("Rule", "TOD.02.R3")]`, a scenario with the tag `@TOD.02.R3`. It fails on a rule no test
+names, and on a test naming a rule the spec does not have. Naming a rule in a test is the builder's
+work, not the spec writer's: the spec stays free of tests.
+
 ## What a spec never holds
 
 - Code: no class, field, file, test, table or project names, and no internal states.

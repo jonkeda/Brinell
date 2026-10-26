@@ -28,6 +28,7 @@ public sealed class CreateEditJourneyTests : IDisposable
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.02.1")]
+    [Trait("Rule", "TOD.02.R1")]
     public Task Add_OpensAnEmptyForm_Open_WithoutADueDate()
     {
         var edit = _fixture.List.Add();
@@ -44,6 +45,7 @@ public sealed class CreateEditJourneyTests : IDisposable
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.02.2")]
+    [Trait("Rule", "TOD.02.R10")]
     public Task Save_AValidTodo_ShowsItInTheList_WaitingToSync()
     {
         var title = Unique("Walk the dog");
@@ -56,6 +58,8 @@ public sealed class CreateEditJourneyTests : IDisposable
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.02.3")]
+    [Trait("Rule", "TOD.02.R2")]
+    [Trait("Rule", "TOD.02.R4")]
     public Task Save_WithoutATitle_ShowsTitleRequired_AndStays()
     {
         var edit = _fixture.List.Add().SaveExpectingError();
@@ -69,6 +73,7 @@ public sealed class CreateEditJourneyTests : IDisposable
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.02.5")]
+    [Trait("Rule", "TOD.02.R7")]
     public Task DueDateSwitch_EnablesThePicker_AndTheDateIsSaved()
     {
         var title = Unique("Pay the bill");

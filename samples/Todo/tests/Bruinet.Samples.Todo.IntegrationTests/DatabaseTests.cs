@@ -104,6 +104,7 @@ public sealed class DatabaseTests : IDisposable
 
     [Fact]
     [Trait("Journey", "TOD.02.6")]
+    [Trait("Rule", "TOD.02.R9")]
     public async Task ACreatedTodo_IsStoredLocally_WithItsOwnId_AndLocalOnly()
     {
         using var host = await TodoHost.StartAsync();

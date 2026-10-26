@@ -57,6 +57,7 @@ public sealed class TodoValidationTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData("\t \r\n")]
+    [Trait("Rule", "TOD.02.R2")]
     public void ValidateTitle_EmptyOrWhitespace_IsRequired(string? title)
         => Assert.Equal(TodoValidation.TitleRequired, TodoValidation.ValidateTitle(title));
 
@@ -67,6 +68,7 @@ public sealed class TodoValidationTests
     [InlineData(100, true)]
     [InlineData(101, false)]
     [InlineData(500, false)]
+    [Trait("Rule", "TOD.02.R3")]
     public void ValidateTitle_AllowsAtMost100Characters(int length, bool valid)
     {
         var error = TodoValidation.ValidateTitle(new string('x', length));
@@ -80,6 +82,7 @@ public sealed class TodoValidationTests
 
     [Fact]
     [Trait("Journey", "TOD.02.4")]
+    [Trait("Rule", "TOD.02.R3")]
     public void ValidateTitle_MeasuresAfterTrimming()
         => Assert.Null(TodoValidation.ValidateTitle("  " + new string('x', 100) + "  "));
 }

@@ -10,6 +10,7 @@ public sealed class TodoEditViewModelTests
 
     [Fact]
     [Trait("Journey", "TOD.02.1")]
+    [Trait("Rule", "TOD.02.R1")]
     public async Task New_StartsEmpty_Open_WithoutADueDate()
     {
         var edit = Create();
@@ -28,6 +29,7 @@ public sealed class TodoEditViewModelTests
     [Trait("Journey", "TOD.02.3")]
     [InlineData("")]
     [InlineData("   ")]
+    [Trait("Rule", "TOD.02.R4")]
     public async Task Save_WithoutATitle_ShowsTheError_AndStaysOnThePage(string title)
     {
         var edit = Create();
@@ -44,6 +46,7 @@ public sealed class TodoEditViewModelTests
 
     [Fact]
     [Trait("Journey", "TOD.02.3")]
+    [Trait("Rule", "TOD.02.R5")]
     public async Task TypingAfterAnError_ClearsIt()
     {
         var edit = Create();
@@ -57,6 +60,8 @@ public sealed class TodoEditViewModelTests
 
     [Fact]
     [Trait("Journey", "TOD.02.2")]
+    [Trait("Rule", "TOD.02.R8")]
+    [Trait("Rule", "TOD.02.R10")]
     public async Task Save_New_CreatesTheTodo_AndGoesBack()
     {
         var edit = Create();
@@ -76,6 +81,7 @@ public sealed class TodoEditViewModelTests
 
     [Fact]
     [Trait("Journey", "TOD.02.5")]
+    [Trait("Rule", "TOD.02.R7")]
     public async Task Save_WithTheDueDateSwitchedOff_StoresNoDueDate()
     {
         var todo = Build.Todo(due: new DateOnly(2026, 3, 20));
@@ -94,6 +100,7 @@ public sealed class TodoEditViewModelTests
 
     [Fact]
     [Trait("Journey", "TOD.02.5")]
+    [Trait("Rule", "TOD.02.R7")]
     public async Task Save_WithADueDate_StoresThePickedDate()
     {
         var edit = Create();

@@ -43,6 +43,7 @@ public sealed class JourneyTests : IDisposable
 
     [Fact]
     [Trait("Journey", "TOD.02.1")]
+    [Trait("Rule", "TOD.02.R1")]
     public void Add_OpensAnEmptyForm_Open_WithoutADueDate()
     {
         var edit = _list.Add();
@@ -59,6 +60,7 @@ public sealed class JourneyTests : IDisposable
 
     [Fact]
     [Trait("Journey", "TOD.02.2")]
+    [Trait("Rule", "TOD.02.R10")]
     public void Save_AValidTodo_ShowsItInTheList_WaitingToSync()
     {
         var title = Unique("Walk the dog");
@@ -68,6 +70,8 @@ public sealed class JourneyTests : IDisposable
 
     [Fact]
     [Trait("Journey", "TOD.02.3")]
+    [Trait("Rule", "TOD.02.R2")]
+    [Trait("Rule", "TOD.02.R4")]
     public void Save_WithoutATitle_ShowsTitleRequired_AndStays()
     {
         var edit = _list.Add().SaveExpectingError();
