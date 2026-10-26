@@ -20,6 +20,19 @@ feedback is an exact check. The specs loop runs across all of them, feeding each
 spec is where the factory's light stays on longest. The loops are written out in
 [.my/loops/](.my/loops/02_loops_generic.md); the research behind the specs is in [.my/specs/](.my/specs/).
 
+## Commands
+
+```bash
+dotnet run --project src/Flainel.Cli -- check specs
+```
+
+```bash
+dotnet test Flainel.slnx
+```
+
+The first checks every spec against the [format](docs/spec-format.md) and says what breaks it,
+line by line. The second runs the same check on the specs and on broken copies of them.
+
 ## How it grows
 
 It starts very small, on Bruinet's Todo sample, which already has journeys, tiers and a coverage

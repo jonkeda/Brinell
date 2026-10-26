@@ -52,6 +52,13 @@ Bullets of what a reader might expect here and is elsewhere, with that journey's
 Bullets, each a question and `Proposal:` with an answer and why. An answered question leaves this
 section and becomes a rule, an example or a choice. A spec is `accepted` only with none left.
 
+## The check
+
+`flainel check <spec or folder>` checks all of the above that can be checked without a model: the
+title and table, the sections and their order, the rule ids, a sentence per rule, an example per
+rule with a paragraph and Given, When and Then in order, a proposal per open question, and the
+words below. It names each finding with its line.
+
 ## What a spec never holds
 
 - Code: no class, field, file, test, table or project names, and no internal states.
