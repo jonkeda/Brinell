@@ -39,7 +39,8 @@ public static class Statements
         foreach (Match match in Named.Matches(normalized).Cast<Match>().Concat(Procedures.Matches(normalized).Cast<Match>()))
         {
             var parts = match.Groups["name"].Value.Split('.').Select(part => part.Trim('[', ']', '"').ToLowerInvariant()).ToArray();
-            if (parts[parts.Length - 1] is "sp_executesql" or "sys")
+            // Catalogs, not the app's objects: SQL Server's sys, SQLite's sqlite_master that EF probes.
+            if (parts[parts.Length - 1] is "sp_executesql" or "sys" || parts[parts.Length - 1].StartsWith("sqlite_", StringComparison.Ordinal))
             {
                 continue;
             }

@@ -92,6 +92,17 @@ triggers, defaults and checks count as the table. `--data` hashes a reference ta
 Dynamic SQL (`sp_executesql`) has no dependencies SQL Server can read: list what it reads in
 `--references`, or a change to those tables is missed. `--default-schema` is the app's user's.
 
+On SQLite, add `--provider sqlite` (the connection string can't tell the two apart):
+
+```bash
+bruinet sql schema --provider sqlite --connection "Data Source=<file>" --out Recordings/schema.json --data Kinds
+```
+
+Objects are the tables and views in `main` (`main.places`). A table's hash is its `CREATE TABLE`
+text with its indexes and triggers; SQLite keeps no dependencies, so a view's and a trigger's SQL is
+read for the tables it names. `--data` hashes the rows in any order. In code, `SchemaSnapshot.ReadAsync`
+reads SQLite's catalog when given a `SqliteConnection`.
+
 ## Re-recording
 
 A re-record changes files nobody reads line by line. Read the summary, then accept it:

@@ -38,13 +38,20 @@ internal static class SqlCommands
         var output = new Option<string>("--out") { Description = "The snapshot's file.", DefaultValueFactory = _ => "schema.json" };
         var references = new Option<string?>("--references") { Description = "A JSON file of references kept by hand, for dynamic SQL: { \"dbo.search\": [\"dbo.places\"] }." };
         var data = new Option<string[]>("--data") { Description = "A table of reference data whose rows are hashed with it (repeatable, or comma-separated).", AllowMultipleArgumentsPerToken = true };
-        var defaultSchema = new Option<string>("--default-schema") { Description = "The app's user's default schema: a command's unqualified name is taken in it, then dbo.", DefaultValueFactory = _ => "dbo" };
-        var command = new Command("schema", "Write the database's schema snapshot: tables, views, procedures and functions, their hashes and references.") { connection, output, references, data, defaultSchema };
+        var defaultSchema = new Option<string>("--default-schema") { Description = "The app's user's default schema: a command's unqualified name is taken in it, then dbo. SQLite's is always main.", DefaultValueFactory = _ => "dbo" };
+        var provider = new Option<string>("--provider") { Description = "sqlserver, or sqlite for a SQLite file (\"Data Source=<file>\"): the connection string can't tell them apart.", DefaultValueFactory = _ => "sqlserver" };
+        provider.AcceptOnlyFromAmong("sqlserver", "sqlite");
+        var command = new Command("schema", "Write the database's schema snapshot: tables, views, procedures and functions, their hashes and references.") { connection, output, references, data, defaultSchema, provider };
         command.Action(io, async (parsed, cancellationToken) =>
         {
-            await using var sql = await OpenAsync(parsed.GetValue(connection)!, cancellationToken);
+            var sqlite = parsed.GetValue(provider) == "sqlite";
+            await using System.Data.Common.DbConnection sql = sqlite
+                ? new Microsoft.Data.Sqlite.SqliteConnection(parsed.GetValue(connection)!)
+                : new SqlConnection(parsed.GetValue(connection)!);
+            await sql.OpenAsync(cancellationToken);
             var options = new SnapshotOptions
             {
+                Provider = sqlite ? SnapshotProvider.Sqlite : SnapshotProvider.SqlServer,
                 Data = [.. (parsed.GetValue(data) ?? []).SelectMany(item => item.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))],
                 DefaultSchema = parsed.GetValue(defaultSchema)!,
             };

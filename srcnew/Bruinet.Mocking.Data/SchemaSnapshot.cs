@@ -25,9 +25,20 @@ public sealed class SchemaObject
     public bool Listed { get; set; }
 }
 
+/// <summary>The database a snapshot reads: SQL Server's catalog, or SQLite's <c>sqlite_master</c>.</summary>
+public enum SnapshotProvider
+{
+    Auto,
+    SqlServer,
+    Sqlite,
+}
+
 /// <summary>What a snapshot reads beyond the schema.</summary>
 public sealed class SnapshotOptions
 {
+    /// <summary>Which catalog to read; <see cref="SnapshotProvider.Auto"/> goes by the connection's type.</summary>
+    public SnapshotProvider Provider { get; set; } = SnapshotProvider.Auto;
+
     /// <summary>Tables of reference data (<c>dbo.kinds</c>): their rows are hashed with them, so changed rows make stale.</summary>
     public IReadOnlyCollection<string> Data { get; set; } = [];
 
@@ -129,6 +140,11 @@ public sealed class SchemaSnapshot
     /// <summary>Reads the schema of the database <paramref name="connection"/> is open on, with the reference data <paramref name="options"/> names.</summary>
     public static async Task<SchemaSnapshot> ReadAsync(DbConnection connection, SnapshotOptions options, CancellationToken cancellationToken = default)
     {
+        if (options.Provider == SnapshotProvider.Sqlite || options.Provider == SnapshotProvider.Auto && connection.GetType().Name == "SqliteConnection")
+        {
+            return await SqliteSchema.ReadAsync(connection, options, cancellationToken).ConfigureAwait(false);
+        }
+
         using var command = connection.CreateCommand();
         command.CommandText = Query;
         var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -215,7 +231,7 @@ public sealed class SchemaSnapshot
         return (string)(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false))!;
     }
 
-    private static string Hash(IEnumerable<string> lines)
+    internal static string Hash(IEnumerable<string> lines)
     {
         using var sha = SHA256.Create();
         var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", lines.OrderBy(line => line, StringComparer.Ordinal))));

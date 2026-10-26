@@ -12,7 +12,7 @@ review file), is built and M1 to M6 pass ([maintenance-results.md](maintenance-r
 [docs/guides/sql-replay.md](../../docs/guides/sql-replay.md) and
 [AD-031](../../.docs/decisions/ad-031-a-replayed-test-answers-from-the-database-it-recorded.md). Steps 0 to 6
 are done; 1.7, the legacy system's measurement, waits until the owner has the system, then the trial there.
-Step 7, the schema snapshot on SQLite, is planned below. Each step ends green:
+Step 7, the schema snapshot on SQLite, is built and Q1 to Q6 pass ([sqlite-results.md](sqlite-results.md)). Each step ends green:
 `dotnet build Bruinet.sln -p:NuGetAudit=false`, `dotnet build samples/Todo/Bruinet.Samples.Todo.slnx`
 when Todo is touched, the step's own tests, and the suites it touches on every head it touches.
 
@@ -398,7 +398,7 @@ holds the recordings to.
 
 ## Step 7: the schema snapshot on SQLite
 
-Planned, not built. Replay already runs on SQLite (R1, R3, the hook sample); the snapshot, and with
+Built; Q1 to Q6 pass ([sqlite-results.md](sqlite-results.md)). Replay already runs on SQLite (R1, R3, the hook sample); the snapshot, and with
 it the stamp and `bruinet sql stale`, reads SQL Server's catalog only. Step 7 gives SQLite its own
 reader behind the same `SchemaSnapshot`, so a SQLite suite gets stale reports as a SQL Server one
 does. About half a day.
