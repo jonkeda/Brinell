@@ -48,7 +48,8 @@ jobs:
         run: dotnet build Bruinet.sln -v:minimal /nr:false
 
       # Unit tests only. The *.UITests projects (UI tests and UAT suites) launch real apps and
-      # stay local; see AGENTS.md "Match the test scope to the change".
+      # stay local; see AGENTS.md "Match the test scope to the change". The MAUI ones also run in
+      # memory, below.
       - name: Unit tests
         shell: pwsh
         run: |
@@ -76,12 +77,56 @@ jobs:
           }
           if ($failed) { Write-Error "Failed: $($failed -join ', ')"; exit 1 }
 
+      # The MAUI UI and UAT suites on the MauiUnit head (AD-032): the apps rendered in the test
+      # process, no app launched, no window. The device tests skip with their reason.
+      - name: MAUI suites in memory
+        if: always()
+        shell: pwsh
+        env:
+          BRUINET_HEAD: mauiunit
+        run: ./tools/Scripts/test-maui-in-memory.ps1 -NoBuild -Results TestResults/ci
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: TestResults/ci/*.trx
+          if-no-files-found: warn
+
+  # The same MAUI suites in memory on a Mac: off Windows they build for plain net10.0 with the
+  # MauiUnit and Appium heads only (BruinetWindowsHead, Directory.Build.props).
+  maui-in-memory-macos:
+    name: MAUI suites in memory (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # The headless apps compile MAUI XAML; their AppSupport also targets Android and iOS, which
+      # a restore resolves without building.
+      - name: Install the MAUI workload
+        run: dotnet workload install maui
+
+      - name: MAUI suites in memory
+        shell: pwsh
+        env:
+          BRUINET_HEAD: mauiunit
+        run: ./tools/Scripts/test-maui-in-memory.ps1 -Results TestResults/ci-macos
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-macos
+          path: TestResults/ci-macos/*.trx
           if-no-files-found: warn
 
   pack:

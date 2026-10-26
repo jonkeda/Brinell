@@ -41,6 +41,9 @@ and Appium heads only: no FlaUI, and without the Windows driver's own tests (`Te
 `-p:BruinetWindowsHead=false` builds that shape on Windows. Unset, the head is the Windows app,
 which does not exist there.
 
+`./tools/Scripts/test-maui-in-memory.ps1` runs all three suites this way, on any of them; CI runs it
+on `windows-latest` after the unit tests and in a job of its own on `macos-latest`.
+
 ## Appium Setup
 
 Appium drives MAUI on Android and iOS only; Windows always uses FlaUI. Use

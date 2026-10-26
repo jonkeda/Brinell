@@ -41,9 +41,8 @@ Tomorrow's submodule pointer on `game`.
 
 ## Next
 
-1. A run of the three suites on a real Mac (`dotnet workload install maui`, then `BRUINET_HEAD=mauiunit`).
-2. A CI step on `windows-latest` with `BRUINET_HEAD=mauiunit`; a Linux job after the Mac run.
-3. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
+1. The first macOS run in CI (job `maui-in-memory-macos`, jonkeda/bruinet's Actions): what it finds off Windows; a Linux job after it.
+2. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
 
 Done 2026-10-26: the decision record (`.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md`)
 and the maui-ui-test skill's "Two heads" section (`DeviceFact`, `@device`, what needs a device).
