@@ -18,7 +18,7 @@ Every loop turns plan, build, deploy and feedback, and the build of one loop is 
 loop inside it: tasks in a capability, capabilities in a module. A loop goes dark when its
 feedback is an exact check. The specs loop runs across all of them, feeding each plan, so the
 spec is where the factory's light stays on longest. The loops are written out in
-[.my/loops/](.my/loops/01_loops.md); the research behind the specs is in [.my/specs/](.my/specs/).
+[.my/loops/](.my/loops/02_loops_generic.md); the research behind the specs is in [.my/specs/](.my/specs/).
 
 ## How it grows
 
