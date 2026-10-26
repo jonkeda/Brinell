@@ -6,6 +6,14 @@ One journey of the Todo sample, TOD.02 "Create a todo", written as a Frainet spe
 that run without a model: the spec is complete, and the work covers it. When that holds, Todo's
 other journeys follow, then Tomorrow.
 
+## How a spec is written
+
+- Reverse engineered from the working app, but written as if the code did not exist yet.
+- No code knowledge needed to read or write it: no class, field, test or file names, only what a
+  person sees and does.
+- Examples per rule as a short paragraph and a `gherkin` block in the app's own words.
+- No traceability in the spec yet; tying rules to tests is the work check's job (step 4).
+
 ## What Todo already has
 
 | Layer (specs/01) | In Todo now | Gap |
@@ -23,7 +31,7 @@ So Frainet's first job is the layers above the tests, and tracing rules, not onl
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | `Frainet/specs/todo/TOD.02.spec.md`: intent, rules (`TOD.02.R1`…), examples per rule, decision boundaries (what an agent may decide), links to the subtasks in `journeys.md` | The owner reads it and says it is what Todo means. Written: 10 rules, 13 examples, every rule traced to a test, 4 open questions |
+| 1 | `Frainet/specs/todo/TOD.02.spec.md`: intent, rules (`TOD.02.R1`…), examples per rule, what is not in the journey, decision boundaries (what an agent may decide) | The owner reads it and says it is what Todo means. Written: 10 rules, an example per rule in Gherkin, no code names, 4 open questions |
 | 2 | The format written down: `Frainet/docs/spec-format.md`, only what step 1 used | One page |
 | 3 | Spec check, no model: every rule has an id, an example and a subtask; no vague words from a short list ("fast", "should", "appropriate", "etc.") | A console or test project fails on a broken copy of the spec |
 | 4 | Work check: every rule id reached by a test (a `Rule` trait or a scenario tag), every rule trait names a rule; reuse `JourneyCoverage`'s reading of traits and scenarios | Fails when a rule loses its test |
