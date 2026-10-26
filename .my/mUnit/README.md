@@ -36,8 +36,8 @@ Changes outside the new projects:
 - the device suite references the head and both headless apps, and marks 33 tests;
 - `net10.0` added to `Bruinell.Maui.AppSupport`'s targets, which the apps' XAML needs.
 
-The work is committed on `move` and not pushed: Bruinell's `move` stays local until a push is asked
-for. Tomorrow's submodule pointer has not been moved.
+The work is pushed (2026-10-26, e64b2cc7): `move` on origin and jonkeda/bruinell (its `main` too), and
+Tomorrow's submodule pointer on `game`.
 
 ## Next
 
