@@ -19,6 +19,10 @@
     <ProjectReference Include="..\Bruinell.Samples.Todo.TestSupport\Bruinell.Samples.Todo.TestSupport.csproj" />
     <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
     <ProjectReference Include="..\..\src\Bruinell.Samples.Todo.Api\Bruinell.Samples.Todo.Api.csproj" />
+    <!-- The MauiUnit head (BRUINELL_HEAD=mauiunit, .my/mUnit): the app compiled for plain net10.0,
+         rendered in memory by TodoAppFixtureBase.CreateInMemoryOptions. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinell.Maui.MauiUnit\Bruinell.Maui.MauiUnit.csproj" />
+    <ProjectReference Include="..\..\src\Bruinell.Samples.Todo.App.Headless\Bruinell.Samples.Todo.App.Headless.csproj" />
   </ItemGroup>
 
   <ItemGroup>

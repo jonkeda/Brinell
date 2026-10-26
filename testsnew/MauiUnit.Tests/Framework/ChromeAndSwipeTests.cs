@@ -38,6 +38,25 @@ public sealed class ChromeAndSwipeTests
     }
 
     [Fact]
+    public void The_back_button_shows_while_there_is_a_page_to_go_back_to_and_pops_it()
+    {
+        using var ctx = new MauiTestContext();
+        var second = new ContentPage { AutomationId = "Second", Content = new Label { Text = "second" } };
+        var first = new Button { AutomationId = "Next", Text = "Next" };
+        var root = new ContentPage { AutomationId = "First", Content = first };
+        first.Clicked += async (_, _) => await root.Navigation.PushAsync(second);
+        var app = ctx.Render(root, o => o.WithNavigation());
+        Assert.Empty(app.FindAll<NavigationBackButton>());
+
+        app.Find<Button>("Next").Click();
+        app.Find<NavigationBackButton>().Should().HaveText("Back");
+        app.Find<NavigationBackButton>().Click();
+
+        Assert.Same(root, app.Navigation.ShouldBeOn<ContentPage>());
+        Assert.Empty(app.FindAll<NavigationBackButton>());
+    }
+
+    [Fact]
     public void A_carousel_swipes_one_card_and_refuses_past_the_end()
     {
         using var ctx = new MauiTestContext();

@@ -34,6 +34,7 @@ public sealed class TreeTests
 
         var expected = """
             Window
+              NavigationTitle #PageTitle "Form"
               ContentPage #Form "Form"
                 VerticalStackLayout
                   Entry #Name placeholder="Your name"

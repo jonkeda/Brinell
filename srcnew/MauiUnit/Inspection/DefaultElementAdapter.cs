@@ -19,9 +19,16 @@ public sealed class DefaultElementAdapter : IElementAdapter
         switch (element)
         {
             case Window window:
-                // An open dialog is over the page, and first in reading order as it is on screen.
+                // An open dialog is over the page, and first in reading order as it is on screen;
+                // the title bar's back button comes before the page it leaves.
+                var back = ShellChromeNodes.BackButton(window);
+                var title = ShellChromeNodes.Title(window);
                 return Dialogs.DialogRequests.Of(window).Reverse<Element>()
+                    .Concat(back.CanGoBack ? [back] : [])
+                    .Concat(title.Text is not null ? [title] : [])
                     .Concat(window.Page is { } root ? [Screen.VisiblePage(root, window)] : []);
+            case NavigationBackButton or NavigationTitle:
+                return [];
             case NavigationPage navigation:
                 return navigation.CurrentPage is { } current ? [current] : [];
             case Shell shell:
@@ -63,6 +70,8 @@ public sealed class DefaultElementAdapter : IElementAdapter
             : null,
         MenuItem item => item.Text,
         BaseShellItem shellItem => shellItem.Title,
+        NavigationBackButton => "Back",
+        NavigationTitle title => title.Text,
         Page page => page.Title,
         IText text => text.Text,
         _ => null,

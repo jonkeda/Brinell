@@ -38,7 +38,7 @@ public class MauiTestContext : IMauiTestContext, Bruinell.Core.Recording.IRecord
         {
             _driver = options.Driver;
             _platform = _driver.Platform;
-            _ownsDriver = false; // Caller owns injected driver
+            _ownsDriver = options.OwnsDriver; // The caller owns an injected driver, unless it says otherwise
         }
         else
         {

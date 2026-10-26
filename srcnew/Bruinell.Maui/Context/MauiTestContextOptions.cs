@@ -12,7 +12,14 @@ public class MauiTestContextOptions
     /// If set, factory is not used and DriverOptions are ignored.
     /// </summary>
     public IMauiDriver? Driver { get; init; }
-    
+
+    /// <summary>
+    /// Whether the context disposes the injected <see cref="Driver"/> with itself. False by default:
+    /// the caller owns what it injects. The MauiUnit head sets it, as the in-memory app it made lives
+    /// exactly as long as the context, and a restart must end the old app before it starts the new one.
+    /// </summary>
+    public bool OwnsDriver { get; init; }
+
     /// <summary>
     /// Gets or sets the driver options for the factory.
     /// Required when Driver is not set.

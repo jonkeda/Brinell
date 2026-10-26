@@ -71,7 +71,10 @@ public sealed class MauiUnitElement : IMauiElement
 
     #region State
 
-    public bool Visible => VisualTree.IsEffectivelyVisible(Element);
+    // Visible only while still on screen: on the driver's window, on the page it shows. A device's
+    // element of a page that has gone goes stale; in memory the MAUI object lives on, and a container
+    // that cached it (a Sync card, a list row) would read the old page's text without this.
+    public bool Visible => IsOnScreen() && VisualTree.IsEffectivelyVisible(Element);
 
     public bool Enabled => VisualTree.IsEffectivelyEnabled(Element) && PartEnabled();
 
@@ -211,6 +214,7 @@ public sealed class MauiUnitElement : IMauiElement
             case Microsoft.Maui.Controls.Button button: button.Click(); break;
             case ImageButton button: button.Click(); break;
             case MenuItem item: item.Click(); break;
+            case NavigationBackButton back: back.Click(); break;
             case Switch toggle: toggle.Toggle(); break;
             case CheckBox box: box.Toggle(); break;
             case RadioButton radio: radio.Select(); break;
@@ -537,6 +541,41 @@ public sealed class MauiUnitElement : IMauiElement
     public override string ToString() => $"{TagName} #{AutomationId}";
 
     private void Do(Action action) => MauiUnitRefusals.Run(Element, action);
+
+    // Under the driver's window, and its nearest page is the one shown or one that contains it (a
+    // NavigationPage, a Shell, tabs). Window chrome and dialogs have no page of their own above them.
+    private bool IsOnScreen()
+    {
+        if (_isApp)
+            return true;
+
+        // Up to the window, which is the Application's child, not the top.
+        Page? nearestPage = null;
+        var onWindow = false;
+        for (var walker = Element; walker is not null; walker = walker.Parent)
+        {
+            if (walker is Window)
+            {
+                onWindow = ReferenceEquals(walker, _driver.Window);
+                break;
+            }
+
+            nearestPage ??= walker as Page;
+        }
+
+        if (!onWindow)
+            return false;
+        if (nearestPage is null)
+            return true;
+
+        for (MauiElement? shown = Screen.CurrentPage(_driver.Window); shown is not null; shown = shown.Parent)
+        {
+            if (ReferenceEquals(shown, nearestPage))
+                return true;
+        }
+
+        return false;
+    }
 
     private MauiUnitElement Part(StepperPart part) => new(_driver, Element, isApp: false, part);
 

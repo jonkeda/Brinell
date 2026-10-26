@@ -105,9 +105,15 @@ public sealed class UatRuntime
         }
     }
 
+    /// <summary>
+    /// A scope for one scenario, from the fixture's composition as it is now: a fixture that restarts
+    /// its app between scenarios (a file's TestData, in BeforeFile) builds a new composition around
+    /// the new app, and this runtime is kept across files, so the one read at construction would hand
+    /// the next scenario page objects on the old, disposed app.
+    /// </summary>
     public IServiceScope? CreateScope()
     {
-        return Composition?.CreateScope();
+        return (ResolveComposition(_root) ?? Composition)?.CreateScope();
     }
 
     public static void ConfigureScope(BddExecutionContext context, IServiceProvider serviceProvider)

@@ -31,11 +31,15 @@ public sealed class MauiUnitDriver : IMauiDriver
 
     private readonly IRenderedElement<MauiElement> _rendered;
     private readonly string _handle = "mauiunit-" + Interlocked.Increment(ref s_nextHandle);
+    private readonly bool _ownsContext;
 
-    public MauiUnitDriver(IRenderedElement<MauiElement> rendered)
+    /// <param name="rendered">The rendered app.</param>
+    /// <param name="ownsContext">Whether disposing the driver disposes the MauiUnit context it was rendered in, and with it the app's services.</param>
+    public MauiUnitDriver(IRenderedElement<MauiElement> rendered, bool ownsContext = false)
     {
         ArgumentNullException.ThrowIfNull(rendered);
         _rendered = rendered;
+        _ownsContext = ownsContext;
     }
 
     /// <summary>The MauiUnit context the page was rendered in.</summary>
@@ -144,11 +148,18 @@ public sealed class MauiUnitDriver : IMauiDriver
 
     public int NavigationDepth() => _rendered.Navigation.Stack.Count + _rendered.Navigation.ModalStack.Count;
 
+    /// <summary>
+    /// Whether the app has finished its work: its queued work run until nothing new has come for a
+    /// moment (an awaited request answered and continued), within <paramref name="timeoutMs"/>. On a
+    /// device the app works on by itself between a test's calls; in memory it works only when asked,
+    /// so a test's last work would otherwise finish during the next test.
+    /// </summary>
     public bool IsIdle(int timeoutMs = 2000)
-    {
-        TestContext.Dispatcher.RunPending();
-        return !TestContext.Dispatcher.HasPendingWork;
-    }
+        => TestContext.Dispatcher.WaitForQuiet(QuietMoment, TimeSpan.FromMilliseconds(Math.Max(0, timeoutMs)));
+
+    // Long enough for a local backend's answer to come back and be continued; short, as it is paid
+    // on every page opened.
+    private static readonly TimeSpan QuietMoment = TimeSpan.FromMilliseconds(25);
 
     // The top page's identity is its AutomationId, the id a caller then looks it up by
     // (PageNavigation.WaitArrived); its type name only where it has none.
@@ -233,6 +244,8 @@ public sealed class MauiUnitDriver : IMauiDriver
 
     public void Dispose()
     {
+        if (_ownsContext)
+            TestContext.Dispose();
     }
 
     public override string ToString() => new StringBuilder("MauiUnit: ").Append(CurrentPage.GetType().Name).ToString();

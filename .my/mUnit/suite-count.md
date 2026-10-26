@@ -62,3 +62,18 @@ is lost coverage: the device heads stay the judge at a gate, and these tests sta
 
 The full list of the 33, by group, with each one's first message line, is kept in
 [suite-count-failures.md](suite-count-failures.md).
+
+## The Todo sample on MauiUnit (2026-10-26)
+
+`$env:BRUINELL_HEAD='mauiunit'` on the Todo sample's two MAUI suites, against its app compiled for
+plain `net10.0` (`samples/Todo/src/Bruinell.Samples.Todo.App.Headless`), a WireMock backend over
+HTTP and a SQLite database per run:
+
+| Suite | Result | Time |
+| --- | --- | --- |
+| `Bruinell.Samples.Todo.Uat` | 42 scenarios pass, 1 skips (`@service`, for the service head) | about 30 s |
+| `Bruinell.Samples.Todo.UITests` | 44 tests pass, 3 skip (the live-API tier, without `BRUINELL_UAT_LIVE_API`) | about 18 s |
+
+The first full UAT run passed 0 of 42 and the second 12. The way to green and its fixes are in the
+README's log. Both suites then passed five runs in a row. Without the variable both still run on
+Windows: the smoke tests and two scenarios were checked on the built app.

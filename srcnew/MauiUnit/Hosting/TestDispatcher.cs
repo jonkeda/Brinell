@@ -144,6 +144,31 @@ public sealed class TestDispatcher : IDispatcher
         }
     }
 
+    /// <summary>
+    /// Runs the queued work until no new work has arrived for <paramref name="quiet"/>: the app has
+    /// settled, its awaited I/O answered and continued. Within <paramref name="timeout"/> on the wall
+    /// clock; virtual time does not move.
+    /// </summary>
+    /// <returns>Whether it settled within the timeout.</returns>
+    public bool WaitForQuiet(TimeSpan quiet, TimeSpan timeout)
+    {
+        var clock = Stopwatch.StartNew();
+        while (true)
+        {
+            using (Enter())
+            {
+                Drain();
+            }
+
+            var left = timeout - clock.Elapsed;
+            if (left <= TimeSpan.Zero)
+                return !HasPendingWork;
+
+            if (!_signal.Wait(left < quiet ? left : quiet))
+                return true;
+        }
+    }
+
     internal void Enqueue(Action action)
     {
         lock (_gate)

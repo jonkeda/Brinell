@@ -111,14 +111,23 @@ public sealed class TodoTestReset : IDisposable
     {
         var done = DoneFileOf(_path!);
         var temporary = done + ".tmp";
-        try
+
+        // The test polls the done file, and Windows refuses to replace a file another handle has open:
+        // a read lasts microseconds, so the move is tried again a few times. Dropped, the answer left
+        // the test waiting out its timeout on a reset that had finished.
+        for (var attempt = 1; attempt <= 20; attempt++)
         {
-            File.WriteAllText(temporary, answer);
-            File.Move(temporary, done, overwrite: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // The test times out waiting, and says the app did not answer.
+            try
+            {
+                File.WriteAllText(temporary, answer);
+                File.Move(temporary, done, overwrite: true);
+                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Still refused after the last try: the test times out waiting, and says the app did not answer.
+                Thread.Sleep(10);
+            }
         }
     }
 }

@@ -63,6 +63,8 @@ public sealed class MauiTestContext : IDisposable
         Services.AddSingleton<IDispatcher>(Dispatcher);
         Services.AddSingleton<IPreferences>(Preferences);
         Services.AddSingleton<ISecureStorage>(SecureStorage);
+        Services.AddSingleton<Microsoft.Maui.Animations.IAnimationManager>(
+            new Microsoft.Maui.Animations.AnimationManager(new HeadlessTicker()));
     }
 
     /// <summary>The options the context was made with.</summary>

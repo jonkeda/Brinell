@@ -21,7 +21,8 @@ Appium. This folder tracks the work while it is under way. Started 2026-10-25.
 | xUnit, NUnit and MSTest tests | `testsnew/MauiUnit.Tests`, `.NUnit`, `.MSTest` | 41, 2 and 2 green |
 | Bruinell head | `srcnew/Bruinell.Maui.MauiUnit` | Driver, element, state, app sinks, refusals, `MauiUnitHead` |
 | Head's own tests | `testsnew/Bruinell.Maui.MauiUnit.Tests` | 3 of 3 green |
-| The device suite on both heads | `testsnew/Bruinell.Maui.UITests`, both sample apps compiled headless | `BRUINELL_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 7 s**. Unset: Windows (FlaUI), as before |
+| The device suite on both heads | `testsnew/Bruinell.Maui.UITests`, both sample apps compiled headless | `BRUINELL_HEAD=mauiunit`: **325 pass, 35 skip with their reason, 0 fail, in 12 s**. Unset: Windows (FlaUI), as before |
+| The Todo sample on both heads | `samples/Todo/tests/Bruinell.Samples.Todo.Uat`, `.UITests`, `samples/Todo/src/Bruinell.Samples.Todo.App.Headless` | `BRUINELL_HEAD=mauiunit`: UAT **42 of 42 scenarios** (1 `@service` skips) in about 30 s; UI tests **44 of 44** (3 live-API skips) in about 18 s; green in 5 runs running. Unset: Windows, smoke and two scenarios checked |
 | Proposal, design, count | `.my/mUnit` | Written |
 
 How the head is chosen, as the Html suites choose bUnit:
@@ -40,7 +41,7 @@ for. Tomorrow's submodule pointer has not been moved.
 
 ## Next
 
-1. A decision record once the owner has seen the counts: a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
+1. A decision record once the owner has seen the counts (the device suite, and now the Todo sample): a third MAUI head, its fidelity rules, and the device heads as the judge at a gate.
 2. The maui-ui-test skill told when to use `DeviceFact` and `@device`, as html-ui-test was for `BrowserFact`.
 3. Snapshot files (Phase 5) and fake leaf handlers for layout (Phase 6), each only once a test needs them.
 
@@ -90,3 +91,14 @@ for. Tomorrow's submodule pointer has not been moved.
   - the head value: `BRUINELL_HEAD=mauiunit`, with no alias for `munit`.
 
   This folder keeps its name, `.my/mUnit`. All suites are green after the rename, and the device suite gives 325 pass and 35 skip on MauiUnit, 7 of 7 on the Windows spot check.
+- **The Todo sample, 2026-10-26.** The Todo app (a Shell, a backend over HTTP, SQLite, the toolkit) runs its UAT and UI suites in memory: 42 of 42 scenarios and 44 of 44 tests, with only the `@service` and live-API skips. It took, in order:
+  - the app's registrations moved from `MauiProgram` into `TodoAppServices.AddTodoApp`, which `MauiProgram` and the fixture both call, so the in-memory app is composed as the device app is;
+  - `TodoAppFixtureBase.CreateInMemoryOptions`: the same arrangement (database, backend, network-state and reset files), the launch settings handed to the app directly, MauiUnit's dispatcher as the main thread;
+  - the toolkit's assembly loaded before the first page parses, as `UseMauiCommunityToolkit()` does on a device (Debug parses XAML at run time and only knows loaded namespaces);
+  - an `IAnimationManager` in MauiUnit, whose ticker reports animations off, so a toolkit state change or a fade ends at once instead of throwing;
+  - the head's timeouts back to the device fixture's (a backend answers after two seconds; the 500 ms ones were a wrong assumption);
+  - `UatRuntime.CreateScope` from the fixture's composition as it is now, not as it was when the runtime was made: a restart in `BeforeFile` had left every later scenario on the old, disposed app. That one is a Bruinell.Uat bug on any head;
+  - a back button and a title in MauiUnit's tree (`NavigationBackButton`, `NavigationTitle`), as the title bar shows them, found by the head under WinUI's ids;
+  - an element counts as visible only while it is on the driver's window, on the shown page: a container that cached a gone page's element read stale text;
+  - `IsIdle` runs the app's work until it is quiet for a moment, and the Todo fixture lets the app settle before resetting the backend, so a test's sync no longer finishes in the next one;
+  - the test files (network state, reset and its answer) replaced with a short retry, as the app's in-process reads met the moves often enough to fail a run; the swallowed reset answer was the intermittent "started reset, never done".

@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Bruinell.Samples.Todo.Api/Bruinell.Samples.Todo.Api.csproj" />
     <Project Path="src/Bruinell.Samples.Todo.App/Bruinell.Samples.Todo.App.csproj" />
+    <Project Path="src/Bruinell.Samples.Todo.App.Headless/Bruinell.Samples.Todo.App.Headless.csproj" />
     <Project Path="src/Bruinell.Samples.Todo.Contracts/Bruinell.Samples.Todo.Contracts.csproj" />
     <Project Path="src/Bruinell.Samples.Todo.Core/Bruinell.Samples.Todo.Core.csproj" />
     <Project Path="src/Bruinell.Samples.Todo.Infrastructure/Bruinell.Samples.Todo.Infrastructure.csproj" />

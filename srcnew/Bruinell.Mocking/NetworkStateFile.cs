@@ -101,7 +101,29 @@ public sealed class NetworkStateFile : IDisposable
             // Whole-file replace, so the app never reads a half-written word.
             var temporary = Path + ".tmp";
             File.WriteAllText(temporary, state);
-            File.Move(temporary, Path, overwrite: true);
+            Replace(temporary);
         }
     }
+
+    // Windows refuses to replace a file another handle has open, and the app polls this one: a read
+    // lasts microseconds, so the move is tried again a few times before the refusal stands. An app in
+    // the test's own process (the MauiUnit head) meets the read often enough to fail a run.
+    private void Replace(string temporary)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(temporary, Path, overwrite: true);
+                return;
+            }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && attempt < ReplaceAttempts)
+            {
+                Thread.Sleep(ReplacePause);
+            }
+        }
+    }
+
+    private const int ReplaceAttempts = 20;
+    private static readonly TimeSpan ReplacePause = TimeSpan.FromMilliseconds(10);
 }

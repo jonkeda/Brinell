@@ -1,11 +1,17 @@
+using Bruinell.Core.Testing;
 using Bruinell.Maui.Configuration;
 using Bruinell.Maui.Enums;
+using Bruinell.Maui.MauiUnit;
 using Bruinell.Maui.Testing;
 using Bruinell.Mocking;
+using Bruinell.Samples.Todo.App.Services;
 using Bruinell.Samples.Todo.Infrastructure;
 using Bruinell.Samples.Todo.TestSupport;
 using Bruinell.Samples.Todo.UITests.Containers;
 using Bruinell.Samples.Todo.UITests.Pages;
+using Microsoft.Extensions.DependencyInjection;
+using TodoApp = Bruinell.Samples.Todo.App.App;
+using TodoAppShell = Bruinell.Samples.Todo.App.AppShell;
 
 namespace Bruinell.Samples.Todo.UITests;
 
@@ -71,6 +77,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// </remarks>
     public TodoListPage StartTest()
     {
+        LetTheLastTestFinish();
         Network.SetOnline();
         ResetBackendForTest();
 
@@ -90,6 +97,18 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows, where the test can write the app's files.</summary>
     public bool CanStartOverInPlace => Context.Platform == MauiPlatform.Windows;
 
+    // In memory (MauiUnit) the app works only when a test lets it, so a sync the last test started
+    // would otherwise finish in this one, after its backend was reset, and show in its request log.
+    // On a device the app has finished it by itself.
+    // Longer than a page's IsIdle: a sync's requests and continuations come in a few rounds.
+    private void LetTheLastTestFinish()
+    {
+        if (Context.Driver is MauiUnitDriver head)
+        {
+            head.TestContext.Dispatcher.WaitForQuiet(TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(3));
+        }
+    }
+
     /// <summary>
     /// Puts the app back to where its test set starts, with no restart, and returns to the list:
     /// what <see cref="StartTest"/> does, and the app's own data too.
@@ -106,10 +125,12 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
             return StartTest();
         }
 
+        LetTheLastTestFinish();
         Network.SetOnline();
         ResetBackendForTest();
         Arranged.TestSet.RestoreDatabaseAsync(Arranged.Database.Path).GetAwaiter().GetResult();
-        Arranged.Reset.Request();
+        // In memory the app's main thread runs only when the test lets it: the wait lets it.
+        Arranged.Reset.Request(whileWaiting: MauiHeads.IsMauiUnit ? () => Context.Driver.IsIdle() : null);
         return StartTest();
     }
 
@@ -191,6 +212,44 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// <inheritdoc />
     protected override MauiTestContextOptions CreateTestContextOptions()
     {
+        var settings = Arrange();
+
+        var options = base.CreateTestContextOptions();
+        _launchValues = options.DriverOptions!.LaunchSettings;
+        foreach (var (name, value) in LaunchValuesFor(settings, Arranged.Database.Folder))
+        {
+            _launchValues[name] = value;
+        }
+
+        return options;
+    }
+
+    /// <summary>
+    /// The MauiUnit head (<c>BRUINELL_HEAD=mauiunit</c>): the same arrangement as on a device (database,
+    /// backend, network-state and reset files), and the app composed as its <c>MauiProgram</c> composes
+    /// it (<see cref="TodoAppServices.AddTodoApp"/>), with the launch settings handed over directly
+    /// rather than as launch values, and MauiUnit's dispatcher as the main thread. Asked again on every
+    /// restart, so a restart is a new app on the settings of that moment.
+    /// </summary>
+    protected override MauiTestContextOptions CreateInMemoryOptions()
+    {
+        var settings = _settings ?? Arrange();
+
+        // What UseMauiCommunityToolkit() does first on a device: the toolkit's assembly loaded. In
+        // Debug, XAML is parsed at run time, and the parser knows only the XAML namespaces of loaded
+        // assemblies, so without this toolkit:StateContainer on the list was "not found".
+        _ = typeof(CommunityToolkit.Maui.Layouts.StateContainer).Assembly;
+        return MauiUnitHead.InMemory(
+            services => services.GetRequiredService<TodoAppShell>(),
+            options => options.Application = services => new TodoApp(services.GetRequiredService<TodoAppShell>()),
+            context => context.Services.AddTodoApp(
+                _ => settings,
+                new TodoPlatform(Dispatch: action => context.Dispatcher.Dispatch(action))));
+    }
+
+    // The test set, its database and backend, the network-state and reset files, and the launch settings.
+    private LaunchSettings Arrange()
+    {
         var testSet = TodoTestSet.Load(TestDataName);
         var database = new TempDatabase("ui-" + testSet.Name);
         testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
@@ -211,15 +270,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 
         _arrangement = new Arrangement(testSet, database, network, reset);
         _settings = settings;
-
-        var options = base.CreateTestContextOptions();
-        _launchValues = options.DriverOptions!.LaunchSettings;
-        foreach (var (name, value) in LaunchValuesFor(settings, database.Folder))
-        {
-            _launchValues[name] = value;
-        }
-
-        return options;
+        return settings;
     }
 
     /// <summary>
@@ -254,10 +305,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
 
         _settings = _settings! with { DatabasePath = database.Path, FixedNow = testSet.Now };
-        foreach (var (key, value) in LaunchValuesFor(_settings, database.Folder))
-        {
-            _launchValues![key] = value;
-        }
+        PassToTheLaunch(_settings, database.Folder);
 
         // The first database's folder holds the network-state file, so earlier ones stay until Dispose.
         _retired.Add(Arranged.Database);
@@ -272,9 +320,21 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     private void ApplySettings(LaunchSettings settings)
     {
         _settings = settings;
-        foreach (var (key, value) in LaunchValuesFor(settings, Arranged.Database.Folder))
+        PassToTheLaunch(settings, Arranged.Database.Folder);
+    }
+
+    // On a device the settings reach the app as launch values; in memory (MauiUnit) the next app is
+    // composed with them directly (CreateInMemoryOptions), and there are no launch values.
+    private void PassToTheLaunch(LaunchSettings settings, string runFolder)
+    {
+        if (_launchValues is not { } launch)
         {
-            _launchValues![key] = value;
+            return;
+        }
+
+        foreach (var (key, value) in LaunchValuesFor(settings, runFolder))
+        {
+            launch[key] = value;
         }
     }
 

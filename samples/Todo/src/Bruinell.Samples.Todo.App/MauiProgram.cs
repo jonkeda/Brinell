@@ -1,5 +1,4 @@
 using Bruinell.Maui.AppSupport;
-using Bruinell.Samples.Todo.App.Pages;
 using Bruinell.Samples.Todo.App.Services;
 using Bruinell.Samples.Todo.Core.Services;
 using Bruinell.Samples.Todo.Infrastructure;
@@ -33,21 +32,11 @@ public static class MauiProgram
         // that carries them does not exist yet while the container is built (see LaunchValues).
         // A normal launch sets none and gets the defaults: the app's own database file and the
         // development API.
-        builder.Services.AddTodoServices(
+        builder.Services.AddTodoApp(
             _ => LaunchSettings.From(LaunchValues.Read, Path.Combine(FileSystem.AppDataDirectory, "todo.db")),
             new TodoPlatform(
                 DeviceConnectivity: new DeviceConnectivity(),
                 Dispatch: MainThread.BeginInvokeOnMainThread));
-
-        builder.Services.AddSingleton<INavigator, ShellNavigator>();
-        builder.Services.AddSingleton<IDialogs, ShellDialogs>();
-
-        builder.Services.AddSingleton<AppShell>();
-        builder.Services.AddSingleton<TodoListPage>();
-        builder.Services.AddTransient<TodoDetailPage>();
-        builder.Services.AddTransient<TodoEditPage>();
-        builder.Services.AddTransient<UserListPage>();
-        builder.Services.AddTransient<UserEditPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

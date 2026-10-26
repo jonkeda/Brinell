@@ -7,6 +7,13 @@ namespace Bruinell.Maui.MauiUnit;
 /// <summary>Bruinell's locators on MauiUnit's tree: which nodes under a root a locator names.</summary>
 internal static class MauiUnitLocators
 {
+    // The head reports Windows, so a page object asks for the back button by WinUI's id for it, as it
+    // asks for Shell's tabs by WinUI's names (MauiUnitDriver.ShellChrome): MauiUnit's own is BackButton.
+    private const string WindowsBackButton = "NavigationViewBackButton";
+
+    // And the title bar's text by WinUI's id for it; MauiUnit's own is PageTitle.
+    private const string WindowsTitle = "title";
+
     /// <summary>The nodes under <paramref name="root"/> (itself excluded) that <paramref name="locator"/> names, in reading order.</summary>
     public static IEnumerable<VisualNode> Match(VisualNode root, Locator locator)
     {
@@ -28,7 +35,9 @@ internal static class MauiUnitLocators
         {
             LocatorStrategy.AutomationId or LocatorStrategy.Id or LocatorStrategy.AccessibilityId
                 or LocatorStrategy.DataAutomationId or LocatorStrategy.DataTestId
-                => node => node.AutomationId == value,
+                => node => node.AutomationId == value
+                           || (value == WindowsBackButton && node.Element is NavigationBackButton)
+                           || (value == WindowsTitle && node.Element is NavigationTitle),
             LocatorStrategy.Name => node => MauiUnitElement.NameOf(node.Element) == value,
             LocatorStrategy.Text or LocatorStrategy.LinkText => node => node.Text == value,
             LocatorStrategy.PartialLinkText => node => node.Text?.Contains(value, StringComparison.Ordinal) == true,

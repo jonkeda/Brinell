@@ -379,6 +379,27 @@ public static class Interactions
         return view;
     }
 
+    /// <summary>
+    /// Presses the title bar's back button: the top modal is popped, else the window's page is told
+    /// the back button was pressed, so the page's <c>OnBackButtonPressed</c> may keep it, and
+    /// NavigationPage and Shell pop.
+    /// </summary>
+    /// <exception cref="ElementNotInteractableException">There is nothing to go back to, so no button is shown.</exception>
+    public static NavigationBackButton Click(this NavigationBackButton back)
+    {
+        if (!back.CanGoBack)
+            throw new ElementNotInteractableException("Cannot press back: there is nothing to go back to.", InteractionRefusal.Hidden);
+
+        Act(back, "press back", () =>
+        {
+            if (back.Window.Navigation.ModalStack.Count > 0)
+                _ = back.Window.Navigation.PopModalAsync();
+            else
+                back.Window.Page?.SendBackButtonPressed();
+        });
+        return back;
+    }
+
     /// <summary>Taps a Shell tab: its item and section become current, and Shell navigates there.</summary>
     public static ShellSection Select(this ShellSection tab)
     {

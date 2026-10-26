@@ -70,8 +70,13 @@ internal static class ItemRealizer
     {
         var rows = Rows.GetValue(itemsView, _ => new Dictionary<object, View>(ReferenceEqualityComparer.Instance));
         var keys = items.Select(item => item ?? NullItem).ToList();
+        // A row whose item left is detached, as a platform's recycled row is: whoever still holds it
+        // holds an element no longer on screen.
         foreach (var gone in rows.Keys.Except(keys, ReferenceEqualityComparer.Instance).ToList())
-            rows.Remove(gone);
+        {
+            if (rows.Remove(gone, out var view) && ReferenceEquals(view.Parent, itemsView))
+                view.Parent = null;
+        }
 
         var result = new List<View>(items.Count);
         foreach (var key in keys)
