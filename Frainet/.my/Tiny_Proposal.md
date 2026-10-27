@@ -29,6 +29,22 @@ A factory is made of six kinds of piece, and only these.
 The orchestrator is not a piece: it is the main conversation, turning the loops by reading the
 factory file. Code exists only inside gates, such as `frainet check` and `frainet trace`.
 
+## One agent, skills on demand
+
+One main agent does the work of every step itself, loading each tiny skill only when its step
+comes. Anthropic's own advice (October 2026) is the same: with today's models, one agent loop with
+skills loaded on demand often beats a team of subagents, because every handoff costs time, money and
+fidelity, and agents split by role copy the org chart into the factory. A subagent is kept only where
+it earns its place:
+
+- **A cold reviewer at a gate**, which must not share the builder's context, as the architect does.
+- **Work in parallel**, each piece needing little from the rest and returning a short result.
+- **A context too full**, where the main agent measurably gets worse.
+
+So a factory has no analyst, designer or tester agents; it has one agent, its skills, and reviewers
+at the gates. A subagent folded into the main loop is checked like any change: one at a time, each
+eval run more than once, and kept apart again if the folded loop does worse.
+
 ## One factory file
 
 Each factory is described in one file, `factory.md`: its loops, the skills in each, the gate after
@@ -92,3 +108,11 @@ weight it does not use.
   management loop drops those a newer model no longer needs.
 - Where does the review's cold reader come from? Proposal: a subagent with only the skill's gate and
   the document, as the architect agent works in Tomorrow today.
+- Which of Tomorrow's subagents fold into the main loop? Proposal: the test-designer and doc-writer
+  first, one at a time, measured on a real step; the architect and schema-keeper stay, because they
+  are cold reviewers at gates.
+
+## Sources
+
+- [Building agents: when to fold subagents into your main agent loop (Anthropic)](https://claude.com/de/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop)
+- [Anthropic says one AI agent beats many subagents (The Decoder, 2026-10-25)](https://the-decoder.com/anthropic-says-one-ai-agent-beats-many-subagents-now-that-models-can-handle-complexity-alone/)
