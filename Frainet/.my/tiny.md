@@ -52,6 +52,9 @@ worth measuring before Frainet is built on it.
 
 ## How to find out
 
+First run on world/580: [tiny-experiment.md](tiny-experiment.md).
+
+
 - Redo three recent documents from Tomorrow's factory, a brief, a design and a review, with tiny
   prompts and the same context files, and lay each beside the original.
 - Write down every difference that matters; those differences are the only corrections worth
