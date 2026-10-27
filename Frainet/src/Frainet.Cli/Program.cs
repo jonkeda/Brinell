@@ -1,7 +1,7 @@
-using Flainel.Specs;
+using Frainet.Specs;
 
-// flainel check <spec or folder>...: every *.spec.md checked against docs/spec-format.md; exit 1 on a finding.
-// flainel trace <spec> <tests folder>...: every rule of the spec reached by a test; exit 1 on a finding.
+// frainet check <spec or folder>...: every *.spec.md checked against docs/spec-format.md; exit 1 on a finding.
+// frainet trace <spec> <tests folder>...: every rule of the spec reached by a test; exit 1 on a finding.
 return args switch
 {
     ["check", _, ..] => Check(args[1..]),
@@ -11,8 +11,8 @@ return args switch
 
 static int Usage()
 {
-    Console.Error.WriteLine("Usage: flainel check <spec.md or folder>...");
-    Console.Error.WriteLine("       flainel trace <spec.md> <tests folder>...");
+    Console.Error.WriteLine("Usage: frainet check <spec.md or folder>...");
+    Console.Error.WriteLine("       frainet trace <spec.md> <tests folder>...");
     return 2;
 }
 

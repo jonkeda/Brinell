@@ -1,5 +1,5 @@
 <Project>
-  <!-- Flainel stands alone: nothing is taken from Bruinet's build, so it can move to its own repository as a copy. -->
+  <!-- Frainet stands alone: nothing is taken from Bruinet's build, so it can move to its own repository as a copy. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>

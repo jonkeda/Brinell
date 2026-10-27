@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>flainel</AssemblyName>
+    <AssemblyName>frainet</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Flainel.Specs\Flainel.Specs.csproj" />
+    <ProjectReference Include="..\Frainet.Specs\Frainet.Specs.csproj" />
   </ItemGroup>
 </Project>

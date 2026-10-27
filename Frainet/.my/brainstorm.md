@@ -1,8 +1,8 @@
-# Brainstorm: what Flainel is
+# Brainstorm: what Frainet is
 
-Flainel is meant to become the factory, or a method for making factories, because software
+Frainet is meant to become the factory, or a method for making factories, because software
 factories will differ per case. Tomorrow is a game built by a dark factory made by hand; it is an
-example Flainel learns from, and may later run on Flainel. Bruinet is the test tool, and maybe the
+example Frainet learns from, and may later run on Frainet. Bruinet is the test tool, and maybe the
 review tool. This note collects ideas; [questions.md](questions.md) asks what to decide.
 
 ## Three readings
@@ -35,7 +35,7 @@ the evidence that a method exists to be found.
 - **The tests and the stack:** the tiers, the tools, where it deploys.
 - **The people and the budget:** one owner or a team, how many model calls a night may spend.
 
-## The pieces Flainel might hold
+## The pieces Frainet might hold
 
 | Piece | What it does | There now |
 | --- | --- | --- |
@@ -50,11 +50,11 @@ the evidence that a method exists to be found.
 
 ## Who does what
 
-- **Flainel:** the method and its parts, and the gates that decide.
+- **Frainet:** the method and its parts, and the gates that decide.
 - **Bruinet:** runs and records the tests, shows them as videos for acceptance, and may review UI; its
-  results are evidence at Flainel's gates.
+  results are evidence at Frainet's gates.
 - **Tomorrow:** the first factory, made by hand, and the source of lessons.
-- **Todo:** the smallest product, to try a factory made with Flainel.
+- **Todo:** the smallest product, to try a factory made with Frainet.
 
 ## Ideas to take from others
 
@@ -87,8 +87,8 @@ the evidence that a method exists to be found.
 
 ## Ways to get it working
 
-- **Extract, don't invent:** describe Tomorrow's factory, and the Migrator's, in Flainel's words; what
-  they share is Flainel, what differs is a choice in the method.
-- **Make a second factory small:** Todo's, made with Flainel, and compare it with Tomorrow's.
+- **Extract, don't invent:** describe Tomorrow's factory, and the Migrator's, in Frainet's words; what
+  they share is Frainet, what differs is a choice in the method.
+- **Make a second factory small:** Todo's, made with Frainet, and compare it with Tomorrow's.
 - **Take before building:** for each piece, look at who does it already and take the best part.
 - **Grow on evidence:** a piece is added when a factory needs it, and dropped when nobody uses it.

@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Flainel.Specs/Flainel.Specs.csproj" />
-    <Project Path="src/Flainel.Cli/Flainel.Cli.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Flainel.Specs.Tests/Flainel.Specs.Tests.csproj" />
-  </Folder>
-</Solution>

@@ -1,10 +1,10 @@
-# Questions: what Flainel is and how it gets working
+# Questions: what Frainet is and how it gets working
 
-What to decide before Flainel grows past its first slice. Each question has a proposal and why.
+What to decide before Frainet grows past its first slice. Each question has a proposal and why.
 The ideas behind them are in [brainstorm.md](brainstorm.md). An answered question moves to a
 decision, and its line here goes.
 
-## What Flainel is
+## What Frainet is
 
 - **Factory, method or kit?** Proposal: a kit with a method; a factory is what you make with it.
   Factories differ per case, so the parts must work alone.
@@ -12,10 +12,10 @@ decision, and its line here goes.
   It keeps the writing honest without building for users we don't have.
 - **What is the first factory made with it?** Proposal: Todo's. It is the smallest product and
   already has journeys, tiers and tests to check against.
-- **Does Tomorrow move onto Flainel?** Proposal: not now; Flainel learns from Tomorrow's factory,
-  and Tomorrow moves only when Flainel does a part of it better.
-- **Where does Bruinet stop and Flainel start?** Proposal: Bruinet runs, records and shows tests,
-  and may review UI; Flainel says what must be proved and reads Bruinet's results at its gates.
+- **Does Tomorrow move onto Frainet?** Proposal: not now; Frainet learns from Tomorrow's factory,
+  and Tomorrow moves only when Frainet does a part of it better.
+- **Where does Bruinet stop and Frainet start?** Proposal: Bruinet runs, records and shows tests,
+  and may review UI; Frainet says what must be proved and reads Bruinet's results at its gates.
 
 ## Its parts
 
@@ -36,9 +36,9 @@ decision, and its line here goes.
 
 - **How do we know it works?** Proposal: per loop, how dark it runs on Shapiro's scale, how much
   work comes back, and how long gates wait for a person; first on Todo, then Tomorrow.
-- **Where do we start?** Proposal: describe Tomorrow's factory in Flainel's words, and keep the
+- **Where do we start?** Proposal: describe Tomorrow's factory in Frainet's words, and keep the
   first slice's step 5 going beside it as the first evidence.
 - **How do we take from others without getting lost?** Proposal: one piece at a time; for each, a
   short look at who does it already, take the best part, and write down where it came from.
-- **When does Flainel get its own repository?** Proposal: when a second product besides Todo uses it.
+- **When does Frainet get its own repository?** Proposal: when a second product besides Todo uses it.
 - **Open source?** Proposal: decide when it gets its own repository.

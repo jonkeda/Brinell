@@ -1,6 +1,6 @@
-using Flainel.Specs;
+using Frainet.Specs;
 
-namespace Flainel.Specs.Tests;
+namespace Frainet.Specs.Tests;
 
 /// <summary>
 /// The spec check on the real specs, and on broken copies of TOD.02: each copy breaks one thing the
@@ -96,12 +96,12 @@ public sealed class SpecCheckTests
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "Flainel.slnx")))
+            if (File.Exists(Path.Combine(dir.FullName, "Frainet.slnx")))
             {
                 return dir.FullName;
             }
         }
 
-        throw new InvalidOperationException("Flainel.slnx not found above the test's folder.");
+        throw new InvalidOperationException("Frainet.slnx not found above the test's folder.");
     }
 }
