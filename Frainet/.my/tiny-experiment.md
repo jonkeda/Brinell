@@ -78,10 +78,45 @@ comparison is mine, not the owner's. The review could not run tests, so it is we
 one by design. Next is the owner's read of the runs, then a second capability of another kind (a
 page, not an import) before the skills change.
 
+## Round 2: the tiny skill
+
+A tiny brief skill, [tiny-skills/brief.md](tiny-skills/brief.md), is the prompt plus the three brief
+corrections and a gate: 75 words against the 437 of step-brief and its template. It ran twice on
+world/580 and twice on ui/275 (Region you can zoom and pan, a page rather than an import), each run
+cold, in a checkout from before its brief, with a folder holding only its plan item. The briefs are
+`skill-brief-1.md` and `skill-brief-2.md` in [tiny-runs/world-580/](tiny-runs/world-580/) and
+[tiny-runs/ui-275/](tiny-runs/ui-275/).
+
+The corrections held. All four briefs pass the gate ([brief-gate.py](tiny-skills/brief-gate.py)):
+488 to 496 words, two or three scenarios each in Gherkin, written in the suite's own phrases ("I tap
+Admin", "I pick the area") with new steps only where the behaviour is new. The original world/580
+brief passes too; the original ui/275 brief fails on length, at 571 words.
+
+| | Bare prompt (round 1) | Tiny skill (round 2) |
+| --- | --- | --- |
+| Gherkin scenarios | 1 of 3 clean briefs | 4 of 4 |
+| Under 500 words | 0 of 3 | 4 of 4 |
+| Scope kept small | 1 of 3 | 3 of 4; one adds naming the water on hover |
+| Headings | own per run | still own per run |
+
+The substance stayed good. On ui/275 both briefs saw that the arrow keys already walk the survivor
+on the game and proposed panning only while the map has focus; the original found that in its second
+design round. Both also asked how to test a Noord-Holland-sized area when the test set holds only
+Hoorn. On world/580 both kept the question of tiles against shapes.
+
+Some care went under the word cap. Neither world/580 brief raised Edam lying outside the dev area or
+the size of the big lakes, which every bare brief did. A cap of 500 words seems to cost the unknowns
+first.
+
+The gate taught its own lesson. Its first version also failed a `Feature:` line and a When after a
+Then, which Gherkin allows; that was a house style the skill never stated. A gate stricter than its
+skill fails good work, so a gate checks exactly what the skill says and no more.
+
 ## Open questions
 
-- Shrink Tomorrow's skills now? Proposal: not yet; first a second capability, then try one skill,
-  step-brief, as a tiny prompt plus the corrections above, on a real step.
+- Shrink Tomorrow's skills now? Proposal: try step-brief as this tiny skill on the next real step,
+  with an "Unknown" line added to the corrections so the cap doesn't cost the unknowns, and compare at
+  its review.
 - Fix the headings? Proposal: only those a check reads (for a brief, the scenarios); let the rest
   vary and see whether the owner minds.
 - Is the extra insight real or luck? Proposal: count, over the next few steps, the points a tiny run
