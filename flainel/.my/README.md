@@ -4,6 +4,8 @@ Flainel's work in flight, one row per topic.
 
 | Topic | What is open | Status | Updated |
 | --- | --- | --- | --- |
+| [brainstorm.md](brainstorm.md) | What Flainel is: a factory, a method for making factories, or a kit; what factories share and where they differ; its pieces; ideas to take; why it is difficult | brainstorm | 2026-10-27 |
+| [questions.md](questions.md) | What to decide before Flainel grows: what it is, its parts, getting it working; each with a proposal | open | 2026-10-27 |
 | [plan.md](plan.md) | The first slice: Todo's TOD.02 as a Flainel spec, and the checks on it; step 1 accepted ([TOD.02.spec.md](../specs/todo/TOD.02.spec.md)), step 2 written ([spec-format.md](../docs/spec-format.md)), step 3 built (`flainel check`), step 4 built (`flainel trace`, 10 of 11 rules reached); next an agent adds R11's test from the spec alone | step 4 of 5 | 2026-10-26 |
 | [competitors.md](competitors.md) | What else does what Flainel wants: spec-driven toolkits (Spec Kit, Kiro, OpenSpec, Tessl, BMAD), executable specs, requirements traced as code (StrictDoc, Doorstop, sphinx-needs), management suites; where Flainel differs, what to borrow | research | 2026-10-26 |
 | [loops/](loops/02_loops_generic.md) | Loops in loops, the dark factory: plan, build, deploy, feedback ([02](loops/02_loops_generic.md)); the same by PDCA ([03](loops/03_loops_pdca.md)); how Tomorrow and the Migrator use it ([01](loops/01_loops.md)). Moved from Tomorrow's `.my/loops` | background | 2026-10-26 |
