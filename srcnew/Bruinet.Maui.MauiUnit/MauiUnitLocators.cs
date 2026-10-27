@@ -41,6 +41,9 @@ internal static class MauiUnitLocators
             LocatorStrategy.Name => node => MauiUnitElement.NameOf(node.Element) == value,
             LocatorStrategy.Text or LocatorStrategy.LinkText => node => node.Text == value,
             LocatorStrategy.PartialLinkText => node => node.Text?.Contains(value, StringComparison.Ordinal) == true,
+            // A ListView cell's view is the row a device reports as a list item.
+            LocatorStrategy.ControlType when string.Equals(value, "ListItem", StringComparison.OrdinalIgnoreCase)
+                => node => node.Element is View { Parent: Cell },
             LocatorStrategy.ControlType when ControlTypes.TryGetValue(value, out var types)
                 => node => types.Any(type => type.IsInstanceOfType(node.Element)),
             LocatorStrategy.ClassName or LocatorStrategy.TagName or LocatorStrategy.ControlType

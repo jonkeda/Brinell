@@ -74,25 +74,34 @@ public sealed class MauiUnitElement : IMauiElement
     // Visible only while still on screen: on the driver's window, on the page it shows. A device's
     // element of a page that has gone goes stale; in memory the MAUI object lives on, and a container
     // that cached it (a Sync card, a list row) would read the old page's text without this.
-    public bool Visible => IsOnScreen() && VisualTree.IsEffectivelyVisible(Element);
+    public bool Visible => AfterAppWork(() => IsOnScreen() && VisualTree.IsEffectivelyVisible(Element));
 
-    public bool Enabled => VisualTree.IsEffectivelyEnabled(Element) && PartEnabled();
+    public bool Enabled => AfterAppWork(() => VisualTree.IsEffectivelyEnabled(Element) && PartEnabled());
 
-    public bool Selected => Element switch
+    public bool Selected => AfterAppWork(() => Element switch
     {
         RadioButton radio => radio.IsChecked,
         CheckBox box => box.IsChecked,
         ShellSection tab => tab.Parent is ShellItem item && ReferenceEquals(item.CurrentItem, tab) && item.Parent is Shell shell && ReferenceEquals(shell.CurrentItem, item),
         ShellItem flyoutItem => flyoutItem.Parent is Shell owner && ReferenceEquals(owner.CurrentItem, flyoutItem),
         _ => IsSelectedRow(),
-    };
+    });
 
     public string? Text => _part switch
     {
         StepperPart.Minus => "-",
         StepperPart.Plus => "+",
-        _ => VisualTree.AdapterFor(Element, _driver.TestContext.Adapters).GetText(Element),
+        _ => AfterAppWork(() => VisualTree.AdapterFor(Element, _driver.TestContext.Adapters).GetText(Element)),
     };
+
+    // In memory the app works only when asked; a device's app works between two reads. A state read
+    // runs the queued work first (an answered request continued, a page closed), so a test polling
+    // one element, as a cached page root's bounds are, sees the app move on.
+    private T AfterAppWork<T>(Func<T> read)
+    {
+        _driver.TestContext.Dispatcher.RunPending();
+        return read();
+    }
 
     public string? TagName => _part == StepperPart.None ? Element.GetType().Name : "RepeatButton";
 
