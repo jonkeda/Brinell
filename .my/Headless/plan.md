@@ -9,23 +9,22 @@ references none of it.
 
 Commit 91211700 chose MauiUnit over Headless because "headless" is the browser's word. The owner now
 wants Headless: it says what the head is (no device, no window) to someone who doesn't know bUnit, while
-MauiUnit reads as a unit-test framework. AD-032 is amended with that line (open question 6: the owner's
-own words).
+MauiUnit reads as a unit-test framework. AD-032 is amended with that line.
 
 ## Names, now and after
 
 | Now | After |
 | --- | --- |
 | `srcnew/MauiUnit/` (PackageId `MauiUnit`, `namespace MauiUnit.*`) | `srcnew/MauiHeadless/`, `MauiHeadless`, `MauiHeadless.*` |
-| `srcnew/Bruinet.Maui.MauiUnit/` (PackageId) | `srcnew/Bruinet.Maui.Headless/` (Q1) |
+| `srcnew/Bruinet.Maui.MauiUnit/` (PackageId) | `srcnew/Bruinet.Maui.Headless/`  |
 | `testsnew/MauiUnit.Tests`, `.MSTest`, `.NUnit` | `testsnew/MauiHeadless.Tests`, `.MSTest`, `.NUnit` |
 | `testsnew/Bruinet.Maui.MauiUnit.Tests` | `testsnew/Bruinet.Maui.Headless.Tests` |
 | `samples/MauiUnit.Samples.App` | `samples/MauiHeadless.Samples.App` |
 | `samples/Bruinet.Samples.Maui.App.MauiUnit`, `…Maui.ShellApp.MauiUnit`, `samples/Todo/src/Bruinet.Samples.Todo.App.MauiUnit` | `….Headless` |
-| `MauiUnitDriver`, `MauiUnitElement`, `MauiUnitAppBridge`, `MauiUnitHead`, `MauiUnitAssertionException`, `MauiUnitRefusals`, `MauiUnitState`, `MauiUnitLocators`, `MauiUnitDialog` | `MauiHeadless…` (Q2) |
+| `MauiUnitDriver`, `MauiUnitElement`, `MauiUnitAppBridge`, `MauiUnitHead`, `MauiUnitAssertionException`, `MauiUnitRefusals`, `MauiUnitState`, `MauiUnitLocators`, `MauiUnitDialog` | `MauiHeadless…` |
 | `CreateMauiUnitOptions`, `IsMauiUnit`, `MauiPlatform.MauiUnit` | `CreateHeadlessOptions`, `IsHeadless`, `MauiPlatform.Headless` |
 | `InMemoryPreferences`, `InMemorySecureStorage` (`MauiUnit/Hosting`) | `HeadlessPreferences`, `HeadlessSecureStorage` |
-| `BRUINET_HEAD=mauiunit` | `BRUINET_HEAD=headless` (Q3) |
+| `BRUINET_HEAD=mauiunit` | `BRUINET_HEAD=headless` |
 | `tools/Scripts/test-maui-on-mauiunit.ps1` | `tools/Scripts/test-maui-headless.ps1` |
 | `ci.yml`: job `mauiunit-macos`, steps "MAUI suites on MauiUnit" | `maui-headless-macos`, "MAUI suites headless" |
 | `samples/Todo/tests/Bruinet.Samples.Todo.UITests/Recordings/mauiunit/`, keys in `reviewed.json` | `Recordings/headless/`, keys rewritten |
@@ -39,7 +38,7 @@ own words).
 - The browser's headless option (`BrowserOptions.Headless`, `HtmlTestContextOptions.Headless`, `HEADLESS`):
   the `MauiHeadless` prefix keeps the two apart.
 - "In memory" where it means data held in memory, not the head: `Bruinet.Mocking.Data`, the Scraper,
-  Todo's unit-test fakes (Q4).
+  Todo's unit-test fakes.
 - History: past CHANGELOG entries, closed `.my` records, commit messages.
 
 ## Steps
@@ -57,16 +56,16 @@ Each step leaves the build green and its tests passing, and is one commit.
 | 7 | Words: the guide renamed and rewritten, AD-032 amended, the `maui-ui-test` and `maui-control` skills, `AGENTS.md`, `.github/copilot-instructions.md`, `docs/`, a CHANGELOG entry; "in memory" phrases by the rule above | `grep -ri mauiunit` finds only history; links resolve |
 | 8 | Whole check: every MAUI suite headless on Windows; the Windows device head once, to see nothing else moved | the suites' counts match before and after (328 pass, 33 skip headless) |
 
-## Open questions
+## Decided (the owner, 2026-10-27)
 
-1. Bruinet's project name? Proposal: `Bruinet.Maui.Headless`, as `Bruinet.Html.Bunit` and
-   `Bruinet.Maui.FlaUI` name the head after the stack; `Bruinet.Maui.MauiHeadless` says Maui twice.
-2. Type prefix? Proposal: `MauiHeadless…` (`MauiHeadlessDriver`), so a search never mixes it with the
-   browser's `Headless`; `Headless…` alone is shorter but ambiguous.
-3. The head's value? Proposal: `headless`; the web keeps `bunit`, one value per head, no aliases.
-4. Todo's `InMemoryTodoRepository` and `InMemoryUserRepository`? Proposal: keep; they are unit-test fakes,
-   and "in-memory repository" is the usual name for one.
-5. The packages `MauiUnit` and `Bruinet.Maui.MauiUnit`? Proposal: rename outright with a CHANGELOG line;
-   no release has shipped them, so the breaking-changes policy has nothing to deprecate.
-6. The why for AD-032? Proposal: the line in "Why the name changes back", in the owner's words if they
-   differ.
+1. Bruinet's project is `Bruinet.Maui.Headless`, as `Bruinet.Html.Bunit` and `Bruinet.Maui.FlaUI` name
+   the head after the stack.
+2. Types take the prefix `MauiHeadless…` (`MauiHeadlessDriver`), so a search never mixes them with the
+   browser's `Headless`.
+3. The head's value is `headless`; the web keeps `bunit`; one value per head, no aliases.
+4. Todo's `InMemoryTodoRepository` and `InMemoryUserRepository` stay: unit-test fakes, the usual name.
+5. The packages `MauiUnit` and `Bruinet.Maui.MauiUnit` are renamed outright with a CHANGELOG line; no
+   release shipped them.
+6. AD-032's why is the line in "Why the name changes back".
+
+Not started: the steps wait for the owner's go.
