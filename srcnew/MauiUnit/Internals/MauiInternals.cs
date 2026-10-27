@@ -114,4 +114,25 @@ internal static class MauiInternals
 
     private static MissingMemberException Missing(string member)
         => new($"MauiUnit needs MAUI's internal {member}, which this MAUI version ({typeof(Element).Assembly.GetName().Version}) does not have. See MauiUnit's 'MAUI internals' list.");
+
+    // MainThread.SetCustomImplementation(Func<bool>, Action<Action>): MAUI's own hook for a platform
+    // without a main thread; plain net10.0 throws from MainThread without it.
+    private static readonly Lazy<MethodInfo> SetMainThreadMethod = new(() =>
+        typeof(Microsoft.Maui.ApplicationModel.MainThread).GetMethod("SetCustomImplementation", BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw Missing("MainThread.SetCustomImplementation(Func<bool>, Action<Action>)"));
+
+    /// <summary>Routes <c>MainThread</c> to <paramref name="isMainThread"/> and <paramref name="beginInvoke"/>.</summary>
+    public static void SetMainThread(Func<bool> isMainThread, Action<Action> beginInvoke)
+        => SetMainThreadMethod.Value.Invoke(null, [isMainThread, beginInvoke]);
+
+    /// <summary>
+    /// Sets an Essentials static's implementation through its internal setter, such as
+    /// <c>FileSystem.SetCurrent</c> or <c>Preferences.SetDefault</c>.
+    /// </summary>
+    public static void SetEssential(Type essential, string setter, object implementation)
+    {
+        var method = essential.GetMethod(setter, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw Missing($"{essential.Name}.{setter}");
+        method.Invoke(null, [implementation]);
+    }
 }

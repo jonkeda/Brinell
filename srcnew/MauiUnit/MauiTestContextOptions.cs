@@ -25,6 +25,12 @@ public sealed class MauiTestContextOptions
     public IList<IElementAdapter> Adapters { get; } = [];
 
     /// <summary>
+    /// Types styled to lose their platform behaviors, beside <see cref="Hosting.HeadlessBehaviors.DefaultHosts"/>:
+    /// an app's control that adds one (a toolkit TouchBehavior) and has an implicit style of its own.
+    /// </summary>
+    public IList<Type> BehaviorHosts { get; } = [];
+
+    /// <summary>
     /// How long <c>WaitForAssertion</c> and <c>WaitForState</c> wait by default on the wall clock, for work
     /// that real asynchrony has yet to post back. Virtual time never needs it.
     /// </summary>

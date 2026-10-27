@@ -57,6 +57,8 @@ public sealed class MauiTestContext : IDisposable
         if (options.SetApplicationCurrent)
             Dispatcher.OnEnter = () => _application is { } application ? new ApplicationScope(application) : null;
         TestDispatcherProvider.Install(Dispatcher);
+        // App code calls MainThread directly; it runs on this context's dispatcher, as its UI thread.
+        MauiInternals.SetMainThread(() => !Dispatcher.IsDispatchRequired, action => Dispatcher.Dispatch(action));
 
         Services = new TestServiceProvider();
         Services.AddSingleton(this);
@@ -121,6 +123,7 @@ public sealed class MauiTestContext : IDisposable
                 View view => new ContentPage { Content = view },
                 _ => throw new ArgumentException($"A {typeof(T).Name} cannot be shown on its own: render a Page, a View or a Layout."),
             };
+            HeadlessBehaviors.Strip(page);
             if (options.InNavigationPage && page is not NavigationPage and not Shell)
                 page = new NavigationPage(page);
             if (page is Shell { Handler: null } shell)
@@ -183,6 +186,7 @@ public sealed class MauiTestContext : IDisposable
                 return Dispatcher.Run(() =>
                 {
                     var application = Options.Application?.Invoke(Services) ?? new MauiApplication();
+                    HeadlessBehaviors.Install(application, Options.BehaviorHosts);
                     application.Handler = new HeadlessHandler(MauiContext);
                     return application;
                 });

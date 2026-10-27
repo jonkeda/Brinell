@@ -53,6 +53,13 @@ otherwise answers as Windows does: WinUI's ids for the back button and title, of
 tree. A page object that asks `Platform == Windows` for a reason that also holds in memory says
 `Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit`.
 
+An app that calls Essentials directly (`Preferences.Default`, `FileSystem.AppDataDirectory`,
+`DeviceInfo.Idiom`) installs MauiUnit's before it starts:
+`HeadlessEssentials.Install(new HeadlessEssentialsOptions { AppDataDirectory = ..., AppName = ... })`.
+Platform behaviors such as the toolkit's `TouchBehavior` are removed from pages, content views, list rows
+and ListView cells; a control of the app's own that adds one and has its own implicit style is named in
+`options.BehaviorHosts`, as Exact Construction names its `ClickableContainer`.
+
 ## What Needs A Device
 
 Mark a test `[DeviceFact("why")]` (or `[WindowsOnlyFact(Device = "why")]`) and a scenario `@device`: on
@@ -72,6 +79,10 @@ ends its call at once with `DeviceOnlyException` naming the member.
 
 - **Visible** means on the shown page of the driver's window, with no `IsVisible="False"` ancestor. An
   off-screen carousel card is found and is not shown; scrolling succeeds at once.
+- **A tap goes where a touch would.** It runs the tapped view's recognizers, else those of the single
+  content it wraps (a ContentView or Border filled by one child), else those of the nearest ancestor up
+  to the page. A tap inside a list row that nothing above takes selects the row, and a ListView cell
+  raises `ItemTapped`.
 - **The app runs only when a call lets it.** Each call drains MauiUnit's dispatcher queue, so a control's
   wait (`Assert*`, `WaitArrived`) is what moves the app on. A wait outside the driver must let it run (the
   Todo fixture's reset passes `whileWaiting: IsIdle`), and a fixture lets the last test's work settle
@@ -126,7 +137,15 @@ What MauiUnit relies on, from MAUI 10 on plain `net10.0`:
   services, so a Shell root gets a no-op `HeadlessHandler` carrying the test's services. A `NavigationPage`
   must never get one: with a handler, a push waits for the platform.
 - `CollectionView` has no item views without a handler: MauiUnit realizes every item through its
-  template.
+  template, a grouped list's group headers and footers around each group, and a `ListView`'s cells.
+- `PlatformBehavior.OnLoaded` reads `Handler.PlatformView` without a null check, so a page carrying one
+  throws when it joins a window. MauiUnit's implicit styles strip them first (`HeadlessBehaviors`), in a
+  merged dictionary of their own so an app's theme switch does not clear them. A behavior with a
+  `Command` becomes a `TapGestureRecognizer` with it.
+- `MainThread` and the Essentials have no plain `net10.0` implementation; MAUI's internal setters route
+  `MainThread` to the context's dispatcher and install `HeadlessEssentials`.
+- Tree reads run as the UI thread would, with the app current: a row's template may look up the app's
+  resources while it is made.
 - Taps (`SendTapped`), focus (the `IsFocused` key), bindings and pending dialogs (`_pendingActions`) are
   internal: MauiUnit reaches them by reflection in one place, `MauiInternals`.
 - Any animation asks for an `IAnimationManager`; MauiUnit registers MAUI's own over a ticker that reports

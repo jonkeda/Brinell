@@ -52,12 +52,19 @@ public static class ElementQueries
         return (T)Single(matches, tree, Describe(typeof(T), automationId: null, text)).Element;
     }
 
-    /// <summary>The tree under <paramref name="root"/> as it is now, after the queued work has run.</summary>
+    /// <summary>
+    /// The tree under <paramref name="root"/> as it is now, after the queued work has run. It is read as
+    /// the UI thread would, with the context's application current, because reading makes rows whose
+    /// templates may look up the app's resources.
+    /// </summary>
     public static VisualNode Read(Element root)
     {
         ArgumentNullException.ThrowIfNull(root);
-        MauiTestContext.Of(root)?.Dispatcher.RunPending();
-        return VisualTree.Read(root);
+        if (MauiTestContext.Of(root) is not { } context)
+            return VisualTree.Read(root);
+
+        context.Dispatcher.RunPending();
+        return context.Dispatcher.Run(() => VisualTree.Read(root));
     }
 
     private static IEnumerable<VisualNode> Nodes(Element root) => Read(root).DescendantsAndSelf();

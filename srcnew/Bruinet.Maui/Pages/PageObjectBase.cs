@@ -87,6 +87,10 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
             return ContentReady();
 
         var signal = root.TryFindElement(Locator.ByAutomationId(BusyAutomationId));
+        // A full-screen loading view can hide the whole page, signal included, between the root
+        // check and the search: that page is not loaded yet, which a later probe sees.
+        if (signal == null && !root.HasUsableBounds())
+            return new ScopeReadiness(Name, ScopeReadinessState.NotLoaded, "page hidden while it loads");
         if (signal == null)
             return new ScopeReadiness(
                 Name,

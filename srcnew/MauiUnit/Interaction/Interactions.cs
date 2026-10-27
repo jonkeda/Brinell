@@ -51,24 +51,79 @@ public static class Interactions
     }
 
     /// <summary>
-    /// Taps the view <paramref name="taps"/> times in a row through the recognizers that want that many,
-    /// as the platform does: each one's Command and Tapped.
+    /// Taps the view <paramref name="taps"/> times in a row, as the platform routes a touch: the
+    /// recognizers on the view that want that many taps, else those on the single content it wraps
+    /// (a ContentView or Border filled by one child), else those on the nearest ancestor up to the
+    /// page. A touch inside a list row that nothing above takes selects the row, as on a device: a
+    /// CollectionView row by its item, a ListView cell through ItemTapped.
     /// </summary>
-    /// <exception cref="ElementNotInteractableException">The view has no recognizer for that many taps.</exception>
+    /// <exception cref="ElementNotInteractableException">Nothing on that path takes that many taps.</exception>
+#pragma warning disable CS0618 // ListView is obsolete, but apps still show it.
     public static TView Tap<TView>(this TView view, int taps = 1) where TView : View
     {
-        var recognizers = view.GestureRecognizers.OfType<TapGestureRecognizer>()
+        foreach (var target in TapPath(view))
+        {
+            switch (target)
+            {
+                case View candidate when Recognizers(candidate, taps) is { Count: > 0 } recognizers:
+                    Act(view, "tap", () =>
+                    {
+                        foreach (var recognizer in recognizers)
+                            MauiInternals.SendTapped(recognizer, candidate);
+                    });
+                    return view;
+                case View row when taps == 1 && row.Parent is ItemsView items && ItemRealizer.TryGetItem(row, out var item):
+                    Act(view, "tap", () =>
+                    {
+                        if (items is SelectableItemsView { SelectionMode: not SelectionMode.None } selectable && item is not null)
+                            Select(selectable, item);
+                    });
+                    return view;
+                case Cell cell when taps == 1 && cell.Parent is ListView list:
+                    Act(view, "tap", () =>
+                    {
+                        var index = ((ITemplatedItemsView<Cell>)list).TemplatedItems.ToList().IndexOf(cell);
+                        if (index >= 0)
+                            list.NotifyRowTapped(index, cell);
+                    });
+                    return view;
+            }
+        }
+
+        throw new ElementNotInteractableException($"Cannot tap {Name(view)}: it has no TapGestureRecognizer for {taps} tap(s), nor does its content or a parent.");
+    }
+
+    private static List<TapGestureRecognizer> Recognizers(View view, int taps)
+        => view.GestureRecognizers.OfType<TapGestureRecognizer>()
             .Where(recognizer => recognizer.NumberOfTapsRequired == taps)
             .ToList();
-        if (recognizers.Count == 0)
-            throw new ElementNotInteractableException($"Cannot tap {Name(view)}: it has no TapGestureRecognizer for {taps} tap(s).");
 
-        Act(view, "tap", () =>
-        {
-            foreach (var recognizer in recognizers)
-                MauiInternals.SendTapped(recognizer, view);
-        });
-        return view;
+    // The view, the single content it wraps going down, then its ancestors up to the row, page or list.
+    private static IEnumerable<Element> TapPath(View view)
+    {
+        yield return view;
+        for (var content = SingleContent(view); content is not null; content = SingleContent(content))
+            yield return content;
+
+        for (var parent = view.Parent; parent is not null and not Page and not ItemsView and not ListView; parent = parent.Parent)
+            yield return parent;
+    }
+#pragma warning restore CS0618
+
+    private static View? SingleContent(View view) => view switch
+    {
+        ContentView { Content: { } content } => content,
+        Border { Content: { } content } => content,
+        _ => null,
+    };
+
+    // A row's select, as a touch makes it: the same as Select, without its refusals.
+    private static void Select(SelectableItemsView view, object item)
+    {
+        if (view.SelectionMode == SelectionMode.Single)
+            view.SelectedItem = item;
+        else if (!view.SelectedItems.Contains(item))
+            view.SelectedItems.Add(item);
     }
 
     #endregion

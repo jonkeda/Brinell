@@ -96,11 +96,12 @@ public sealed class MauiUnitElement : IMauiElement
 
     // In memory the app works only when asked; a device's app works between two reads. A state read
     // runs the queued work first (an answered request continued, a page closed), so a test polling
-    // one element, as a cached page root's bounds are, sees the app move on.
+    // one element, as a cached page root's bounds are, sees the app move on. The read itself runs as
+    // the UI thread would, with the app current, as an adapter's text may read its resources.
     private T AfterAppWork<T>(Func<T> read)
     {
         _driver.TestContext.Dispatcher.RunPending();
-        return read();
+        return _driver.TestContext.Dispatcher.Run(read);
     }
 
     public string? TagName => _part == StepperPart.None ? Element.GetType().Name : "RepeatButton";

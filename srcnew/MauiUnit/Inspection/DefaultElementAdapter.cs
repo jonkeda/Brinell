@@ -46,6 +46,10 @@ public sealed class DefaultElementAdapter : IElementAdapter
                 return flyout.IsPresented ? [flyout.Flyout, flyout.Detail] : [flyout.Detail];
             case ItemsView items:
                 return ItemRealizer.Realize(items);
+#pragma warning disable CS0618 // ListView is obsolete, but apps still show it.
+            case ListView { IsGroupingEnabled: false } list:
+                return ListViewCells(list);
+#pragma warning restore CS0618
             case Page page:
                 return page.ToolbarItems.Cast<Element>().Concat(VisualChildren(page));
             default:
@@ -87,6 +91,26 @@ public sealed class DefaultElementAdapter : IElementAdapter
         if (Screen.CurrentPage(shell) is { } shown)
             yield return shown;
     }
+
+    // A ListView's header, the view of each cell it has made, and its footer. Reading the cells makes
+    // them, so the template is wrapped first to strip each cell before it joins the list.
+#pragma warning disable CS0618 // ListView is obsolete, but apps still show it.
+    private static IEnumerable<Element> ListViewCells(ListView list)
+    {
+        Hosting.HeadlessBehaviors.PrepareListView(list);
+        if (list.Header is View header)
+            yield return header;
+
+        foreach (var cell in ((ITemplatedItemsView<Cell>)list).TemplatedItems.OfType<ViewCell>())
+        {
+            if (cell.View is { } view)
+                yield return view;
+        }
+
+        if (list.Footer is View footer)
+            yield return footer;
+    }
+#pragma warning restore CS0618
 
     private static IEnumerable<Element> VisualChildren(Element element)
         => ((IVisualTreeElement)element).GetVisualChildren().OfType<Element>();
