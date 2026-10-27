@@ -5,6 +5,7 @@ Frainet's work in flight, one row per topic.
 | Topic | What is open | Status | Updated |
 | --- | --- | --- | --- |
 | [brainstorm.md](brainstorm.md) | What Frainet is: a factory, a method for making factories, or a kit; what factories share and where they differ; its pieces; ideas to take; why it is difficult | brainstorm | 2026-10-27 |
+| [Tiny_Proposal.md](Tiny_Proposal.md) | Tiny, Frainet's method: dark factories of loops, tiny skills and gates, code only in gates; one factory file; small to a full SDLC by adding loops; first Todo, then Tomorrow | proposal | 2026-10-27 |
 | [tiny.md](tiny.md) | Tiny factories: tiny prompts ("create a plan") because models know the craft; what a factory still holds (words, facts, corrections, gates, loop); an experiment to measure it | idea | 2026-10-27 |
 | [tiny-experiment.md](tiny-experiment.md) | Tiny prompts against the skills on world/580: as good in substance, lost shape, scope, length and process; six corrections; round 2, a 75-word tiny brief skill ([tiny-skills/](tiny-skills/brief.md)) on world/580 and ui/275: Gherkin and length held 4 of 4, scope 3 of 4, some unknowns lost to the cap; the runs in [tiny-runs/](tiny-runs/) | two rounds | 2026-10-27 |
 | [questions.md](questions.md) | What to decide before Frainet grows: what it is, its parts, getting it working; each with a proposal | open | 2026-10-27 |
