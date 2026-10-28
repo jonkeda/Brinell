@@ -91,7 +91,7 @@ weight it does not use.
 
 1. The `factory.md` format, written from Todo's two loops, and Todo's tiny skills: brief, design,
    build, review, each with its gate.
-2. One Todo capability through it, end to end: R11 of TOD.02, step 5 of [plan.md](plan.md), so
+2. One Todo capability through it, end to end: R11 of TOD.02, step 5 of [plan.md](../plan.md), so
    `frainet trace` is the build's gate.
 3. The same capability measured against how Tomorrow's `/step` would have done it: words, runs, rework,
    time waiting for a person.
