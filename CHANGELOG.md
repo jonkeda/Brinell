@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default), counted from the call's start, so a list that opens is seen open and a method that does
   three things shows three. A slower action waits nothing more, an action that runs another pauses
   once, reads never pause, and a run that does not record never waits (`ActionPacing`, AD-024).
-  The pause is outside the call's logged time, so near-misses are unchanged.
+  The pause is outside the call's logged time, so near-misses are unchanged. Scenes that record at
+  once (scenarios in two collections) each keep their pause until they end, whichever ends first.
 - A step's line now plays while the step runs, and the beat follows the later of the two; a
   script's `Say | before` keeps the old order, the step waiting for its line. Scenes kept before
   this are out of date: their hash now holds the pause and `Say`.
