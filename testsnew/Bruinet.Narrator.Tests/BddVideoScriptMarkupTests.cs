@@ -77,7 +77,7 @@ public sealed class BddVideoScriptMarkupTests : IDisposable
     [InlineData("<prosody rate=\"85%\">x</prosody>")]
     [InlineData("<say-as interpret-as=\"digits\">3</say-as>")]
     public void AGoodAttribute_IsClean(string markup)
-        => Assert.Empty(Check($"| When I tap Sync | Tap {markup} it. |", voice: "azure-speech-service:en-GB-Emily:MAI-Voice-2.1").Diagnostics);
+        => Assert.Empty(Check($"| When I tap Sync | Tap {markup} it. |", voice: "azure-speech-service:en-GB-SoniaNeural").Diagnostics);
 
     [Fact]
     public void AnElementWhereItMayNotGo_IsVID024()
@@ -99,6 +99,16 @@ public sealed class BddVideoScriptMarkupTests : IDisposable
         Assert.Contains("Microsoft Zira", dropped.Message, StringComparison.Ordinal);
         Assert.Contains("cannot follow markup", Assert.Single(openAi.Diagnostics).Message, StringComparison.Ordinal);
         Assert.Empty(speech.Diagnostics);
+    }
+
+    [Fact]
+    public void AMaiVoiceDoesNotFollowABreak_AndTheWarningSaysWhatToUseInstead()
+    {
+        var check = Check("| When I tap Sync | Tap.<break time=\"1s\"/> Then <s>go.</s> |", voice: "azure-speech-service:en-GB-Emily:MAI-Voice-2.1");
+
+        var dropped = Assert.Single(check.Diagnostics);
+        Assert.Equal(BddVideoScriptCheck.UnsupportedElementCode, dropped.Code);
+        Assert.Contains("<p>", dropped.Message, StringComparison.Ordinal);
     }
 
     [Fact]

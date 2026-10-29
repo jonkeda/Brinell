@@ -57,7 +57,68 @@ That was the list.
 
 The preview shows the script as it will play: every step of each scene, with its line or
 *silent*. It is checked like a feature file: an address or a `Say` row that finds nothing is an
-error (`VID011`-`VID013`), a row out of step order a warning (`VID014`).
+error (`VID011`-`VID013`), a row out of step order a warning (`VID014`); markup in a line has its own
+codes ([Markup In A Line](#markup-in-a-line)).
+
+## Markup In A Line
+
+A `Say` cell, or a scene's intro or outro paragraph, may hold SSML inline: how a line is said, not only what:
+
+```markdown
+| When I tap Save | and save.<break time="400ms"/> Your <emphasis level="strong">todo</emphasis> is on the list. |
+| Given I am on the list | Welcome to <sub alias="Brew-ee-net">Bruinet</sub>, in <say-as interpret-as="cardinal">3</say-as> steps. |
+```
+
+A script with no markup works as before. The narrator writes the SSML document (`speak`, the language, the voice) from the
+script's `Voice`, so a line holds only its inside. A line is markup when it holds a known element; `x < 5` and `Tom & Jerry`
+are plain text, and a tag-like word that is no element (`<brek/>`) is a warning and is never spoken. Captions, the
+timeline, the review page and the preview always show the plain words (a `sub` shows its text, not its alias); the preview
+marks a line that has markup.
+
+| Element | Means |
+| --- | --- |
+| `break` (`time="500ms"`, `"2s"`, up to 20 s; or `strength`) | a pause |
+| `emphasis` (`level`), `prosody` (`rate`, `pitch`, `volume`) | stress; speed, pitch, loudness |
+| `say-as` (`interpret-as`), `sub` (`alias`), `phoneme` (`ph`, IPA) | how a number, a name, a word is read |
+| `p`, `s`, `lang` | a paragraph, a sentence (both pause), a foreign phrase |
+| `mstts:express-as`, `mstts:silence` | Azure Speech's style for the line (it wins over the script's `Instructions`), and a silence |
+
+Not every voice follows every element. The check knows by the voice the script names, and says so before recording:
+
+| Voice | Follows |
+| --- | --- |
+| A Windows voice | `break`, `emphasis`, `prosody`, `sub`, `phoneme`, `p`, `s` (measured; `say-as`, `lang` and the `mstts:` elements are dropped) |
+| Azure Speech, a neural voice | every element above |
+| Azure Speech, a MAI voice | the same except `break` (use `p` or `s` for a pause) and `phoneme` |
+| Azure OpenAI (`azure:`) | none: its line is the plain words, a `sub` said as its alias |
+
+An element a voice does not follow is dropped and its words are kept (`VID023`), never spoken. With no voice named in the script
+the settings decide at record time, and the check says nothing.
+
+| Code | Says |
+| --- | --- |
+| `VID020` | the markup is not well-formed: an element never closed or closing nothing |
+| `VID021` | warning: a tag-like word is no SSML element, so it is not spoken (write `&lt;` to say a `<`) |
+| `VID022` | an attribute value the voices do not know: a break over 20 s, an unknown `prosody` rate, a `sub` with no alias |
+| `VID023` | warning: the script's voice does not follow an element; it is dropped, its words kept |
+| `VID024` | an element where it may not go: inside `say-as`, `sub` or `phoneme` |
+| `VID025` | `pronunciations.md` lists a term twice, or a row has nothing to say |
+
+### Pronunciations
+
+A suite lists how its names are said once, in `pronunciations.md` beside `uat.config.md`, so no script is cluttered with tags:
+
+```markdown
+| Term | Say | IPA |
+| --- | --- | --- |
+| Bruinet | Brew-ee-net | |
+| Todo | | ˈtuːduː |
+```
+
+Before a line is spoken each whole-word, case-sensitive occurrence of a term in its plain text becomes `<sub alias="Say">`, or a
+`<phoneme>` when only an IPA is given; a term inside a tag the author wrote is left alone. The alias reaches every voice, one that
+follows no markup included. A scene kept earlier is out of date when a term changes, and not before: a suite with no
+`pronunciations.md` keeps its scenes' hashes.
 
 Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/tests/Bruinet.Samples.Todo.Uat/Features/how-todo-works.video.md).
 

@@ -112,7 +112,7 @@ public sealed class AzureSpeech : ISsmlSynthesizer
         ArgumentNullException.ThrowIfNull(wavPath);
         var name = NameOf(voice);
         var style = string.IsNullOrWhiteSpace(Instructions) ? null : Instructions.Trim();
-        var inner = line.ToSsml(SupportedElements);
+        var inner = line.ToSsml(SsmlSupport.Of(Prefix + name)!);
         var ssml = SsmlOf(inner, name, style, ownStyle: line.ElementsUsed.Contains("mstts:express-as"));
         return await ClipAsync(ssml, name, style, inner, wavPath, cancellationToken).ConfigureAwait(false);
     }

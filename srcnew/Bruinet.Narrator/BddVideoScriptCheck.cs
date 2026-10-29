@@ -166,7 +166,8 @@ public sealed record BddVideoScriptCheck(
             report(BddDiagnosticSeverity.Warning, UnsupportedElementCode,
                 supported.Count == 0
                     ? $"The voice '{voice}' cannot follow markup, so <{element}> is dropped and the words are kept (a <sub> says its alias)."
-                    : $"The voice '{voice}' does not follow <{element}>: it is dropped and the words are kept.",
+                    : $"The voice '{voice}' does not follow <{element}>: it is dropped and the words are kept."
+                        + (element == "break" ? " A MAI voice pauses at the end of a <p> or an <s>." : string.Empty),
                 line);
         }
     }

@@ -294,7 +294,13 @@ public sealed class SpokenLine
 
             if (mode != Mode.Ssml || !supported.Contains(node.Name))
             {
+                // A paragraph or a sentence ends where the next begins: without its tags the words must not run together.
                 text.Append(Inner());
+                if (node.Name is "p" or "s")
+                {
+                    text.Append(' ');
+                }
+
                 continue;
             }
 
@@ -401,8 +407,14 @@ public static class SsmlSupport
     /// <summary>Windows' voices, measured (.my/voice/ssml-results.md): they pause, stress, change rate, say aliases and follow phonemes.</summary>
     public static readonly IReadOnlySet<string> Windows = new HashSet<string>(StringComparer.Ordinal) { "break", "emphasis", "prosody", "sub", "phoneme", "p", "s" };
 
-    /// <summary>Azure Speech: every element of v1. (Some voices, the HD and MAI ones, may not follow all of them.)</summary>
+    /// <summary>Azure Speech's neural voices: every element of v1.</summary>
     public static readonly IReadOnlySet<string> AzureSpeech = SpokenLine.Elements;
+
+    /// <summary>
+    /// Azure Speech's MAI voices (<c>en-GB-Emily:MAI-Voice-2.1</c>), measured (.my/voice/ssml-results.md): a <c>break</c> is not followed (use
+    /// <c>p</c> or <c>s</c> for a pause) and a <c>phoneme</c> is spoken as text.
+    /// </summary>
+    public static readonly IReadOnlySet<string> AzureSpeechMai = new HashSet<string>(SpokenLine.Elements.Where(element => element is not ("break" or "phoneme")), StringComparer.Ordinal);
 
     /// <summary>
     /// The elements the voice a script names follows: Azure Speech's for <c>azure-speech-service:</c>, none for <c>azure:</c> (Azure OpenAI), Windows' for
@@ -410,5 +422,9 @@ public static class SsmlSupport
     /// </summary>
     /// <param name="voice">The voice as a script names it.</param>
     public static IReadOnlySet<string>? Of(string? voice)
-        => string.IsNullOrWhiteSpace(voice) ? null : Bruinet.Narrator.AzureSpeech.Owns(voice) ? AzureSpeech : AzureOpenAiSpeech.Owns(voice) ? None : Windows;
+        => string.IsNullOrWhiteSpace(voice)
+            ? null
+            : Bruinet.Narrator.AzureSpeech.Owns(voice)
+                ? voice.Contains(":MAI-Voice", StringComparison.OrdinalIgnoreCase) ? AzureSpeechMai : AzureSpeech
+                : AzureOpenAiSpeech.Owns(voice) ? None : Windows;
 }

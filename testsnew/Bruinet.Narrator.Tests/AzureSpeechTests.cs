@@ -116,18 +116,30 @@ public sealed class AzureSpeechTests : IDisposable
     {
         var service = new FakeService(Respond(Wav(1)));
         var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache) { Instructions = "narrator" };
+        const string Sonia = "azure-speech-service:en-GB-SoniaNeural";
         var pronunciations = Pronunciations.Parse("| Term | Say |\n| --- | --- |\n| Bruinet | Brew-ee-net |\n", "p.md");
         var text = pronunciations.Apply("Tom & Jerry meet Bruinet.<break time=\"400ms\"/> Your <emphasis level=\"strong\">todo</emphasis> is saved.");
 
-        var clip = await Narrator.Speech.ClipAsync(voice, text, Emily, Output(), default);
+        var clip = await Narrator.Speech.ClipAsync(voice, text, Sonia, Output(), default);
 
         Assert.Equal("Tom & Jerry meet Bruinet. Your todo is saved.", clip.Text);
         Assert.Equal(
             "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xmlns:mstts=\"http://www.w3.org/2001/mstts\" xml:lang=\"en-GB\">"
-            + "<voice name=\"en-GB-Emily:MAI-Voice-2.1\"><mstts:express-as style=\"narrator\">"
+            + "<voice name=\"en-GB-SoniaNeural\"><mstts:express-as style=\"narrator\">"
             + "Tom &amp; Jerry meet <sub alias=\"Brew-ee-net\">Bruinet</sub>.<break time=\"400ms\"/> Your <emphasis level=\"strong\">todo</emphasis> is saved."
             + "</mstts:express-as></voice></speak>",
             Assert.Single(service.Requests).Body);
+    }
+
+    [Fact]
+    public async Task AMaiVoice_GetsNoBreakAndNoPhoneme_ButKeepsItsWordsAndAParagraphPause()
+    {
+        var service = new FakeService(Respond(Wav(1)));
+        var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache);
+
+        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> <s>Go to <phoneme ph=\"x\">Todo</phoneme>.</s>", Emily, Output(), default);
+
+        Assert.Contains("Wait. <s>Go to Todo.</s></voice>", Assert.Single(service.Requests).Body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -151,9 +163,10 @@ public sealed class AzureSpeechTests : IDisposable
         var service = new FakeService(Respond(Wav(2)), Respond(Wav(1)));
         var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache);
 
-        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Emily, Output(), default);
-        await Narrator.Speech.ClipAsync(voice, "Wait. Go.", Emily, Output(), default);
-        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Emily, Output(), default);
+        const string Sonia = "azure-speech-service:en-GB-SoniaNeural";
+        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Sonia, Output(), default);
+        await Narrator.Speech.ClipAsync(voice, "Wait. Go.", Sonia, Output(), default);
+        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Sonia, Output(), default);
 
         Assert.Equal(2, service.Requests.Count);
     }

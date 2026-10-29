@@ -1,6 +1,6 @@
 # SSML in the video scripts
 
-Status: **plan**, not started. Date: 2026-10-29.
+Status: **built** 2026-10-29, steps 1 to 8 (the owner has not recorded one yet); the plan below is as decided, the findings in [ssml-results.md](ssml-results.md). Date: 2026-10-29.
 
 Follows [plan.md](plan.md) (the Azure OpenAI voice, built), [settings-plan.md](settings-plan.md) (built)
 and [speech-plan.md](speech-plan.md) (Azure Speech, planned). A video script says what is spoken at each

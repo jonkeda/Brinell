@@ -145,9 +145,22 @@ public sealed class SpokenLineTests
     }
 
     [Fact]
+    public void WithoutItsTags_AParagraphOrSentenceStillEndsWhereTheNextBegins()
+    {
+        var line = SpokenLine.Parse("<p><s>Save the todo.</s><s>Then sync it now.</s></p>");
+
+        Assert.Equal("Save the todo. Then sync it now.", line.Plain);
+        Assert.Equal("Save the todo. Then sync it now.", line.Reduced);
+        Assert.Equal("<p><s>Save the todo.</s><s>Then sync it now.</s></p>", line.ToSsml(SsmlSupport.Windows));
+    }
+
+    [Fact]
     public void WhichVoiceFollowsWhich_IsByThePrefix()
     {
-        Assert.Same(SsmlSupport.AzureSpeech, SsmlSupport.Of("azure-speech-service:en-GB-Emily:MAI-Voice-2.1"));
+        Assert.Same(SsmlSupport.AzureSpeech, SsmlSupport.Of("azure-speech-service:en-GB-SoniaNeural"));
+        Assert.Same(SsmlSupport.AzureSpeechMai, SsmlSupport.Of("azure-speech-service:en-GB-Emily:MAI-Voice-2.1"));
+        Assert.DoesNotContain("break", SsmlSupport.AzureSpeechMai);
+        Assert.Contains("p", SsmlSupport.AzureSpeechMai);
         Assert.Same(SsmlSupport.None, SsmlSupport.Of("azure:coral"));
         Assert.Same(SsmlSupport.Windows, SsmlSupport.Of("Microsoft Zira"));
         Assert.Null(SsmlSupport.Of(null));
