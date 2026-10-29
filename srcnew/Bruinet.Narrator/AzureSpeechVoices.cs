@@ -46,6 +46,11 @@ public sealed class AzureSpeechVoices
         return Of(voices, locale);
     }
 
+    /// <summary>Asks the service for its voices whatever is kept, and keeps the answer.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <exception cref="VoiceServiceException">The service could not be asked, or did not answer with a list.</exception>
+    public Task<IReadOnlyList<SpeechVoice>> RefreshAsync(CancellationToken cancellationToken) => FetchAsync(cancellationToken);
+
     /// <summary>The kept list for a resource, or null when there is none, it is stale or it is broken (never a call).</summary>
     /// <param name="secrets">Where the service is.</param>
     /// <param name="cacheFolder">Where the list is kept; the speech cache by default.</param>

@@ -78,9 +78,13 @@ public sealed partial class PresenterShellViewModel
     private static readonly IReadOnlyList<string> WindowsVoices = WindowsSpeech.Voices;
 
     /// <summary>The voices on this machine, the default first, then the cloud voices when one is set up.</summary>
-    public IReadOnlyList<string> VoiceChoices => _cloud.IsSetUp
-        ? [DefaultVoiceChoice, .. WindowsVoices, .. CloudVoices.Select(voice => Bruinet.Narrator.AzureOpenAiSpeech.Prefix + voice)]
-        : [DefaultVoiceChoice, .. WindowsVoices];
+    public IReadOnlyList<string> VoiceChoices =>
+    [
+        DefaultVoiceChoice,
+        .. WindowsVoices,
+        .. _cloud.IsSetUp ? CloudVoices.Select(voice => Bruinet.Narrator.AzureOpenAiSpeech.Prefix + voice) : [],
+        .. SpeechVoicesForPicker(),
+    ];
 
     /// <summary>The voice setting, by its name on the Settings page.</summary>
     public string VoiceChoice

@@ -943,6 +943,68 @@
                                FontSize="11"
                                Style="{StaticResource PresenterMutedLabel}" />
 
+                        <!-- Azure Speech: the speech object of the same file; the workspace choice and the path above are the file's. The key is typed, never shown. -->
+                        <Label Text="Azure Speech (a named voice for each language)" FontAttributes="Bold" AutomationId="SpeechSettingsLabel" />
+                        <Label Text="{Binding SpeechState}"
+                               AutomationId="SpeechStateLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="Endpoint" />
+                        <Entry AutomationId="SpeechEndpointInput"
+                               Text="{Binding SpeechEndpointText}"
+                               Placeholder="eastus2, or https://&lt;resource&gt;.cognitiveservices.azure.com" />
+                        <Label Text="Key" />
+                        <Entry AutomationId="SpeechKeyInput"
+                               IsPassword="True"
+                               uia:GestureAutomation.Verbs="GetText,SetText,ClearText"
+                               Text="{Binding SpeechKeyText}"
+                               Placeholder="{Binding SpeechKeyPlaceholder}"
+                               SemanticProperties.Description="Azure Speech's key" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="4">
+                            <Label Grid.Row="0" Grid.Column="0" Text="Language" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="0" Grid.Column="1"
+                                   AutomationId="SpeechLocaleInput"
+                                   Text="{Binding SpeechLocale}"
+                                   Placeholder="en-GB" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="Voices" VerticalTextAlignment="Center" />
+                            <Picker Grid.Row="1" Grid.Column="1"
+                                    AutomationId="SpeechVoicePicker"
+                                    ItemsSource="{Binding SpeechVoiceChoices}"
+                                    SelectedItem="{Binding SpeechPickedVoice, Mode=TwoWay}"
+                                    SemanticProperties.Description="The voices of the language, from the service's list" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="Default voice" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="2" Grid.Column="1"
+                                   AutomationId="SpeechDefaultVoiceInput"
+                                   Text="{Binding SpeechDefaultVoice}"
+                                   Placeholder="en-GB-Emily:MAI-Voice-2.1" />
+                            <Label Grid.Row="3" Grid.Column="0" Text="Sample rate" VerticalTextAlignment="Center" />
+                            <Picker Grid.Row="3" Grid.Column="1"
+                                    AutomationId="SpeechSampleRatePicker"
+                                    ItemsSource="{Binding SpeechSampleRateChoices}"
+                                    SelectedItem="{Binding SpeechSampleRate, Mode=TwoWay}"
+                                    SemanticProperties.Description="The audio's sample rate in hertz" />
+                        </Grid>
+                        <HorizontalStackLayout Spacing="6">
+                            <Button Text="Load voices"
+                                    AutomationId="LoadSpeechVoicesButton"
+                                    Command="{Binding LoadSpeechVoicesCommand}"
+                                    ToolTipProperties.Text="Ask the service for its voices of this language" />
+                            <Button Text="Try"
+                                    AutomationId="TrySpeechButton"
+                                    Command="{Binding TrySpeechCommand}"
+                                    ToolTipProperties.Text="Speak a sample line with these settings, before saving them" />
+                            <Button Text="Save"
+                                    AutomationId="SaveSpeechButton"
+                                    Command="{Binding SaveSpeechCommand}" />
+                            <Button Text="{Binding RemoveSpeechText}"
+                                    AutomationId="RemoveSpeechButton"
+                                    Command="{Binding RemoveSpeechCommand}" />
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding SpeechStatus}"
+                               AutomationId="SpeechStatusLabel"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+
                         <Label Text="Theme" />
                         <HorizontalStackLayout Spacing="6">
                             <Button Text="{Binding ThemeGlyph}"

@@ -246,7 +246,144 @@ public sealed class NarratorRunTests : IDisposable
         Assert.Equal($"Set up from the environment ({VoiceSecrets.KeyVariable}, {VoiceSecrets.EndpointVariable}).", shell.CloudVoiceState);
     }
 
+    [Fact]
+    public void Speech_Saved_IsTheSpeechObjectOfTheUsersFile_TheKeyIsNotKept_AndOpenAisFieldsStay()
+    {
+        var file = Path.Combine(_home, ".bruinet", VoiceSecrets.FileName);
+        VoiceSecrets.Save(file, "https://voice.openai.azure.com", null, null, CloudKey, "coral");
+        var shell = Shell(new FailingExecutionService());
+        Assert.Equal("Not set up.", shell.SpeechState);
+        Assert.DoesNotContain("azure-speech-service:en-GB-Emily:MAI-Voice-2.1", shell.VoiceChoices);
+
+        shell.SpeechEndpointText = "eastus2";
+        shell.SpeechKeyText = SpeechKey;
+        shell.SpeechSampleRate = 48000;
+        shell.SaveSpeechCommand.Execute(null);
+
+        var saved = SpeechSecrets.Find(null, NoVariables, _home)!;
+        Assert.Equal((SpeechKey, "eastus2", 48000), (saved.Key, saved.Endpoint, saved.SampleRate));
+        Assert.Equal("coral", VoiceSecrets.Find(null, NoVariables, _home)?.Voice);
+        Assert.Equal($"Set up from {file}.", shell.SpeechState);
+        Assert.Equal(string.Empty, shell.SpeechKeyText);
+        Assert.Equal("Key set: leave empty to keep it", shell.SpeechKeyPlaceholder);
+        Assert.Contains("azure-speech-service:en-GB-Emily:MAI-Voice-2.1", shell.VoiceChoices);
+        Assert.DoesNotContain(
+            typeof(PresenterShellViewModel).GetProperties().Where(property => property.PropertyType == typeof(string) && property.GetIndexParameters().Length == 0),
+            property => property.GetValue(shell) is string text && text.Contains(SpeechKey, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Speech_AnEndpointThatIsNotARegionOrHttps_IsNotSaved_AndTheStatusSaysWhy()
+    {
+        var shell = Shell(new FailingExecutionService());
+
+        shell.SpeechEndpointText = "http://insecure.example";
+        shell.SpeechKeyText = SpeechKey;
+        shell.SaveSpeechCommand.Execute(null);
+
+        Assert.Contains("https://", shell.SpeechStatus, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(_home, ".bruinet", VoiceSecrets.FileName)));
+        Assert.Equal("Not set up.", shell.SpeechState);
+    }
+
+    [Fact]
+    public void Speech_Try_SpeaksWithTheFieldsAsTheyAre_BeforeASave()
+    {
+        var recorder = new NoRecorder();
+        var shell = Shell(new FailingExecutionService(), recorder);
+        shell.SpeechEndpointText = "eastus2";
+        shell.SpeechKeyText = SpeechKey;
+
+        shell.TrySpeechCommand.Execute(null);
+
+        var (voice, secrets) = Assert.Single(recorder.TriedSpeech);
+        Assert.Equal("azure-speech-service:en-GB-Emily:MAI-Voice-2.1", voice);
+        Assert.Equal(SpeechKey, secrets.Key);
+        Assert.Equal("Spoken in azure-speech-service:en-GB-Emily:MAI-Voice-2.1.", shell.SpeechStatus);
+        Assert.False(File.Exists(Path.Combine(_home, ".bruinet", VoiceSecrets.FileName)));
+    }
+
+    [Fact]
+    public void Speech_TryWithoutAKey_SaysWhatIsNeeded()
+    {
+        var recorder = new NoRecorder();
+        var shell = Shell(new FailingExecutionService(), recorder);
+        shell.SpeechEndpointText = "eastus2";
+
+        shell.TrySpeechCommand.Execute(null);
+
+        Assert.Empty(recorder.TriedSpeech);
+        Assert.Equal("Azure Speech needs an endpoint and a key.", shell.SpeechStatus);
+    }
+
+    [Fact]
+    public void Speech_LoadVoices_FillsThePickerForTheLocale_AndAPickedVoiceBecomesTheDefault()
+    {
+        var recorder = new NoRecorder
+        {
+            SpeechVoices = [new SpeechVoice("en-GB-Emily:MAI-Voice-2.1", "en-GB", "Female", ["narrator"], "Neural", "Preview"), new SpeechVoice("en-GB-Harry:MAI-Voice-2.1", "en-GB", "Male", [], "Neural", "Preview")],
+        };
+        var shell = Shell(new FailingExecutionService(), recorder);
+        shell.SpeechEndpointText = "eastus2";
+        shell.SpeechKeyText = SpeechKey;
+        shell.SpeechLocale = "en-GB";
+
+        shell.LoadSpeechVoicesCommand.Execute(null);
+
+        Assert.Equal(["en-GB-Emily:MAI-Voice-2.1", "en-GB-Harry:MAI-Voice-2.1"], shell.SpeechVoiceChoices);
+        Assert.Equal("2 voices for en-GB.", shell.SpeechStatus);
+        Assert.Equal("en-GB", recorder.ListedLocale);
+
+        shell.SpeechPickedVoice = "en-GB-Harry:MAI-Voice-2.1";
+        Assert.Equal("en-GB-Harry:MAI-Voice-2.1", shell.SpeechDefaultVoice);
+    }
+
+    [Fact]
+    public void Speech_Remove_AsksOnce_ThenRemovesOnlyItsObject()
+    {
+        var file = Path.Combine(_home, ".bruinet", VoiceSecrets.FileName);
+        VoiceSecrets.Save(file, "https://voice.openai.azure.com", null, null, CloudKey, null);
+        SpeechSecrets.Save(file, "eastus2", SpeechKey, null);
+        var shell = Shell(new FailingExecutionService());
+
+        shell.RemoveSpeechCommand.Execute(null);
+        Assert.NotNull(SpeechSecrets.Find(null, NoVariables, _home));
+        Assert.Equal("Click again to delete", shell.RemoveSpeechText);
+
+        shell.RemoveSpeechCommand.Execute(null);
+        Assert.Null(SpeechSecrets.Find(null, NoVariables, _home));
+        Assert.NotNull(VoiceSecrets.Find(null, NoVariables, _home));
+        Assert.Equal("Not set up.", shell.SpeechState);
+        Assert.True(shell.IsCloudVoiceSetUp);
+    }
+
+    [Fact]
+    public void Speech_SetUpByTheEnvironment_SaysSo()
+    {
+        var shell = Shell(new FailingExecutionService(), readVariable: name => name is SpeechSecrets.KeyVariable or SpeechSecrets.EndpointVariable ? "set" : null);
+
+        Assert.True(shell.IsSpeechSetUp);
+        Assert.Equal($"Set up from the environment ({SpeechSecrets.KeyVariable}, {SpeechSecrets.EndpointVariable}).", shell.SpeechState);
+        Assert.Contains("azure-speech-service:en-GB-Emily:MAI-Voice-2.1", shell.VoiceChoices);
+    }
+
+    [Fact]
+    public void Speech_ARunLeavesTheDevelopersRealFileAlone()
+    {
+        var real = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bruinet", VoiceSecrets.FileName);
+        var before = File.Exists(real) ? File.ReadAllBytes(real) : null;
+        var shell = Shell(new FailingExecutionService());
+        shell.SpeechEndpointText = "eastus2";
+        shell.SpeechKeyText = SpeechKey;
+        shell.SaveSpeechCommand.Execute(null);
+        shell.RemoveSpeechCommand.Execute(null);
+        shell.RemoveSpeechCommand.Execute(null);
+
+        Assert.Equal(before, File.Exists(real) ? File.ReadAllBytes(real) : null);
+    }
+
     private const string CloudKey = "secret-key-123";
+    private const string SpeechKey = "speech-key-987";
 
     private static string? NoVariables(string name) => null;
 
@@ -342,6 +479,24 @@ public sealed class NarratorRunTests : IDisposable
         {
             TriedCloud.Add((voice, secrets));
             return Task.CompletedTask;
+        }
+
+        public List<(string Voice, SpeechSecrets Secrets)> TriedSpeech { get; } = [];
+
+        public IReadOnlyList<SpeechVoice> SpeechVoices { get; init; } = [];
+
+        public string? ListedLocale { get; private set; }
+
+        public Task TryAzureSpeechAsync(string text, string voice, SpeechSecrets secrets, CancellationToken cancellationToken)
+        {
+            TriedSpeech.Add((voice, secrets));
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<SpeechVoice>> ListSpeechVoicesAsync(SpeechSecrets secrets, string locale, CancellationToken cancellationToken)
+        {
+            ListedLocale = locale;
+            return Task.FromResult(AzureSpeechVoices.Of(SpeechVoices, locale));
         }
     }
 }

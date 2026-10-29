@@ -150,6 +150,7 @@ public sealed partial class PresenterShellViewModel
         RemoveCloudVoiceCommand = new RelayCommand(RemoveCloudVoice, () => _cloud.File is not null);
         AddCloudIgnoreRuleCommand = new RelayCommand(AddCloudIgnoreRule, () => CanAddCloudIgnoreRule);
         RefreshCloudVoice(fields: true);
+        InitializeSpeech();
     }
 
     // The workspace changed: which places it allows, and what is set up for it.
@@ -168,6 +169,7 @@ public sealed partial class PresenterShellViewModel
         OnPropertyChanged(nameof(CloudSavePath));
         (AddCloudIgnoreRuleCommand as RelayCommand)?.NotifyCanExecuteChanged();
         RefreshCloudVoice(fields: true);
+        RefreshSpeech(fields: true);
     }
 
     private void RefreshCloudVoice(bool fields)

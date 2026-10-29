@@ -106,6 +106,21 @@ public interface IPresenterRecorder
     /// <param name="cancellationToken">Cancels the speech.</param>
     /// <exception cref="VoiceServiceException">The service could not make the line; its message says why.</exception>
     Task TryCloudVoiceAsync(string text, string voice, VoiceSecrets secrets, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>Speaks a line aloud with Azure Speech's settings as entered, before they are saved.</summary>
+    /// <param name="text">The line.</param>
+    /// <param name="voice">The voice, <c>azure-speech-service:&lt;name&gt;</c>.</param>
+    /// <param name="secrets">The settings to try.</param>
+    /// <param name="cancellationToken">Cancels the speech.</param>
+    /// <exception cref="VoiceServiceException">The service could not make the line; its message says why.</exception>
+    Task TryAzureSpeechAsync(string text, string voice, SpeechSecrets secrets, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>Asks Azure Speech for its voices of a locale, and keeps the list.</summary>
+    /// <param name="secrets">The settings to ask with.</param>
+    /// <param name="locale">A locale such as en-GB; empty for every voice.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <exception cref="VoiceServiceException">The service could not be asked; its message says why.</exception>
+    Task<IReadOnlyList<SpeechVoice>> ListSpeechVoicesAsync(SpeechSecrets secrets, string locale, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<SpeechVoice>>([]);
 }
 
 /// <inheritdoc />
@@ -249,6 +264,21 @@ public sealed class PresenterRecorder : IPresenterRecorder
     {
         var clip = await Speech.ClipAsync(new AzureOpenAiSpeech(secrets), text, voice, RehearsalFile("try-cloud"), cancellationToken).ConfigureAwait(false);
         await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task TryAzureSpeechAsync(string text, string voice, SpeechSecrets secrets, CancellationToken cancellationToken)
+    {
+        var clip = await Speech.ClipAsync(new AzureSpeech(secrets), text, voice, RehearsalFile("try-speech"), cancellationToken).ConfigureAwait(false);
+        await WindowsSpeech.PlayAsync(clip, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SpeechVoice>> ListSpeechVoicesAsync(SpeechSecrets secrets, string locale, CancellationToken cancellationToken)
+    {
+        // Asked for afresh: Load is the button that renews the kept list.
+        var voices = await new AzureSpeechVoices(secrets).RefreshAsync(cancellationToken).ConfigureAwait(false);
+        return AzureSpeechVoices.Of(voices, locale);
     }
 
     /// <inheritdoc />
