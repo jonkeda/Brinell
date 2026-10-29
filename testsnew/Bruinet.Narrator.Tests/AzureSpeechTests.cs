@@ -111,6 +111,69 @@ public sealed class AzureSpeechTests : IDisposable
         Assert.Contains("style=\"educational\"", service.Requests[1].Body, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ALineWithMarkup_IsPostedAsItsSsml_UnderTheStyle_WithTheTextEscaped()
+    {
+        var service = new FakeService(Respond(Wav(1)));
+        var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache) { Instructions = "narrator" };
+        var pronunciations = Pronunciations.Parse("| Term | Say |\n| --- | --- |\n| Bruinet | Brew-ee-net |\n", "p.md");
+        var text = pronunciations.Apply("Tom & Jerry meet Bruinet.<break time=\"400ms\"/> Your <emphasis level=\"strong\">todo</emphasis> is saved.");
+
+        var clip = await Narrator.Speech.ClipAsync(voice, text, Emily, Output(), default);
+
+        Assert.Equal("Tom & Jerry meet Bruinet. Your todo is saved.", clip.Text);
+        Assert.Equal(
+            "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xmlns:mstts=\"http://www.w3.org/2001/mstts\" xml:lang=\"en-GB\">"
+            + "<voice name=\"en-GB-Emily:MAI-Voice-2.1\"><mstts:express-as style=\"narrator\">"
+            + "Tom &amp; Jerry meet <sub alias=\"Brew-ee-net\">Bruinet</sub>.<break time=\"400ms\"/> Your <emphasis level=\"strong\">todo</emphasis> is saved."
+            + "</mstts:express-as></voice></speak>",
+            Assert.Single(service.Requests).Body);
+    }
+
+    [Fact]
+    public async Task ALinesOwnStyle_WinsForTheLine_AndAPlainLineStillGoesAsText()
+    {
+        var service = new FakeService(Respond(Wav(1)), Respond(Wav(1)));
+        var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache) { Instructions = "narrator" };
+
+        await Narrator.Speech.ClipAsync(voice, "<mstts:express-as style=\"excited\">Hurray</mstts:express-as> and done.", Emily, Output(), default);
+        await Narrator.Speech.ClipAsync(voice, "Plain <3 line.", Emily, Output(), default);
+
+        Assert.Equal(1, service.Requests[0].Body.Split("express-as style").Length - 1);
+        Assert.Contains("<mstts:express-as style=\"excited\">Hurray</mstts:express-as> and done.", service.Requests[0].Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("style=\"narrator\"", service.Requests[0].Body, StringComparison.Ordinal);
+        Assert.Contains("<mstts:express-as style=\"narrator\">Plain &lt;3 line.</mstts:express-as>", service.Requests[1].Body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AMarkedLine_AndTheSameWordsPlain_AreDifferentClips_AndEachIsAskedForOnce()
+    {
+        var service = new FakeService(Respond(Wav(2)), Respond(Wav(1)));
+        var voice = new AzureSpeech(new SpeechSecrets("eastus2", Key), service, _cache);
+
+        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Emily, Output(), default);
+        await Narrator.Speech.ClipAsync(voice, "Wait. Go.", Emily, Output(), default);
+        await Narrator.Speech.ClipAsync(voice, "Wait.<break time=\"1s\"/> Go.", Emily, Output(), default);
+
+        Assert.Equal(2, service.Requests.Count);
+    }
+
+    [Fact]
+    public async Task AzureOpenAi_GetsTheReducedLine_TagsGone_AliasesSpoken_AndTheCacheKeyIsTheReducedText()
+    {
+        var service = new FakeService(Respond(Wav(1)));
+        var voice = new AzureOpenAiSpeech(new VoiceSecrets("https://voice.openai.azure.com", VoiceSecrets.DefaultDeployment, VoiceSecrets.DefaultApiVersion, Key), service, _cache);
+
+        var first = await Narrator.Speech.ClipAsync(voice, "Welcome to <sub alias=\"Brew-ee-net\">Bruinet</sub>.<break time=\"1s\"/> Go.", "azure:coral", Output(), default);
+        var same = await Narrator.Speech.ClipAsync(voice, "Welcome to Brew-ee-net. Go.", "azure:coral", Output(), default);
+
+        Assert.Equal("Welcome to Bruinet. Go.", first.Text);
+        Assert.Equal("Welcome to Brew-ee-net. Go.", same.Text);
+        var sent = Assert.Single(service.Requests);
+        Assert.Contains("\"input\":\"Welcome to Brew-ee-net. Go.\"", sent.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<", sent.Body.Replace("\\u003C", "<", StringComparison.Ordinal), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(24000, "riff-24khz-16bit-mono-pcm")]
     [InlineData(48000, "riff-48khz-16bit-mono-pcm")]

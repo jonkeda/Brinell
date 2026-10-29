@@ -12,7 +12,7 @@ namespace Bruinet.Narrator;
 /// <c>mstts:express-as</c>. Each line is asked for once: clips are kept in the speech cache, by the service,
 /// the voice, the style, the sample rate and the text.
 /// </summary>
-public sealed class AzureSpeech : ISpeechSynthesizer
+public sealed class AzureSpeech : ISsmlSynthesizer
 {
     /// <summary>What an Azure Speech voice's name starts with.</summary>
     public const string Prefix = "azure-speech-service:";
@@ -43,6 +43,9 @@ public sealed class AzureSpeech : ISpeechSynthesizer
 
     /// <inheritdoc />
     public bool IsAvailable => true;
+
+    /// <inheritdoc />
+    public IReadOnlySet<string> SupportedElements => SsmlSupport.AzureSpeech;
 
     /// <summary>Whether a voice's name is an Azure Speech voice's.</summary>
     /// <param name="voice">The name.</param>
@@ -76,9 +79,20 @@ public sealed class AzureSpeech : ISpeechSynthesizer
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(voice);
-        var said = SecurityElement.Escape(text);
-        var inner = string.IsNullOrWhiteSpace(style) ? said : $"<mstts:express-as style=\"{SecurityElement.Escape(style.Trim())}\">{said}</mstts:express-as>";
-        return $"<speak version=\"1.0\" xmlns=\"{Namespace}\" xmlns:mstts=\"{StyleNamespace}\" xml:lang=\"{LanguageOf(voice)}\"><voice name=\"{SecurityElement.Escape(voice)}\">{inner}</voice></speak>";
+        return SsmlOf(SecurityElement.Escape(text), voice, style);
+    }
+
+    /// <summary>The SSML document around a line's inner SSML (already escaped), with the style around the line unless the line sets its own.</summary>
+    /// <param name="inner">The line's SSML, from <see cref="SpokenLine.ToSsml"/>.</param>
+    /// <param name="voice">The voice, without the prefix.</param>
+    /// <param name="style">The style; null for the voice's own way.</param>
+    /// <param name="ownStyle">Whether the line holds its own <c>mstts:express-as</c>, which then wins for the line.</param>
+    public static string SsmlOf(string inner, string voice, string? style, bool ownStyle = false)
+    {
+        ArgumentNullException.ThrowIfNull(inner);
+        ArgumentNullException.ThrowIfNull(voice);
+        var said = string.IsNullOrWhiteSpace(style) || ownStyle ? inner : $"<mstts:express-as style=\"{SecurityElement.Escape(style.Trim())}\">{inner}</mstts:express-as>";
+        return $"<speak version=\"1.0\" xmlns=\"{Namespace}\" xmlns:mstts=\"{StyleNamespace}\" xml:lang=\"{LanguageOf(voice)}\"><voice name=\"{SecurityElement.Escape(voice)}\">{said}</voice></speak>";
     }
 
     /// <inheritdoc />
@@ -86,10 +100,30 @@ public sealed class AzureSpeech : ISpeechSynthesizer
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(wavPath);
-        var name = voice is null ? _secrets.Voice ?? SpeechSecrets.DefaultVoice : VoiceOf(voice);
+        var name = NameOf(voice);
         var style = string.IsNullOrWhiteSpace(Instructions) ? null : Instructions.Trim();
-        var hash = CloudVoice.Hash("azure-speech-service", _secrets.Host, name, style ?? string.Empty, _secrets.SampleRate.ToString(System.Globalization.CultureInfo.InvariantCulture), text);
-        return await CloudVoice.ClipAsync(_cache, hash, wavPath, () => RequestAsync(Ssml(text, name, style), cancellationToken), cancellationToken).ConfigureAwait(false);
+        return await ClipAsync(Ssml(text, name, style), name, style, text, wavPath, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<TimeSpan> SynthesizeLineAsync(SpokenLine line, string? voice, string wavPath, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(wavPath);
+        var name = NameOf(voice);
+        var style = string.IsNullOrWhiteSpace(Instructions) ? null : Instructions.Trim();
+        var inner = line.ToSsml(SupportedElements);
+        var ssml = SsmlOf(inner, name, style, ownStyle: line.ElementsUsed.Contains("mstts:express-as"));
+        return await ClipAsync(ssml, name, style, inner, wavPath, cancellationToken).ConfigureAwait(false);
+    }
+
+    private string NameOf(string? voice) => voice is null ? _secrets.Voice ?? SpeechSecrets.DefaultVoice : VoiceOf(voice);
+
+    // The clip's name holds the service, the voice, the style, the sample rate and what is said (the SSML of a line with markup).
+    private Task<TimeSpan> ClipAsync(string ssml, string voice, string? style, string said, string wavPath, CancellationToken cancellationToken)
+    {
+        var hash = CloudVoice.Hash("azure-speech-service", _secrets.Host, voice, style ?? string.Empty, _secrets.SampleRate.ToString(System.Globalization.CultureInfo.InvariantCulture), said);
+        return CloudVoice.ClipAsync(_cache, hash, wavPath, () => RequestAsync(ssml, cancellationToken), cancellationToken);
     }
 
     private Task<byte[]> RequestAsync(string ssml, CancellationToken cancellationToken)

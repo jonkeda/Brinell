@@ -210,6 +210,34 @@ public sealed class SpokenLine
         }
     }
 
+    /// <summary>Maps the text of a line, leaving every tag as written and the text inside <c>sub</c>, <c>phoneme</c> and <c>say-as</c> alone.</summary>
+    internal static string MapText(string source, Func<string, string> map)
+    {
+        var result = new StringBuilder();
+        var position = 0;
+        var inside = 0;
+        foreach (Match match in Tag.Matches(source))
+        {
+            var text = source[position..match.Index];
+            result.Append(inside == 0 ? map(text) : text).Append(match.Value);
+            position = match.Index + match.Length;
+            if (TextOnly.Contains(match.Groups["name"].Value))
+            {
+                if (match.Groups["close"].Success)
+                {
+                    inside = Math.Max(0, inside - 1);
+                }
+                else if (!match.Groups["empty"].Success)
+                {
+                    inside++;
+                }
+            }
+        }
+
+        var tail = source[position..];
+        return result.Append(inside == 0 ? map(tail) : tail).ToString();
+    }
+
     // Markup's text is read as the author means it: a bare & is an ampersand, an entity is its character.
     private static string Decode(string raw)
         => raw.IndexOf('&', StringComparison.Ordinal) < 0

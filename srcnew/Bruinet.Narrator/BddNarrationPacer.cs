@@ -190,7 +190,7 @@ public sealed record BddSceneClips(SpeechClip? Intro, IReadOnlyDictionary<int, S
     {
         ArgumentNullException.ThrowIfNull(plan);
         Directory.CreateDirectory(folder);
-        Task<SpeechClip> Clip(string text, string file) => Speech.ClipAsync(synthesizer, text, voice, Path.Combine(folder, file), cancellationToken);
+        Task<SpeechClip> Clip(string text, string file) => Speech.ClipAsync(synthesizer, plan.Pronunciations?.Apply(text) ?? text, voice, Path.Combine(folder, file), cancellationToken);
 
         var intro = plan.Scene.Intro is { } introText ? await Clip(introText, "intro.wav").ConfigureAwait(false) : null;
         var says = new Dictionary<int, SpeechClip>();

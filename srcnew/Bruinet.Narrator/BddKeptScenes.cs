@@ -76,6 +76,12 @@ public static class BddKeptScenes
             Add("instructions: " + instructions);
         }
 
+        // Likewise the suite's pronunciations: a term changed makes the scenes out of date.
+        if (plan.Pronunciations is { } pronunciations)
+        {
+            Add("pronunciations: " + pronunciations.Fingerprint);
+        }
+
         foreach (var step in plan.Steps)
         {
             Add(BddVideoScriptCheck.Written(step));

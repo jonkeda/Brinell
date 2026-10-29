@@ -18,7 +18,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
         _html.Append($"<article class=\"uat-doc\" data-kind=\"video\" data-file=\"{Encode(Path.GetFileName(filePath))}\">\n");
         if (_check.Script is not { } script)
         {
-            Diagnostics(_ => true);
+            Diagnostics(_ => true, all: true);
             _html.Append("</article>\n");
             return new BddPreviewResult(_html.ToString(), _check.Diagnostics);
         }
@@ -53,7 +53,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
             Diagnostics(line => line >= scene.Line && line < next);
         }
 
-        Diagnostics(_ => true);
+        Diagnostics(_ => true, all: true);
         _html.Append("</article>\n");
         return new BddPreviewResult(_html.ToString(), _check.Diagnostics);
     }
@@ -94,9 +94,9 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
         }
     }
 
-    private void Diagnostics(Func<int, bool> atLine)
+    private void Diagnostics(Func<int, bool> atLine, bool all = false)
     {
-        foreach (var diagnostic in _check.Diagnostics.Where(d => !_shown.Contains(d) && atLine(d.Location.LineNumber)).ToList())
+        foreach (var diagnostic in _check.Diagnostics.Where(d => !_shown.Contains(d) && (all || (IsOwn(d) && atLine(d.Location.LineNumber)))).ToList())
         {
             _shown.Add(diagnostic);
             var severity = diagnostic.Severity == BddDiagnosticSeverity.Error ? "error" : "warning";
@@ -113,6 +113,10 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
             ? $"{Encode(line.Plain)} <span class=\"uat-video-markup\" title=\"SSML: {Encode(string.Join(", ", line.ElementsUsed))}\">SSML</span>"
             : Encode(line.Plain);
     }
+
+    // A diagnostic of another file (pronunciations.md) has a line of its own: it is shown at the end, not at the script's line of that number.
+    private bool IsOwn(BddDiagnostic diagnostic)
+        => diagnostic.Location.FilePath is null || _check.Script is null || string.Equals(diagnostic.Location.FilePath, _check.Script.FilePath, StringComparison.OrdinalIgnoreCase);
 
     private static string Encode(string value) => WebUtility.HtmlEncode(value);
 }

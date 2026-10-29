@@ -8,6 +8,9 @@ namespace Bruinet.Narrator;
 /// <param name="Says">What is said before a step, by the step's line in the feature file.</param>
 public sealed record BddVideoScenePlan(BddVideoScene Scene, string FeatureFile, BddScenario Scenario, IReadOnlyList<BddStep> Steps, IReadOnlyDictionary<int, BddVideoLine> Says)
 {
+    /// <summary>How the suite's names are said (its <c>pronunciations.md</c>); null when it has none. Applied to each line before it is spoken.</summary>
+    public Pronunciations? Pronunciations { get; init; }
+
     /// <summary>The scenario's address.</summary>
     public string Address => Scene.Scenario!;
 }
@@ -56,6 +59,9 @@ public sealed record BddVideoScriptCheck(
     /// <summary>An element is where it may not go: inside <c>say-as</c>, <c>sub</c> or <c>phoneme</c>.</summary>
     public const string MisplacedElementCode = "VID024";
 
+    /// <summary><c>pronunciations.md</c> lists a term twice, or has a row with nothing to say; reported in that file.</summary>
+    public const string PronunciationsCode = Narrator.Pronunciations.ProblemCode;
+
     /// <summary>The script's style (<c>Instructions</c>) is not one the Azure Speech voice lists.</summary>
     public const string UnknownStyleCode = "VID030";
 
@@ -100,6 +106,12 @@ public sealed record BddVideoScriptCheck(
             return new BddVideoScriptCheck(script, diagnostics, scenes, null);
         }
 
+        var pronunciations = Pronunciations.Load(configDirectory);
+        foreach (var (problemLine, message) in pronunciations?.Problems ?? [])
+        {
+            diagnostics.Add(new BddDiagnostic(BddDiagnosticSeverity.Error, PronunciationsCode, message, new BddSourceLocation(pronunciations!.Path, problemLine)));
+        }
+
         var files = new Dictionary<string, BddParseResult?>(StringComparer.OrdinalIgnoreCase);
         foreach (var scene in script.Scenes.Where(scene => scene.Scenario is not null))
         {
@@ -107,7 +119,7 @@ public sealed record BddVideoScriptCheck(
             {
                 // The binder runs the Background's steps first, so a scene can narrate them too.
                 var steps = found.Background.Concat(found.Scenario.Steps).ToList();
-                scenes.Add(new BddVideoScenePlan(scene, found.File, found.Scenario, steps, Says(scene, found.Scenario.Name, steps, Report)));
+                scenes.Add(new BddVideoScenePlan(scene, found.File, found.Scenario, steps, Says(scene, found.Scenario.Name, steps, Report)) { Pronunciations = pronunciations });
             }
         }
 
