@@ -11,7 +11,8 @@ The device heads run every gate.
 
 MauiHeadless itself (`srcnew/MauiHeadless`) is a framework of its own, a bUnit for MAUI, on xUnit, NUnit and
 MSTest: it references MAUI and nothing of Bruinet's. A fixture names its app in `CreateHeadlessOptions`,
-from the app compiled for plain `net10.0` beside its device heads; the app's composition is one method
+from the app's own plain `net10.0` target beside its device targets (one project, the test
+project's reference pinned to `net10.0`); the app's composition is one method
 the device's `MauiProgram` and the fixture both call.
 
 What the MauiHeadless head cannot answer (layout, bounds, pixels, platform input, native pickers and
@@ -39,10 +40,14 @@ third driver costs two projects and no change to a page object.
   handlers, and only once a test needs them;
 - a head per test project: one variable keeps one project and lets a run choose; off Windows the same
   projects build for plain `net10.0` without FlaUI (`BruinetWindowsHead`);
-- making the MauiHeadless head the gate: it passes a page whose layout hides a button.
+- making the MauiHeadless head the gate: it passes a page whose layout hides a button;
+- a second project per app that links its sources for `net10.0` (the samples' `*.App.Headless`
+  until 2026-10-29): two project files to keep in step and three more in the solution, for keeping
+  one target out of the app's own build.
 
-**The project earns its place by AD-026's R3:** MauiHeadless, and the apps' MauiHeadless builds, stay out of every
-suite that only drives a device; Bruinet.Maui does not reference them.
+**The project earns its place by AD-026's R3:** MauiHeadless stays out of every suite that only drives
+a device, and Bruinet.Maui does not reference it. A device suite launches the built app and does not
+reference it; building the app project whole builds its `net10.0` target too.
 
 **Broken when:** a page object, control or phrase needs a change to run on MauiHeadless; `Bruinet.Maui`
 references MauiHeadless, or MauiHeadless references Bruinet; a device-only member waits out its budget on

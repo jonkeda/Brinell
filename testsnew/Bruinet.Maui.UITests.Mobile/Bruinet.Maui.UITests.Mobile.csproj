@@ -58,8 +58,8 @@
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.Appium\Bruinet.Maui.Appium.csproj" />
     <!-- The linked fixtures' MauiHeadless head (BRUINET_HEAD=headless), as in the Windows head. -->
     <ProjectReference Include="..\..\srcnew\Bruinet.Maui.Headless\Bruinet.Maui.Headless.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App.Headless\Bruinet.Samples.Maui.App.Headless.csproj" />
-    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp.Headless\Bruinet.Samples.Maui.ShellApp.Headless.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.App\Bruinet.Samples.Maui.App.csproj" SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Maui.ShellApp\Bruinet.Samples.Maui.ShellApp.csproj" SetTargetFramework="TargetFramework=net10.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -21,10 +21,10 @@
     <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport\Bruinet.Samples.Todo.TestSupport.csproj" />
     <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
-    <!-- The MauiHeadless head (BRUINET_HEAD=headless, docs/guides/maui-headless.md): the app compiled for plain net10.0,
+    <!-- The MauiHeadless head (BRUINET_HEAD=headless, docs/guides/maui-headless.md): the app's own net10.0 build,
          rendered headless by TodoAppFixtureBase.CreateHeadlessOptions. -->
     <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.Headless\Bruinet.Maui.Headless.csproj" />
-    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App\Bruinet.Samples.Todo.App.csproj" SetTargetFramework="TargetFramework=net10.0" />
   </ItemGroup>
 
   <ItemGroup>

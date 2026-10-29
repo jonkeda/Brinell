@@ -117,7 +117,7 @@ public class ShellFixture : MauiTestFixtureBase
 
     /// <summary>
     /// The MauiHeadless head (<c>BRUINET_HEAD=headless</c>): the app's Shell rendered headless from the app's
-    /// MauiHeadless build (<c>Bruinet.Samples.Maui.ShellApp.Headless</c>).
+    /// own <c>net10.0</c> build.
     /// </summary>
     protected override MauiTestContextOptions CreateHeadlessOptions()
         => Bruinet.Maui.Headless.MauiHeadlessHead.Options(

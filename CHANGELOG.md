@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The sample apps (`Bruinet.Samples.Maui.App`, `...ShellApp`, `Bruinet.Samples.Todo.App`) build for
+  plain `net10.0` themselves, for the MauiHeadless head, and the `*.App.Headless` projects that linked
+  their sources are gone. The UI test projects reference the apps with
+  `SetTargetFramework="TargetFramework=net10.0"`; the apps add their Windows target only on Windows.
 - MauiUnit is renamed MauiHeadless (`srcnew/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
 
 ### Added

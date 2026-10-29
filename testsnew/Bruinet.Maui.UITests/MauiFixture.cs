@@ -379,8 +379,7 @@ public class MauiFixture : MauiTestFixtureBase
 
     /// <summary>
     /// The MauiHeadless head (<c>BRUINET_HEAD=headless</c>): the app as its <c>App</c> starts it, a
-    /// <c>NavigationPage</c> on the hub, rendered headless from the app's MauiHeadless build
-    /// (<c>Bruinet.Samples.Maui.App.Headless</c>).
+    /// <c>NavigationPage</c> on the hub, rendered headless from the app's own <c>net10.0</c> build.
     /// </summary>
     protected override MauiTestContextOptions CreateHeadlessOptions()
     {

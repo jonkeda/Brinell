@@ -25,8 +25,8 @@ host the gesture bridge - see the [MAUI platform guide](../platform-guides/maui.
 $env:BRUINET_HEAD='headless'; dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -v:minimal /nr:false
 ```
 
-The same suite renders both sample apps headless with MauiHeadless, from the apps compiled for plain
-`net10.0` (`samples\Bruinet.Samples.Maui.App.Headless`, `...ShellApp.Headless`). It needs no
+The same suite renders both sample apps headless with MauiHeadless, from each app's own plain `net10.0`
+target (`samples\Bruinet.Samples.Maui.App`, `...ShellApp`). It needs no
 device, no built app and no window, and the whole suite takes seconds. A test that needs a device
 is marked `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]`, and a scenario is
 tagged `@device`; they are skipped on this head with the reason. A fixture names its headless

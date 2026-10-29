@@ -29,9 +29,31 @@ plain `net10.0` without FlaUI (`BruinetWindowsHead` in `Directory.Build.props`);
 
 ## Giving A Suite A MauiHeadless Head
 
-1. **Build the app for plain `net10.0`**: a project beside the app's own, `UseMaui`, that links the app's
-   sources and XAML and leaves out `Platforms\` and `MauiProgram.cs`. The samples' are
-   `samples/Bruinet.Samples.Maui.App.Headless` and `samples/Todo/src/Bruinet.Samples.Todo.App.Headless`.
+1. **Give the app a plain `net10.0` target**, beside its platform ones, and reference the app from the
+   test project pinned to it. The `net10.0` build is a library the test process loads, without
+   `Platforms\`, `MauiProgram.cs` or the packaged assets. Add the Windows target only on Windows, so
+   the app restores on a Mac:
+
+   ```xml
+   <TargetFrameworks>net10.0-android;net10.0-ios;net10.0</TargetFrameworks>
+   <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0;$(TargetFrameworks)</TargetFrameworks>
+   <OutputType Condition="'$(TargetFramework)' != 'net10.0'">Exe</OutputType>
+   ...
+   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+     <Compile Remove="MauiProgram.cs;Platforms\**" />
+     <MauiXaml Remove="Platforms\**" />
+   </ItemGroup>
+   <!-- MauiIcon, MauiSplashScreen, MauiImage, MauiAsset under Condition="'$(TargetFramework)' != 'net10.0'" -->
+   ```
+
+   ```xml
+   <ProjectReference Include="..\MyApp\MyApp.csproj" SetTargetFramework="TargetFramework=net10.0" />
+   ```
+
+   The samples do this: `samples/Bruinet.Samples.Maui.App`, `...ShellApp` and
+   `samples/Todo/src/Bruinet.Samples.Todo.App`. An app that would rather keep its own project file
+   untouched can instead build the `net10.0` library in a project beside it that links the app's
+   sources and XAML, with the same things left out.
 2. **Compose the app once.** Move the registrations out of `MauiProgram` into a method both call, as
    the Todo app's `TodoAppServices.AddTodoApp`, so the headless app is the device app.
 3. **Override `CreateHeadlessOptions()`** on the suite's `MauiTestFixtureBase`:
