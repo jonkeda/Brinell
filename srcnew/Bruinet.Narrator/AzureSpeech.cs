@@ -114,7 +114,7 @@ public sealed class AzureSpeech : ISpeechSynthesizer
     private string? Explain(HttpStatusCode status) => status switch
     {
         HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => $"Azure Speech at {_secrets.Host} refused the key: it is wrong, or belongs to another region. Check the key and the endpoint in {VoiceSecrets.FileName}.",
-        HttpStatusCode.BadRequest => $"Azure Speech at {_secrets.Host} refused the voice name or the text: check the name against the voices the service lists.",
+        HttpStatusCode.BadRequest => $"Azure Speech at {_secrets.Host} refused the voice name, the style or the text: check them against the voices and styles the service lists.",
         HttpStatusCode.UnsupportedMediaType => $"Azure Speech at {_secrets.Host} refused the content type.",
         HttpStatusCode.TooManyRequests or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
             => $"Azure Speech at {_secrets.Host} is busy: it was asked {CloudVoice.BusyRetries + 1} times.",
