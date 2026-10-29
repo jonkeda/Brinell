@@ -5,8 +5,11 @@ namespace Bruinet.Narrator;
 /// <summary>
 /// Paces one scene: a written step's spoken line plays while the step runs (or, with
 /// <see cref="BddSayMode.Before"/>, before it), the run only taking as long as the speech; the voice
-/// is laid in afterwards. After the step and its line, a beat for its result to be seen. It writes
-/// down when each step and line happened, on the <see cref="Stopwatch"/> clock the recorder uses.
+/// is laid in afterwards. After a step, a beat for its result to be seen. A step without a line of
+/// its own follows its beat while the line before it still plays, so a state that lasts a moment
+/// (a loading state after a tap) is still there to check; a step with a line, and the outro, wait
+/// for the line before, so lines never overlap. It writes down when each step and line happened,
+/// on the <see cref="Stopwatch"/> clock the recorder uses.
 /// </summary>
 public sealed class BddNarrationPacer : IBddStepPacer
 {
@@ -51,15 +54,19 @@ public sealed class BddNarrationPacer : IBddStepPacer
             await SayAsync(_clips.Intro, cancellationToken).ConfigureAwait(false);
         }
 
-        var saying = SayAsync(_clips.Says.GetValueOrDefault(line), cancellationToken);
-        if (_say == BddSayMode.Before)
+        if (_clips.Says.GetValueOrDefault(line) is { } say)
         {
-            await saying.ConfigureAwait(false);
-        }
-        else
-        {
-            // The step runs while its line plays; the line is waited for before the beat.
-            _speaking = saying;
+            await SpokenAsync().ConfigureAwait(false);
+            var saying = SayAsync(say, cancellationToken);
+            if (_say == BddSayMode.Before)
+            {
+                await saying.ConfigureAwait(false);
+            }
+            else
+            {
+                // The step runs while its line plays; the next line, or the outro, waits for it.
+                _speaking = saying;
+            }
         }
 
         _current = new StepTimes(line, Written(invocation), Stopwatch.GetTimestamp());
@@ -94,6 +101,7 @@ public sealed class BddNarrationPacer : IBddStepPacer
             await SayAsync(_clips.Intro, cancellationToken).ConfigureAwait(false);
         }
 
+        await SpokenAsync().ConfigureAwait(false);
         await SayAsync(_clips.Outro, cancellationToken).ConfigureAwait(false);
     }
 
@@ -123,10 +131,15 @@ public sealed class BddNarrationPacer : IBddStepPacer
 
         _current.End ??= Stopwatch.GetTimestamp();
         _current = null;
+        await Task.Delay(_beat, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The line still playing, if any, has ended.
+    private async Task SpokenAsync()
+    {
         var speaking = _speaking;
         _speaking = Task.CompletedTask;
         await speaking.ConfigureAwait(false);
-        await Task.Delay(_beat, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SayAsync(SpeechClip? clip, CancellationToken cancellationToken)

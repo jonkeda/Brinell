@@ -35,7 +35,7 @@ public sealed class BddNarrationPacerTests
     }
 
     [Fact]
-    public async Task A_line_plays_while_its_step_runs_and_the_beat_follows_the_later_of_the_two()
+    public async Task A_line_plays_while_its_step_runs_and_the_outro_waits_for_it()
     {
         var scenario = Scenarios.Bind();
         var clips = new BddSceneClips(
@@ -54,7 +54,46 @@ public sealed class BddNarrationPacerTests
         Assert.True(first.Start >= intro.End - 0.01, "The intro still plays before the first step.");
         Assert.True(second.Start < say.End - 0.05, "A step runs while its line plays.");
         Assert.InRange(second.Start - say.Start, 0, 0.05);
-        Assert.True(outro.Start >= say.End + 0.02, "The beat follows the line when it ends after the step.");
+        Assert.True(outro.Start >= say.End - 0.01, "The outro waits for the line.");
+    }
+
+    [Fact]
+    public async Task A_step_without_a_line_follows_its_beat_while_the_line_before_it_still_plays()
+    {
+        // A loading state checked right after the tap that started it must not wait for the tap's line.
+        var scenario = Scenarios.Bind();
+        var clips = new BddSceneClips(null, new Dictionary<int, SpeechClip> { [6] = new("Here is your list.", null, TimeSpan.FromMilliseconds(300)) }, null);
+        var pacer = new BddNarrationPacer(clips, TimeSpan.FromMilliseconds(20));
+        var start = Stopwatch.GetTimestamp();
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer }).RunAsync(scenario);
+        await pacer.FinishAsync(CancellationToken.None);
+        var timeline = pacer.Timeline(1, "Opening", null, null, start, Stopwatch.GetTimestamp(), []);
+
+        var (first, second) = (timeline.Steps[0], timeline.Steps[1]);
+        var say = Assert.Single(timeline.Clips);
+        Assert.True(second.Start >= first.End + 0.015, "A beat follows a step.");
+        Assert.True(second.Start < say.End - 0.15, "A silent step does not wait for the line before it.");
+    }
+
+    [Fact]
+    public async Task A_step_with_a_line_waits_for_the_line_before_it_so_lines_never_overlap()
+    {
+        var scenario = Scenarios.Bind();
+        var clips = new BddSceneClips(null, new Dictionary<int, SpeechClip>
+        {
+            [6] = new("Here is your list.", null, TimeSpan.FromMilliseconds(200)),
+            [7] = new("You tap Sync.", null, TimeSpan.FromMilliseconds(50)),
+        }, null);
+        var pacer = new BddNarrationPacer(clips, TimeSpan.Zero);
+        var start = Stopwatch.GetTimestamp();
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer }).RunAsync(scenario);
+        await pacer.FinishAsync(CancellationToken.None);
+        var timeline = pacer.Timeline(1, "Opening", null, null, start, Stopwatch.GetTimestamp(), []);
+
+        Assert.True(timeline.Clips[1].Start >= timeline.Clips[0].End - 0.01, "The second line starts when the first has ended.");
+        Assert.True(timeline.Steps[1].Start >= timeline.Clips[0].End - 0.01, "Its step starts with it.");
     }
 
     [Fact]

@@ -68,13 +68,15 @@ Three waits keep a recording watchable; none of them is in a test run that does 
 
 | Wait | When | How long |
 | --- | --- | --- |
-| The line | a step's line starts as the step starts; the step ends when both have | the line's length |
+| The line | a step's line starts as the step starts; the next line, or the outro, waits for it | the line's length |
 | The pause | after each control action: a click, a choice, text set or cleared, a key | until the action has taken `Pause` (700 ms by default); a slower action waits nothing more |
 | The beat | after a step and its line | `Beat` (600 ms by default) |
 
 The pause is per action, not per step, so a page-object method that opens a list and picks from it
 shows both. An action that runs another (an Invoke as a Click) pauses once, reads and asserts never
-pause, and the pause is not part of the call's own time in the log. `Say | before` keeps the older
+pause, and the pause is not part of the call's own time in the log. A step without a line of its
+own follows its beat while the line before it still plays, so a state that lasts a moment (a
+loading state after a tap) is still there to check. `Say | before` keeps the older
 order: each line is said, then its step runs in silence. A scene's kept recording is out of date
 when `Pause` or `Say` change.
 

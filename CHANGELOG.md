@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   once, reads never pause, and a run that does not record never waits (`ActionPacing`, AD-024).
   The pause is outside the call's logged time, so near-misses are unchanged. Scenes that record at
   once (scenarios in two collections) each keep their pause until they end, whichever ends first.
-- A step's line now plays while the step runs, and the beat follows the later of the two; a
-  script's `Say | before` keeps the old order, the step waiting for its line. Scenes kept before
+- A step's line now plays while the step runs; a step without a line follows its beat while that
+  line still plays (a loading state checked after a tap is still there), and the next line or the
+  outro waits for it, so lines never overlap. A script's `Say | before` keeps the old order, the
+  step waiting for its line. Scenes kept before
   this are out of date: their hash now holds the pause and `Say`.
 - `[UiFact]` (`Bruinet.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
   test method failed and before the test object is disposed, from the test object's own context
