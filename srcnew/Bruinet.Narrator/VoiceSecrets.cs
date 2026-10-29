@@ -177,7 +177,7 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
 
         var kept = Value(key) ?? (File.Exists(path) ? Read(path).Key : null)
             ?? throw new InvalidOperationException("A cloud voice needs a key: none was given, and there is none saved.");
-        var fields = new Dictionary<string, string>
+        var fields = new System.Text.Json.Nodes.JsonObject
         {
             ["endpoint"] = endpoint.Trim(),
             ["deployment"] = Value(deployment) ?? DefaultDeployment,
@@ -189,37 +189,34 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
             fields["voice"] = named;
         }
 
-        var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        Directory.CreateDirectory(folder);
-        var partial = Path.Combine(folder, $".{FileName}.{Guid.NewGuid():N}.part");
-        File.WriteAllText(partial, JsonSerializer.Serialize(fields, new JsonSerializerOptions { WriteIndented = true }));
-        if (OperatingSystem.IsWindows())
+        // Azure Speech's settings live in the same file: saving this voice's keeps them.
+        if (File.Exists(path) && VoiceFile.ReadRoot(path)[SpeechSecrets.Section] is { } speech)
         {
-            OwnerOnly(partial);
+            fields[SpeechSecrets.Section] = speech.DeepClone();
         }
 
-        File.Move(partial, path, overwrite: true);
+        VoiceFile.Write(path, fields);
     }
 
-    /// <summary>Removes the file; nothing when there is none. Environment variables are not touched.</summary>
+    /// <summary>
+    /// Removes this voice's settings: the file, or only its fields when it holds Azure Speech's
+    /// <c>speech</c> object too. Nothing when there is no file. Environment variables are not touched.
+    /// </summary>
     /// <param name="path">The file.</param>
     public static void Delete(string path)
     {
-        if (File.Exists(path))
+        if (!File.Exists(path))
         {
-            File.Delete(path);
+            return;
         }
-    }
 
-    // Only the current user may read or change the key: inherited access is removed.
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static void OwnerOnly(string path)
-    {
-        var user = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
-        var security = new System.Security.AccessControl.FileSecurity();
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(user, System.Security.AccessControl.FileSystemRights.FullControl, System.Security.AccessControl.AccessControlType.Allow));
-        new FileInfo(path).SetAccessControl(security);
+        if (VoiceFile.ReadRoot(path)[SpeechSecrets.Section] is { } speech)
+        {
+            VoiceFile.Write(path, new System.Text.Json.Nodes.JsonObject { [SpeechSecrets.Section] = speech.DeepClone() });
+            return;
+        }
+
+        File.Delete(path);
     }
 
     private static string? Value(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();

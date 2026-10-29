@@ -1,0 +1,298 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+namespace Bruinet.Narrator;
+
+/// <summary>
+/// Where Azure AI Speech (<c>AzureSpeech</c>) is, and its key. The <c>speech</c> object of the same
+/// <see cref="VoiceSecrets.FileName"/> the Azure OpenAI voice uses (its top-level fields stay that voice's),
+/// found in the same places; <c>BRUINET_SPEECH_*</c> variables win over the file. The key is never written
+/// anywhere but the request's header.
+/// </summary>
+/// <param name="Endpoint">A region (<c>eastus2</c>), the resource's URL, or a URL copied with a path.</param>
+/// <param name="Key">The resource's key.</param>
+public sealed record SpeechSecrets(string Endpoint, string Key)
+{
+    /// <summary>The key, for a build agent's secret store.</summary>
+    public const string KeyVariable = "BRUINET_SPEECH_KEY";
+
+    /// <summary>The endpoint, over the file's.</summary>
+    public const string EndpointVariable = "BRUINET_SPEECH_ENDPOINT";
+
+    /// <summary>The default voice, over the file's.</summary>
+    public const string VoiceVariable = "BRUINET_SPEECH_VOICE";
+
+    /// <summary>The sample rate, over the file's.</summary>
+    public const string SampleRateVariable = "BRUINET_SPEECH_SAMPLE_RATE";
+
+    /// <summary>The voice when neither the script nor the settings name one: Emily, a MAI voice (preview).</summary>
+    public const string DefaultVoice = "en-GB-Emily:MAI-Voice-2.1";
+
+    /// <summary>The sample rate when none is set; the Azure OpenAI voice's, so one shape reaches the composer.</summary>
+    public const int DefaultSampleRate = 24000;
+
+    /// <summary>The other sample rate.</summary>
+    public const int HighSampleRate = 48000;
+
+    /// <summary>The name of the file's object.</summary>
+    internal const string Section = "speech";
+
+    /// <summary>The voice when a script names none, e.g. <c>nl-NL-FennaNeural</c>; null for <see cref="DefaultVoice"/>.</summary>
+    public string? Voice { get; init; }
+
+    /// <summary>The audio's sample rate: <see cref="DefaultSampleRate"/> or <see cref="HighSampleRate"/>.</summary>
+    public int SampleRate { get; init; } = DefaultSampleRate;
+
+    /// <summary>The service's host, with its scheme: the region's text-to-speech host, or the resource's.</summary>
+    public string Host => HostOf(Endpoint);
+
+    /// <summary>Where a line is sent.</summary>
+    public string SynthesisUrl => Host + "/cognitiveservices/v1";
+
+    /// <summary>Where the voices are listed.</summary>
+    public string VoicesUrl => Host + (IsRegional(Host) ? string.Empty : "/tts") + "/cognitiveservices/voices/list";
+
+    /// <summary>The settings without the key, so they can be shown.</summary>
+    public override string ToString() => $"{Endpoint}, voice {Voice ?? DefaultVoice}, {SampleRate} Hz, key set";
+
+    /// <summary>The host an endpoint names: a region (<c>eastus2</c>) is made into its regional host; a URL is cut to its scheme and host.</summary>
+    /// <param name="endpoint">The endpoint as given.</param>
+    public static string HostOf(string endpoint)
+    {
+        ArgumentNullException.ThrowIfNull(endpoint);
+        var text = endpoint.Trim();
+        if (text.Length > 0 && text.All(character => char.IsAsciiLetterOrDigit(character)))
+        {
+            return $"https://{text.ToLowerInvariant()}.tts.speech.microsoft.com";
+        }
+
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? $"{uri.Scheme}://{uri.Authority}" : text.TrimEnd('/');
+    }
+
+    /// <summary>Why an endpoint cannot be used, or null when it can.</summary>
+    /// <param name="endpoint">The endpoint as given.</param>
+    public static string? EndpointProblem(string? endpoint)
+    {
+        var text = endpoint?.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            return "The endpoint is needed: a region such as eastus2, or https://<resource>.cognitiveservices.azure.com.";
+        }
+
+        if (text.All(character => char.IsAsciiLetterOrDigit(character)))
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
+        {
+            return "The endpoint is a region such as eastus2, or a URL such as https://<resource>.cognitiveservices.azure.com.";
+        }
+
+        return uri.Scheme == "https" ? null : $"The endpoint must start with https://, not {uri.Scheme}://.";
+    }
+
+    /// <summary>The sample rates a voice is asked for; anything else is refused by <see cref="SampleRateProblem"/>.</summary>
+    /// <param name="sampleRate">The rate.</param>
+    public static string? SampleRateProblem(int sampleRate)
+        => sampleRate is DefaultSampleRate or HighSampleRate ? null : $"The sample rate is {DefaultSampleRate} or {HighSampleRate}, not {sampleRate}.";
+
+    /// <summary>The settings, or null when no endpoint and key are found (a half-filled section is not enough).</summary>
+    /// <param name="folder">The suite's folder; null to look only in the environment and the user's folder.</param>
+    /// <param name="read">Reads an environment variable; the process's by default.</param>
+    /// <param name="home">The user's folder; <c>%USERPROFILE%</c> by default.</param>
+    /// <exception cref="InvalidDataException">The sample rate is neither 24000 nor 48000.</exception>
+    public static SpeechSecrets? Find(string? folder, Func<string, string?>? read = null, string? home = null)
+    {
+        read ??= Environment.GetEnvironmentVariable;
+        var file = VoiceFile.Places(folder, home).FirstOrDefault(File.Exists) is { } path ? VoiceFile.ReadSection(path) : null;
+        var endpoint = Value(read(EndpointVariable)) ?? file?.Endpoint;
+        var key = Value(read(KeyVariable)) ?? file?.Key;
+        if (endpoint is null || key is null)
+        {
+            return null;
+        }
+
+        return new SpeechSecrets(endpoint, key)
+        {
+            Voice = Value(read(VoiceVariable)) ?? file?.Voice,
+            SampleRate = Rate(Value(read(SampleRateVariable)) ?? file?.SampleRate),
+        };
+    }
+
+    /// <summary>What is set up, and from where, without the key: for a settings page.</summary>
+    /// <param name="folder">The suite's folder; null to look only in the environment and the user's folder.</param>
+    /// <param name="read">Reads an environment variable; the process's by default.</param>
+    /// <param name="home">The user's folder; <c>%USERPROFILE%</c> by default.</param>
+    public static SpeechSecretsDescription Describe(string? folder, Func<string, string?>? read = null, string? home = null)
+    {
+        read ??= Environment.GetEnvironmentVariable;
+        var path = VoiceFile.Places(folder, home).FirstOrDefault(File.Exists);
+        var file = path is null ? null : VoiceFile.ReadSection(path);
+        string[] variables = [KeyVariable, EndpointVariable, VoiceVariable, SampleRateVariable];
+        return new SpeechSecretsDescription(
+            Value(read(EndpointVariable)) ?? file?.Endpoint,
+            Value(read(VoiceVariable)) ?? file?.Voice,
+            Rate(Value(read(SampleRateVariable)) ?? file?.SampleRate),
+            Value(read(KeyVariable)) is not null || file?.Key is not null,
+            file is null ? null : path,
+            variables.Where(variable => Value(read(variable)) is not null).ToList());
+    }
+
+    /// <summary>
+    /// Writes the <c>speech</c> object, keeping every other field of the file (the Azure OpenAI voice's).
+    /// An empty <paramref name="key"/> keeps the key the file has.
+    /// </summary>
+    /// <param name="path">The file.</param>
+    /// <param name="endpoint">A region or the resource's URL.</param>
+    /// <param name="key">The key; empty to keep the saved one.</param>
+    /// <param name="voice">The default voice; null for none.</param>
+    /// <param name="sampleRate">24000 or 48000.</param>
+    /// <exception cref="InvalidOperationException">No key is given and the file has none, or the endpoint or the sample rate cannot be used.</exception>
+    public static void Save(string path, string endpoint, string? key, string? voice, int sampleRate = DefaultSampleRate)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        var problem = EndpointProblem(endpoint) ?? SampleRateProblem(sampleRate);
+        if (problem is not null)
+        {
+            throw new InvalidOperationException(problem);
+        }
+
+        var root = VoiceFile.ReadRoot(path);
+        var kept = Value(key) ?? VoiceFile.ReadSection(path)?.Key
+            ?? throw new InvalidOperationException("Azure Speech needs a key: none was given, and there is none saved.");
+        var section = new JsonObject { ["endpoint"] = endpoint.Trim(), ["key"] = kept };
+        if (Value(voice) is { } named)
+        {
+            section["voice"] = named;
+        }
+
+        if (sampleRate != DefaultSampleRate)
+        {
+            section["sampleRate"] = sampleRate;
+        }
+
+        root[Section] = section;
+        VoiceFile.Write(path, root);
+    }
+
+    /// <summary>Removes the <c>speech</c> object, keeping the rest of the file; the file goes when nothing else is in it.</summary>
+    /// <param name="path">The file.</param>
+    public static void Delete(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var root = VoiceFile.ReadRoot(path);
+        root.Remove(Section);
+        if (root.Count == 0)
+        {
+            File.Delete(path);
+        }
+        else
+        {
+            VoiceFile.Write(path, root);
+        }
+    }
+
+    private static int Rate(string? text)
+    {
+        if (text is null)
+        {
+            return DefaultSampleRate;
+        }
+
+        return int.TryParse(text, out var rate) && SampleRateProblem(rate) is null
+            ? rate
+            : throw new InvalidDataException($"The sample rate is {DefaultSampleRate} or {HighSampleRate}, not '{text}'.");
+    }
+
+    private static string? Value(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    private static bool IsRegional(string host) => host.EndsWith(".tts.speech.microsoft.com", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>What Azure Speech's settings are, and where they come from; never the key itself.</summary>
+/// <param name="Endpoint">The endpoint; null when none is set.</param>
+/// <param name="Voice">The default voice; null for <see cref="SpeechSecrets.DefaultVoice"/>.</param>
+/// <param name="SampleRate">The sample rate.</param>
+/// <param name="HasKey">Whether a key is set.</param>
+/// <param name="File">The file with a <c>speech</c> object; null when there is none.</param>
+/// <param name="FromEnvironment">The environment variables that are set, over the file.</param>
+public sealed record SpeechSecretsDescription(string? Endpoint, string? Voice, int SampleRate, bool HasKey, string? File, IReadOnlyList<string> FromEnvironment)
+{
+    /// <summary>Whether Azure Speech can be used: an endpoint and a key.</summary>
+    public bool IsSetUp => Endpoint is not null && HasKey;
+}
+
+/// <summary>The one file, <see cref="VoiceSecrets.FileName"/>, that holds both cloud voices' settings.</summary>
+internal static class VoiceFile
+{
+    internal static IReadOnlyList<string> Places(string? folder, string? home) => VoiceSecrets.Places(folder, home);
+
+    /// <summary>The file's fields; empty when there is no file.</summary>
+    internal static JsonObject ReadRoot(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonNode.Parse(File.ReadAllText(path), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true }) as JsonObject ?? [];
+        }
+        catch (JsonException exception)
+        {
+            // The message names the file and the position only: the parser does not quote the text.
+            throw new InvalidDataException($"{path} is not valid JSON (line {exception.LineNumber + 1}): see voice.secrets.example.json for its shape.");
+        }
+    }
+
+    /// <summary>The <c>speech</c> object's values; null when the file has none.</summary>
+    internal static SectionValues? ReadSection(string path)
+    {
+        if (ReadRoot(path)[SpeechSecrets.Section] is not JsonObject section)
+        {
+            return null;
+        }
+
+        return new SectionValues(Text("endpoint"), Text("key"), Text("voice"), Text("sampleRate"));
+
+        string? Text(string name)
+            => section[name] is JsonValue value && (value.TryGetValue<string>(out var text) ? text : value.ToString()) is { } found && !string.IsNullOrWhiteSpace(found)
+                ? found.Trim()
+                : null;
+    }
+
+    /// <summary>Writes the file whole, readable by the current user only on Windows.</summary>
+    internal static void Write(string path, JsonObject root)
+    {
+        var folder = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        Directory.CreateDirectory(folder);
+        var partial = Path.Combine(folder, $".{VoiceSecrets.FileName}.{Guid.NewGuid():N}.part");
+        File.WriteAllText(partial, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        if (OperatingSystem.IsWindows())
+        {
+            OwnerOnly(partial);
+        }
+
+        File.Move(partial, path, overwrite: true);
+    }
+
+    // Only the current user may read or change the key: inherited access is removed.
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static void OwnerOnly(string path)
+    {
+        var user = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
+        var security = new System.Security.AccessControl.FileSecurity();
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(user, System.Security.AccessControl.FileSystemRights.FullControl, System.Security.AccessControl.AccessControlType.Allow));
+        new FileInfo(path).SetAccessControl(security);
+    }
+
+    internal sealed record SectionValues(string? Endpoint, string? Key, string? Voice, string? SampleRate);
+}
