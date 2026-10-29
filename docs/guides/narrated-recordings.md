@@ -168,8 +168,8 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRUINET_VOICE`, `BRUINET_BEAT`, `BRUINET_PAUSE` | the voice, the beat (ms) and the action pause (ms), when the script does not say |
 | `BRUINET_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
 | `BRUINET_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
-| `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
-| `BRUINET_SPEECH_ENDPOINT`, `BRUINET_SPEECH_KEY`, `BRUINET_SPEECH_VOICE`, `BRUINET_SPEECH_SAMPLE_RATE` | Azure Speech's settings, over the file's `speech` object ([Azure Speech](#azure-speech)) |
+| `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over the file's `azureFoundry` object ([Cloud Voice](#cloud-voice)) |
+| `BRUINET_SPEECH_ENDPOINT`, `BRUINET_SPEECH_KEY`, `BRUINET_SPEECH_VOICE`, `BRUINET_SPEECH_SAMPLE_RATE` | Azure Speech's settings, over the file's `azureSpeech` object ([Azure Speech](#azure-speech)) |
 | `BRUINET_RECORDERS` | a folder with `Bruinet.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRUINET_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
 
@@ -190,15 +190,17 @@ every platform's runs. A script can set its tone:
 Its endpoint and key go in `voice.secrets.json`, which git ignores. The Presenter writes it for you
 (Settings, Narrator, Cloud voice: [the Presenter](../platform-guides/presenter.md#record)), with
 Try to hear it first; or write it by hand, as `voice.secrets.example.json` at the repository root
-shows:
+shows. Its settings are the file's `azureFoundry` object:
 
 ```json
 {
-  "endpoint": "https://<resource>.openai.azure.com",
-  "deployment": "gpt-4o-mini-tts",
-  "apiVersion": "2025-03-01-preview",
-  "key": "<the resource's key>",
-  "voice": "coral"
+  "azureFoundry": {
+    "endpoint": "https://<resource>.openai.azure.com",
+    "deployment": "gpt-4o-mini-tts",
+    "apiVersion": "2025-03-01-preview",
+    "key": "<the resource's key>",
+    "voice": "coral"
+  }
 }
 ```
 
@@ -255,12 +257,12 @@ Presenter's **Load voices**), the script check warns, as VID030, when the voice 
 The MAI voices are in public preview, with no service-level agreement; a video that is published should use a generally
 available neural voice, named the same way.
 
-The settings are the `speech` object of the same `voice.secrets.json`, found in the same places; the file's other fields stay the Azure OpenAI
-voice's, and saving one never changes the other:
+The settings are the `azureSpeech` object of the same `voice.secrets.json`, found in the same places, beside the Azure OpenAI
+voice's `azureFoundry`; saving one never changes the other:
 
 ```json
 {
-  "speech": {
+  "azureSpeech": {
     "endpoint": "eastus2",
     "key": "<the Speech resource's key>",
     "voice": "en-GB-Emily:MAI-Voice-2.1",

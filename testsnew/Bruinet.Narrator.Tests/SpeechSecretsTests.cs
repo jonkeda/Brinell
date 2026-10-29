@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Bruinet.Narrator.Tests;
 
-/// <summary>Azure Speech's settings: the <c>speech</c> object of voice.secrets.json, beside the Azure OpenAI voice's.</summary>
+/// <summary>Azure Speech's settings: the <c>azureSpeech</c> object of voice.secrets.json, beside the Azure OpenAI voice's <c>azureFoundry</c>.</summary>
 public sealed class SpeechSecretsTests : IDisposable
 {
     private const string Key = "speech-key-987";
@@ -29,7 +29,7 @@ public sealed class SpeechSecretsTests : IDisposable
     [Fact]
     public void TheSpeechObject_IsFound_WithItsDefaults()
     {
-        File.WriteAllText(SuiteFile, """{ "speech": { "endpoint": "eastus2", "key": "speech-key-987" } }""");
+        File.WriteAllText(SuiteFile, """{ "azureSpeech": { "endpoint": "eastus2", "key": "speech-key-987" } }""");
 
         var secrets = SpeechSecrets.Find(_suite, NoVariables, _home);
 
@@ -43,7 +43,7 @@ public sealed class SpeechSecretsTests : IDisposable
     [Fact]
     public void TheEnvironment_WinsOverTheFile()
     {
-        File.WriteAllText(SuiteFile, """{ "speech": { "endpoint": "eastus2", "key": "file-key", "voice": "nl-NL-FennaNeural" } }""");
+        File.WriteAllText(SuiteFile, """{ "azureSpeech": { "endpoint": "eastus2", "key": "file-key", "voice": "nl-NL-FennaNeural" } }""");
         var agent = new Dictionary<string, string>
         {
             [SpeechSecrets.EndpointVariable] = "westeurope",
@@ -58,9 +58,9 @@ public sealed class SpeechSecretsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{ "speech": { "endpoint": "eastus2" } }""")]
-    [InlineData("""{ "speech": { "key": "speech-key-987" } }""")]
-    [InlineData("""{ "speech": {} }""")]
+    [InlineData("""{ "azureSpeech": { "endpoint": "eastus2" } }""")]
+    [InlineData("""{ "azureSpeech": { "key": "speech-key-987" } }""")]
+    [InlineData("""{ "azureSpeech": {} }""")]
     public void AHalfFilledSection_IsNotSetUp(string json)
     {
         File.WriteAllText(SuiteFile, json);
@@ -70,8 +70,8 @@ public sealed class SpeechSecretsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{ "speech": { "endpoint": "eastus2", "key": "k", "sampleRate": 16000 } }""")]
-    [InlineData("""{ "speech": { "endpoint": "eastus2", "key": "k", "sampleRate": "loud" } }""")]
+    [InlineData("""{ "azureSpeech": { "endpoint": "eastus2", "key": "k", "sampleRate": 16000 } }""")]
+    [InlineData("""{ "azureSpeech": { "endpoint": "eastus2", "key": "k", "sampleRate": "loud" } }""")]
     public void ASampleRate_OtherThan24000Or48000_IsRefused_NamingBoth(string json)
     {
         File.WriteAllText(SuiteFile, json);
@@ -85,7 +85,7 @@ public sealed class SpeechSecretsTests : IDisposable
     [Fact]
     public void TheSampleRate_CanBeANumberInTheFile_AndAVariable()
     {
-        File.WriteAllText(SuiteFile, """{ "speech": { "endpoint": "eastus2", "key": "k", "sampleRate": 48000 } }""");
+        File.WriteAllText(SuiteFile, """{ "azureSpeech": { "endpoint": "eastus2", "key": "k", "sampleRate": 48000 } }""");
         Assert.Equal(48000, SpeechSecrets.Find(_suite, NoVariables, _home)!.SampleRate);
 
         var refused = Assert.Throws<InvalidDataException>(() => SpeechSecrets.Find(_suite, name => name == SpeechSecrets.SampleRateVariable ? "44100" : null, _home));
@@ -159,7 +159,7 @@ public sealed class SpeechSecretsTests : IDisposable
         SpeechSecrets.Save(SuiteFile, "eastus2", Key, null);
 
         using var json = JsonDocument.Parse(File.ReadAllText(SuiteFile));
-        var section = json.RootElement.GetProperty("speech");
+        var section = json.RootElement.GetProperty("azureSpeech");
         Assert.False(section.TryGetProperty("voice", out _));
         Assert.False(section.TryGetProperty("sampleRate", out _));
         Assert.Equal(SpeechSecrets.DefaultSampleRate, SpeechSecrets.Find(_suite, NoVariables, _home)!.SampleRate);

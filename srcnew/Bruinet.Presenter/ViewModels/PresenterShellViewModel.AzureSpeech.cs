@@ -5,7 +5,7 @@ using Bruinet.Presenter.Commands;
 
 namespace Bruinet.Presenter.ViewModels;
 
-// Azure Speech (Settings, Narrator, Azure Speech): the speech object of the same voice.secrets.json the Cloud
+// Azure Speech (Settings, Narrator, Azure Speech): the azureSpeech object of the same voice.secrets.json the Cloud
 // voice part writes (so the workspace choice and the path are that part's), set up, tried, saved and removed here.
 // The key is typed in and never shown again: once saved, the field is emptied and the part says "key set".
 public sealed partial class PresenterShellViewModel

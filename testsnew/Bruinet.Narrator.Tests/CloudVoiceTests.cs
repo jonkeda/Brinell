@@ -305,7 +305,7 @@ public sealed class CloudVoiceTests : IDisposable
             fields["key"] = key;
         }
 
-        File.WriteAllText(Path.Combine(folder, VoiceSecrets.FileName), JsonSerializer.Serialize(fields));
+        File.WriteAllText(Path.Combine(folder, VoiceSecrets.FileName), JsonSerializer.Serialize(new Dictionary<string, object> { ["azureFoundry"] = fields }));
     }
 
     private static HttpResponseMessage Respond(byte[] wav) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(wav) };

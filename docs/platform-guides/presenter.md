@@ -193,10 +193,10 @@ Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
 ([Cloud Voice](../guides/narrated-recordings.md#cloud-voice)): it says whether one is set up and
 from where (a file, or the environment), and takes the endpoint, the key, the deployment, the API
 version and the default voice. **Try** speaks a sample line with the fields as they are, before
-anything is saved; **Save** writes `voice.secrets.json` for this machine
+anything is saved; **Save** writes the `azureFoundry` object of `voice.secrets.json` for this machine
 (`%USERPROFILE%\.bruinet`), or beside the open workspace when its repository's `.gitignore`
-ignores the file (**Add the line to .gitignore** adds it); **Remove** deletes the file, after a
-second click. The key is typed into a password field and never shown again: after Save the part
+ignores the file (**Add the line to .gitignore** adds it); **Remove** takes that object out (the
+file goes with the last one), after a second click. The key is typed into a password field and never shown again: after Save the part
 says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
 lists the `azure:` voices.
 
@@ -205,7 +205,7 @@ same state line and key rules, an endpoint (a region such as `eastus2`, or the r
 (the system's to begin with) and the **Voices** of that language from the service's list, the **Default voice**
 (typed, or picked), and the **Sample rate** (24000 or 48000). **Load voices** asks the service and keeps the
 list, so later the picker needs no call; **Try** speaks a sample line before anything is saved; **Save** writes
-the file's `speech` object, in the place the Cloud voice part shows, keeping the Azure OpenAI fields; **Remove**
+the file's `azureSpeech` object, in the place the Cloud voice part shows, keeping `azureFoundry`; **Remove**
 takes only that object out, after a second click. Its voices join the Voice picker as `azure-speech-service:`.
 
 ### Narrator mode

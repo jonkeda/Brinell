@@ -4,8 +4,9 @@ namespace Bruinet.Narrator;
 
 /// <summary>
 /// Where the cloud voice (<see cref="AzureOpenAiSpeech"/>) is, and its key. Read from the environment
-/// (<see cref="KeyVariable"/> and the others), over the first <see cref="FileName"/> found in a suite's
-/// folder or a folder above it up to the repository's root, then in <c>%USERPROFILE%\.bruinet</c>.
+/// (<see cref="KeyVariable"/> and the others), over the <c>azureFoundry</c> object of the first
+/// <see cref="FileName"/> found in a suite's folder or a folder above it up to the repository's root,
+/// then in <c>%USERPROFILE%\.bruinet</c>; Azure Speech's settings are the same file's <c>azureSpeech</c>.
 /// The file is ignored by git; the key is never written anywhere but the request's header.
 /// </summary>
 /// <param name="Endpoint">The Azure OpenAI resource, e.g. <c>https://name.openai.azure.com</c>; a URL copied with its path works too.</param>
@@ -34,6 +35,9 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
 
     /// <summary>The API version when none is named.</summary>
     public const string DefaultApiVersion = "2025-03-01-preview";
+
+    /// <summary>The name of the file's object.</summary>
+    internal const string Section = "azureFoundry";
 
     /// <summary>The voice when a script names none, e.g. <c>coral</c>; null for <see cref="AzureOpenAiSpeech.DefaultVoice"/>.</summary>
     public string? Voice { get; init; }
@@ -156,8 +160,8 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
     }
 
     /// <summary>
-    /// Writes the file whole, readable by the current user only on Windows. An empty
-    /// <paramref name="key"/> keeps the key the file has.
+    /// Writes the <c>azureFoundry</c> object, keeping the rest of the file (Azure Speech's), readable by
+    /// the current user only on Windows. An empty <paramref name="key"/> keeps the key the file has.
     /// </summary>
     /// <param name="path">The file.</param>
     /// <param name="endpoint">The Azure OpenAI resource.</param>
@@ -175,7 +179,7 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
             throw new InvalidOperationException(problem);
         }
 
-        var kept = Value(key) ?? (File.Exists(path) ? Read(path).Key : null)
+        var kept = Value(key) ?? (File.Exists(path) ? Read(path)?.Key : null)
             ?? throw new InvalidOperationException("A cloud voice needs a key: none was given, and there is none saved.");
         var fields = new System.Text.Json.Nodes.JsonObject
         {
@@ -189,56 +193,25 @@ public sealed record VoiceSecrets(string Endpoint, string Deployment, string Api
             fields["voice"] = named;
         }
 
-        // Azure Speech's settings live in the same file: saving this voice's keeps them.
-        if (File.Exists(path) && VoiceFile.ReadRoot(path)[SpeechSecrets.Section] is { } speech)
-        {
-            fields[SpeechSecrets.Section] = speech.DeepClone();
-        }
-
-        VoiceFile.Write(path, fields);
+        var root = VoiceFile.ReadRoot(path);
+        root[Section] = fields;
+        VoiceFile.Write(path, root);
     }
 
     /// <summary>
-    /// Removes this voice's settings: the file, or only its fields when it holds Azure Speech's
-    /// <c>speech</c> object too. Nothing when there is no file. Environment variables are not touched.
+    /// Removes the <c>azureFoundry</c> object, keeping the rest of the file; the file goes when nothing
+    /// else is in it. Nothing when there is no file. Environment variables are not touched.
     /// </summary>
     /// <param name="path">The file.</param>
-    public static void Delete(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return;
-        }
-
-        if (VoiceFile.ReadRoot(path)[SpeechSecrets.Section] is { } speech)
-        {
-            VoiceFile.Write(path, new System.Text.Json.Nodes.JsonObject { [SpeechSecrets.Section] = speech.DeepClone() });
-            return;
-        }
-
-        File.Delete(path);
-    }
+    public static void Delete(string path) => VoiceFile.RemoveSection(path, Section);
 
     private static string? Value(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private static FileValues Read(string path)
-    {
-        try
-        {
-            using var json = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-            return new FileValues(Text("endpoint"), Text("deployment"), Text("apiVersion"), Text("key"), Text("voice"));
-
-            string? Text(string name)
-                => json.RootElement.ValueKind == JsonValueKind.Object && json.RootElement.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-                    ? Value(value.GetString())
-                    : null;
-        }
-        catch (JsonException exception)
-        {
-            // The message names the file and the position only: the parser does not quote the text.
-            throw new InvalidDataException($"{path} is not valid JSON (line {exception.LineNumber + 1}): see voice.secrets.example.json for its shape.");
-        }
-    }
+    // The azureFoundry object's values; null when the file has none.
+    private static FileValues? Read(string path)
+        => VoiceFile.ReadSection(path, Section) is { } text
+            ? new FileValues(text("endpoint"), text("deployment"), text("apiVersion"), text("key"), text("voice"))
+            : null;
 
     private sealed record FileValues(string? Endpoint, string? Deployment, string? ApiVersion, string? Key, string? Voice);
 }
@@ -341,7 +314,7 @@ public sealed class VoiceNotConfiguredException : Exception
     /// <param name="voice">The voice that was asked for.</param>
     /// <param name="places">Where the settings were looked for.</param>
     public VoiceNotConfiguredException(string voice, IReadOnlyList<string> places)
-        : base($"The voice '{voice}' is a cloud voice, and no key was found for it. Set {VoiceSecrets.KeyVariable} and {VoiceSecrets.EndpointVariable}, or write {VoiceSecrets.FileName} "
+        : base($"The voice '{voice}' is a cloud voice, and no key was found for it. Set {VoiceSecrets.KeyVariable} and {VoiceSecrets.EndpointVariable}, or write an \"{VoiceSecrets.Section}\" object in {VoiceSecrets.FileName} "
                + $"(as voice.secrets.example.json shows) in one of: {string.Join("; ", places)}.")
     {
     }
@@ -356,5 +329,5 @@ public sealed class VoiceNotConfiguredException : Exception
     /// <param name="places">Where the settings were looked for.</param>
     public static VoiceNotConfiguredException ForSpeech(string voice, IReadOnlyList<string> places)
         => new($"The voice '{voice}' is an Azure Speech voice, and no endpoint and key were found for it. Set {SpeechSecrets.EndpointVariable} and {SpeechSecrets.KeyVariable}, "
-               + $"or write a \"speech\" object in {VoiceSecrets.FileName} (as voice.secrets.example.json shows) in one of: {string.Join("; ", places)}.");
+               + $"or write an \"{SpeechSecrets.Section}\" object in {VoiceSecrets.FileName} (as voice.secrets.example.json shows) in one of: {string.Join("; ", places)}.");
 }

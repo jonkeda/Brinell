@@ -943,7 +943,7 @@
                                FontSize="11"
                                Style="{StaticResource PresenterMutedLabel}" />
 
-                        <!-- Azure Speech: the speech object of the same file; the workspace choice and the path above are the file's. The key is typed, never shown. -->
+                        <!-- Azure Speech: the azureSpeech object of the same file; the workspace choice and the path above are the file's. The key is typed, never shown. -->
                         <Label Text="Azure Speech (a named voice for each language)" FontAttributes="Bold" AutomationId="SpeechSettingsLabel" />
                         <Label Text="{Binding SpeechState}"
                                AutomationId="SpeechStateLabel"

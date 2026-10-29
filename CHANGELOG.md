@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Breaking:** `voice.secrets.json` holds each cloud voice in an object of its own: the Azure OpenAI
+  voice's fields in `azureFoundry` (they were at the top level) and Azure Speech's in `azureSpeech`
+  (it was `speech`). A file in the old shape is not read: move its fields, as
+  `voice.secrets.example.json` shows, or save them again in the Presenter.
 - The sample apps (`Bruinet.Samples.Maui.App`, `...ShellApp`, `Bruinet.Samples.Todo.App`) build for
   plain `net10.0` themselves, for the MauiHeadless head, and the `*.App.Headless` projects that linked
   their sources are gone. The UI test projects reference the apps with

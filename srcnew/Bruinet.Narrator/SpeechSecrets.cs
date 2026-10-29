@@ -4,8 +4,8 @@ using System.Text.Json.Nodes;
 namespace Bruinet.Narrator;
 
 /// <summary>
-/// Where Azure AI Speech (<see cref="AzureSpeech"/>) is, and its key. The <c>speech</c> object of the same
-/// <see cref="VoiceSecrets.FileName"/> the Azure OpenAI voice uses (its top-level fields stay that voice's),
+/// Where Azure AI Speech (<see cref="AzureSpeech"/>) is, and its key. The <c>azureSpeech</c> object of the same
+/// <see cref="VoiceSecrets.FileName"/> the Azure OpenAI voice uses (its <c>azureFoundry</c> object stays that voice's),
 /// found in the same places; <c>BRUINET_SPEECH_*</c> variables win over the file. The key is never written
 /// anywhere but the request's header.
 /// </summary>
@@ -35,7 +35,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     public const int HighSampleRate = 48000;
 
     /// <summary>The name of the file's object.</summary>
-    internal const string Section = "speech";
+    internal const string Section = "azureSpeech";
 
     /// <summary>The voice when a script names none, e.g. <c>nl-NL-FennaNeural</c>; null for <see cref="DefaultVoice"/>.</summary>
     public string? Voice { get; init; }
@@ -114,7 +114,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     public static SpeechSecrets? Find(string? folder, Func<string, string?>? read = null, string? home = null)
     {
         read ??= Environment.GetEnvironmentVariable;
-        var file = VoiceFile.Places(folder, home).FirstOrDefault(File.Exists) is { } path ? VoiceFile.ReadSection(path) : null;
+        var file = VoiceFile.Places(folder, home).FirstOrDefault(File.Exists) is { } path ? Read(path) : null;
         var endpoint = Value(read(EndpointVariable)) ?? file?.Endpoint;
         var key = Value(read(KeyVariable)) ?? file?.Key;
         if (endpoint is null || key is null)
@@ -137,7 +137,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     {
         read ??= Environment.GetEnvironmentVariable;
         var path = VoiceFile.Places(folder, home).FirstOrDefault(File.Exists);
-        var file = path is null ? null : VoiceFile.ReadSection(path);
+        var file = path is null ? null : Read(path);
         string[] variables = [KeyVariable, EndpointVariable, VoiceVariable, SampleRateVariable];
         return new SpeechSecretsDescription(
             Value(read(EndpointVariable)) ?? file?.Endpoint,
@@ -149,7 +149,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     }
 
     /// <summary>
-    /// Writes the <c>speech</c> object, keeping every other field of the file (the Azure OpenAI voice's).
+    /// Writes the <c>azureSpeech</c> object, keeping the rest of the file (the Azure OpenAI voice's).
     /// An empty <paramref name="key"/> keeps the key the file has.
     /// </summary>
     /// <param name="path">The file.</param>
@@ -169,7 +169,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
         }
 
         var root = VoiceFile.ReadRoot(path);
-        var kept = Value(key) ?? VoiceFile.ReadSection(path)?.Key
+        var kept = Value(key) ?? Read(path)?.Key
             ?? throw new InvalidOperationException("Azure Speech needs a key: none was given, and there is none saved.");
         var section = new JsonObject { ["endpoint"] = endpoint.Trim(), ["key"] = kept };
         if (Value(voice) is { } named)
@@ -186,26 +186,9 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
         VoiceFile.Write(path, root);
     }
 
-    /// <summary>Removes the <c>speech</c> object, keeping the rest of the file; the file goes when nothing else is in it.</summary>
+    /// <summary>Removes the <c>azureSpeech</c> object, keeping the rest of the file; the file goes when nothing else is in it.</summary>
     /// <param name="path">The file.</param>
-    public static void Delete(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return;
-        }
-
-        var root = VoiceFile.ReadRoot(path);
-        root.Remove(Section);
-        if (root.Count == 0)
-        {
-            File.Delete(path);
-        }
-        else
-        {
-            VoiceFile.Write(path, root);
-        }
-    }
+    public static void Delete(string path) => VoiceFile.RemoveSection(path, Section);
 
     private static int Rate(string? text)
     {
@@ -222,6 +205,14 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     private static string? Value(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private static bool IsRegional(string host) => host.EndsWith(".tts.speech.microsoft.com", StringComparison.OrdinalIgnoreCase);
+
+    // The azureSpeech object's values; null when the file has none.
+    private static SectionValues? Read(string path)
+        => VoiceFile.ReadSection(path, Section) is { } text
+            ? new SectionValues(text("endpoint"), text("key"), text("voice"), text("sampleRate"))
+            : null;
+
+    private sealed record SectionValues(string? Endpoint, string? Key, string? Voice, string? SampleRate);
 }
 
 /// <summary>What Azure Speech's settings are, and where they come from; never the key itself.</summary>
@@ -229,7 +220,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
 /// <param name="Voice">The default voice; null for <see cref="SpeechSecrets.DefaultVoice"/>.</param>
 /// <param name="SampleRate">The sample rate.</param>
 /// <param name="HasKey">Whether a key is set.</param>
-/// <param name="File">The file with a <c>speech</c> object; null when there is none.</param>
+/// <param name="File">The file with an <c>azureSpeech</c> object; null when there is none.</param>
 /// <param name="FromEnvironment">The environment variables that are set, over the file.</param>
 public sealed record SpeechSecretsDescription(string? Endpoint, string? Voice, int SampleRate, bool HasKey, string? File, IReadOnlyList<string> FromEnvironment)
 {
@@ -237,7 +228,7 @@ public sealed record SpeechSecretsDescription(string? Endpoint, string? Voice, i
     public bool IsSetUp => Endpoint is not null && HasKey;
 }
 
-/// <summary>The one file, <see cref="VoiceSecrets.FileName"/>, that holds both cloud voices' settings.</summary>
+/// <summary>The one file, <see cref="VoiceSecrets.FileName"/>, that holds both cloud voices' settings, an object each.</summary>
 internal static class VoiceFile
 {
     internal static IReadOnlyList<string> Places(string? folder, string? home) => VoiceSecrets.Places(folder, home);
@@ -261,20 +252,37 @@ internal static class VoiceFile
         }
     }
 
-    /// <summary>The <c>speech</c> object's values; null when the file has none.</summary>
-    internal static SectionValues? ReadSection(string path)
+    /// <summary>Reads the fields of the object <paramref name="name"/>, trimmed, null when blank; null when the file has no such object.</summary>
+    internal static Func<string, string?>? ReadSection(string path, string name)
     {
-        if (ReadRoot(path)[SpeechSecrets.Section] is not JsonObject section)
+        if (ReadRoot(path)[name] is not JsonObject section)
         {
             return null;
         }
 
-        return new SectionValues(Text("endpoint"), Text("key"), Text("voice"), Text("sampleRate"));
+        return field => section[field] is JsonValue value && (value.TryGetValue<string>(out var text) ? text : value.ToString()) is { } found && !string.IsNullOrWhiteSpace(found)
+            ? found.Trim()
+            : null;
+    }
 
-        string? Text(string name)
-            => section[name] is JsonValue value && (value.TryGetValue<string>(out var text) ? text : value.ToString()) is { } found && !string.IsNullOrWhiteSpace(found)
-                ? found.Trim()
-                : null;
+    /// <summary>Removes the object <paramref name="name"/>, keeping the rest; the file goes when nothing else is in it.</summary>
+    internal static void RemoveSection(string path, string name)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var root = ReadRoot(path);
+        root.Remove(name);
+        if (root.Count == 0)
+        {
+            File.Delete(path);
+        }
+        else
+        {
+            Write(path, root);
+        }
     }
 
     /// <summary>Writes the file whole, readable by the current user only on Windows.</summary>
@@ -302,6 +310,4 @@ internal static class VoiceFile
         security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(user, System.Security.AccessControl.FileSystemRights.FullControl, System.Security.AccessControl.AccessControlType.Allow));
         new FileInfo(path).SetAccessControl(security);
     }
-
-    internal sealed record SectionValues(string? Endpoint, string? Key, string? Voice, string? SampleRate);
 }

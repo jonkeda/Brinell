@@ -47,6 +47,25 @@ public sealed class VoiceSecretsFileTests : IDisposable
     }
 
     [Fact]
+    public void TheFile_HoldsEachServiceInItsOwnObject_AndReadsNothingOutsideThem()
+    {
+        VoiceSecrets.Save(UserFile, Endpoint, deployment: null, apiVersion: null, Key, "coral");
+        SpeechSecrets.Save(UserFile, "eastus2", "speech-key", "en-US-Harper:MAI-Voice-2.1");
+
+        using (var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(UserFile)))
+        {
+            Assert.Equal(["azureFoundry", "azureSpeech"], json.RootElement.EnumerateObject().Select(property => property.Name));
+            Assert.Equal(Endpoint, json.RootElement.GetProperty("azureFoundry").GetProperty("endpoint").GetString());
+            Assert.Equal("eastus2", json.RootElement.GetProperty("azureSpeech").GetProperty("endpoint").GetString());
+        }
+
+        // The fields at the top level, where the Azure OpenAI voice's once were, are not read.
+        File.WriteAllText(UserFile, $$"""{ "endpoint": "{{Endpoint}}", "key": "{{Key}}", "speech": { "endpoint": "eastus2", "key": "k" } }""");
+        Assert.Null(VoiceSecrets.Find(null, NoVariables, _home));
+        Assert.Null(SpeechSecrets.Find(null, NoVariables, _home));
+    }
+
+    [Fact]
     public void AnEmptyKey_KeepsTheSavedOne_AndWithNoneSaved_IsRefused()
     {
         Assert.Throws<InvalidOperationException>(() => VoiceSecrets.Save(UserFile, Endpoint, null, null, key: "", voice: null));
