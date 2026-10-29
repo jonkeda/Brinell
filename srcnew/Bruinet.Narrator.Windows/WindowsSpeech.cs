@@ -6,7 +6,7 @@ using Windows.Media.SpeechSynthesis;
 namespace Bruinet.Narrator.Windows;
 
 /// <summary>Windows' own voices (Windows.Media.SpeechSynthesis): offline, the ones in Settings, Time and language, Speech.</summary>
-public sealed class WindowsSpeech : ISpeechSynthesizer
+public sealed class WindowsSpeech : ISsmlSynthesizer
 {
     /// <inheritdoc />
     public bool IsAvailable => TryVoices()?.Count > 0;
@@ -15,24 +15,27 @@ public sealed class WindowsSpeech : ISpeechSynthesizer
     public static IReadOnlyList<string> Voices => TryVoices()?.Select(voice => voice.DisplayName).ToList() ?? [];
 
     /// <inheritdoc />
+    public IReadOnlySet<string> SupportedElements => SsmlSupport.Windows;
+
+    /// <inheritdoc />
     public async Task<TimeSpan> SynthesizeAsync(string text, string? voice, string wavPath, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(wavPath);
-        using var synthesizer = new SpeechSynthesizer();
-        if (voice is not null)
-        {
-            synthesizer.Voice = SpeechSynthesizer.AllVoices.FirstOrDefault(candidate => candidate.DisplayName.Contains(voice, StringComparison.OrdinalIgnoreCase))
-                ?? throw new ArgumentException($"No voice '{voice}' here. The voices: {string.Join(", ", Voices)}.", nameof(voice));
-        }
+        using var synthesizer = Synthesizer(voice);
+        return await WriteAsync(synthesizer.SynthesizeTextToStreamAsync(text), wavPath, cancellationToken).ConfigureAwait(false);
+    }
 
-        using (var speech = await synthesizer.SynthesizeTextToStreamAsync(text).AsTask(cancellationToken).ConfigureAwait(false))
-        await using (var file = File.Create(wavPath))
-        {
-            await speech.AsStreamForRead().CopyToAsync(file, cancellationToken).ConfigureAwait(false);
-        }
+    /// <inheritdoc />
+    public async Task<TimeSpan> SynthesizeLineAsync(SpokenLine line, string? voice, string wavPath, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(wavPath);
+        using var synthesizer = Synthesizer(voice);
 
-        return Speech.WavDuration(wavPath);
+        // The document's language is the voice's own: a language the voice lacks is an error, not a guess.
+        var ssml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"{synthesizer.Voice.Language}\">{line.ToSsml(SupportedElements)}</speak>";
+        return await WriteAsync(synthesizer.SynthesizeSsmlToStreamAsync(ssml), wavPath, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Plays a clip aloud, to its end; for Speak aloud, while a recording waits for the line.</summary>
@@ -58,6 +61,29 @@ public sealed class WindowsSpeech : ISpeechSynthesizer
             // The clip's own length bounds the wait: a player that never says it ended does not hold the run.
             await Task.WhenAny(ended.Task, Task.Delay(clip.Duration + TimeSpan.FromSeconds(1), cancellationToken)).ConfigureAwait(false);
         }
+    }
+
+    private static SpeechSynthesizer Synthesizer(string? voice)
+    {
+        var synthesizer = new SpeechSynthesizer();
+        if (voice is not null)
+        {
+            synthesizer.Voice = SpeechSynthesizer.AllVoices.FirstOrDefault(candidate => candidate.DisplayName.Contains(voice, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException($"No voice '{voice}' here. The voices: {string.Join(", ", Voices)}.", nameof(voice));
+        }
+
+        return synthesizer;
+    }
+
+    private static async Task<TimeSpan> WriteAsync(global::Windows.Foundation.IAsyncOperation<SpeechSynthesisStream> operation, string wavPath, CancellationToken cancellationToken)
+    {
+        using (var speech = await operation.AsTask(cancellationToken).ConfigureAwait(false))
+        await using (var file = File.Create(wavPath))
+        {
+            await speech.AsStreamForRead().CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+        }
+
+        return Speech.WavDuration(wavPath);
     }
 
     // No speech runtime (a server without the feature) means no voices, not a failed run.

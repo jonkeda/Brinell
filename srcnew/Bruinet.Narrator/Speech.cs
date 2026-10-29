@@ -17,6 +17,21 @@ public interface ISpeechSynthesizer
     Task<TimeSpan> SynthesizeAsync(string text, string? voice, string wavPath, CancellationToken cancellationToken);
 }
 
+/// <summary>A synthesizer that follows SSML: a line with markup reaches it as a <see cref="SpokenLine"/>, rendered for the elements it supports.</summary>
+public interface ISsmlSynthesizer : ISpeechSynthesizer
+{
+    /// <summary>The SSML elements this synthesizer follows (<see cref="SsmlSupport"/>); the others are dropped, their words kept.</summary>
+    IReadOnlySet<string> SupportedElements { get; }
+
+    /// <summary>Speaks a line with markup into <paramref name="wavPath"/>; the synthesizer builds the SSML document around <see cref="SpokenLine.ToSsml"/>.</summary>
+    /// <param name="line">What to say.</param>
+    /// <param name="voice">The voice, by (part of) its name; null for the default voice.</param>
+    /// <param name="wavPath">The WAV file to write.</param>
+    /// <param name="cancellationToken">Cancels the synthesis.</param>
+    /// <returns>How long the speech lasts.</returns>
+    Task<TimeSpan> SynthesizeLineAsync(SpokenLine line, string? voice, string wavPath, CancellationToken cancellationToken);
+}
+
 /// <summary>Declares a speech synthesizer that <see cref="Speech.Discover"/> offers; it needs a public parameterless constructor.</summary>
 /// <param name="synthesizerType">The synthesizer's type, an <see cref="ISpeechSynthesizer"/>.</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
@@ -27,7 +42,7 @@ public sealed class SpeechSynthesizerAttribute(Type synthesizerType) : Attribute
 }
 
 /// <summary>A spoken line, made before the run so its length is known.</summary>
-/// <param name="Text">What is said.</param>
+/// <param name="Text">What is said, as the captions show it: the line without its markup (<see cref="SpokenLine.Plain"/>).</param>
 /// <param name="WavPath">The speech; null when no voice could make it (captions only).</param>
 /// <param name="Duration">How long it lasts.</param>
 public sealed record SpeechClip(string Text, string? WavPath, TimeSpan Duration);
@@ -101,13 +116,18 @@ public static class Speech
     public static async Task<SpeechClip> ClipAsync(ISpeechSynthesizer? synthesizer, string text, string? voice, string wavPath, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
+
+        // A line may hold SSML: captions and the estimate take its words; a voice that follows markup gets it, any other the reduced line.
+        var line = SpokenLine.Parse(text);
         if (synthesizer is null)
         {
-            return new SpeechClip(text, null, Estimate(text));
+            return new SpeechClip(line.Plain, null, Estimate(line.Plain));
         }
 
-        var duration = await synthesizer.SynthesizeAsync(text, voice, wavPath, cancellationToken).ConfigureAwait(false);
-        return new SpeechClip(text, wavPath, duration);
+        var duration = line.HasMarkup && synthesizer is ISsmlSynthesizer ssml
+            ? await ssml.SynthesizeLineAsync(line, voice, wavPath, cancellationToken).ConfigureAwait(false)
+            : await synthesizer.SynthesizeAsync(line.Reduced, voice, wavPath, cancellationToken).ConfigureAwait(false);
+        return new SpeechClip(line.Plain, wavPath, duration);
     }
 
     /// <summary>How long <paramref name="text"/> takes to say, estimated from its words.</summary>
