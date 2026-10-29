@@ -52,26 +52,41 @@ public static class Speech
     }
 
     /// <summary>
-    /// The synthesizer that owns a voice: a cloud voice (<c>azure:coral</c>) when its settings are
-    /// found (<see cref="VoiceSecrets"/>), otherwise a platform voice (<see cref="Discover()"/>). With no
-    /// voice named, a configured cloud voice comes first. Null when there is no voice at all.
+    /// The synthesizer that owns a voice: Azure Speech (<c>azure-speech-service:en-GB-Emily:MAI-Voice-2.1</c>) or the Azure
+    /// OpenAI voice (<c>azure:coral</c>) when its settings are found (<see cref="SpeechSecrets"/>,
+    /// <see cref="VoiceSecrets"/>), otherwise a platform voice (<see cref="Discover()"/>). With no voice named,
+    /// Azure OpenAI comes first when it is set up, then Azure Speech. Null when there is no voice at all.
     /// </summary>
     /// <param name="voice">The voice; null for the default.</param>
-    /// <param name="instructions">How a cloud voice says its lines; null for its own way.</param>
+    /// <param name="instructions">How a cloud voice says its lines (Azure Speech: a style); null for its own way.</param>
     /// <param name="folder">The suite's folder, where the cloud voice's settings are looked for first.</param>
     /// <param name="read">Reads an environment variable; the process's by default.</param>
     /// <param name="home">The user's folder; <c>%USERPROFILE%</c> by default.</param>
     /// <exception cref="VoiceNotConfiguredException">A cloud voice is named, and no settings were found for it.</exception>
     public static ISpeechSynthesizer? Find(string? voice, string? instructions = null, string? folder = null, Func<string, string?>? read = null, string? home = null)
     {
+        // A named cloud voice never quietly becomes another voice: the scene would differ for the wrong reason.
+        if (AzureSpeech.Owns(voice))
+        {
+            return SpeechSecrets.Find(folder, read, home) is { } named
+                ? new AzureSpeech(named) { Instructions = instructions }
+                : throw VoiceNotConfiguredException.ForSpeech(voice!, VoiceSecrets.Places(folder, home));
+        }
+
         var secrets = voice is null || AzureOpenAiSpeech.Owns(voice) ? VoiceSecrets.Find(folder, read, home) : null;
         if (secrets is not null)
         {
             return new AzureOpenAiSpeech(secrets) { Instructions = instructions };
         }
 
-        // A named cloud voice never quietly becomes another voice: the scene would differ for the wrong reason.
-        return AzureOpenAiSpeech.Owns(voice) ? throw new VoiceNotConfiguredException(voice!, VoiceSecrets.Places(folder, home)) : Discover();
+        if (AzureOpenAiSpeech.Owns(voice))
+        {
+            throw new VoiceNotConfiguredException(voice!, VoiceSecrets.Places(folder, home));
+        }
+
+        return voice is null && SpeechSecrets.Find(folder, read, home) is { } only
+            ? new AzureSpeech(only) { Instructions = instructions }
+            : Discover();
     }
 
     /// <summary>

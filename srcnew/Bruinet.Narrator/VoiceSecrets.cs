@@ -345,4 +345,16 @@ public sealed class VoiceNotConfiguredException : Exception
                + $"(as voice.secrets.example.json shows) in one of: {string.Join("; ", places)}.")
     {
     }
+
+    private VoiceNotConfiguredException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>The exception for an Azure Speech voice, naming its variables and the places looked in.</summary>
+    /// <param name="voice">The voice that was asked for.</param>
+    /// <param name="places">Where the settings were looked for.</param>
+    public static VoiceNotConfiguredException ForSpeech(string voice, IReadOnlyList<string> places)
+        => new($"The voice '{voice}' is an Azure Speech voice, and no endpoint and key were found for it. Set {SpeechSecrets.EndpointVariable} and {SpeechSecrets.KeyVariable}, "
+               + $"or write a \"speech\" object in {VoiceSecrets.FileName} (as voice.secrets.example.json shows) in one of: {string.Join("; ", places)}.");
 }

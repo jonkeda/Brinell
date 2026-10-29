@@ -41,6 +41,9 @@ public sealed record BddVideoScriptCheck(
     /// <summary>A Say row is out of step order.</summary>
     public const string OrderCode = "VID014";
 
+    /// <summary>The script's style (<c>Instructions</c>) is not one the Azure Speech voice lists.</summary>
+    public const string UnknownStyleCode = "VID030";
+
     /// <summary>Whether nothing is wrong enough to stop a recording.</summary>
     public bool Success => Script is not null && Diagnostics.All(diagnostic => diagnostic.Severity != BddDiagnosticSeverity.Error);
 
@@ -48,7 +51,10 @@ public sealed record BddVideoScriptCheck(
     /// <param name="text">The script's text, which may be unsaved.</param>
     /// <param name="filePath">The script's path.</param>
     /// <param name="configDirectory">The suite's folder; null to look for it above the script.</param>
-    public static BddVideoScriptCheck Check(string text, string filePath, string? configDirectory = null)
+    /// <param name="read">Reads an environment variable for Azure Speech's settings; the process's by default.</param>
+    /// <param name="home">The user's folder, where those settings are looked for last; <c>%USERPROFILE%</c> by default.</param>
+    /// <param name="speechCache">Where Azure Speech's voice list is kept; the speech cache by default.</param>
+    public static BddVideoScriptCheck Check(string text, string filePath, string? configDirectory = null, Func<string, string?>? read = null, string? home = null, string? speechCache = null)
     {
         var parse = BddVideoScriptParser.Parse(text, filePath);
         var diagnostics = new List<BddDiagnostic>(parse.Diagnostics);
@@ -61,6 +67,11 @@ public sealed record BddVideoScriptCheck(
 
         void Report(BddDiagnosticSeverity severity, string code, string message, int line)
             => diagnostics.Add(new BddDiagnostic(severity, code, message, new BddSourceLocation(filePath, line)));
+
+        if (UnknownStyle(script, configDirectory, read, home, speechCache) is { } unknown)
+        {
+            Report(BddDiagnosticSeverity.Warning, UnknownStyleCode, unknown, script.InstructionsLine);
+        }
 
         if (configDirectory is null && script.Scenes.Any(scene => scene.Scenario is not null))
         {
@@ -82,6 +93,37 @@ public sealed record BddVideoScriptCheck(
 
         diagnostics.Sort((a, b) => a.Location.LineNumber.CompareTo(b.Location.LineNumber));
         return new BddVideoScriptCheck(script, diagnostics, scenes, configDirectory);
+    }
+
+    // An Azure Speech voice takes a style, not free text: once its voice list is kept, a style the voice lacks is said so.
+    private static string? UnknownStyle(BddVideoScript script, string? configDirectory, Func<string, string?>? read, string? home, string? speechCache)
+    {
+        if (!AzureSpeech.Owns(script.Voice) || string.IsNullOrWhiteSpace(script.Instructions))
+        {
+            return null;
+        }
+
+        try
+        {
+            var voice = AzureSpeech.VoiceOf(script.Voice!);
+            var style = script.Instructions.Trim();
+            if (SpeechSecrets.Find(configDirectory, read, home) is not { } secrets
+                || AzureSpeechVoices.Kept(secrets, speechCache) is not { } kept
+                || AzureSpeechVoices.Find(kept, voice) is not { } found
+                || found.Styles.Contains(style, StringComparer.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return found.Styles.Count == 0
+                ? $"'{voice}' has no styles, so the instructions '{style}' are ignored: Azure Speech takes a style name (narrator, educational), not free text."
+                : $"'{voice}' has no style '{style}'. Its styles: {string.Join(", ", found.Styles)}.";
+        }
+        catch (InvalidDataException)
+        {
+            // Broken settings are reported where the voice is used; the check stays about the script.
+            return null;
+        }
     }
 
     /// <summary>The folder with the suite's config at or above <paramref name="directory"/>; null when none.</summary>

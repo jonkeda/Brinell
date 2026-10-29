@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 namespace Bruinet.Narrator;
 
 /// <summary>
-/// Where Azure AI Speech (<c>AzureSpeech</c>) is, and its key. The <c>speech</c> object of the same
+/// Where Azure AI Speech (<see cref="AzureSpeech"/>) is, and its key. The <c>speech</c> object of the same
 /// <see cref="VoiceSecrets.FileName"/> the Azure OpenAI voice uses (its top-level fields stay that voice's),
 /// found in the same places; <c>BRUINET_SPEECH_*</c> variables win over the file. The key is never written
 /// anywhere but the request's header.

@@ -6,7 +6,7 @@ using System.Text;
 namespace Bruinet.Narrator;
 
 /// <summary>
-/// What the cloud voices (<see cref="AzureOpenAiSpeech"/>, <c>AzureSpeech</c>) share: the clip cache
+/// What the cloud voices (<see cref="AzureOpenAiSpeech"/>, <see cref="AzureSpeech"/>) share: the clip cache
 /// (<c>%LOCALAPPDATA%\Bruinet\speech-cache</c>), a streaming WAV's header, the retry on a busy service.
 /// </summary>
 internal static class CloudVoice
@@ -85,8 +85,10 @@ internal static class CloudVoice
     /// <param name="endpoint">Where the service is, for the messages; never the key.</param>
     /// <param name="explain">The service's own message for a status, or null for the generic one.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
-    internal static async Task<byte[]> SendAsync(HttpClient client, Func<HttpRequestMessage> create, string endpoint, Func<HttpStatusCode, string?> explain, CancellationToken cancellationToken)
+    /// <param name="retry">Whether a status is a busy service, asked again; only 429 by default.</param>
+    internal static async Task<byte[]> SendAsync(HttpClient client, Func<HttpRequestMessage> create, string endpoint, Func<HttpStatusCode, string?> explain, CancellationToken cancellationToken, Func<HttpStatusCode, bool>? retry = null)
     {
+        retry ??= status => status == HttpStatusCode.TooManyRequests;
         for (var attempt = 0; ; attempt++)
         {
             using var request = create();
@@ -107,7 +109,7 @@ internal static class CloudVoice
                     return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (response.StatusCode == HttpStatusCode.TooManyRequests && attempt < BusyRetries)
+                if (retry(response.StatusCode) && attempt < BusyRetries)
                 {
                     await Task.Delay(response.Headers.RetryAfter?.Delta ?? BusyWait, cancellationToken).ConfigureAwait(false);
                     continue;
@@ -121,6 +123,10 @@ internal static class CloudVoice
             }
         }
     }
+
+    /// <summary>Busy, or briefly gone: 429, 502 and 503 are asked again.</summary>
+    /// <param name="status">The answer's status.</param>
+    internal static bool IsBusy(HttpStatusCode status) => status is HttpStatusCode.TooManyRequests or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable;
 
     private static async Task<string> Body(HttpResponseMessage response, CancellationToken cancellationToken)
     {

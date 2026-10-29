@@ -48,6 +48,7 @@ public static class BddVideoScriptParser
         string? title = null;
         string? voice = null;
         string? instructions = null;
+        var instructionsLine = 1;
         TimeSpan? beat = null;
         BddTouchMode? touches = null;
         string? touchColor = null;
@@ -120,7 +121,7 @@ public static class BddVideoScriptParser
             return new BddVideoScriptParse(null, diagnostics);
         }
 
-        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions, Touches = touches, TouchColor = touchColor }, diagnostics);
+        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions, InstructionsLine = instructionsLine, Touches = touches, TouchColor = touchColor }, diagnostics);
 
         void Finish()
         {
@@ -152,6 +153,7 @@ public static class BddVideoScriptParser
                     break;
                 case "instructions":
                     instructions = cells[1].Length > 0 ? cells[1] : null;
+                    instructionsLine = number;
                     break;
                 case "beat" when int.TryParse(cells[1], NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds):
                     beat = TimeSpan.FromMilliseconds(milliseconds);

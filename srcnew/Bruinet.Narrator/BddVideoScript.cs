@@ -14,6 +14,9 @@ public sealed record BddVideoScript(string FilePath, string Title, string? Voice
     /// <summary>How a cloud voice says the lines, e.g. "calm and friendly"; null for the settings'.</summary>
     public string? Instructions { get; init; }
 
+    /// <summary>The <c>Instructions</c> row's line in the script; 1 when there is none.</summary>
+    public int InstructionsLine { get; init; } = 1;
+
     /// <summary>Which touch marks the composed video gets (<c>Touches</c>); null for all of them.</summary>
     public BddTouchMode? Touches { get; init; }
 
