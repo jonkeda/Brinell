@@ -21,9 +21,9 @@ public enum MauiPlatform
     iOS,
 
     /// <summary>
-    /// No device: the app in the test's own process, rendered by MauiUnit (<c>BRUINET_HEAD=mauiunit</c>).
+    /// No device: the app in the test's own process, rendered by MauiHeadless (<c>BRUINET_HEAD=headless</c>).
     /// Its tree answers as Windows' UI Automation does (off-screen elements are in it, finding is not
     /// seeing), so what holds for Windows usually holds here.
     /// </summary>
-    MauiUnit
+    Headless
 }

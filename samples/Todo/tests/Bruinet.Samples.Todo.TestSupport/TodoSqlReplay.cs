@@ -12,7 +12,7 @@ namespace Bruinet.Samples.Todo.TestSupport;
 /// SQL replay for one app that outlives its tests (.my/sql-replay/plan.md, step 8): the app's <see cref="TodoDatabase.Wrap"/>
 /// reaches the session of the test running now, begun in its class's constructor and ended in its <c>Dispose</c>. Owned by
 /// the fixture or device that owns the app, never static: tests in a collection run one after another, collections each
-/// have their own. Only for a head that composes the app in the test's process (bUnit, MauiUnit); <c>BRUINET_SQL_REPLAY</c>
+/// have their own. Only for a head that composes the app in the test's process (bUnit, MauiHeadless); <c>BRUINET_SQL_REPLAY</c>
 /// says <c>Record</c> or <c>Replay</c>.
 /// </summary>
 public sealed class TodoSqlReplay
@@ -27,7 +27,7 @@ public sealed class TodoSqlReplay
     private bool _startedUp;
 
     /// <param name="project">The suite's project folder name; its recordings are <c>Recordings/&lt;head&gt;/&lt;test&gt;.json</c> beside it.</param>
-    /// <param name="head">The head the app runs on (<c>bunit</c>, <c>mauiunit</c>); null when it isn't one that can replay.</param>
+    /// <param name="head">The head the app runs on (<c>bunit</c>, <c>headless</c>); null when it isn't one that can replay.</param>
     /// <param name="device">The app's name, when a test has more than one; null for the only one.</param>
     public TodoSqlReplay(string project, string? head, string? device = null)
     {

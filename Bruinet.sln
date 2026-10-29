@@ -258,21 +258,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Html.Bunit.Tests", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Maui", "Maui", "{5358A8DD-221C-A68E-DDFB-CD91B98A505E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit", "srcnew\MauiUnit\MauiUnit.csproj", "{EFB3EFF8-F249-4793-B418-E8C821F3C2F3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiHeadless", "srcnew\MauiHeadless\MauiHeadless.csproj", "{EFB3EFF8-F249-4793-B418-E8C821F3C2F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Maui.MauiUnit", "srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj", "{BAE2CA8C-5B6C-46E4-B41C-A3B3E310319D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Maui.Headless", "srcnew\Bruinet.Maui.Headless\Bruinet.Maui.Headless.csproj", "{BAE2CA8C-5B6C-46E4-B41C-A3B3E310319D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit.Tests", "testsnew\MauiUnit.Tests\MauiUnit.Tests.csproj", "{777BBBCE-B984-4B8C-A3AA-54A228EF999D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiHeadless.Tests", "testsnew\MauiHeadless.Tests\MauiHeadless.Tests.csproj", "{777BBBCE-B984-4B8C-A3AA-54A228EF999D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit.Samples.App", "samples\MauiUnit.Samples.App\MauiUnit.Samples.App.csproj", "{B3845830-2924-414E-B4DB-D43D35C59184}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiHeadless.Samples.App", "samples\MauiHeadless.Samples.App\MauiHeadless.Samples.App.csproj", "{B3845830-2924-414E-B4DB-D43D35C59184}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit.Tests.NUnit", "testsnew\MauiUnit.Tests.NUnit\MauiUnit.Tests.NUnit.csproj", "{6EDCA213-9463-471F-8227-6366257FE513}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiHeadless.Tests.NUnit", "testsnew\MauiHeadless.Tests.NUnit\MauiHeadless.Tests.NUnit.csproj", "{6EDCA213-9463-471F-8227-6366257FE513}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiUnit.Tests.MSTest", "testsnew\MauiUnit.Tests.MSTest\MauiUnit.Tests.MSTest.csproj", "{A046A924-A00F-4E84-BDB7-F7DC26873FE2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiHeadless.Tests.MSTest", "testsnew\MauiHeadless.Tests.MSTest\MauiHeadless.Tests.MSTest.csproj", "{A046A924-A00F-4E84-BDB7-F7DC26873FE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Maui.MauiUnit.Tests", "testsnew\Bruinet.Maui.MauiUnit.Tests\Bruinet.Maui.MauiUnit.Tests.csproj", "{07385005-6891-4380-B359-C9C68772F50A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Maui.Headless.Tests", "testsnew\Bruinet.Maui.Headless.Tests\Bruinet.Maui.Headless.Tests.csproj", "{07385005-6891-4380-B359-C9C68772F50A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.App.MauiUnit", "samples\Bruinet.Samples.Maui.App.MauiUnit\Bruinet.Samples.Maui.App.MauiUnit.csproj", "{E9E61BA5-E125-43D5-8012-6CE8A5043A3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.App.Headless", "samples\Bruinet.Samples.Maui.App.Headless\Bruinet.Samples.Maui.App.Headless.csproj", "{E9E61BA5-E125-43D5-8012-6CE8A5043A3F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Mocking.Data", "srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj", "{C322C993-DC6C-4070-BE9B-9B7D764DBECA}"
 EndProject
@@ -296,9 +296,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Mocking.Data.Hook.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Sql.Hook", "samples\Bruinet.Samples.Sql.Hook\Bruinet.Samples.Sql.Hook.csproj", "{7C31F65B-4599-4F3C-9FC8-FD233EFF61E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.ShellApp.MauiUnit", "samples\Bruinet.Samples.Maui.ShellApp.MauiUnit\Bruinet.Samples.Maui.ShellApp.MauiUnit.csproj", "{7F0AE2BC-F59E-4746-842F-ED246775CC98}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Maui.ShellApp.Headless", "samples\Bruinet.Samples.Maui.ShellApp.Headless\Bruinet.Samples.Maui.ShellApp.Headless.csproj", "{7F0AE2BC-F59E-4746-842F-ED246775CC98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Todo.App.MauiUnit", "samples\Todo\src\Bruinet.Samples.Todo.App.MauiUnit\Bruinet.Samples.Todo.App.MauiUnit.csproj", "{E3A28373-2899-41BD-9706-81DF4A1787A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bruinet.Samples.Todo.App.Headless", "samples\Todo\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj", "{E3A28373-2899-41BD-9706-81DF4A1787A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

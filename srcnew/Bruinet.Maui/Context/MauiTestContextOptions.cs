@@ -15,7 +15,7 @@ public class MauiTestContextOptions
 
     /// <summary>
     /// Whether the context disposes the injected <see cref="Driver"/> with itself. False by default:
-    /// the caller owns what it injects. The MauiUnit head sets it, as the in-memory app it made lives
+    /// the caller owns what it injects. The MauiHeadless head sets it, as the headless app it made lives
     /// exactly as long as the context, and a restart must end the old app before it starts the new one.
     /// </summary>
     public bool OwnsDriver { get; init; }

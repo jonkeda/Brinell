@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Bruinet.Samples.Todo.UITests</RootNamespace>
-    <!-- FlaUI drives the Windows app, on Windows. Elsewhere plain net10.0: MauiUnit and Appium
+    <!-- FlaUI drives the Windows app, on Windows. Elsewhere plain net10.0: MauiHeadless and Appium
          (BruinetWindowsHead, Directory.Build.props). -->
     <TargetFramework Condition="'$(BruinetWindowsHead)' == 'true'">net10.0-windows</TargetFramework>
     <TargetFramework Condition="'$(BruinetWindowsHead)' != 'true'">net10.0</TargetFramework>
@@ -21,10 +21,10 @@
     <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport\Bruinet.Samples.Todo.TestSupport.csproj" />
     <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
-    <!-- The MauiUnit head (BRUINET_HEAD=mauiunit, docs/guides/mauiunit.md): the app compiled for plain net10.0,
-         rendered in memory by TodoAppFixtureBase.CreateMauiUnitOptions. -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.MauiUnit\Bruinet.Maui.MauiUnit.csproj" />
-    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.MauiUnit\Bruinet.Samples.Todo.App.MauiUnit.csproj" />
+    <!-- The MauiHeadless head (BRUINET_HEAD=headless, docs/guides/maui-headless.md): the app compiled for plain net10.0,
+         rendered headless by TodoAppFixtureBase.CreateHeadlessOptions. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Maui.Headless\Bruinet.Maui.Headless.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.App.Headless\Bruinet.Samples.Todo.App.Headless.csproj" />
   </ItemGroup>
 
   <ItemGroup>

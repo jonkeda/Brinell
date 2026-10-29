@@ -107,7 +107,7 @@ public sealed class NetworkStateFile : IDisposable
 
     // Windows refuses to replace a file another handle has open, and the app polls this one: a read
     // lasts microseconds, so the move is tried again a few times before the refusal stands. An app in
-    // the test's own process (the MauiUnit head) meets the read often enough to fail a run.
+    // the test's own process (the MauiHeadless head) meets the read often enough to fail a run.
     private void Replace(string temporary)
     {
         for (var attempt = 1; ; attempt++)

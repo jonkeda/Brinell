@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MauiHeadless on MSTest: the same examples, to show MauiHeadless needs no xUnit. -->
+  <PropertyGroup>
+    <RootNamespace>MauiHeadless.Tests.MSTest</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- testsnew/Directory.Build.props adds xUnit to every test project. -->
+    <PackageReference Remove="xunit" />
+    <PackageReference Remove="xunit.runner.visualstudio" />
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="MSTest.TestAdapter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\MauiHeadless\MauiHeadless.csproj" />
+    <ProjectReference Include="..\..\samples\MauiHeadless.Samples.App\MauiHeadless.Samples.App.csproj" />
+  </ItemGroup>
+
+</Project>

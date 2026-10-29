@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MauiHeadless on xUnit: the examples, and MauiHeadless's own behaviour (dispatcher, clock, tree, errors). -->
+  <PropertyGroup>
+    <RootNamespace>MauiHeadless.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\MauiHeadless\MauiHeadless.csproj" />
+    <ProjectReference Include="..\..\samples\MauiHeadless.Samples.App\MauiHeadless.Samples.App.csproj" />
+  </ItemGroup>
+
+</Project>

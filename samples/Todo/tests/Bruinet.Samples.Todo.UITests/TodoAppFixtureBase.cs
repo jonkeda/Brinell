@@ -1,7 +1,7 @@
 using Bruinet.Core.Testing;
 using Bruinet.Maui.Configuration;
 using Bruinet.Maui.Enums;
-using Bruinet.Maui.MauiUnit;
+using Bruinet.Maui.Headless;
 using Bruinet.Maui.Testing;
 using Bruinet.Mocking;
 using Bruinet.Samples.Todo.App.Services;
@@ -43,9 +43,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 {
     private readonly List<TempDatabase> _retired = [];
 
-    // A field initializer, so it is there when the base constructor composes the app. Replayed in memory only: on a
+    // A field initializer, so it is there when the base constructor composes the app. Replayed headless only: on a
     // device the app runs in a process of its own, on its own file.
-    private readonly TodoSqlReplay _replay = new("Bruinet.Samples.Todo.UITests", MauiHeads.IsMauiUnit ? "mauiunit" : null);
+    private readonly TodoSqlReplay _replay = new("Bruinet.Samples.Todo.UITests", MauiHeads.IsHeadless ? "headless" : null);
     private string? _test;
     private Arrangement? _arrangement;
     private LaunchSettings? _settings;
@@ -95,8 +95,8 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         // Windows only. On Android a Picker opens a native dialog the selection controls cannot
         // reach yet (the Picker tests are 0/8 there before any change), and a dialog left open
         // would take every later test down with it. Tests that use the filter are Windows-only
-        // (and MauiUnit's, where the Picker is selected in process).
-        if (Context.Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit)
+        // (and MauiHeadless's, where the Picker is selected in process).
+        if (Context.Platform is MauiPlatform.Windows or MauiPlatform.Headless)
         {
             list.Filter.SelectByText("All");
         }
@@ -127,12 +127,12 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         _replay.End();
     }
 
-    // Replayed in memory, an app that syncs on start finishes that sync (its pushes, pulls and the users' refresh) before the first
+    // Replayed headless, an app that syncs on start finishes that sync (its pushes, pulls and the users' refresh) before the first
     // test: what it writes then belongs to the start, however long its requests take. Waiting on the dispatcher alone is
     // fooled while a request is out.
     private void LetTheStartupSyncFinish()
     {
-        if (_replay.Mode == Mocking.Data.Replay.ReplayMode.Off || Context.Driver is not MauiUnitDriver head || _settings is not { SyncOnStart: true })
+        if (_replay.Mode == Mocking.Data.Replay.ReplayMode.Off || Context.Driver is not MauiHeadlessDriver head || _settings is not { SyncOnStart: true })
         {
             return;
         }
@@ -145,16 +145,16 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         }
     }
 
-    /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows and in memory, where the test can write the app's files.</summary>
-    public bool CanStartOverInPlace => Context.Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit;
+    /// <summary>Whether <see cref="StartOver"/> resets the app in place: on Windows and headless, where the test can write the app's files.</summary>
+    public bool CanStartOverInPlace => Context.Platform is MauiPlatform.Windows or MauiPlatform.Headless;
 
-    // In memory (MauiUnit) the app works only when a test lets it, so a sync the last test started
+    // Headless (MauiHeadless) the app works only when a test lets it, so a sync the last test started
     // would otherwise finish in this one, after its backend was reset, and show in its request log.
     // On a device the app has finished it by itself.
     // Longer than a page's IsIdle: a sync's requests and continuations come in a few rounds.
     private void LetTheLastTestFinish()
     {
-        if (Context.Driver is MauiUnitDriver head)
+        if (Context.Driver is MauiHeadlessDriver head)
         {
             head.TestContext.Dispatcher.WaitForQuiet(TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(3));
         }
@@ -180,8 +180,8 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         Network.SetOnline();
         ResetBackendForTest();
         Arranged.TestSet.RestoreDatabaseAsync(Arranged.Database.Path).GetAwaiter().GetResult();
-        // In memory the app's main thread runs only when the test lets it: the wait lets it.
-        Arranged.Reset.Request(whileWaiting: MauiHeads.IsMauiUnit ? () => Context.Driver.IsIdle() : null);
+        // Headless the app's main thread runs only when the test lets it: the wait lets it.
+        Arranged.Reset.Request(whileWaiting: MauiHeads.IsHeadless ? () => Context.Driver.IsIdle() : null);
         return StartTest();
     }
 
@@ -276,13 +276,13 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     }
 
     /// <summary>
-    /// The MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>): the same arrangement as on a device (database,
+    /// The MauiHeadless head (<c>BRUINET_HEAD=headless</c>): the same arrangement as on a device (database,
     /// backend, network-state and reset files), and the app composed as its <c>MauiProgram</c> composes
     /// it (<see cref="TodoAppServices.AddTodoApp"/>), with the launch settings handed over directly
-    /// rather than as launch values, and MauiUnit's dispatcher as the main thread. Asked again on every
+    /// rather than as launch values, and MauiHeadless's dispatcher as the main thread. Asked again on every
     /// restart, so a restart is a new app on the settings of that moment.
     /// </summary>
-    protected override MauiTestContextOptions CreateMauiUnitOptions()
+    protected override MauiTestContextOptions CreateHeadlessOptions()
     {
         var settings = _settings ?? Arrange();
 
@@ -293,7 +293,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         // Debug, XAML is parsed at run time, and the parser knows only the XAML namespaces of loaded
         // assemblies, so without this toolkit:StateContainer on the list was "not found".
         _ = typeof(CommunityToolkit.Maui.Layouts.StateContainer).Assembly;
-        return MauiUnitHead.Options(
+        return MauiHeadlessHead.Options(
             services => services.GetRequiredService<TodoAppShell>(),
             options => options.Application = services => new TodoApp(services.GetRequiredService<TodoAppShell>()),
             context =>
@@ -383,8 +383,8 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         PassToTheLaunch(settings, Arranged.Database.Folder);
     }
 
-    // On a device the settings reach the app as launch values; in memory (MauiUnit) the next app is
-    // composed with them directly (CreateMauiUnitOptions), and there are no launch values.
+    // On a device the settings reach the app as launch values; headless (MauiHeadless) the next app is
+    // composed with them directly (CreateHeadlessOptions), and there are no launch values.
     private void PassToTheLaunch(LaunchSettings settings, string runFolder)
     {
         if (_launchValues is not { } launch)

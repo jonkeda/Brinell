@@ -68,4 +68,4 @@ Each step leaves the build green and its tests passing, and is one commit.
    release shipped them.
 6. AD-032's why is the line in "Why the name changes back".
 
-Not started: the steps wait for the owner's go.
+Done 2026-10-29 in one commit: steps 1 to 7 and the headless checks of 8 (51+2+2+4 framework tests, 328 pass and 33 skip in the MAUI suite, Todo 45 pass and 3 skip). Not run: the Windows device head, CI.

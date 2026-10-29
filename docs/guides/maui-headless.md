@@ -1,0 +1,154 @@
+# The MauiHeadless Head
+
+A MAUI suite can run its page objects, controls and feature files without a device: MauiHeadless renders
+the app's pages in the test process, and Bruinet drives them through the same `IMauiDriver`. A run picks
+its head with `BRUINET_HEAD`; the device heads (FlaUI on Windows, Appium on Android and iOS) stay the
+judge at every gate. The decision is
+[AD-032](../../.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md).
+
+## When To Use It
+
+During development and in CI, to run a MAUI suite in seconds with no app built, no window and no
+emulator, on Windows, macOS or Linux. Bruinet's device suite runs 328 tests in about 20 s, and the Todo
+sample's 42 scenarios in about 40 s.
+
+At a gate, run a device head. MauiHeadless has no layout, no pixels and no platform input, so a button a
+layout hides, or a control the platform draws, can pass headless and fail on a device.
+
+## Running It
+
+```bash
+BRUINET_HEAD=headless dotnet test testsnew/Bruinet.Maui.UITests
+./tools/Scripts/test-maui-headless.ps1
+```
+
+The script runs the device suite and both Todo suites, a `.trx` each; CI runs it on `windows-latest`
+and `macos-latest`. Unset, or any value but `headless`, is the device. Off Windows the suites build for
+plain `net10.0` without FlaUI (`BruinetWindowsHead` in `Directory.Build.props`); run
+`dotnet workload install maui` once there. More in [Running MAUI tests](../run/MAUI.md).
+
+## Giving A Suite A MauiHeadless Head
+
+1. **Build the app for plain `net10.0`**: a project beside the app's own, `UseMaui`, that links the app's
+   sources and XAML and leaves out `Platforms\` and `MauiProgram.cs`. The samples' are
+   `samples/Bruinet.Samples.Maui.App.Headless` and `samples/Todo/src/Bruinet.Samples.Todo.App.Headless`.
+2. **Compose the app once.** Move the registrations out of `MauiProgram` into a method both call, as
+   the Todo app's `TodoAppServices.AddTodoApp`, so the headless app is the device app.
+3. **Override `CreateHeadlessOptions()`** on the suite's `MauiTestFixtureBase`:
+
+```csharp
+protected override MauiTestContextOptions CreateHeadlessOptions()
+{
+    // Debug parses XAML at run time and knows only loaded assemblies: load what the builder would.
+    _ = typeof(CommunityToolkit.Maui.Layouts.StateContainer).Assembly;
+    return MauiHeadlessHead.Options(
+        services => services.GetRequiredService<AppShell>(),           // the first page
+        options => options.Application = services => new App(...),     // the app's Application
+        context => context.Services.AddMyApp(settings, platform));      // the app's composition
+}
+```
+
+Page objects, controls and scenarios need no change. The head reports `MauiPlatform.Headless` and
+otherwise answers as Windows does: WinUI's ids for the back button and title, off-screen elements in the
+tree. A page object that asks `Platform == Windows` for a reason that also holds headless says
+`Platform is MauiPlatform.Windows or MauiPlatform.Headless`.
+
+An app that calls Essentials directly (`Preferences.Default`, `FileSystem.AppDataDirectory`,
+`DeviceInfo.Idiom`) installs MauiHeadless's before it starts:
+`HeadlessEssentials.Install(new HeadlessEssentialsOptions { AppDataDirectory = ..., AppName = ... })`.
+Platform behaviors such as the toolkit's `TouchBehavior` are removed from pages, content views, list rows
+and ListView cells; a control of the app's own that adds one and has its own implicit style is named in
+`options.BehaviorHosts`, as Exact Construction names its `ClickableContainer`.
+
+## What Needs A Device
+
+Mark a test `[DeviceFact("why")]` (or `[WindowsOnlyFact(Device = "why")]`) and a scenario `@device`: on
+the MauiHeadless head they are skipped with the reason, so the run still lists them. A device-only member
+ends its call at once with `DeviceOnlyException` naming the member.
+
+| Needs a device | Why |
+| --- | --- |
+| Layout: bounds, scroll offsets (`ReadScrollPosition`), what is below the fold | No layout; elements report 1 x 1 bounds |
+| Pixels: screenshots, recordings | Nothing is drawn |
+| Platform input: hover, right-click, free swipes, the clipboard | No platform |
+| Controls the platform draws: a picker's popup, MediaElement's transport controls | Not in MAUI's tree |
+| `#if ANDROID`, `#if IOS` code | Not compiled into a plain `net10.0` build |
+| Tests of FlaUI, Appium or the UI Automation bridge themselves | Not in the process |
+
+## What Behaves Differently
+
+- **Visible** means on the shown page of the driver's window, with no `IsVisible="False"` ancestor. An
+  off-screen carousel card is found and is not shown; scrolling succeeds at once.
+- **A tap goes where a touch would.** It runs the tapped view's recognizers, else those of the single
+  content it wraps (a ContentView or Border filled by one child), else those of the nearest ancestor up
+  to the page. A tap inside a list row that nothing above takes selects the row, and a ListView cell
+  raises `ItemTapped`.
+- **The app runs only when a call lets it.** Each call drains MauiHeadless's dispatcher queue, so a control's
+  wait (`Assert*`, `WaitArrived`) is what moves the app on. A wait outside the driver must let it run (the
+  Todo fixture's reset passes `whileWaiting: IsIdle`), and a fixture lets the last test's work settle
+  before the next (`WaitForQuiet`).
+- **The virtual clock does not move under the head.** App timers and `DispatchDelayed` work fire only
+  when a test advances MauiHeadless's clock; a test that needs them is a device test for now.
+- **Gestures and toolkit state** go to the app's own verb sinks (`GestureAutomation.Sink` in
+  `Bruinet.Maui.AppSupport`), called in process: the half of the Windows bridge that lives in the app,
+  without UI Automation.
+- **Dialogs**: `DisplayAlertAsync`, `DisplayPromptAsync` and `DisplayActionSheetAsync` show a `TestDialog`
+  over the page; its buttons answer the app's await.
+- **Shell and navigation chrome** (tab bar, flyout, back button, title) are nodes in the tree, found under
+  the Windows ids.
+- **Animations** end at once at their final value.
+- **A file the app polls** (a reset or network-state file) is read in the test's process: write it with a
+  short retry, as Windows refuses to replace a file another handle has open.
+
+## MauiHeadless On Its Own
+
+MauiHeadless (`srcnew/MauiHeadless`) is also a component-testing framework for MAUI without Bruinet, on xUnit,
+NUnit or MSTest:
+
+```csharp
+using var ctx = new MauiTestContext();
+ctx.Services.AddSingleton<ISettingsService, PreferencesSettingsService>();
+ctx.Preferences.Set("name", "Ada");
+
+var page = ctx.Render<SettingsPage>();
+page.Find<Entry>("Name").Should().HaveText("Ada");
+page.Find<Entry>("Name").SetText("Grace");
+page.Find<Button>("SaveButton").Click();
+
+ctx.AdvanceTime(TimeSpan.FromSeconds(1));          // timers and delayed work, in order
+page.Find<TestDialog>().Choose("OK");               // a DisplayAlertAsync, answered
+```
+
+`Render` takes a page type, an instance or a Shell; `Services` is fixed after the first render
+(`Replace` swaps a registration for a fake); `Preferences` and `SecureStorage` are in memory;
+`ToSnapshot()` gives the tree as indented text. Its examples are `testsnew/MauiHeadless.Tests`.
+
+## How MAUI Runs Without A Platform
+
+What MauiHeadless relies on, from MAUI 10 on plain `net10.0`:
+
+- Controls, layouts, bindings, XAML, `NavigationPage`, modals and `Shell.GoToAsync` work with no
+  handler. Bindings need a dispatcher, so MauiHeadless installs one per process.
+- Appearing and Disappearing are raised only for a page in a `Window` whose parent is an `Application`:
+  each render is a window opened through the internal `Application.AddWindow`.
+- `Shell.Current` reads `Application.Current`, which MauiHeadless sets to the context's app while its work
+  runs, under a lock.
+- A Shell's `ContentTemplate` page is built on request (`GetOrCreateContent`) over the nearest handler's
+  services, so a Shell root gets a no-op `HeadlessHandler` carrying the test's services. A `NavigationPage`
+  must never get one: with a handler, a push waits for the platform.
+- `CollectionView` has no item views without a handler: MauiHeadless realizes every item through its
+  template, a grouped list's group headers and footers around each group, and a `ListView`'s cells.
+- `PlatformBehavior.OnLoaded` reads `Handler.PlatformView` without a null check, so a page carrying one
+  throws when it joins a window. MauiHeadless's implicit styles strip them first (`HeadlessBehaviors`), in a
+  merged dictionary of their own so an app's theme switch does not clear them. A behavior with a
+  `Command` becomes a `TapGestureRecognizer` with it.
+- `MainThread` and the Essentials have no plain `net10.0` implementation; MAUI's internal setters route
+  `MainThread` to the context's dispatcher and install `HeadlessEssentials`.
+- Tree reads run as the UI thread would, with the app current: a row's template may look up the app's
+  resources while it is made.
+- Taps (`SendTapped`), focus (the `IsFocused` key), bindings and pending dialogs (`_pendingActions`) are
+  internal: MauiHeadless reaches them by reflection in one place, `MauiInternals`.
+- Any animation asks for an `IAnimationManager`; MauiHeadless registers MAUI's own over a ticker that reports
+  animations off.
+- A picker selects by equality, so MauiHeadless refuses to pick an item equal to an earlier one, as the
+  Windows bridge does.

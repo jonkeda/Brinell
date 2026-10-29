@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The sample app's pages, views, view models and resources on plain net10.0, for the MauiHeadless head
+    (docs/guides/maui-headless.md). Every file is LINKED from Bruinet.Samples.Maui.App, never copied, so the MauiHeadless
+    run tests the app as it is. What only a platform has stays out: Platforms\, MauiProgram (the
+    app builder and its handlers), and the image, font and splash assets the build packages.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <RootNamespace>Bruinet.Samples.Maui.App</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- The app's own setting: its code is sample code, not held to the repo's warning bar. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0618;XC0022;XC0023;XC0025;MAUIG2045</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <App>..\Bruinet.Samples.Maui.App\</App>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="CommunityToolkit.Maui" />
+    <PackageReference Include="CommunityToolkit.Maui.MediaElement" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Samples.Shared\Bruinet.Samples.Shared.csproj" />
+    <ProjectReference Include="..\Bruinet.Maui.AppSupport\Bruinet.Maui.AppSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(App)**\*.cs"
+             Exclude="$(App)bin\**;$(App)obj\**;$(App)Platforms\**;$(App)Models\**;$(App)TestViews\**;$(App)MauiProgram.cs;$(App)**\*.xaml.cs"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <MauiXaml Include="$(App)**\*.xaml"
+              Exclude="$(App)bin\**;$(App)obj\**;$(App)Platforms\**;$(App)Models\**;$(App)TestViews\**"
+              Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="$(App)**\*.xaml.cs"
+             Exclude="$(App)bin\**;$(App)obj\**;$(App)Platforms\**;$(App)Models\**;$(App)TestViews\**"
+             Link="%(RecursiveDir)%(Filename)%(Extension)"
+             DependentUpon="%(Filename)" />
+  </ItemGroup>
+
+</Project>

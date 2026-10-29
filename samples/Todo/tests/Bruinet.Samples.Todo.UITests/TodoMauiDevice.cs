@@ -158,7 +158,7 @@ public sealed class TodoMauiDevice : ITestApp
 
         // As in TodoAppFixtureBase.StartTest: a Picker on Android opens a dialog the selection
         // controls cannot reach yet.
-        if (Platform is MauiPlatform.Windows or MauiPlatform.MauiUnit)
+        if (Platform is MauiPlatform.Windows or MauiPlatform.Headless)
         {
             list.Filter.SelectByText("All");
         }

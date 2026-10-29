@@ -378,16 +378,16 @@ public class MauiFixture : MauiTestFixtureBase
     #region MauiTestFixtureBase Overrides
 
     /// <summary>
-    /// The MauiUnit head (<c>BRUINET_HEAD=mauiunit</c>): the app as its <c>App</c> starts it, a
-    /// <c>NavigationPage</c> on the hub, rendered in memory from the app's MauiUnit build
-    /// (<c>Bruinet.Samples.Maui.App.MauiUnit</c>).
+    /// The MauiHeadless head (<c>BRUINET_HEAD=headless</c>): the app as its <c>App</c> starts it, a
+    /// <c>NavigationPage</c> on the hub, rendered headless from the app's MauiHeadless build
+    /// (<c>Bruinet.Samples.Maui.App.Headless</c>).
     /// </summary>
-    protected override MauiTestContextOptions CreateMauiUnitOptions()
+    protected override MauiTestContextOptions CreateHeadlessOptions()
     {
         // What UseMauiCommunityToolkitMediaElement() does first on a device: the assembly loaded, as
         // Debug parses XAML at run time and knows only the XAML namespaces of loaded assemblies.
         _ = typeof(global::CommunityToolkit.Maui.Views.MediaElement).Assembly;
-        return Bruinet.Maui.MauiUnit.MauiUnitHead.Options(
+        return Bruinet.Maui.Headless.MauiHeadlessHead.Options(
             _ => new Microsoft.Maui.Controls.NavigationPage(new Bruinet.Samples.Maui.App.HubPage()),
             options => options.Application = _ => new Bruinet.Samples.Maui.App.App());
     }

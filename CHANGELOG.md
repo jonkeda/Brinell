@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- MauiUnit is renamed MauiHeadless (`srcnew/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
+
 ### Added
 - `[UiFact]` (`Bruinet.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
   test method failed and before the test object is disposed, from the test object's own context

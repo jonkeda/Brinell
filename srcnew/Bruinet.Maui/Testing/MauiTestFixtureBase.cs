@@ -102,8 +102,8 @@ public abstract class MauiTestFixtureBase : IDisposable
             Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} old session did not close: {error.Message}");
         }
 
-        // In memory a restart is a fresh app; on a device the first launch's options are kept.
-        _context = new MauiTestContext(MauiHeads.IsMauiUnit ? CreateMauiUnitOptions() : _options);
+        // Headless a restart is a fresh app; on a device the first launch's options are kept.
+        _context = new MauiTestContext(MauiHeads.IsHeadless ? CreateHeadlessOptions() : _options);
         UseTheAppsCulture();
         _screenshotService = CreateScreenshotService(_context);
         OnRestarted();
@@ -169,9 +169,9 @@ public abstract class MauiTestFixtureBase : IDisposable
     public IScreenshotService ScreenshotService => _screenshotService;
 
     /// <summary>
-    /// Gets the current platform: MauiUnit on that head, else the configuration's.
+    /// Gets the current platform: MauiHeadless on that head, else the configuration's.
     /// </summary>
-    protected MauiPlatform Platform => MauiHeads.IsMauiUnit ? MauiPlatform.MauiUnit : Configuration?.Maui?.Platform ?? MauiPlatform.Windows;
+    protected MauiPlatform Platform => MauiHeads.IsHeadless ? MauiPlatform.Headless : Configuration?.Maui?.Platform ?? MauiPlatform.Windows;
 
     #region Abstract Methods
 
@@ -210,19 +210,19 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     #region Heads
 
-    // The device unless BRUINET_HEAD=mauiunit (MauiHeads).
+    // The device unless BRUINET_HEAD=headless (MauiHeads).
     private MauiTestContextOptions Options()
-        => MauiHeads.IsMauiUnit ? CreateMauiUnitOptions() : CreateTestContextOptions();
+        => MauiHeads.IsHeadless ? CreateHeadlessOptions() : CreateTestContextOptions();
 
     /// <summary>
-    /// The suite's MauiUnit head (<see cref="MauiHeads"/>, docs/guides/mauiunit.md): its app's first page rendered in
-    /// memory, the options from <c>Bruinet.Maui.MauiUnit</c>'s <c>MauiUnitHead.Options</c>. A suite that has
-    /// one overrides this; by default an MauiUnit run of the suite says it has none.
+    /// The suite's MauiHeadless head (<see cref="MauiHeads"/>, docs/guides/maui-headless.md): its app's first page rendered in
+    /// memory, the options from <c>Bruinet.Maui.Headless</c>'s <c>MauiHeadlessHead.Options</c>. A suite that has
+    /// one overrides this; by default an MauiHeadless run of the suite says it has none.
     /// </summary>
-    /// <remarks>Asked again on <see cref="RestartApp"/>, so a restart is a fresh in-memory app.</remarks>
-    protected virtual MauiTestContextOptions CreateMauiUnitOptions()
+    /// <remarks>Asked again on <see cref="RestartApp"/>, so a restart is a fresh headless app.</remarks>
+    protected virtual MauiTestContextOptions CreateHeadlessOptions()
         => throw new InvalidOperationException(
-            $"{GetType().Name} has no MauiUnit head: override CreateMauiUnitOptions, or run it without {MauiHeads.Variable}=mauiunit.");
+            $"{GetType().Name} has no MauiHeadless head: override CreateHeadlessOptions, or run it without {MauiHeads.Variable}=headless.");
 
     #endregion
 

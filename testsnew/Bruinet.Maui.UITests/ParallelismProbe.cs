@@ -71,7 +71,7 @@ internal static class ParallelismProbe
     /// There is only ever one app on a device, so a per-fixture token says as much.
     /// </remarks>
     internal static void Enter(string side, IMauiDriver driver)
-        => EnterCore(side, driver.Platform is Enums.MauiPlatform.Windows or Enums.MauiPlatform.MauiUnit
+        => EnterCore(side, driver.Platform is Enums.MauiPlatform.Windows or Enums.MauiPlatform.Headless
             ? driver.CurrentWindowHandle
             : $"{driver.Platform}:{Guid.NewGuid():N}");
 
