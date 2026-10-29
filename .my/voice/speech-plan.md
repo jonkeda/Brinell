@@ -4,19 +4,21 @@ Status: **plan**, not started. Date: 2026-10-29.
 
 Follows [plan.md](plan.md) (the Azure OpenAI voice, built) and [settings-plan.md](settings-plan.md) (its
 Presenter settings, built). This adds **Azure AI Speech**, the service with a named neural voice per
-language and region, beside it: `Voice | speech:nl-NL-FennaNeural` in a video script, its endpoint
-(URL) and key in the same settings.
+language and region, beside it: `Voice | speech:en-GB-Emily:MAI-Voice-2.1` in a video script, its
+endpoint (URL) and key in the same settings. The first voice is **Emily**, one of Microsoft's MAI
+voices (preview), picked in the Foundry voice gallery.
 
 ## 1. Goal
 
-A video script, the Presenter's Default voice or `BRUINET_VOICE` names `speech:<voice>`, and its lines
-are spoken by Azure Speech. The endpoint and key are set once: in the Presenter (Settings, Narrator,
+A video script, the Presenter's Default voice or `BRUINET_VOICE` names `speech:<voice>`, such as
+`speech:en-GB-Emily:MAI-Voice-2.1`, and its lines are spoken by Azure Speech. The endpoint and key are set once: in the Presenter (Settings, Narrator,
 Azure Speech), in the settings file, or in environment variables. Pacing, captions, the clip cache
 and the video are unchanged.
 
 Why a second cloud voice: Azure OpenAI's voices are a short list that speaks every language in the
 same few voices. Azure Speech has a named voice for each language and region (Dutch among them), the
-same voice every time, billed per character with a free tier. The first stays; the script chooses.
+same voice every time, billed per character with a free tier, and the MAI voices are expressive and
+built for long narration, which is what a video voice-over is. The first stays; the script chooses.
 
 ## 2. The service (Microsoft Learn, text to speech REST reference, checked 2026-10-29)
 
@@ -27,10 +29,14 @@ same voice every time, billed per character with a free tier. The first stays; t
 | Output | `X-Microsoft-OutputFormat: riff-24khz-16bit-mono-pcm` is a non-streaming WAV; 48 kHz also exists. `User-Agent` is required. |
 | Voices | `GET …/tts/cognitiveservices/voices/list` with the same key: `ShortName`, `Locale`, `Gender`, `StyleList`, `VoiceType`, `Status`, `WordsPerMinute`. |
 | Styles | `mstts:express-as style="friendly"` in the SSML, for the voices whose `StyleList` has it. |
+| MAI voices | The same API, key and endpoint forms. The SSML name is the voice ID, a colon and the model: `en-GB-Emily:MAI-Voice-2.1` (`MAI-Voice-2.1-Flash` is the low-latency model; 2.1 is for long-form narration and fidelity). 23 languages; Emily and Harry (`en-GB-Harry`) are British English. Served from 14 regions, `eastus2` among them. Public preview: no service-level agreement. |
+| MAI styles | Per voice, from the docs' table. Emily: `agent`, `angry`, `audiobook`, `confused`, `customer_call_center`, `disgusted`, `educational`, `embarrassed`, `excited`, `fearful`, `happy`, `jealous`, `joyful`, `narrator`, `neutral`, `sad`, `surprised`. Harry: `agent`, `angry`, `audiobook`, `customer_call_center`, `disgusted`, `educational`, `fearful`, `joyful`, `narrator`, `neutral`, `sad`, `surprised`. Both have `narrator`, `educational` and `audiobook`. The page's own sample uses `style="happiness"`, which neither table lists. |
 | Errors | 400 bad request, 401 key or region wrong, 415 wrong content type, 429 too many, 502 and 503 server side. |
 | Limit | Audio over 10 minutes is cut; a narrated line never nears it. |
 
-Not yet known: which `…/cognitiveservices/v1` path the custom-subdomain host takes for synthesis
+Not yet known: whether the MAI voices answer in a WAV (`riff-24khz-16bit-mono-pcm`; the page's sample asks
+for MP3), which style names the service takes, whether `voices/list` lists them and under which names,
+which `…/cognitiveservices/v1` path the custom-subdomain host takes for synthesis
 (the page shows `/cognitiveservices/v1` on the host and `/tts/cognitiveservices/…` for the voice list),
 and whether the Foundry resource of plan.md (`jonk4-me1wfl8r-eastus2`, the same key) also serves Speech
 at `https://jonk4-me1wfl8r-eastus2.cognitiveservices.azure.com`. Step 1 finds out.
@@ -50,8 +56,11 @@ at `https://jonk4-me1wfl8r-eastus2.cognitiveservices.azure.com`. Step 1 finds ou
 
 ### A1. A voice names its service: `speech:`
 
-`speech:nl-NL-FennaNeural` goes to Azure Speech; `azure:coral` stays Azure OpenAI's. A name with no prefix is a Windows voice, as before.
-The language of the SSML (`xml:lang`) is the voice name's first two parts (`nl-NL`).
+`speech:en-GB-Emily:MAI-Voice-2.1` goes to Azure Speech; `azure:coral` stays Azure OpenAI's. A name with
+no prefix is a Windows voice, as before. Only the first `speech:` is cut; the rest, including the
+`:MAI-Voice-2.1` model suffix, goes to the service whole, so a neural voice (`nl-NL-FennaNeural`) and a
+MAI voice are named the same way. The language of the SSML (`xml:lang`) is the voice name's first two
+parts (`en-GB`).
 
 ### A2. The settings join `voice.secrets.json`
 
@@ -64,7 +73,7 @@ the existing top-level fields stay Azure OpenAI's, so a file that works today st
   "speech": {
     "endpoint": "https://<resource>.cognitiveservices.azure.com",
     "key": "<speech key>",
-    "voice": "nl-NL-FennaNeural"
+    "voice": "en-GB-Emily:MAI-Voice-2.1"
   }
 }
 ```
@@ -84,12 +93,14 @@ No token flow: no refresh, no host-scoped tokens, and the key works on every end
 
 The narrator builds the SSML: the text XML-escaped (`&`, `<`, `>`, quotes), one `<voice>`; output
 `riff-24khz-16bit-mono-pcm` (the Azure OpenAI voice's rate, so the video composer sees one shape);
-`User-Agent: Bruinet.Narrator`. `FixHeader` runs anyway, as the length comes from the header.
+`User-Agent: Bruinet.Narrator`. `FixHeader` runs anyway, as the length comes from the header. If a MAI
+voice will not answer in a WAV (step 1), the request asks for `raw-24khz-16bit-mono-pcm` and the narrator
+writes the 44-byte WAV header itself: no MP3 decoder, which the narrator does not have.
 
 ### A5. Tone is a style
 
-For a `speech:` voice the script's `Instructions` is a style name (`friendly`, `cheerful`), sent as
-`mstts:express-as`. Free text is not understood by this service; the script check warns when the
+For a `speech:` voice the script's `Instructions` is a style name, sent as `mstts:express-as`: for a
+video voice-over `narrator`, `educational` or `audiobook`, which Emily and Harry both have. Free text is not understood by this service; the script check warns when the
 voice's `StyleList` lacks the style, once the voices list is cached. Step 1 finds out what the service
 does with a style the voice lacks.
 
@@ -121,31 +132,64 @@ fails and names the places looked in; it never becomes another voice.
 | 429, 502, 503 | busy: retried after `Retry-After`, a few times, then fails naming it |
 | network error | the endpoint cannot be reached |
 
+### A10. MAI-Voice-2.1, not Flash, for videos
+
+The model is part of the name, so a script picks it. Videos are rendered ahead, so latency does not
+matter and the long-form model's fidelity does; `-Flash` is for a voice that answers a person live.
+Emily is the first default (she is listed first in the gallery); Harry is a name away.
+
 ## 5. Steps
 
 Each step one commit, with tests; no test calls the real service.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | **By hand, before code** (the owner's key): `curl` the voices list and one SSML synthesis against the regional host and the resource host; try the resource of plan.md; try a style the voice lacks. Write the findings to `speech-results.md`. | A2's endpoint forms, A4's path and A5's behaviour are known |
+| 1 | **By hand, before code** (the owner's key, below): Emily in a WAV against the regional host, the same with raw PCM if the WAV fails, the resource host of plan.md's Foundry resource, the voices list, and a style the voice lacks (`whispering` on Harry). Write the findings to `speech-results.md`. | A2's endpoint forms, A4's output, A5's styles and A7's list are known |
 | 2 | **Share the pieces** (A6) out of `AzureOpenAiSpeech`. | `CloudVoiceTests` pass unchanged |
 | 3 | **Settings** (A2): the `speech` object, the variables, `Find`, `Places`, `Describe`, `Save`, `Delete` for it; the example file. | Tests: order, a half-filled section, saving one service keeps the other, the key in no message; the ignore rule covers the file as before |
 | 4 | **`AzureSpeech`** (A1, A3, A4, A9) and `Speech.Find` for `speech:` and A8's order. | Fake `HttpMessageHandler` tests: the URL for a region, a resource URL and a pasted URL; the header; the SSML with `Tom & Jerry` escaped; the language from the name; each error; the cache serves a second line |
 | 5 | **Styles** (A5): `Instructions` as `express-as`; the script check. | Parser, SSML and check tests |
 | 6 | **The voices list** (A7). | Tests with a canned list: by locale, cached, a stale or broken cache refetched |
 | 7 | **The Presenter**: an Azure Speech part under Narrator beside the Cloud voice part (state line, endpoint, key as a password field, default voice, locale and voice pickers, Try, Save, Remove, the workspace choice of settings-plan.md S2); the Default voice picker gains `speech:` voices. | Presenter tests and dogfood scenarios as in settings-plan.md step 5; the developer's real file unchanged after a run |
-| 8 | **Docs and by hand**: the guide's Cloud voice section (Azure Speech: the settings, the voices, prices as the pricing page says then), AD-024 amended (voices by service); the owner records a script with `speech:`. | The video speaks the Speech voice; a second recording uses the cache |
+| 8 | **Docs and by hand**: the guide's Cloud voice section (Azure Speech: the settings, the MAI voices and their styles, prices as the pricing page says then), AD-024 amended (voices by service); the owner records a script with `speech:en-GB-Emily:MAI-Voice-2.1`. | The video speaks the Speech voice; a second recording uses the cache |
+
+### Step 1, by hand (PowerShell 7)
+
+The key stays in the owner's shell; nothing here is saved. Set `$key` to the Speech resource's key (the
+Keys and Endpoint page of the Foundry resource) and `$region` to its region (`eastus2`).
+
+```powershell
+@'
+<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-GB">
+  <voice name="en-GB-Emily:MAI-Voice-2.1">
+    <mstts:express-as style="narrator">This is Emily, the voice of the video.</mstts:express-as>
+  </voice>
+</speak>
+'@ | Set-Content emily.ssml
+
+curl.exe -sS -D - -o emily.wav -X POST "https://$region.tts.speech.microsoft.com/cognitiveservices/v1" `
+  -H "Ocp-Apim-Subscription-Key: $key" -H "Content-Type: application/ssml+xml" `
+  -H "X-Microsoft-OutputFormat: riff-24khz-16bit-mono-pcm" -H "User-Agent: Bruinet.Narrator" --data-binary "@emily.ssml"
+```
+
+Then the same with `raw-24khz-16bit-mono-pcm` and `-o emily.raw` (if the WAV answer is not a 200 or does not
+play), with the host `https://<resource>.cognitiveservices.azure.com` and the path `/cognitiveservices/v1`
+and again `/tts/cognitiveservices/v1`, with `style="happiness"` and with a style Emily lacks, and
+`GET …/tts/cognitiveservices/voices/list` (look for `MAI`). Write down for each: the status, the headers
+the service returned, whether the audio plays, and the exact voice names the list gives.
 
 ## 6. Open questions
 
 | # | Question | Leaning |
 | --- | --- | --- |
-| Q1 | The prefix: `speech:` or `azure-speech:`? | `speech:`: the voice names (`nl-NL-FennaNeural`) are plainly Azure's, and `azure:` is taken. |
+| Q1 | The prefix: `speech:` or `azure-speech:`? | `speech:`: the voice names (`en-GB-Emily:MAI-Voice-2.1`) are plainly Azure's, and `azure:` is taken. |
 | Q2 | The settings in the same file or `speech.secrets.json`? | The same file (A2): one ignore rule, one Presenter save path, and the first voice's file keeps working. |
 | Q3 | Microsoft Entra ID instead of a key? | Later, as in plan.md Q3: it needs Azure.Identity and the `aad#` token form. |
 | Q4 | HD voices and pronunciation (a lexicon, `sub` and `phoneme` in SSML) for product names? | Later: a voice name passes through already; pronunciation is its own step if a product name is said wrongly. |
 | Q5 | 24 kHz or 48 kHz? | 24 kHz (A4); 48 kHz only if the video's audio is judged thin. |
 | Q6 | Rate and pitch (`prosody`) in the script? | Not now: the beat paces the video, and a style gives the tone. |
+| Q7 | Emily or Harry as the settings' default voice? | Emily, as the first in the gallery; the owner says if Harry. |
+| Q8 | Is a preview voice acceptable for the videos? | Yes for the owner's own and review videos; check the preview terms (the docs say Microsoft holds the commercial licensing rights) before a video goes public. |
 
 ## 7. Risks
 
@@ -155,8 +199,10 @@ Each step one commit, with tests; no test calls the real service.
 - **SSML breaks on a line with `&` or `<`.** The escape is tested with such a line.
 - **The key leaks.** The rules of plan.md V1 and settings-plan.md S3, with the same tests on the new section.
 - **A key from another region.** The 401 message says so, as the service's page does.
+- **A preview service changes or goes.** No SLA: the voice name and styles may change. The settings hold the voice name, so one edit moves a script to another voice, and the Windows voice is the way back.
 - **Cost of a long script.** The cache makes a re-recording free; the guide quotes the current prices.
 
 ## Sources
 
 - [Text to speech REST API (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech)
+- [MAI-Voice-2.1 and MAI-Voice-2.1-Flash (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-voices)
