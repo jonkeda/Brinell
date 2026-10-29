@@ -96,6 +96,7 @@ public sealed class SpeechSecretsTests : IDisposable
     [InlineData("eastus2", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/v1", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/voices/list")]
     [InlineData("EastUS2", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/v1", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/voices/list")]
     [InlineData("https://eastus2.tts.speech.microsoft.com", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/v1", "https://eastus2.tts.speech.microsoft.com/cognitiveservices/voices/list")]
+    [InlineData("https://westeurope.api.cognitive.microsoft.com/", "https://westeurope.tts.speech.microsoft.com/cognitiveservices/v1", "https://westeurope.tts.speech.microsoft.com/cognitiveservices/voices/list")]
     [InlineData("https://res.cognitiveservices.azure.com", "https://res.cognitiveservices.azure.com/cognitiveservices/v1", "https://res.cognitiveservices.azure.com/tts/cognitiveservices/voices/list")]
     [InlineData("https://res.cognitiveservices.azure.com/speech/path?api-version=1", "https://res.cognitiveservices.azure.com/cognitiveservices/v1", "https://res.cognitiveservices.azure.com/tts/cognitiveservices/voices/list")]
     public void TheEndpoint_AsARegion_AResourceUrl_OrAPastedUrl_NamesTheSameHost(string endpoint, string synthesis, string voices)

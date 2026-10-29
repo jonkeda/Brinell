@@ -55,7 +55,7 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
     /// <summary>The settings without the key, so they can be shown.</summary>
     public override string ToString() => $"{Endpoint}, voice {Voice ?? DefaultVoice}, {SampleRate} Hz, key set";
 
-    /// <summary>The host an endpoint names: a region (<c>eastus2</c>) is made into its regional host; a URL is cut to its scheme and host.</summary>
+    /// <summary>The host an endpoint names: a region (<c>eastus2</c>), or a regional <c>*.api.cognitive.microsoft.com</c> URL, is made into its text-to-speech host; any other URL is cut to its scheme and host.</summary>
     /// <param name="endpoint">The endpoint as given.</param>
     public static string HostOf(string endpoint)
     {
@@ -66,7 +66,16 @@ public sealed record SpeechSecrets(string Endpoint, string Key)
             return $"https://{text.ToLowerInvariant()}.tts.speech.microsoft.com";
         }
 
-        return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? $"{uri.Scheme}://{uri.Authority}" : text.TrimEnd('/');
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri))
+        {
+            return text.TrimEnd('/');
+        }
+
+        // The regional endpoint of a Cognitive Services key (westeurope.api.cognitive.microsoft.com) is not a text-to-speech host: its region's is.
+        const string Regional = ".api.cognitive.microsoft.com";
+        return uri.Host.EndsWith(Regional, StringComparison.OrdinalIgnoreCase) && uri.Host.Length > Regional.Length && !uri.Host[..^Regional.Length].Contains('.', StringComparison.Ordinal)
+            ? $"https://{uri.Host[..^Regional.Length].ToLowerInvariant()}.tts.speech.microsoft.com"
+            : $"{uri.Scheme}://{uri.Authority}";
     }
 
     /// <summary>Why an endpoint cannot be used, or null when it can.</summary>
