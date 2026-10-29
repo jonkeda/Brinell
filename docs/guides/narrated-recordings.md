@@ -46,8 +46,8 @@ That was the list.
 | Part | Means |
 | --- | --- |
 | `# Video:` | the video's title |
-| `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for a cloud voice), and the wait after each step in ms; the settings when left out |
-| `Instructions` | how a cloud voice says the lines (its tone); the settings when left out |
+| `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for Azure OpenAI, `azure-speech-service:en-GB-Emily:MAI-Voice-2.1` for Azure Speech), and the wait after each step in ms; the settings when left out |
+| `Instructions` | how a cloud voice says the lines: its tone, or for Azure Speech a style name (`narrator`); the settings when left out |
 | `Touches`, `TouchColor` | the touch marks: `on` (the default), `off` or `outline-only`, and their colour as `#RRGGBB`; the settings, then Exact red `#E8111E`, when left out ([Touch Marks](#touch-marks)) |
 | `## Scene:` | a chapter; one scenario, run and recorded |
 | `Scenario:` | the scenario's address: its file relative to the suite's config, `#`, its name with every run of other characters as one `-` (the `BddScenario` trait) |
@@ -88,6 +88,7 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRUINET_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
 | `BRUINET_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
 | `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
+| `BRUINET_SPEECH_ENDPOINT`, `BRUINET_SPEECH_KEY`, `BRUINET_SPEECH_VOICE`, `BRUINET_SPEECH_SAMPLE_RATE` | Azure Speech's settings, over the file's `speech` object ([Azure Speech](#azure-speech)) |
 | `BRUINET_RECORDERS` | a folder with `Bruinet.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRUINET_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
 
@@ -148,6 +149,52 @@ their voice, instructions and text, so recording a scene again costs nothing. A 
 names a cloud voice fails when none is set up, or when the service refuses (the message says
 why); it never falls back to another voice. `BRUINET_VOICE_INSTRUCTIONS` gives the tone when the
 script does not.
+
+## Azure Speech
+
+Azure AI Speech, the service with a named neural voice for each language and region, speaks the lines when a
+script, `BRUINET_VOICE` or the IDEs' Voice setting names `azure-speech-service:<voice>`: the voice's name as
+the service gives it, after the prefix. A neural voice (`azure-speech-service:nl-NL-FennaNeural`) and a MAI voice
+(`azure-speech-service:en-GB-Emily:MAI-Voice-2.1`, the model after a colon) are named the same way; the name goes
+to the service whole, and its first two parts are the language. It is the second cloud voice: the same voice
+every time, billed per character with a free tier (the service's pricing page has the current prices).
+`azure:` names stay Azure OpenAI's.
+
+```markdown
+| Field | Value |
+| --- | --- |
+| Voice | azure-speech-service:en-GB-Emily:MAI-Voice-2.1 |
+| Instructions | narrator |
+```
+
+`Instructions` is a **style**, not free text: `narrator`, `educational` or `audiobook` suit a voice-over, and
+Emily and Harry (`en-GB-Harry:MAI-Voice-2.1`) both have them. Once the voices list has been loaded (the
+Presenter's **Load voices**), the script check warns, as VID030, when the voice lacks the style. Use
+`MAI-Voice-2.1`, not `-Flash`, for a video: the long-form model's fidelity matters there, its latency does not.
+The MAI voices are in public preview, with no service-level agreement; a video that is published should use a generally
+available neural voice, named the same way.
+
+The settings are the `speech` object of the same `voice.secrets.json`, found in the same places; the file's other fields stay the Azure OpenAI
+voice's, and saving one never changes the other:
+
+```json
+{
+  "speech": {
+    "endpoint": "eastus2",
+    "key": "<the Speech resource's key>",
+    "voice": "en-GB-Emily:MAI-Voice-2.1",
+    "sampleRate": 24000
+  }
+}
+```
+
+The endpoint is a region (`eastus2`), the resource's URL, or a URL pasted with a path (the path is dropped).
+`sampleRate` is `24000` (the default, the Azure OpenAI voice's rate) or `48000`; anything else is refused.
+`BRUINET_SPEECH_*` override the file. The key goes only into the `Ocp-Apim-Subscription-Key` header. A line is
+asked for once, as for the other voice; the clip's name holds the service, the voice, the style, the sample rate
+and the text. With no voice named, Azure OpenAI is used when it is set up, else Azure Speech, else a Windows
+voice. A named Azure Speech voice fails when it has no settings, and when the service answers 401 (the key is wrong or
+belongs to another region), 400 (check the voice's name) or stays busy after a few asks.
 
 ## Touch Marks
 

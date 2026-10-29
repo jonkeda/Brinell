@@ -200,7 +200,7 @@ the service returned, whether the audio plays, and the exact voice names the lis
    preview voice until the preview ends and its terms are read; a generally available neural voice, named the
    same way, is the voice for those. *(To confirm: the answer to 8 and the choice of Emily in 7 meet here.)*
 
-Not started: the steps wait for the owner's go; step 1 is the owner's, with a key.
+Built 2026-10-29: steps 2 to 7 and the docs of step 8, on the plan's assumptions (a WAV answer, the `/cognitiveservices/v1` path on a resource host, a style the voice lacks sent as it is). Not done: step 1 (the owner's, with a key: it confirms those assumptions, and `speech-results.md` records them), the Presenter's dogfood scenarios, and the owner's recording with Emily.
 
 ## 7. Risks
 

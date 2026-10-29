@@ -200,6 +200,14 @@ second click. The key is typed into a password field and never shown again: afte
 says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
 lists the `azure:` voices.
 
+**Azure Speech** is the part below it ([Azure Speech](../guides/narrated-recordings.md#azure-speech)): the
+same state line and key rules, an endpoint (a region such as `eastus2`, or the resource's URL), the **Language**
+(the system's to begin with) and the **Voices** of that language from the service's list, the **Default voice**
+(typed, or picked), and the **Sample rate** (24000 or 48000). **Load voices** asks the service and keeps the
+list, so later the picker needs no call; **Try** speaks a sample line before anything is saved; **Save** writes
+the file's `speech` object, in the place the Cloud voice part shows, keeping the Azure OpenAI fields; **Remove**
+takes only that object out, after a second click. Its voices join the Voice picker as `azure-speech-service:`.
+
 ### Narrator mode
 
 Narrator mode makes a whole video script (`*.video.md`) into its video from Presenter, a scene at
