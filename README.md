@@ -21,6 +21,9 @@ git clone https://github.com/exact-mobile-apps/test-tooling.git Bruinet
 - [Framework Overview](docs/getting-started/framework-overview.md)
 - [Build And Test](docs/run/build-and-test.md)
 - [Spec Status](docs/specs/README.md)
+- [MAUI headless](docs/guides/maui-headless.md): MAUI suites without a device
+- [bUnit head](docs/guides/bunit.md): Blazor suites without a browser
+- [Narrated recordings](docs/guides/narrated-recordings.md): a scenario run on video with a voice-over, from a Windows voice or Azure
 
 The previous documentation tree is preserved in [docs2](docs2/README.md) while
 the active docs are rebuilt.
@@ -47,17 +50,21 @@ MSBuild, and build from `tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio
 | `Bruinet.Maui.Appium` | Appium driver adapter for MAUI/mobile |
 | `Bruinet.Maui.FlaUI` | FlaUI driver adapter for Windows MAUI |
 | `Bruinet.Maui.CommunityToolkit` | MAUI Community Toolkit control support |
+| `MauiHeadless` | Headless component testing for .NET MAUI: pages, views and view models rendered without a device, emulator or window, on xUnit, NUnit or MSTest |
+| `Bruinet.Maui.Headless` | MauiHeadless as a Bruinet head (`BRUINET_HEAD=headless`): the same MAUI page objects and controls, no device |
 | `Bruinet.Wpf` | WPF automation through FlaUI |
 | `Bruinet.WinForms` | WinForms automation through FlaUI |
 | `Bruinet.Html` | HTML/web testing abstractions and Selenium support |
 | `Bruinet.Html.Playwright` | Playwright-backed web automation |
+| `Bruinet.Html.Bunit` | bUnit head for Bruinet.Html: the same page objects on a rendered component, no browser |
 | `Bruinet.Blazor` | Blazor-focused testing helpers |
 | `Bruinet.Stride` | Stride UI testing integration |
 | `Bruinet.Stride.Automation` | In-app automation hooks used by Stride-style tests |
 | `Bruinet.Mocking` | WireMock and mock sensor helpers |
 | `Bruinet.NativeAndroid` | Native Android apps through Appium: page objects and generated controls in MAUI's and Html's shape |
 | `Bruinet.Uat` | Markdown-driven UAT scenario runtime |
-| `Bruinet.Presenter` | Desktop presenter for UAT workspaces |
+| `Bruinet.Narrator` | Narrated recordings: video scripts (`*.video.md`) with SSML in their lines, `pronunciations.md`, and the voices: Windows', Azure OpenAI and Azure Speech |
+| `Bruinet.Presenter` | Desktop presenter for UAT workspaces; sets up the narrator's voices |
 
 ## Source Layout
 
