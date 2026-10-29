@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Voice | azure-speech-service:en-GB-Emily:MAI-Voice-2.1 |
+| Voice | azure-speech-service:en-US-Harper:MAI-Voice-2.1 |
 | Instructions | narrator |
 | Beat | 400 |
 
