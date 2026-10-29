@@ -70,7 +70,7 @@ Plain text is XML-escaped when the SSML is built (`Tom & Jerry` stays safe besid
 
 An optional interface `ISsmlSynthesizer : ISpeechSynthesizer` with `SynthesizeSsmlAsync(ssml, voice, wavPath, ct)`
 and the set of elements it supports. `WindowsSpeech` and Azure Speech implement it; `AzureOpenAiSpeech`
-does not and gets the reduced line. The same capability table, by the voice's prefix (none, `speech:`,
+does not and gets the reduced line. The same capability table, by the voice's prefix (none, `azure-speech-service:`,
 `azure:`), feeds the script check without a synthesizer in hand.
 
 ### M4. v1 elements
