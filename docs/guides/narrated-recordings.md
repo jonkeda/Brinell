@@ -2,8 +2,8 @@
 
 Record a scenario, or a whole video script of scenarios, on video with a voice-over that says
 what is happening. The scenarios run as the gate runs them (AD-024); the app is recorded while
-they run, and each spoken line is waited for before its step, so the voice and the app stay in
-step. Each tap, swipe and key the test makes is marked on the video ([Touch Marks](#touch-marks)).
+they run, each spoken line plays while its step runs, and each action is held long enough to be
+seen ([Pacing](#pacing)), so the voice and the app stay in step. Each tap, swipe and key the test makes is marked on the video ([Touch Marks](#touch-marks)).
 Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test`.
 
 ## You Need
@@ -28,6 +28,7 @@ Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test
 | --- | --- |
 | Voice | Microsoft Zira |
 | Beat | 600 |
+| Pause | 700 |
 
 ## Scene: Opening the app
 
@@ -47,18 +48,35 @@ That was the list.
 | --- | --- |
 | `# Video:` | the video's title |
 | `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for Azure OpenAI, `azure-speech-service:en-GB-Emily:MAI-Voice-2.1` for Azure Speech), and the wait after each step in ms; the settings when left out |
+| `Pause`, `Say` | the least time an action takes in ms (0 to 5000), and `while` (the default) or `before`: when a step's line is said ([Pacing](#pacing)) |
 | `Instructions` | how a cloud voice says the lines: its tone, or for Azure Speech a style name (`narrator`); the settings when left out |
 | `Touches`, `TouchColor` | the touch marks: `on` (the default), `off` or `outline-only`, and their colour as `#RRGGBB`; the settings, then Exact red `#E8111E`, when left out ([Touch Marks](#touch-marks)) |
 | `## Scene:` | a chapter; one scenario, run and recorded |
 | `Scenario:` | the scenario's address: its file relative to the suite's config, `#`, its name with every run of other characters as one `-` (the `BddScenario` trait) |
 | paragraph before the table | said before the first step |
-| `Step`, `Say` | said before that step; the step as the scenario writes it, keyword included (a `## Step:` call by its call line). A step with no row runs silently |
+| `Step`, `Say` | said as that step runs (or before it, with `Say \| before`); the step as the scenario writes it, keyword included (a `## Step:` call by its call line). A step with no row runs silently |
 | paragraph after the table | said after the last step |
 
 The preview shows the script as it will play: every step of each scene, with its line or
 *silent*. It is checked like a feature file: an address or a `Say` row that finds nothing is an
 error (`VID011`-`VID013`), a row out of step order a warning (`VID014`); markup in a line has its own
 codes ([Markup In A Line](#markup-in-a-line)).
+
+## Pacing
+
+Three waits keep a recording watchable; none of them is in a test run that does not record.
+
+| Wait | When | How long |
+| --- | --- | --- |
+| The line | a step's line starts as the step starts; the step ends when both have | the line's length |
+| The pause | after each control action: a click, a choice, text set or cleared, a key | until the action has taken `Pause` (700 ms by default); a slower action waits nothing more |
+| The beat | after a step and its line | `Beat` (600 ms by default) |
+
+The pause is per action, not per step, so a page-object method that opens a list and picks from it
+shows both. An action that runs another (an Invoke as a Click) pauses once, reads and asserts never
+pause, and the pause is not part of the call's own time in the log. `Say | before` keeps the older
+order: each line is said, then its step runs in silence. A scene's kept recording is out of date
+when `Pause` or `Say` change.
 
 ## Markup In A Line
 
@@ -145,7 +163,7 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRUINET_RECORD_DIR` | the Recordings folder; `TestResults\<run>` when not set (the IDEs and Presenter: `TestResults\recordings`) |
 | `BRUINET_RECORD_OUT` | the scenes folder, for a host that names the video |
 | `BRUINET_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
-| `BRUINET_VOICE`, `BRUINET_BEAT` | the voice and the beat (ms), when the script does not say |
+| `BRUINET_VOICE`, `BRUINET_BEAT`, `BRUINET_PAUSE` | the voice, the beat (ms) and the action pause (ms), when the script does not say |
 | `BRUINET_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
 | `BRUINET_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
 | `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
@@ -299,7 +317,7 @@ happened and marked in the timeline. A scenario recorded on its own is named aft
 
 Kept scenes (Narrator mode, or `BRUINET_RECORD_KEEP`) stay in `<script>.scenes\scene-NN`: the
 scene's `video.mp4`, its spoken lines and its `timeline.json`, which holds what the scene was
-recorded from. A scene whose lines, steps, voice or beat changed since is out of date.
+recorded from. A scene whose lines, steps, voice, beat, pause or `Say` changed since is out of date.
 
 ## Recorders
 

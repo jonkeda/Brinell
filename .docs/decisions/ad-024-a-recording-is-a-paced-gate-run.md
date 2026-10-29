@@ -6,7 +6,7 @@ the tool that asks for it:
 | Decision | What holds |
 | --- | --- |
 | **The runner records** | A gate run with `BRUINET_RECORD` records its scenes (`Bruinet.Uat` through `Bruinet.Narrator`). Visual Studio, VS Code, the MCP tool `record_video` and CI only set the variables and run `dotnet test`; Presenter asks its suite's runner process for the same pacer and recorder (AD-025). One engine, so a recording shows what the gate does. |
-| **Timing is a seam, not a wait** | `BddExecutionContext.Pacer` (`IBddStepPacer`) is waited on before and after each step; it is null unless something records. The voice is made before the run, so each line's length is known; the run only takes as long as the speech, and the voice is laid in afterwards at its recorded time. |
+| **Timing is a seam, not a wait** | `BddExecutionContext.Pacer` (`IBddStepPacer`) is waited on before and after each step; it is null unless something records. The voice is made before the run, so each line's length is known; a line plays while its step runs (`Say \| before`: before it), the run only takes as long as the speech, and the voice is laid in afterwards at its recorded time. The second seam is the call model: while a scene records, `ControlCalls.Act` holds each outermost action until it has taken the scene's pause (`ActionPacing`, set beside the interaction log), outside the call's logged time, so a step that does several things shows each. |
 | **Narration lives in a video script** | `*.video.md`: scenes, each a scenario address, an intro, `Step | Say` rows and an outro. A feature file stays a test. The script is checked like a feature file (AD-022's one checker, `VID0xx`). |
 | **Capture is not input** (AD-005) | A recorder reads what is already drawn: Windows.Graphics.Capture for a window (it records a covered one), Chromium's screencast for a page, `adb screenrecord` for a device. It never focuses, activates or moves the app. The screen-region recorder, which records whatever covers the area, is only the last resort. |
 | **One clock, separate outputs** | Every time is on the `Stopwatch` clock, so a step's time in `timeline.json` is its time in the video. The video, the `.srt` captions and the timeline are separate files; the captions are never burned in. ffmpeg encodes, lays in the voice and joins the scenes; Record checks for it first. |
@@ -36,6 +36,8 @@ hand drift from the speech and slow every test run. Evidence (at 9f27d29d):
 **Broken when:**
 - a scenario or step definition waits for a voice, or a plain `dotnet test` run is slower after
   this change;
+- `ActionPacing.Pause` is set outside a scene that records, a read or an assert pauses, or an
+  action's pause is counted in its logged time;
 - `BddExecutionContext.Pacer` is set without `BRUINET_RECORD`, Presenter's Record, or a rehearsal
   in Presenter's Narrator mode with Speak aloud on;
 - a kept scene is stitched as current when its lines, steps, voice or beat changed since;

@@ -23,6 +23,12 @@ public sealed record BddVideoScript(string FilePath, string Title, string? Voice
     /// <summary>The touch marks' accent (<c>TouchColor</c>, <c>#RRGGBB</c>); null for the settings'.</summary>
     public string? TouchColor { get; init; }
 
+    /// <summary>The least time an action takes in the video (<c>Pause</c>); null for the settings'.</summary>
+    public TimeSpan? Pause { get; init; }
+
+    /// <summary>When a step's line is said (<c>Say</c>: <c>while</c> or <c>before</c>); null for while.</summary>
+    public BddSayMode? Say { get; init; }
+
     /// <summary>The extension of a video script.</summary>
     public const string Extension = ".video.md";
 

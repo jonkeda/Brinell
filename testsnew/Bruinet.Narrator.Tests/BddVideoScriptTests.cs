@@ -84,6 +84,36 @@ public sealed class BddVideoScriptParserTests
     }
 
     [Fact]
+    public void Pause_and_Say_are_read_and_a_value_out_of_range_is_an_error()
+    {
+        var parse = BddVideoScriptParser.Parse("""
+            # Video: V
+            | Field | Value |
+            | --- | --- |
+            | Pause | 900 |
+            | Say | Before |
+            """, "x.video.md");
+        var wrong = BddVideoScriptParser.Parse("""
+            # Video: V
+            | Field | Value |
+            | --- | --- |
+            | Pause | 6000 |
+            | Say | after |
+            | Say | 1 |
+            """, "x.video.md");
+        var none = BddVideoScriptParser.Parse("# Video: V", "x.video.md");
+
+        Assert.Empty(parse.Diagnostics);
+        Assert.Equal(TimeSpan.FromMilliseconds(900), parse.Script!.Pause);
+        Assert.Equal(BddSayMode.Before, parse.Script.Say);
+        Assert.Equal(new BddScenePacing(TimeSpan.FromMilliseconds(900), BddSayMode.Before), BddScenePacing.Of(parse.Script));
+        Assert.Equal([4, 5, 6], wrong.Diagnostics.Where(diagnostic => diagnostic.Code == BddVideoScriptParser.BadValueCode).Select(diagnostic => diagnostic.Location.LineNumber));
+        Assert.Null(wrong.Script!.Pause);
+        Assert.Null(wrong.Script.Say);
+        Assert.Same(BddScenePacing.Default, BddScenePacing.Of(none.Script));
+    }
+
+    [Fact]
     public void Form_problems_are_at_their_lines()
     {
         var parse = BddVideoScriptParser.Parse("""

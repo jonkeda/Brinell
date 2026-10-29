@@ -218,7 +218,7 @@ public sealed class NarratorViewModel : ViewModelBase
                 continue;
             }
 
-            scene.Hash = BddKeptScenes.Hash(plan, script.Voice ?? voice, script.Beat ?? beat, script.Instructions);
+            scene.Hash = BddKeptScenes.Hash(plan, script.Voice ?? voice, script.Beat ?? beat, script.Instructions, BddScenePacing.Of(script));
             scene.State = scenesFolder is null ? BddSceneState.NotRecorded : BddKeptScenes.State(scenesFolder, scene.Number, scene.Hash);
             var recorded = scenesFolder is null || scene.State == BddSceneState.NotRecorded ? null : BddKeptScenes.Recorded(scenesFolder, scene.Number);
             scene.Node.Video = recorded?.Video is { } video ? Path.Combine(BddKeptScenes.SceneFolder(scenesFolder!, scene.Number), video) : null;

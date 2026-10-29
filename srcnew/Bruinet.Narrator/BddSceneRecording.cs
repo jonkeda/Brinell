@@ -17,11 +17,34 @@ public sealed record BddSceneRequest(int Number, string Name, string Scenario, s
     /// <summary>What the recording was made from (<see cref="BddKeptScenes.Hash"/>), written to its timeline; null when the scene is not kept.</summary>
     public string? Hash { get; init; }
 
+    /// <summary>The pause of each action, and when a step's line is said.</summary>
+    public BddScenePacing Pacing { get; init; } = BddScenePacing.Default;
+
     /// <summary>The scene's video file.</summary>
     public string VideoPath => Path.Combine(Folder, "video.mp4");
 
     /// <summary>The scene's timeline file.</summary>
     public string TimelinePath => Path.Combine(Folder, BddSceneTimeline.FileName);
+}
+
+/// <summary>How a scene is paced besides its beat, so its video shows what the test does.</summary>
+/// <param name="Pause">The least time an action takes while the scene records (<see cref="ActionPacing"/>).</param>
+/// <param name="Say">When a step's line is said.</param>
+public sealed record BddScenePacing(TimeSpan Pause, BddSayMode Say)
+{
+    /// <summary>The longest pause a script may ask for, in milliseconds.</summary>
+    public const int MaxPauseMs = 5000;
+
+    /// <summary>The pause when nothing says: long enough to see a list open or a field filled.</summary>
+    public static readonly TimeSpan DefaultPause = TimeSpan.FromMilliseconds(700);
+
+    /// <summary>The default pause, each line said while its step runs.</summary>
+    public static BddScenePacing Default { get; } = new(DefaultPause, BddSayMode.While);
+
+    /// <summary>A script's pacing: its <c>Pause</c> and <c>Say</c>, else the defaults.</summary>
+    /// <param name="script">The video script; null for the defaults.</param>
+    public static BddScenePacing Of(BddVideoScript? script)
+        => script is { Pause: null, Say: null } or null ? Default : new(script.Pause ?? DefaultPause, script.Say ?? BddSayMode.While);
 }
 
 /// <summary>
@@ -39,6 +62,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
     private readonly SceneInteractions _interactions = new();
     private IRecording? _recording;
     private IDisposable? _logging;
+    private IDisposable? _pacing;
     private bool _started;
     private long _startedAt;
 
@@ -52,7 +76,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
         _request = request ?? throw new ArgumentNullException(nameof(request));
         _target = target ?? throw new ArgumentNullException(nameof(target));
         _recorders = recorders ?? throw new ArgumentNullException(nameof(recorders));
-        _pacer = new BddNarrationPacer(request.Clips, request.Beat, play);
+        _pacer = new BddNarrationPacer(request.Clips, request.Beat, play, request.Pacing.Say);
     }
 
     /// <summary>The scene.</summary>
@@ -148,12 +172,17 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
 
         // The test's taps and swipes, for the touch marks drawn when the video is composed.
         _logging = Interactions.Begin(target, _interactions);
+
+        // Each action held long enough to be seen on the video.
+        _pacing = ActionPacing.Begin(_request.Pacing.Pause);
     }
 
     private void StopLogging()
     {
         _logging?.Dispose();
         _logging = null;
+        _pacing?.Dispose();
+        _pacing = null;
     }
 
     private sealed class SceneInteractions : IInteractionLog

@@ -3,30 +3,34 @@ using System.Diagnostics;
 namespace Bruinet.Narrator;
 
 /// <summary>
-/// Paces one scene: before a written step, its spoken line's length (the run only has to take as
-/// long as the speech; the voice is laid in afterwards); after it, a beat for its result to be seen.
-/// It writes down when each step and line happened, on the <see cref="Stopwatch"/> clock the
-/// recorder uses.
+/// Paces one scene: a written step's spoken line plays while the step runs (or, with
+/// <see cref="BddSayMode.Before"/>, before it), the run only taking as long as the speech; the voice
+/// is laid in afterwards. After the step and its line, a beat for its result to be seen. It writes
+/// down when each step and line happened, on the <see cref="Stopwatch"/> clock the recorder uses.
 /// </summary>
 public sealed class BddNarrationPacer : IBddStepPacer
 {
     private readonly BddSceneClips _clips;
     private readonly TimeSpan _beat;
     private readonly Func<SpeechClip, CancellationToken, Task>? _play;
+    private readonly BddSayMode _say;
     private readonly List<StepTimes> _steps = [];
     private readonly List<(SpeechClip Clip, long Start)> _spoken = [];
     private StepTimes? _current;
+    private Task _speaking = Task.CompletedTask;
     private bool _started;
 
     /// <summary>Creates the pacer for one scene.</summary>
     /// <param name="clips">The scene's spoken lines, made before the run.</param>
     /// <param name="beat">The wait after a step.</param>
     /// <param name="play">Plays a line aloud while it is waited for; null to wait in silence.</param>
-    public BddNarrationPacer(BddSceneClips clips, TimeSpan beat, Func<SpeechClip, CancellationToken, Task>? play = null)
+    /// <param name="say">Whether a step's line plays while the step runs, or before it.</param>
+    public BddNarrationPacer(BddSceneClips clips, TimeSpan beat, Func<SpeechClip, CancellationToken, Task>? play = null, BddSayMode say = BddSayMode.While)
     {
         _clips = clips ?? throw new ArgumentNullException(nameof(clips));
         _beat = beat;
         _play = play;
+        _say = say;
     }
 
     /// <inheritdoc />
@@ -47,7 +51,17 @@ public sealed class BddNarrationPacer : IBddStepPacer
             await SayAsync(_clips.Intro, cancellationToken).ConfigureAwait(false);
         }
 
-        await SayAsync(_clips.Says.GetValueOrDefault(line), cancellationToken).ConfigureAwait(false);
+        var saying = SayAsync(_clips.Says.GetValueOrDefault(line), cancellationToken);
+        if (_say == BddSayMode.Before)
+        {
+            await saying.ConfigureAwait(false);
+        }
+        else
+        {
+            // The step runs while its line plays; the line is waited for before the beat.
+            _speaking = saying;
+        }
+
         _current = new StepTimes(line, Written(invocation), Stopwatch.GetTimestamp());
         _steps.Add(_current);
     }
@@ -109,6 +123,9 @@ public sealed class BddNarrationPacer : IBddStepPacer
 
         _current.End ??= Stopwatch.GetTimestamp();
         _current = null;
+        var speaking = _speaking;
+        _speaking = Task.CompletedTask;
+        await speaking.ConfigureAwait(false);
         await Task.Delay(_beat, cancellationToken).ConfigureAwait(false);
     }
 
@@ -169,6 +186,16 @@ public sealed class BddNarrationPacer : IBddStepPacer
 
         public string? Message { get; set; }
     }
+}
+
+/// <summary>When a step's line is said (a video script's <c>Say</c> field).</summary>
+public enum BddSayMode
+{
+    /// <summary>While the step runs: the voice over what it does.</summary>
+    While,
+
+    /// <summary>Before the step runs: the step waits for its line.</summary>
+    Before,
 }
 
 /// <summary>A scene's spoken lines, made before its run.</summary>

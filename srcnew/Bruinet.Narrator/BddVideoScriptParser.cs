@@ -8,7 +8,7 @@ namespace Bruinet.Narrator;
 public sealed record BddVideoScriptParse(BddVideoScript? Script, IReadOnlyList<BddDiagnostic> Diagnostics);
 
 /// <summary>
-/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Instructions, Beat, Touches, TouchColor),
+/// Reads a video script: <c># Video: title</c>, an optional <c>Field | Value</c> table (Voice, Instructions, Beat, Pause, Say, Touches, TouchColor),
 /// then <c>## Scene: name</c> sections, each with a <c>Scenario:</c> line, an intro paragraph, a
 /// <c>Step | Say</c> table and an outro paragraph.
 /// </summary>
@@ -52,6 +52,8 @@ public static class BddVideoScriptParser
         TimeSpan? beat = null;
         BddTouchMode? touches = null;
         string? touchColor = null;
+        TimeSpan? pause = null;
+        BddSayMode? say = null;
         var scenes = new List<BddVideoScene>();
         SceneBuilder? scene = null;
 
@@ -121,7 +123,7 @@ public static class BddVideoScriptParser
             return new BddVideoScriptParse(null, diagnostics);
         }
 
-        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions, InstructionsLine = instructionsLine, Touches = touches, TouchColor = touchColor }, diagnostics);
+        return new BddVideoScriptParse(new BddVideoScript(filePath, title, voice, beat, scenes) { Instructions = instructions, InstructionsLine = instructionsLine, Touches = touches, TouchColor = touchColor, Pause = pause, Say = say }, diagnostics);
 
         void Finish()
         {
@@ -173,8 +175,20 @@ public static class BddVideoScriptParser
                 case "touchcolor":
                     Report(BddDiagnosticSeverity.Error, BadValueCode, $"TouchColor is a colour as #RRGGBB, e.g. {BddTouchMarks.DefaultColor}: not '{cells[1]}'.", number);
                     break;
+                case "pause" when int.TryParse(cells[1], NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds <= BddScenePacing.MaxPauseMs:
+                    pause = TimeSpan.FromMilliseconds(milliseconds);
+                    break;
+                case "pause":
+                    Report(BddDiagnosticSeverity.Error, BadValueCode, $"Pause is the least milliseconds an action takes in the video, a whole number up to {BddScenePacing.MaxPauseMs}: not '{cells[1]}'.", number);
+                    break;
+                case "say" when Enum.TryParse<BddSayMode>(cells[1], ignoreCase: true, out var mode) && cells[1].All(char.IsLetter):
+                    say = mode;
+                    break;
+                case "say":
+                    Report(BddDiagnosticSeverity.Error, BadValueCode, $"Say is while (a step's line plays while it runs) or before (the step waits for its line): not '{cells[1]}'.", number);
+                    break;
                 default:
-                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice, Instructions, Beat, Touches and TouchColor are.", number);
+                    Report(BddDiagnosticSeverity.Warning, UnknownFieldCode, $"'{cells[0]}' is not a video field: Voice, Instructions, Beat, Pause, Say, Touches and TouchColor are.", number);
                     break;
             }
         }

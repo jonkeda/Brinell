@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MauiUnit is renamed MauiHeadless (`srcnew/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
 
 ### Added
+- Narrated recordings pace each action: while a scene records, every control action (a click, a
+  choice, text set, a key) takes at least the script's `Pause` (`BRUINET_PAUSE`, 700 ms by
+  default), counted from the call's start, so a list that opens is seen open and a method that does
+  three things shows three. A slower action waits nothing more, an action that runs another pauses
+  once, reads never pause, and a run that does not record never waits (`ActionPacing`, AD-024).
+  The pause is outside the call's logged time, so near-misses are unchanged.
+- A step's line now plays while the step runs, and the beat follows the later of the two; a
+  script's `Say | before` keeps the old order, the step waiting for its line. Scenes kept before
+  this are out of date: their hash now holds the pause and `Say`.
 - `[UiFact]` (`Bruinet.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
   test method failed and before the test object is disposed, from the test object's own context
   (public or not) or a fixture's. xUnit v2 tells a `[Fact]`'s `After` hook nothing of the outcome,

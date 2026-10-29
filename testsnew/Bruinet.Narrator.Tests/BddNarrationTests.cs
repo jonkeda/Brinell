@@ -15,7 +15,7 @@ public sealed class BddNarrationPacerTests
             new SpeechClip("Intro.", null, TimeSpan.FromMilliseconds(60)),
             new Dictionary<int, SpeechClip> { [7] = new("You tap Sync.", null, TimeSpan.FromMilliseconds(80)) },
             new SpeechClip("Outro.", null, TimeSpan.FromMilliseconds(40)));
-        var pacer = new BddNarrationPacer(clips, TimeSpan.FromMilliseconds(30));
+        var pacer = new BddNarrationPacer(clips, TimeSpan.FromMilliseconds(30), say: BddSayMode.Before);
         var start = Stopwatch.GetTimestamp();
 
         await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer }).RunAsync(scenario);
@@ -32,6 +32,46 @@ public sealed class BddNarrationPacerTests
         Assert.True(outro.Start >= second.End + 0.02, "The outro follows the last step's beat.");
         Assert.Equal(BddStepResultStatus.Passed, timeline.Status);
         Assert.True(timeline.Duration >= outro.End - 0.01);
+    }
+
+    [Fact]
+    public async Task A_line_plays_while_its_step_runs_and_the_beat_follows_the_later_of_the_two()
+    {
+        var scenario = Scenarios.Bind();
+        var clips = new BddSceneClips(
+            new SpeechClip("Intro.", null, TimeSpan.FromMilliseconds(60)),
+            new Dictionary<int, SpeechClip> { [7] = new("You tap Sync.", null, TimeSpan.FromMilliseconds(150)) },
+            new SpeechClip("Outro.", null, TimeSpan.FromMilliseconds(40)));
+        var pacer = new BddNarrationPacer(clips, TimeSpan.FromMilliseconds(30));
+        var start = Stopwatch.GetTimestamp();
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer }).RunAsync(scenario);
+        await pacer.FinishAsync(CancellationToken.None);
+        var timeline = pacer.Timeline(1, "Opening", "Features/A.feature.md#A.1", "video.mp4", start, Stopwatch.GetTimestamp(), []);
+
+        var (intro, say, outro) = (timeline.Clips[0], timeline.Clips[1], timeline.Clips[2]);
+        var (first, second) = (timeline.Steps[0], timeline.Steps[1]);
+        Assert.True(first.Start >= intro.End - 0.01, "The intro still plays before the first step.");
+        Assert.True(second.Start < say.End - 0.05, "A step runs while its line plays.");
+        Assert.InRange(second.Start - say.Start, 0, 0.05);
+        Assert.True(outro.Start >= say.End + 0.02, "The beat follows the line when it ends after the step.");
+    }
+
+    [Fact]
+    public async Task A_failed_step_still_waits_for_its_line()
+    {
+        var scenario = Scenarios.Bind(tapFails: true);
+        var clips = new BddSceneClips(null, new Dictionary<int, SpeechClip> { [7] = new("You tap Sync.", null, TimeSpan.FromMilliseconds(120)) }, null);
+        var pacer = new BddNarrationPacer(clips, TimeSpan.Zero);
+        var start = Stopwatch.GetTimestamp();
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer }).RunAsync(scenario);
+        await pacer.FinishAsync(CancellationToken.None);
+        var end = Stopwatch.GetTimestamp();
+        var timeline = pacer.Timeline(1, "Opening", null, null, start, end, []);
+
+        Assert.Equal(BddStepResultStatus.Failed, timeline.Status);
+        Assert.True(Stopwatch.GetElapsedTime(start, end).TotalSeconds >= timeline.Clips[0].End - 0.01, "The scene ends after the line.");
     }
 
     [Fact]
@@ -102,6 +142,25 @@ public sealed class BddSceneRecordingTests : IDisposable
         Assert.InRange(tap.At, timeline.Steps[^1].Start, timeline.Duration);
         Assert.Equal(new BddBox(100, 200, 800, 600), saved.Source);
         Assert.Null(Interactions.Log);
+    }
+
+    [Fact]
+    public async Task While_the_scene_records_its_actions_are_paced_and_after_it_they_are_not()
+    {
+        var request = new BddSceneRequest(1, "Opening", "Features/A.feature.md#A.1", Path.Combine(_folder, "scene-01"), BddSceneClips.Silent, TimeSpan.Zero)
+        {
+            Pacing = new BddScenePacing(TimeSpan.FromMilliseconds(450), BddSayMode.While),
+        };
+        await using var recording = new BddSceneRecording(request, () => new RecordingTarget.Window(42), new ScreenRecorders([new FakeRecorder()]));
+        var before = ActionPacing.Pause;
+
+        await new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = recording }).RunAsync(Scenarios.Bind());
+        var during = ActionPacing.Pause;
+        await recording.FinishAsync();
+
+        Assert.Null(before);
+        Assert.Equal(TimeSpan.FromMilliseconds(450), during);
+        Assert.Null(ActionPacing.Pause);
     }
 
     [Fact]
@@ -198,6 +257,30 @@ public sealed class BddRecordingSessionTests : IDisposable
 
         Assert.Equal(Path.Combine(_suite, "Recordings", "a.run"), session.ScenesFolder, ignoreCase: true);
         Assert.Equal(TimeSpan.FromMilliseconds(250), session.Beat);
+    }
+
+    [Fact]
+    public async Task The_pause_comes_from_the_script_else_BRUINET_PAUSE_else_the_default_and_reaches_each_scene()
+    {
+        var script = Path.Combine(_suite, "Features", "a.video.md");
+        File.WriteAllText(Path.Combine(_suite, "Features", "b.video.md"), File.ReadAllText(script).Replace("# Video: A", "# Video: B\n\n| Field | Value |\n| --- | --- |\n| Pause | 900 |\n| Say | before |", StringComparison.Ordinal));
+        BddRecordingSession Session(string video, string? pause) => BddRecordingSession.FromEnvironment(_suite, new Dictionary<string, string?>
+        {
+            [BddRecordingSession.Variable] = video,
+            [BddRecordingSession.FolderVariable] = Path.Combine(_suite, "Recordings"),
+            [BddRecordingSession.PauseVariable] = pause,
+            [Ffmpeg.Variable] = Environment.ProcessPath,
+        }.GetValueOrDefault)!;
+
+        var fromScript = Session("Features/b.video.md", "300");
+        var fromVariable = Session("Features/a.video.md", "300");
+        var byDefault = Session("Features/a.video.md", null);
+        var scene = await fromScript.SceneForAsync(Path.Combine(_suite, "Features", "A.feature.md"), "A.1 Opens");
+
+        Assert.Equal(new BddScenePacing(TimeSpan.FromMilliseconds(900), BddSayMode.Before), fromScript.Pacing);
+        Assert.Equal(new BddScenePacing(TimeSpan.FromMilliseconds(300), BddSayMode.While), fromVariable.Pacing);
+        Assert.Equal(BddScenePacing.Default, byDefault.Pacing);
+        Assert.Equal(fromScript.Pacing, scene!.Pacing);
     }
 
     [Fact]

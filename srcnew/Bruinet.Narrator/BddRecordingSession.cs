@@ -12,8 +12,8 @@ namespace Bruinet.Narrator;
 /// <c>BRUINET_RECORD</c>: a <c>*.video.md</c> (full, or relative to the suite's folder) records its
 /// scenes; <c>1</c> records every scenario, silently. <c>BRUINET_RECORD_DIR</c>: the Recordings
 /// folder, the run's results folder when not set. <c>BRUINET_RECORD_OUT</c>: the scenes folder, for a
-/// host that composes the video after the run. <c>BRUINET_VOICE</c> and <c>BRUINET_BEAT</c> (ms):
-/// the settings, when the script does not say.
+/// host that composes the video after the run. <c>BRUINET_VOICE</c>, <c>BRUINET_BEAT</c> and
+/// <c>BRUINET_PAUSE</c> (ms): the settings, when the script does not say.
 /// </remarks>
 public sealed class BddRecordingSession
 {
@@ -34,6 +34,9 @@ public sealed class BddRecordingSession
 
     /// <summary>The beat in milliseconds, when the script does not say.</summary>
     public const string BeatVariable = "BRUINET_BEAT";
+
+    /// <summary>The least milliseconds an action takes in the video, when the script does not say.</summary>
+    public const string PauseVariable = "BRUINET_PAUSE";
 
     /// <summary>
     /// When set with a video script: its scenes are kept in <c>&lt;folder&gt;\&lt;script&gt;.scenes</c> and
@@ -86,6 +89,9 @@ public sealed class BddRecordingSession
 
     /// <summary>The wait after a step.</summary>
     public TimeSpan Beat { get; }
+
+    /// <summary>The pause of each action and when a line is said: the script's, else the settings'.</summary>
+    public BddScenePacing Pacing { get; init; } = BddScenePacing.Default;
 
     /// <summary>The composed video's touch marks: the script's, with <see cref="BddTouchMarks.ColorVariable"/>'s accent when it names none.</summary>
     public BddTouchMarks Touches { get; init; } = BddTouchMarks.Default;
@@ -141,10 +147,13 @@ public sealed class BddRecordingSession
         var beat = int.TryParse(read(BeatVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds)
             ? TimeSpan.FromMilliseconds(milliseconds)
             : DefaultBeat;
+        var pause = script?.Script?.Pause
+            ?? (int.TryParse(read(PauseVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var pauseMs) ? TimeSpan.FromMilliseconds(Math.Min(pauseMs, BddScenePacing.MaxPauseMs)) : BddScenePacing.DefaultPause);
+        var pacing = new BddScenePacing(pause, script?.Script?.Say ?? BddSayMode.While);
         var voice = script?.Script?.Voice ?? read(VoiceVariable);
         var instructions = script?.Script?.Instructions ?? read(InstructionsVariable);
         var synthesizer = Speech.Find(voice, instructions, configDirectory, read);
-        return new BddRecordingSession(configDirectory, script, scenes, synthesizer, voice, beat, instructions) { KeepScenes = keep, Touches = BddTouchMarks.For(script?.Script, read) };
+        return new BddRecordingSession(configDirectory, script, scenes, synthesizer, voice, beat, instructions) { KeepScenes = keep, Touches = BddTouchMarks.For(script?.Script, read), Pacing = pacing };
     }
 
     /// <summary>
@@ -165,7 +174,7 @@ public sealed class BddRecordingSession
                 Directory.Delete(run, recursive: true);
             }
 
-            return new BddSceneRequest(1, scenarioName, address, Path.Combine(run, "scene-01"), BddSceneClips.Silent, Beat);
+            return new BddSceneRequest(1, scenarioName, address, Path.Combine(run, "scene-01"), BddSceneClips.Silent, Beat) { Pacing = Pacing };
         }
 
         var scenes = Script.Script!.Scenes;
@@ -177,7 +186,7 @@ public sealed class BddRecordingSession
                 var number = IndexOf(scenes, plan.Scene) + 1;
                 var folder = SceneFolder(number);
                 var clips = await BddSceneClips.SpeakAsync(plan, _synthesizer, Voice, folder, cancellationToken).ConfigureAwait(false);
-                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat) { Hash = BddKeptScenes.Hash(plan, Voice, Beat, Instructions) };
+                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat) { Hash = BddKeptScenes.Hash(plan, Voice, Beat, Instructions, Pacing), Pacing = Pacing };
             }
         }
 

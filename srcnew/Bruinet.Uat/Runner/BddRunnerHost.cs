@@ -118,7 +118,13 @@ public sealed class BddRunnerHost
             case BddRunnerRecord record:
                 await DropRecordingAsync().ConfigureAwait(false);
                 var fixture = Opened().Fixture;
-                var scene = new BddSceneRequest(record.Number, record.Name, record.Scenario, record.Folder, Clips(record.Clips), TimeSpan.FromMilliseconds(record.BeatMilliseconds)) { Hash = record.Hash };
+                var scene = new BddSceneRequest(record.Number, record.Name, record.Scenario, record.Folder, Clips(record.Clips), TimeSpan.FromMilliseconds(record.BeatMilliseconds))
+                {
+                    Hash = record.Hash,
+                    Pacing = new BddScenePacing(
+                        record.PauseMilliseconds is { } pause ? TimeSpan.FromMilliseconds(pause) : BddScenePacing.DefaultPause,
+                        record.SayBefore ? BddSayMode.Before : BddSayMode.While),
+                };
                 _recording = new BddSceneRecording(scene, () => UatRecording.TargetOf(fixture), Recorders.Value, record.SpeakAloud ? SayAsync : null);
                 Opened().Runner.Context.Pacer = _recording;
                 return new BddRunnerDone();

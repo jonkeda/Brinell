@@ -32,7 +32,8 @@ public sealed record PresenterRecorded(string Video, bool Narrated, IReadOnlyLis
 /// <param name="Beat">The wait after a step.</param>
 /// <param name="SpeakAloud">Whether each line is also played while the run waits for it.</param>
 /// <param name="Instructions">How a cloud voice says the lines; null for its own way.</param>
-public sealed record PresenterSceneRequest(BddVideoScenePlan Plan, int Number, string Folder, string Hash, string? Voice, TimeSpan Beat, bool SpeakAloud, string? Instructions = null);
+/// <param name="Pacing">The action pause and when lines are said; null for the default.</param>
+public sealed record PresenterSceneRequest(BddVideoScenePlan Plan, int Number, string Folder, string Hash, string? Voice, TimeSpan Beat, bool SpeakAloud, string? Instructions = null, BddScenePacing? Pacing = null);
 
 /// <summary>Records Presenter's runs, the way a gate run with <c>BRUINET_RECORD</c> does.</summary>
 public interface IPresenterRecorder
@@ -156,6 +157,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var clips = BddSceneClips.Silent;
         var name = scenarioName;
         var beat = settings.Beat;
+        var pacing = BddScenePacing.Default;
         _touches = BddTouchMarks.For(null, setting: settings.TouchColor);
         if (BddRecordings.FindScene(workspacePath, featureFile, scenarioName) is { } found)
         {
@@ -164,12 +166,13 @@ public sealed class PresenterRecorder : IPresenterRecorder
             clips = await BddSceneClips.SpeakAsync(found.Scene, Speech.Find(voice, found.Script.Instructions, workspacePath), voice, sceneFolder, cancellationToken).ConfigureAwait(false);
             name = found.Scene.Scene.Name;
             beat = found.Script.Beat ?? beat;
+            pacing = BddScenePacing.Of(found.Script);
         }
 
         _narrated = !ReferenceEquals(clips, BddSceneClips.Silent);
         _title = name;
         session.Said = Play;
-        await session.RecordAsync(new BddRunnerRecord(1, name, address, sceneFolder, null, Clips(clips), beat.TotalMilliseconds, settings.SpeakAloud)).ConfigureAwait(false);
+        await session.RecordAsync(new BddRunnerRecord(1, name, address, sceneFolder, null, Clips(clips), beat.TotalMilliseconds, settings.SpeakAloud, pacing.Pause.TotalMilliseconds, pacing.Say == BddSayMode.Before)).ConfigureAwait(false);
         _recording = session;
         _recordingFolder = sceneFolder;
     }
@@ -207,7 +210,7 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var speech = Speech.Find(scene.Voice, scene.Instructions, scene.Folder);
         var clips = await BddSceneClips.SpeakAsync(scene.Plan, speech, scene.Voice, scene.Folder, cancellationToken).ConfigureAwait(false);
         session.Said = Play;
-        await session.RecordAsync(new BddRunnerRecord(scene.Number, scene.Plan.Scene.Name, scene.Plan.Address, scene.Folder, scene.Hash, Clips(clips), scene.Beat.TotalMilliseconds, scene.SpeakAloud)).ConfigureAwait(false);
+        await session.RecordAsync(new BddRunnerRecord(scene.Number, scene.Plan.Scene.Name, scene.Plan.Address, scene.Folder, scene.Hash, Clips(clips), scene.Beat.TotalMilliseconds, scene.SpeakAloud, (scene.Pacing ?? BddScenePacing.Default).Pause.TotalMilliseconds, scene.Pacing?.Say == BddSayMode.Before)).ConfigureAwait(false);
         _scene = session;
         _sceneFolder = scene.Folder;
     }

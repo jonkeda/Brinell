@@ -57,7 +57,8 @@ public static class BddKeptScenes
     /// <param name="voice">The voice it is spoken in; null for the default.</param>
     /// <param name="beat">The wait after a step.</param>
     /// <param name="instructions">How a cloud voice says the lines; null for none.</param>
-    public static string Hash(BddVideoScenePlan plan, string? voice, TimeSpan beat, string? instructions = null)
+    /// <param name="pacing">The action pause and when lines are said; null for the default.</param>
+    public static string Hash(BddVideoScenePlan plan, string? voice, TimeSpan beat, string? instructions = null, BddScenePacing? pacing = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
         var text = new StringBuilder();
@@ -69,6 +70,10 @@ public static class BddKeptScenes
         Add(plan.Scene.Outro);
         Add(voice);
         Add(((long)beat.TotalMilliseconds).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        // Always: a scene kept before its actions were paced was recorded too fast, so it is out of date.
+        pacing ??= BddScenePacing.Default;
+        Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"pacing: {(long)pacing.Pause.TotalMilliseconds} {pacing.Say}"));
 
         // Only when there are any, so a scene kept before instructions existed is not out of date.
         if (instructions is not null)

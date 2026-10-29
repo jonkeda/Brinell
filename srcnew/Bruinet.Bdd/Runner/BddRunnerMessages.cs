@@ -116,7 +116,9 @@ public sealed record BddRunnerClips(BddRunnerClip? Intro, IReadOnlyDictionary<in
 /// <param name="Clips">Its spoken lines.</param>
 /// <param name="BeatMilliseconds">The wait after a step.</param>
 /// <param name="SpeakAloud">Whether each line is announced (<see cref="BddRunnerSay"/>) for the host to play.</param>
-public sealed record BddRunnerRecord(int Number, string Name, string Scenario, string Folder, string? Hash, BddRunnerClips Clips, double BeatMilliseconds, bool SpeakAloud) : BddRunnerMessage;
+/// <param name="PauseMilliseconds">The least time an action takes while the scene records; null for the default.</param>
+/// <param name="SayBefore">Whether a step waits for its line, rather than running while it plays.</param>
+public sealed record BddRunnerRecord(int Number, string Name, string Scenario, string Folder, string? Hash, BddRunnerClips Clips, double BeatMilliseconds, bool SpeakAloud, double? PauseMilliseconds = null, bool SayBefore = false) : BddRunnerMessage;
 
 /// <summary>Paces the open scenario by its spoken lines without recording it. Answered by <see cref="BddRunnerDone"/>.</summary>
 /// <param name="Clips">The spoken lines.</param>

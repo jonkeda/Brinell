@@ -286,7 +286,8 @@ public sealed partial class PresenterShellViewModel
                     recordedScript.Voice ?? _voice,
                     recordedScript.Beat ?? TimeSpan.FromMilliseconds(_beat),
                     _speakAloud,
-                    recordedScript.Instructions);
+                    recordedScript.Instructions,
+                    BddScenePacing.Of(recordedScript));
                 RecordingStatus = $"Speaking scene {scene.Number}: {scene.Scene.Name}";
                 try
                 {

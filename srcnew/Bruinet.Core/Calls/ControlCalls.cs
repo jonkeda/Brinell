@@ -1,5 +1,6 @@
 using Bruinet.Core.Exceptions;
 using Bruinet.Core.Locators;
+using Bruinet.Core.Recording;
 using Bruinet.Core.Scopes;
 using Bruinet.Core.Utilities;
 
@@ -331,11 +332,24 @@ internal sealed class ControlCalls<TElement>(IControlHost<TElement> host)
     public void Act(Action<TElement> act, bool ensureVisible, int? timeoutMs, string caller, string? value = null)
     {
         var budget = Budget(timeoutMs);
-        host.NewCall().Run(caller, value, budget, host.AnimationMs, attempt =>
+
+        // While a video records the action takes at least its pause, outside the call's own time,
+        // so the log and the near-misses stay as a test run has them.
+        var paced = ActionPacing.Start();
+        var succeeded = false;
+        try
         {
-            ActOnce(attempt, ensureVisible, caller, budget, act);
-            return true;
-        });
+            host.NewCall().Run(caller, value, budget, host.AnimationMs, attempt =>
+            {
+                ActOnce(attempt, ensureVisible, caller, budget, act);
+                return true;
+            });
+            succeeded = true;
+        }
+        finally
+        {
+            ActionPacing.End(paced, succeeded);
+        }
     }
 
     private void ActOnce(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs, Action<TElement> act)
