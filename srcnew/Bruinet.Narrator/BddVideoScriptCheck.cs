@@ -41,6 +41,21 @@ public sealed record BddVideoScriptCheck(
     /// <summary>A Say row is out of step order.</summary>
     public const string OrderCode = "VID014";
 
+    /// <summary>A line's markup is not well-formed.</summary>
+    public const string MarkupCode = "VID020";
+
+    /// <summary>A tag-like word in a line is no SSML element, so it is not spoken.</summary>
+    public const string UnknownTagCode = "VID021";
+
+    /// <summary>An element's attribute has a value the voices do not know.</summary>
+    public const string BadAttributeCode = "VID022";
+
+    /// <summary>The script's voice does not follow an element a line uses; it is dropped, its words kept.</summary>
+    public const string UnsupportedElementCode = "VID023";
+
+    /// <summary>An element is where it may not go: inside <c>say-as</c>, <c>sub</c> or <c>phoneme</c>.</summary>
+    public const string MisplacedElementCode = "VID024";
+
     /// <summary>The script's style (<c>Instructions</c>) is not one the Azure Speech voice lists.</summary>
     public const string UnknownStyleCode = "VID030";
 
@@ -68,6 +83,11 @@ public sealed record BddVideoScriptCheck(
         void Report(BddDiagnosticSeverity severity, string code, string message, int line)
             => diagnostics.Add(new BddDiagnostic(severity, code, message, new BddSourceLocation(filePath, line)));
 
+        foreach (var (spoken, line, scene) in script.Scenes.SelectMany(scene => Spoken(scene)))
+        {
+            Markup(spoken, line, script.Voice, Report);
+        }
+
         if (UnknownStyle(script, configDirectory, read, home, speechCache) is { } unknown)
         {
             Report(BddDiagnosticSeverity.Warning, UnknownStyleCode, unknown, script.InstructionsLine);
@@ -93,6 +113,50 @@ public sealed record BddVideoScriptCheck(
 
         diagnostics.Sort((a, b) => a.Location.LineNumber.CompareTo(b.Location.LineNumber));
         return new BddVideoScriptCheck(script, diagnostics, scenes, configDirectory);
+    }
+
+    // What a scene says: its intro and outro (at the scene's heading) and each row, with the line to report at.
+    private static IEnumerable<(string Text, int Line, BddVideoScene Scene)> Spoken(BddVideoScene scene)
+    {
+        if (scene.Intro is { } intro)
+        {
+            yield return (intro, scene.Line, scene);
+        }
+
+        foreach (var say in scene.Lines)
+        {
+            yield return (say.Say, say.Line, scene);
+        }
+
+        if (scene.Outro is { } outro)
+        {
+            yield return (outro, scene.Line, scene);
+        }
+    }
+
+    // A line's markup: well-formed, its attributes known, and what the script's voice follows (null voice: the settings decide at record time).
+    private static void Markup(string text, int line, string? voice, Action<BddDiagnosticSeverity, string, string, int> report)
+    {
+        var spoken = SpokenLine.Parse(text);
+        foreach (var problem in spoken.Problems)
+        {
+            report(problem.Severity == SpokenProblemSeverity.Error ? BddDiagnosticSeverity.Error : BddDiagnosticSeverity.Warning, problem.Code,
+                $"{problem.Message} (character {problem.Position + 1} of the line)", line);
+        }
+
+        if (SsmlSupport.Of(voice) is not { } supported)
+        {
+            return;
+        }
+
+        foreach (var element in spoken.ElementsUsed.Where(element => !supported.Contains(element)))
+        {
+            report(BddDiagnosticSeverity.Warning, UnsupportedElementCode,
+                supported.Count == 0
+                    ? $"The voice '{voice}' cannot follow markup, so <{element}> is dropped and the words are kept (a <sub> says its alias)."
+                    : $"The voice '{voice}' does not follow <{element}>: it is dropped and the words are kept.",
+                line);
+        }
     }
 
     // An Azure Speech voice takes a style, not free text: once its voice list is kept, a style the voice lacks is said so.

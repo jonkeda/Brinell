@@ -191,6 +191,7 @@ th { background: var(--uat-surface); font-weight: 600; }
 /* Video scripts: what is said, and the steps that run without a word. */
 .uat-video-scenario, .uat-video-fields { color: var(--uat-muted); }
 p.uat-video-say { font-style: italic; border-left: 3px solid var(--uat-accent); padding-left: 0.6em; }
+.uat-video-markup { font-style: normal; font-size: 0.75em; border: 1px solid var(--uat-accent); border-radius: 3px; padding: 0 0.3em; margin-left: 0.3em; }
 .uat-step span.uat-video-say { display: block; font-style: italic; color: var(--uat-accent); }
 .uat-step span.uat-video-say::before { content: "\201C"; }
 .uat-step span.uat-video-say::after { content: "\201D"; }

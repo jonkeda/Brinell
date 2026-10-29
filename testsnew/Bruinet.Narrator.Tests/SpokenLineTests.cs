@@ -112,9 +112,8 @@ public sealed class SpokenLineTests
     {
         var line = SpokenLine.Parse(text);
 
-        var problem = Assert.Single(line.Problems.Where(candidate => candidate.Severity == SpokenProblemSeverity.Error).Take(1));
-        Assert.Equal(code, problem.Code);
-        Assert.Contains(says, problem.Message, StringComparison.Ordinal);
+        var problem = Assert.Single(line.Problems, candidate => candidate.Message.Contains(says, StringComparison.Ordinal));
+        Assert.Equal((code, SpokenProblemSeverity.Error), (problem.Code, problem.Severity));
         Assert.InRange(problem.Position, 0, text.Length);
     }
 

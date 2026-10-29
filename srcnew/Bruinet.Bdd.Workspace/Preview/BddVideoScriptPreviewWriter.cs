@@ -69,7 +69,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
 
         if (scene.Intro is { } intro)
         {
-            _html.Append($"<p class=\"uat-video-say\" data-line=\"{scene.ScenarioLine}\">{Encode(intro)}</p>\n");
+            _html.Append($"<p class=\"uat-video-say\" data-line=\"{scene.ScenarioLine}\">{Said(intro)}</p>\n");
         }
 
         if (plan is not null)
@@ -81,7 +81,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
                 var line = say?.Line ?? scene.ScenarioLine;
                 var spoken = say is null
                     ? "<span class=\"uat-video-silent\">silent</span>"
-                    : $"<span class=\"uat-video-say\">{Encode(say.Say)}</span>";
+                    : $"<span class=\"uat-video-say\">{Said(say.Say)}</span>";
                 _html.Append($"<li class=\"uat-step\" data-line=\"{line}\"><span class=\"uat-kw\">{step.Keyword}</span><span class=\"uat-text\">{Encode(step.Text)}{spoken}</span></li>\n");
             }
 
@@ -90,7 +90,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
 
         if (scene.Outro is { } outro)
         {
-            _html.Append($"<p class=\"uat-video-say\" data-line=\"{scene.Line}\">{Encode(outro)}</p>\n");
+            _html.Append($"<p class=\"uat-video-say\" data-line=\"{scene.Line}\">{Said(outro)}</p>\n");
         }
     }
 
@@ -103,6 +103,15 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, 
             _html.Append($"<div class=\"uat-diag\" data-severity=\"{severity}\" data-code=\"{Encode(diagnostic.Code)}\" data-line=\"{diagnostic.Location.LineNumber}\">");
             _html.Append($"<span class=\"uat-diag-code\">{Encode(diagnostic.Code)}</span> {Encode(diagnostic.Message)}</div>\n");
         }
+    }
+
+    // What is said, as the captions show it (no tags), with a mark when the line has SSML.
+    private static string Said(string text)
+    {
+        var line = Bruinet.Narrator.SpokenLine.Parse(text);
+        return line.HasMarkup
+            ? $"{Encode(line.Plain)} <span class=\"uat-video-markup\" title=\"SSML: {Encode(string.Join(", ", line.ElementsUsed))}\">SSML</span>"
+            : Encode(line.Plain);
     }
 
     private static string Encode(string value) => WebUtility.HtmlEncode(value);

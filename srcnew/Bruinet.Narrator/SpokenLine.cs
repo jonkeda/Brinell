@@ -31,6 +31,9 @@ public sealed record SpokenNode(string? Name, string? Text, IReadOnlyList<KeyVal
     /// <summary>The attribute's value; null when it is not there.</summary>
     /// <param name="name">The attribute's name.</param>
     public string? Attribute(string name) => Attributes.FirstOrDefault(pair => pair.Key == name).Value;
+
+    /// <summary>Where the element starts in the line, from 0.</summary>
+    public int Position { get; init; }
 }
 
 /// <summary>
@@ -153,12 +156,12 @@ public sealed class SpokenLine
             var element = new Open(name, attributes, match.Index);
             if (match.Groups["empty"].Success)
             {
-                stack.Peek().Children.Add(new SpokenNode(name, null, attributes, []));
+                stack.Peek().Children.Add(new SpokenNode(name, null, attributes, []) { Position = match.Index });
             }
             else if (name == "break")
             {
                 // <break time="1s"> with no end is read as an empty element, as most authors mean it.
-                stack.Peek().Children.Add(new SpokenNode(name, null, attributes, []));
+                stack.Peek().Children.Add(new SpokenNode(name, null, attributes, []) { Position = match.Index });
             }
             else
             {
@@ -181,6 +184,15 @@ public sealed class SpokenLine
             return new SpokenLine(text, [new SpokenNode(null, plain, [], [])], problems, plain);
         }
 
+        foreach (var node in Walk(root.Children).Where(node => node.Name is not null))
+        {
+            if (Rules.Problem(node) is { } wrong)
+            {
+                problems.Add(new SpokenProblem(SpokenProblemSeverity.Error, "VID022", wrong, node.Position));
+            }
+        }
+
+        problems.Sort((a, b) => a.Position.CompareTo(b.Position));
         return new SpokenLine(text, root.Children, problems);
 
         void AddText(string raw)
@@ -194,7 +206,7 @@ public sealed class SpokenLine
         void Close()
         {
             var done = stack.Pop();
-            stack.Peek().Children.Add(new SpokenNode(done.Name, null, done.Attributes, done.Children));
+            stack.Peek().Children.Add(new SpokenNode(done.Name, null, done.Attributes, done.Children) { Position = done.Position });
         }
     }
 
@@ -268,6 +280,76 @@ public sealed class SpokenLine
         }
 
         return text.ToString();
+    }
+
+    // What each element's attributes may be (VID022): the SSML 1.1 and Azure Speech values.
+    private static class Rules
+    {
+        private static readonly HashSet<string> Strengths = new(StringComparer.Ordinal) { "none", "x-weak", "weak", "medium", "strong", "x-strong" };
+        private static readonly HashSet<string> Levels = new(StringComparer.Ordinal) { "strong", "moderate", "reduced", "none" };
+        private static readonly HashSet<string> SayAs = new(StringComparer.Ordinal)
+        {
+            "cardinal", "ordinal", "number", "digits", "characters", "spell-out", "date", "time", "telephone", "fraction", "address", "currency", "unit", "verbatim", "expletive",
+        };
+
+        private static readonly Regex Time = new(@"^(?<n>\d+(?:\.\d+)?)(?<unit>ms|s)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex Rate = new(@"^(?:x-slow|slow|medium|fast|x-fast|default|[+-]?\d+(?:\.\d+)?%?)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex Pitch = new(@"^(?:x-low|low|medium|high|x-high|default|[+-]?\d+(?:\.\d+)?(?:%|Hz|st))$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex Volume = new(@"^(?:silent|x-soft|soft|medium|loud|x-loud|default|[+-]?\d+(?:\.\d+)?(?:dB|%)?)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        public static string? Problem(SpokenNode node)
+        {
+            switch (node.Name)
+            {
+                case "break":
+                    if (node.Attribute("time") is { } time)
+                    {
+                        var match = Time.Match(time);
+                        if (!match.Success)
+                        {
+                            return $"<break time=\"{time}\"> is a time such as 500ms or 2s.";
+                        }
+
+                        var milliseconds = double.Parse(match.Groups["n"].Value, CultureInfo.InvariantCulture) * (match.Groups["unit"].Value == "s" ? 1000 : 1);
+                        if (milliseconds > 20000)
+                        {
+                            return $"<break time=\"{time}\"> is over the 20 s (20000 ms) a break may last.";
+                        }
+                    }
+
+                    return node.Attribute("strength") is { } strength && !Strengths.Contains(strength)
+                        ? $"<break strength=\"{strength}\"> is one of {string.Join(", ", Strengths)}."
+                        : null;
+                case "emphasis":
+                    return node.Attribute("level") is { } level && !Levels.Contains(level) ? $"<emphasis level=\"{level}\"> is one of {string.Join(", ", Levels)}." : null;
+                case "prosody":
+                    if (node.Attribute("rate") is null && node.Attribute("pitch") is null && node.Attribute("volume") is null)
+                    {
+                        return "<prosody> needs a rate, a pitch or a volume.";
+                    }
+
+                    return Bad(node, "rate", Rate) ?? Bad(node, "pitch", Pitch) ?? Bad(node, "volume", Volume);
+                case "say-as":
+                    return node.Attribute("interpret-as") is not { } kind
+                        ? "<say-as> needs interpret-as, such as cardinal or digits."
+                        : SayAs.Contains(kind) ? null : $"<say-as interpret-as=\"{kind}\"> is not one the voices know: {string.Join(", ", SayAs)}.";
+                case "sub":
+                    return string.IsNullOrWhiteSpace(node.Attribute("alias")) ? "<sub> needs an alias: what is said instead of its text." : null;
+                case "phoneme":
+                    return string.IsNullOrWhiteSpace(node.Attribute("ph")) ? "<phoneme> needs ph, the pronunciation." : null;
+                case "lang":
+                    return string.IsNullOrWhiteSpace(node.Attribute("xml:lang")) ? "<lang> needs xml:lang, such as en-US." : null;
+                case "mstts:express-as":
+                    return string.IsNullOrWhiteSpace(node.Attribute("style")) ? "<mstts:express-as> needs a style, such as narrator." : null;
+                case "mstts:silence":
+                    return node.Attribute("type") is null || node.Attribute("value") is null ? "<mstts:silence> needs a type and a value." : null;
+                default:
+                    return null;
+            }
+        }
+
+        private static string? Bad(SpokenNode node, string name, Regex pattern)
+            => node.Attribute(name) is { } value && !pattern.IsMatch(value) ? $"<prosody {name}=\"{value}\"> is not a value the voices know." : null;
     }
 
     private sealed class Open(string? name, List<KeyValuePair<string, string>> attributes, int position)
