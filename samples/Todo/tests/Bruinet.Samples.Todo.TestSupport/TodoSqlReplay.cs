@@ -126,13 +126,21 @@ public sealed class TodoSqlReplay
     /// <summary>The suite's recordings folder, beside its project so they are kept in git.</summary>
     public static string RecordingsOf(string project)
     {
-        var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, project + ".csproj")))
+        // Above the test's output (the suite's own project), or beside it: another suite's fixture (the UAT project's) reads this project's recordings.
+        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
         {
-            folder = folder.Parent;
+            if (File.Exists(Path.Combine(folder.FullName, project + ".csproj")))
+            {
+                return Path.Combine(folder.FullName, "Recordings");
+            }
+
+            if (File.Exists(Path.Combine(folder.FullName, project, project + ".csproj")))
+            {
+                return Path.Combine(folder.FullName, project, "Recordings");
+            }
         }
 
-        return Path.Combine(folder?.FullName ?? throw new DirectoryNotFoundException(project), "Recordings");
+        throw new DirectoryNotFoundException(project);
     }
 
     // Recording writes the snapshot from a file the app's migrations made; replay reads it. Read once per app.
