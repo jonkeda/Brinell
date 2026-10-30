@@ -62,7 +62,8 @@ public sealed record BddScenario(
     IReadOnlyList<BddStep> Steps,
     BddSourceLocation Source,
     string? OutlineName = null,
-    int? ExampleIndex = null);
+    int? ExampleIndex = null,
+    string? ExamplesName = null);
 
 public sealed record BddStep(
     BddStepKeyword Keyword,

@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MauiUnit is renamed MauiHeadless (`src/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
 
 ### Added
+- A scenario outline can have several Examples sections: `### Examples: <name>`, each with a tag
+  line of its own that joins the outline's tags for its rows (a head tag picks rows for a head).
+  Rows are numbered across the sections, so names, filters and timings stay put. `UAT015` names
+  the section; two sections with one name are `UAT032`. The preview shows each section.
+- `docs/guides/coming-from-reqnroll.md`: one scenario in both forms, Reqnroll's attributes beside
+  Bruinet's, what works differently and what is not there.
 - Narrated recordings pace each action: while a scene records, every control action (a click, a
   choice, text set, a key) takes at least the script's `Pause` (`BRUINET_PAUSE`, 700 ms by
   default), counted from the call's start, so a list that opens is seen open and a method that does

@@ -58,11 +58,16 @@ And the database should have todos
   | Buy milk | Synced    |
 ```
 
-### Examples
+### Examples: empty
 
 | title |
 | --- |
 | "" |
+
+### Examples: only spaces
+
+| title |
+| --- |
 | "   " |
 
 @TOD.02.5 @TOD.02.R7 @maui @web @create

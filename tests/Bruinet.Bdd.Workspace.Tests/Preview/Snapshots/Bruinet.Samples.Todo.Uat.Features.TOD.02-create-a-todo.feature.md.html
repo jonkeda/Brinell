@@ -98,7 +98,7 @@
 </table>
 </li>
 </ol>
-<h3 data-line="61">Examples</h3>
+<h3 data-line="61">Examples: empty</h3>
 <table class="uat-examples" data-line="63">
 <thead>
 <tr>
@@ -109,35 +109,45 @@
 <tr>
 <td>&quot;&quot;</td>
 </tr>
+</tbody>
+</table>
+<h3 data-line="67">Examples: only spaces</h3>
+<table class="uat-examples" data-line="69">
+<thead>
+<tr>
+<th>title</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td>&quot;   &quot;</td>
 </tr>
 </tbody>
 </table>
-<p class="uat-tags" data-line="68"><span class="uat-tag">@TOD.02.5</span> <span class="uat-tag">@TOD.02.R7</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@create</span></p>
-<h2 class="uat-scenario" data-line="69" data-scenario="TOD.02.5 A due date is optional; switching it off clears it"><span class="uat-kw">Scenario</span> TOD.02.5 A due date is optional; switching it off clears it</h2>
-<ol class="uat-steps" data-line="71">
-<li class="uat-step" data-line="72"><span class="uat-kw">When</span><span class="uat-text">I check Has Due Date</span>
+<p class="uat-tags" data-line="73"><span class="uat-tag">@TOD.02.5</span> <span class="uat-tag">@TOD.02.R7</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@create</span></p>
+<h2 class="uat-scenario" data-line="74" data-scenario="TOD.02.5 A due date is optional; switching it off clears it"><span class="uat-kw">Scenario</span> TOD.02.5 A due date is optional; switching it off clears it</h2>
+<ol class="uat-steps" data-line="76">
+<li class="uat-step" data-line="77"><span class="uat-kw">When</span><span class="uat-text">I check Has Due Date</span>
 </li>
-<li class="uat-step" data-line="73"><span class="uat-kw">Then</span><span class="uat-text">Due Date should be enabled</span>
+<li class="uat-step" data-line="78"><span class="uat-kw">Then</span><span class="uat-text">Due Date should be enabled</span>
 </li>
-<li class="uat-step" data-line="74"><span class="uat-kw">When</span><span class="uat-text">I uncheck Has Due Date</span>
+<li class="uat-step" data-line="79"><span class="uat-kw">When</span><span class="uat-text">I uncheck Has Due Date</span>
 </li>
-<li class="uat-step" data-line="75"><span class="uat-kw">Then</span><span class="uat-text">Due Date should be disabled</span>
+<li class="uat-step" data-line="80"><span class="uat-kw">Then</span><span class="uat-text">Due Date should be disabled</span>
 </li>
-<li class="uat-step" data-line="76"><span class="uat-kw">When</span><span class="uat-text">I set Title to <span class="uat-value">&quot;No deadline&quot;</span></span>
+<li class="uat-step" data-line="81"><span class="uat-kw">When</span><span class="uat-text">I set Title to <span class="uat-value">&quot;No deadline&quot;</span></span>
 </li>
-<li class="uat-step" data-line="77"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
+<li class="uat-step" data-line="82"><span class="uat-kw">And</span><span class="uat-text">I tap Save</span>
 </li>
-<li class="uat-step" data-line="78"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+<li class="uat-step" data-line="83"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
 </li>
-<li class="uat-step" data-line="79"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;No deadline&quot;</span></span>
+<li class="uat-step" data-line="84"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;No deadline&quot;</span></span>
 </li>
-<li class="uat-step" data-line="80"><span class="uat-kw">And</span><span class="uat-text">the database should have todos</span>
-<table class="uat-table" data-line="81">
+<li class="uat-step" data-line="85"><span class="uat-kw">And</span><span class="uat-text">the database should have todos</span>
+<table class="uat-table" data-line="86">
 <thead><tr><th>Title</th><th>DueDate</th></tr></thead>
 <tbody>
-<tr data-line="83"><td>No deadline</td><td>null</td></tr>
+<tr data-line="88"><td>No deadline</td><td>null</td></tr>
 </tbody>
 </table>
 </li>

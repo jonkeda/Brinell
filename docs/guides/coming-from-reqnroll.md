@@ -92,7 +92,7 @@ public sealed class StoredDataPhrases(ITodoArrangement fixture) : BddStepDefinit
 | `[BeforeFeature]` | `[BddBeforeFeature]` | static, once per file per run |
 | `[BeforeScenario("tag")]`, `[AfterScenario("tag")]` | `[BddBeforeScenario("tag")]`, `[BddAfterScenario("tag")]` | ([Hooks](uat-step-definitions.md#hooks)) |
 | `[AfterStep]` | `[BddAfterStep]` | may take the step's `BddStepResult` |
-| `Scenario Outline` with `Examples` | `## Scenario Outline:` with `### Examples` | one Examples block per outline; row *n* runs as `<name> [n]` |
+| `Scenario Outline` with several `Examples`, each named and tagged | `## Scenario Outline:` with one or more `### Examples: <name>`, a tag line above each | row *n* runs as `<name> [n]`, numbered across the blocks |
 | a doc string | a doc string | |
 | tags as test categories | tags, and a `BddScenario` trait per scenario | `dotnet test --filter "BddScenario=Features/TOD.02-create-a-todo.feature.md#TOD.02.2-…"` |
 | `@ignore` | skip rules: a tag and the environment variable that turns it on | a skipped scenario says why ([Skip Rules](uat-template-guide.md#skip-rules)) |
@@ -126,7 +126,6 @@ public sealed class StoredDataPhrases(ITodoArrangement fixture) : BddStepDefinit
 | Retrying a flaky scenario | not on purpose: a flaky scenario is a bug in the app or the test, and stays a failure ([AD-009](../../.docs/decisions/ad-009-app-bugs-stay-failures.md)) |
 | `[Scope]` by tag or feature | page scope, folder namespaces and `Using` instead (AD-019) |
 | `[BeforeStep]`, `[BeforeTestRun]`, `[AfterTestRun]`, `[AfterFeature]` | not yet; the run's setup and teardown is the xUnit fixture's |
-| Several Examples blocks in one outline | one block for now |
 | Keywords in another language (`# language: nl`) | English keywords; the step text can be any language |
 | Cucumber Messages and the HTML report | not yet: each scenario writes `__result.json` and its evidence into the run's folder ([Reporting Artifacts](reporting-artifacts.md)); the IDEs show a run at its lines |
 | Importing `.feature` files | not yet: the structure converts by hand as above, and most step definitions turn into control verbs or page flow |

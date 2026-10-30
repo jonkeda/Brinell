@@ -210,7 +210,7 @@ public static partial class BddMarkdownParser
                     var scenarioName = headingText["Scenario Outline:".Length..].Trim();
                     _index++;
                     var outlineSteps = ParseStepBlock(stopAtExamples: true);
-                    var examples = ParseExamplesTable();
+                    var examples = ParseExamplesBlocks();
                     scenarios.AddRange(ExpandOutline(scenarioName, pendingTags, outlineSteps, examples, line));
                     pendingTags.Clear();
                     continue;
@@ -598,7 +598,7 @@ public static partial class BddMarkdownParser
 
                 if (line.Kind == LineKind.Heading && TryParseHeading(trimmed, out var level, out var headingText))
                 {
-                    if (level <= 2 || (stopAtExamples && level == 3 && headingText.Equals("Examples", StringComparison.Ordinal)))
+                    if (level <= 2 || (stopAtExamples && level == 3 && TryExamplesName(headingText, out _)))
                     {
                         break;
                     }
@@ -661,31 +661,82 @@ public static partial class BddMarkdownParser
             return steps;
         }
 
-        private BddTable? ParseExamplesTable()
+        // An outline's '### Examples' sections, each with the tag line above it and its table.
+        private List<ExamplesBlock> ParseExamplesBlocks()
         {
-            SkipBlankLines();
-            if (End || !TryParseHeading(Current.Text.Trim(), out var level, out var headingText) ||
-                level != 3 ||
-                !headingText.Equals("Examples", StringComparison.Ordinal))
+            List<ExamplesBlock> blocks = [];
+            while (TryReadExamplesHeading(out var tags, out var name, out var heading))
             {
+                blocks.Add(new ExamplesBlock(name, tags, ParseRequiredTable("Examples section must contain a Markdown table."), heading));
+            }
+
+            if (blocks.Count == 0)
+            {
+                SkipBlankLines();
                 var location = End ? new BddSourceLocation(_filePath, _lines.Length + 1) : Location(Current);
                 _diagnostics.Add(new BddDiagnostic(
                     BddDiagnosticSeverity.Error,
                     "UAT012",
                     "Scenario Outline must contain a '### Examples' section.",
                     location));
-                return null;
             }
 
-            _index++;
-            return ParseRequiredTable("Examples section must contain a Markdown table.");
+            return blocks;
+        }
+
+        // Past the tag lines to the next '### Examples' heading; where it was when none comes next.
+        private bool TryReadExamplesHeading(out IReadOnlyList<string> tags, out string? name, out Line heading)
+        {
+            var start = _index;
+            List<string> found = [];
+            SkipBlankLines();
+            while (!End && Current.Kind == LineKind.Tags && TryParseTags(Current.Text.Trim(), out var lineTags))
+            {
+                found.AddRange(lineTags);
+                _index++;
+                SkipBlankLines();
+            }
+
+            if (!End && Current.Kind == LineKind.Heading && TryParseHeading(Current.Text.Trim(), out var level, out var headingText) &&
+                level == 3 && TryExamplesName(headingText, out name))
+            {
+                tags = found;
+                heading = Current;
+                _index++;
+                return true;
+            }
+
+            _index = start;
+            tags = [];
+            name = null;
+            heading = null!;
+            return false;
+        }
+
+        // 'Examples', or 'Examples: <name>'; an empty name is none.
+        private static bool TryExamplesName(string headingText, out string? name)
+        {
+            name = null;
+            if (headingText.Equals("Examples", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (!headingText.StartsWith("Examples:", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var rest = headingText["Examples:".Length..].Trim();
+            name = rest.Length == 0 ? null : rest;
+            return true;
         }
 
         private IReadOnlyList<BddScenario> ExpandOutline(
             string scenarioName,
             IReadOnlyList<string> tags,
             IReadOnlyList<BddStep> outlineSteps,
-            BddTable? examples,
+            IReadOnlyList<ExamplesBlock> examples,
             Line headingLine)
         {
             if (scenarioName.Length == 0)
@@ -698,42 +749,55 @@ public static partial class BddMarkdownParser
                 AddError("UAT014", NoSteps("Scenario Outline section must contain at least one step.", headingLine), headingLine);
             }
 
-            if (examples is null)
+            HashSet<string> names = new(StringComparer.Ordinal);
+            foreach (var block in examples.Where(block => block.Name is not null))
             {
-                return [];
-            }
-
-            var columns = new HashSet<string>(examples.Columns, StringComparer.Ordinal);
-            foreach (var step in outlineSteps)
-            {
-                foreach (var parameter in BddOutline.Placeholders(step))
+                if (!names.Add(block.Name!))
                 {
-                    if (!columns.Contains(parameter))
-                    {
-                        _diagnostics.Add(new BddDiagnostic(
-                            BddDiagnosticSeverity.Error,
-                            "UAT015",
-                            $"Scenario Outline parameter '<{parameter}>' has no matching Examples column.",
-                            step.Source));
-                    }
+                    AddError("UAT032", $"Two Examples sections of this outline are named '{block.Name}'; give each its own name.", block.Heading);
                 }
             }
 
+            // Rows are numbered across the blocks, so a row's name does not depend on its block.
             List<BddScenario> scenarios = [];
-            for (var i = 0; i < examples.Rows.Count; i++)
+            foreach (var block in examples)
             {
-                var row = examples.Rows[i];
-                var expandedSteps = outlineSteps
-                    .Select(step => BddOutline.Substitute(step, row.Cells))
-                    .ToArray();
+                if (block.Table is not { } table)
+                {
+                    continue;
+                }
 
-                scenarios.Add(new BddScenario(
-                    $"{scenarioName} [{i + 1}]",
-                    [.. tags],
-                    expandedSteps,
-                    Location(headingLine),
-                    scenarioName,
-                    i + 1));
+                var columns = new HashSet<string>(table.Columns, StringComparer.Ordinal);
+                foreach (var step in outlineSteps)
+                {
+                    foreach (var parameter in BddOutline.Placeholders(step))
+                    {
+                        if (!columns.Contains(parameter))
+                        {
+                            _diagnostics.Add(new BddDiagnostic(
+                                BddDiagnosticSeverity.Error,
+                                "UAT015",
+                                block.Name is null
+                                    ? $"Scenario Outline parameter '<{parameter}>' has no matching Examples column."
+                                    : $"Scenario Outline parameter '<{parameter}>' has no matching column in Examples '{block.Name}'.",
+                                step.Source));
+                        }
+                    }
+                }
+
+                string[] rowTags = [.. tags.Concat(block.Tags).Distinct(StringComparer.Ordinal)];
+                foreach (var row in table.Rows)
+                {
+                    var index = scenarios.Count + 1;
+                    scenarios.Add(new BddScenario(
+                        $"{scenarioName} [{index}]",
+                        rowTags,
+                        [.. outlineSteps.Select(step => BddOutline.Substitute(step, row.Cells))],
+                        Location(headingLine),
+                        scenarioName,
+                        index,
+                        block.Name));
+                }
             }
 
             return scenarios;
@@ -765,7 +829,7 @@ public static partial class BddMarkdownParser
         {
             SkipBlankLines();
             while (!End && Current.Kind == LineKind.Heading && TryParseHeading(Current.Text.Trim(), out var level, out var headingText) &&
-                   level >= 3 && !headingText.Equals("Examples", StringComparison.Ordinal))
+                   level >= 3 && !TryExamplesName(headingText, out _))
             {
                 WarnIfLooksLikeSection(headingText, Current);
                 _index++;
@@ -1053,4 +1117,7 @@ public static partial class BddMarkdownParser
     }
 
     private sealed record Line(string Text, int Number, LineKind Kind, bool Detached = false);
+
+    // One '### Examples' section of an outline: its name, the tags above it, its table (null when missing).
+    private sealed record ExamplesBlock(string? Name, IReadOnlyList<string> Tags, BddTable? Table, Line Heading);
 }

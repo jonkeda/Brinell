@@ -3,7 +3,7 @@
 Status: **design**, 2026-10-30. D3 built (`docs/guides/coming-from-reqnroll.md`). **D1 parked**
 (2026-10-30, the owner): worth its week only when someone names the tool that will read the
 output (Construction's team, an Exact dashboard); its spike then tests that tool, not Cucumber's
-HTML formatter. D2 open. Item 6 of [improvements](../improvements/README.md),
+HTML formatter. D2 built (2026-10-30; a missing table stays `UAT017`, no `UAT033`). Item 6 of [improvements](../improvements/README.md),
 built on [the Reqnroll comparison](../uat/reqnroll-comparison.md) of 2026-09-27, checked against the
 tree at 3ec7549b.
 
@@ -152,13 +152,13 @@ Then Title Error should show "<error>"
   durations keep their names; the block's name is in the report (`examplesRow`) and the preview,
   not in the scenario's name.
 - Every block needs every placeholder's column (`UAT015` per block). New: `UAT032` two blocks with
-  the same name, `UAT033` an Examples section with no table.
+  the same name. (Built: an Examples section with no table is the existing `UAT017`, so no `UAT033`.)
 
 Changes: `BddMarkdownParser.ParseExamplesTable` becomes a loop; the outline model keeps its blocks
 (name, tags, table, line); `ExpandOutline` numbers across them; the preview renders each block with
 its name and tags; the language server folds and outlines each; the grammar page and
 `uat-template-guide.md`. Tests in `tests/Bruinet.Bdd.Tests` (parse, tags per block, numbering,
-`UAT015` per block, `UAT032`, `UAT033`), a preview snapshot in `Bruinet.Bdd.Workspace.Tests`, and a
+`UAT015` per block, `UAT032`, `UAT017` for a block without a table), a preview snapshot in `Bruinet.Bdd.Workspace.Tests`, and a
 Todo outline split in two blocks run on both web heads.
 
 ## D3. Coming from Reqnroll
@@ -179,7 +179,7 @@ writing guides:
 ## Order
 
 1. D3, so a Reqnroll user finds today's answers now: done 2026-10-30.
-2. D2.
+2. D2: done 2026-10-30 (TOD.02.3 split into two named blocks, both web heads green).
 3. D1, parked: when a reader of its output is named, the spike against that reader, then the run
    fields (times, `examplesRow`, `configDirectory`), the converter, the command, the MCP tool, CI.
    Many dashboards (Jenkins' Cucumber reports, Xray) read Cucumber's older JSON rather than

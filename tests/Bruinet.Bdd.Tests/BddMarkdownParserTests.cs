@@ -317,6 +317,194 @@ public sealed class BddMarkdownParserTests
         Assert.Contains(result.Diagnostics, x => x.Code == "UAT015");
     }
 
+    private const string TwoBlocks = """
+        # Feature: Titles
+
+        @create
+        ## Scenario Outline: A title is refused
+
+        ```gherkin
+        When I set Title to "<title>"
+        Then Title Error should show "<error>"
+        ```
+
+        @maui @web
+        ### Examples: empty and blank
+
+        | title | error |
+        | --- | --- |
+        | | A title is required |
+        | "  " | A title is required |
+
+        @web
+        ### Examples: refused by the server
+
+        | title | error |
+        | --- | --- |
+        | Already taken | A todo with this title exists |
+
+        @smoke
+        ## Scenario: Next
+
+        ```gherkin
+        Given I am on the Todo List page
+        ```
+        """;
+
+    [Fact]
+    public void Parse_SeveralExamplesBlocks_NumberTheRowsAcrossBlocks_AndKeepEachBlocksName()
+    {
+        var result = BddMarkdownParser.Parse(TwoBlocks);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        var rows = result.Document!.Scenarios.Where(x => x.OutlineName is not null).ToList();
+        Assert.Equal(["A title is refused [1]", "A title is refused [2]", "A title is refused [3]"], rows.Select(x => x.Name));
+        Assert.Equal([1, 2, 3], rows.Select(x => x.ExampleIndex!.Value));
+        Assert.Equal(["empty and blank", "empty and blank", "refused by the server"], rows.Select(x => x.ExamplesName));
+        Assert.Equal("I set Title to \"Already taken\"", rows[2].Steps[0].Text);
+    }
+
+    [Fact]
+    public void Parse_TagsAboveAnExamplesBlock_JoinTheOutlinesTags_ForThatBlocksRowsOnly()
+    {
+        var scenarios = BddMarkdownParser.Parse(TwoBlocks).Document!.Scenarios;
+
+        Assert.Equal(["create", "maui", "web"], scenarios[0].Tags);
+        Assert.Equal(["create", "web"], scenarios[2].Tags);
+        Assert.Equal(["smoke"], scenarios[3].Tags);
+    }
+
+    [Fact]
+    public void Parse_AnExamplesHeadingWithoutAName_StillReads_AndHasNoName()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Titles
+
+            ## Scenario Outline: A title
+
+            ```gherkin
+            When I set Title to "<title>"
+            ```
+
+            ### Examples:
+
+            | title |
+            | --- |
+            | Buy milk |
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Null(Assert.Single(result.Document!.Scenarios).ExamplesName);
+    }
+
+    [Fact]
+    public void Parse_AnExamplesBlockMissingAColumn_IsUat015_NamingTheBlock()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Titles
+
+            ## Scenario Outline: A title is refused
+
+            ```gherkin
+            Then Title Error should show "<error>"
+            ```
+
+            ### Examples: first
+
+            | error |
+            | --- |
+            | A title is required |
+
+            ### Examples: second
+
+            | title |
+            | --- |
+            | Already taken |
+            """);
+
+        var problem = Assert.Single(result.Diagnostics);
+        Assert.Equal("UAT015", problem.Code);
+        Assert.Contains("'second'", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Parse_TwoExamplesBlocksWithOneName_IsUat032()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Titles
+
+            ## Scenario Outline: A title
+
+            ```gherkin
+            When I set Title to "<title>"
+            ```
+
+            ### Examples: valid
+
+            | title |
+            | --- |
+            | Buy milk |
+
+            ### Examples: valid
+
+            | title |
+            | --- |
+            | Buy bread |
+            """);
+
+        var problem = Assert.Single(result.Diagnostics);
+        Assert.Equal("UAT032", problem.Code);
+        Assert.Equal(15, problem.Location.LineNumber);
+    }
+
+    [Fact]
+    public void Parse_AnExamplesBlockWithoutATable_IsUat017_AndTheNextBlockStillReads()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Titles
+
+            ## Scenario Outline: A title
+
+            ```gherkin
+            When I set Title to "<title>"
+            ```
+
+            ### Examples: none yet
+
+            ### Examples: valid
+
+            | title |
+            | --- |
+            | Buy milk |
+            """);
+
+        Assert.Equal("UAT017", Assert.Single(result.Diagnostics).Code);
+        Assert.Equal("valid", Assert.Single(result.Document!.Scenarios).ExamplesName);
+    }
+
+    [Fact]
+    public void Parse_TagsAboveAnExamplesHeading_OutsideAnOutline_AreUat020()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Titles
+
+            ## Scenario: A title
+
+            ```gherkin
+            When I set Title to "Buy milk"
+            ```
+
+            @web
+            ### Examples
+
+            | title |
+            | --- |
+            | Buy milk |
+            """);
+
+        Assert.Contains(result.Diagnostics, x => x.Code == "UAT020");
+    }
+
     [Theory]
     [InlineData("```gherkin", "```")]
     [InlineData("~~~gherkin", "~~~")]

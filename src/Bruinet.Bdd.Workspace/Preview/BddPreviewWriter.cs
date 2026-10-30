@@ -161,7 +161,7 @@ internal sealed partial class BddPreviewWriter
             case 2 when text == "Metadata":
                 _nextTableClass = "uat-metadata";
                 break;
-            case 3 when text == "Examples":
+            case 3 when text == "Examples" || text.StartsWith("Examples:", StringComparison.Ordinal):
                 _nextTableClass = "uat-examples";
                 break;
         }
