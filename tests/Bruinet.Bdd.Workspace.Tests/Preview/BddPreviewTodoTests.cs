@@ -50,7 +50,7 @@ public sealed class BddPreviewTodoTests : IClassFixture<BddPreviewTodoTests.Todo
     [Fact]
     public void TheTodoVideo_ShowsEverySceneWithItsSteps_AndNoDiagnostics()
     {
-        var path = Path.Combine(TodoSuite.Project, "Features", "how-todo-works.video.md");
+        var path = Path.Combine(TodoSuite.Project, "VideoScripts", "how-todo-works.video.md");
 
         var result = BddPreview.Render(File.ReadAllText(path), path);
         var html = WebUtility.HtmlDecode(result.Html);
@@ -65,7 +65,7 @@ public sealed class BddPreviewTodoTests : IClassFixture<BddPreviewTodoTests.Todo
     [Fact]
     public void AVideoScript_OffersRecord_AndListsItsRecordingsToWatch()
     {
-        var path = Path.Combine(TodoSuite.Project, "Features", "how-todo-works.video.md");
+        var path = Path.Combine(TodoSuite.Project, "VideoScripts", "how-todo-works.video.md");
         var options = new BddPreviewOptions
         {
             Record = new BddPreviewRunState(false, "Recording needs ffmpeg."),

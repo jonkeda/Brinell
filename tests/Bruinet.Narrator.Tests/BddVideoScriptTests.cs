@@ -222,7 +222,7 @@ public sealed class BddVideoScriptCheckTests : IDisposable
     public void The_Todo_video_checks_clean_against_the_Todo_features()
     {
         var uat = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../samples/Todo/tests/Bruinet.Samples.Todo.Uat"));
-        var path = Path.Combine(uat, "Features", "how-todo-works.video.md");
+        var path = Path.Combine(uat, "VideoScripts", "how-todo-works.video.md");
 
         var check = BddVideoScriptCheck.Check(File.ReadAllText(path), path);
 

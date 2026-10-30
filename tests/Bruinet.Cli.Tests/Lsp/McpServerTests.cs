@@ -76,7 +76,7 @@ public sealed class McpServerTests : IDisposable
         Environment.SetEnvironmentVariable("BRUINET_FFMPEG", Path.Combine(Path.GetTempPath(), "no-ffmpeg-here.exe"));
         try
         {
-            var result = Call("record_video", new JsonObject { ["path"] = Path.Combine(TodoPaths.Project, "Features", "how-todo-works.video.md") });
+            var result = Call("record_video", new JsonObject { ["path"] = Path.Combine(TodoPaths.Project, "VideoScripts", "how-todo-works.video.md") });
 
             Assert.True((bool)result["isError"]!);
             Assert.Contains("winget install", (string?)result["content"]![0]!["text"]);

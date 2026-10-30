@@ -140,7 +140,7 @@ Before a line is spoken each whole-word, case-sensitive occurrence of a term in 
 follows no markup included. A scene kept earlier is out of date when a term changes, and not before: a suite with no
 `pronunciations.md` keeps its scenes' hashes.
 
-Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/tests/Bruinet.Samples.Todo.Uat/Features/how-todo-works.video.md).
+Example: [samples/Todo/.../VideoScripts/how-todo-works.video.md](../../samples/Todo/tests/Bruinet.Samples.Todo.Uat/VideoScripts/how-todo-works.video.md).
 
 ## Record
 
@@ -154,7 +154,7 @@ Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/
 
 ```powershell
 # From the suite's project folder
-$env:BRUINET_RECORD = "Features\how-todo-works.video.md"
+$env:BRUINET_RECORD = "VideoScripts\how-todo-works.video.md"
 $env:BRUINET_RECORDERS = "..\..\..\..\tools\Bruinet.Cli\bin\Debug\net10.0\recorders"
 dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01.1"
 ```
