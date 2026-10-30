@@ -74,6 +74,8 @@ Cucumber Messages output and a set comparison of tables.
 
 - Cucumber Messages first: it lets every existing report and CI tool read Bruinet's results.
 - Then say in the docs that hooks and outlines exist, since that is what a Reqnroll user looks for.
+- Designed on 2026-10-30 in [bdd-gaps/design.md](../bdd-gaps/design.md): a set comparison turned
+  out built too; the design adds Cucumber Messages, several Examples blocks and a Reqnroll page.
 
 ## 7. Prove the browser in CI
 
