@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <!-- One framework while the head is a spike (.my/bunit/plan.md step 1): bUnit pins the components' version. -->
+    <!-- One framework while the head is a spike (AD-030): bUnit pins the components' version. -->
     <TargetFrameworks>net10.0</TargetFrameworks>
     <RootNamespace>Bruinet.Html.Bunit</RootNamespace>
     <Description>bUnit implementation for Bruinet.Html: the same page objects and controls on a rendered component, without a browser.</Description>

@@ -26,7 +26,7 @@ It names no element, driver or scope type, so it needed none of the interfaces:
 MAUI, Html and native Android have no copies of these.
 
 **The control layer's calls have moved down** (2026-10-22, the
-[review of 2026-10-21](../../.my/reviews/2026-10-21-review.md), C1). The three control bases
+[review of 2026-10-21](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/2026-10-21-review.md), C1). The three control bases
 (Html's `ControlBase`, MAUI's and native Android's `ViewBase`) had the same `Run*` family three
 times, and the copies had started to differ. Now `Bruinet.Core.Calls.ControlCalls<TElement>` runs
 every call once for all of them: the attempt, the visibility check, the action once, the waits,

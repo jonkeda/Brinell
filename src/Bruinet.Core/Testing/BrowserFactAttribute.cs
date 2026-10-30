@@ -4,7 +4,7 @@ namespace Bruinet.Core.Testing;
 
 /// <summary>
 /// A test that needs a browser (layout, style sheets, script, pixels): skipped on the bUnit head with the
-/// reason, so the run still lists it (.my/bunit/plan.md step 4). The scenario's counterpart is <c>@browser</c>.
+/// reason, so the run still lists it (AD-030). The scenario's counterpart is <c>@browser</c>.
 /// </summary>
 public sealed class BrowserFactAttribute : FactAttribute
 {

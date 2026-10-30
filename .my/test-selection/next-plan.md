@@ -178,7 +178,7 @@ size.
 
 ## 8. Cheaper browser calls
 
-In the browser the calls are 337 s of 393 s of test time. The [2026-10-21 review](../reviews/2026-10-21-review.md)'s plan has
+In the browser the calls are 337 s of 393 s of test time. The [2026-10-21 review](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/2026-10-21-review.md)'s plan has
 Html items left (round trips per call, the readiness probe). Measured per call kind with the timings' rows.
 
 ## 9. Squash the migrations

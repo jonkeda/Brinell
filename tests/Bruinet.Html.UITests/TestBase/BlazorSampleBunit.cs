@@ -3,7 +3,7 @@ using Bruinet.Samples.Blazor.App.Services;
 
 namespace Bruinet.Html.UITests.TestBase;
 
-/// <summary>The sample on the bUnit head (.my/bunit/plan.md): its <c>Routes</c> and its four services.</summary>
+/// <summary>The sample on the bUnit head (AD-030): its <c>Routes</c> and its four services.</summary>
 internal static class BlazorSampleBunit
 {
     public const string BaseUrl = "http://localhost";

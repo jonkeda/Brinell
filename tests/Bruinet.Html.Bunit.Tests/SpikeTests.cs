@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Bruinet.Html.Bunit.Tests;
 
-/// <summary>The four questions of the bUnit head's spike (.my/bunit/plan.md step 1).</summary>
+/// <summary>The four questions of the bUnit head's spike (AD-030).</summary>
 public sealed class SpikeTests(ITestOutputHelper output)
 {
     private static BunitTestContext Probe() => new(new BunitTestContextOptions { RootComponent = typeof(Probe) });

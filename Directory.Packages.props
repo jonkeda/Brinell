@@ -31,7 +31,7 @@
     <PackageVersion Include="Selenium.WebDriver" Version="4.29.0" />
     <PackageVersion Include="Selenium.Support" Version="4.29.0" />
     <PackageVersion Include="WebDriverManager" Version="2.17.5" />
-    <!-- bUnit for the Html driver without a browser (.my/bunit/plan.md) -->
+    <!-- bUnit for the Html driver without a browser (AD-030) -->
     <PackageVersion Include="bunit" Version="2.12.5" />
     <!-- Playwright for HTML/Web (alternative to Selenium) -->
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />

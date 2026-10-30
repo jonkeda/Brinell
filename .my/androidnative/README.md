@@ -24,7 +24,7 @@ collections with item keys, actions that are never confirmed, and no app to test
 
 ## Relation to `.my/core/`
 
-[`.my/core/`](../core/README.md) plans one `ICore*` shape for every stack; its step 6 moves
+[`.my/core/`](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/core/README.md) plans one `ICore*` shape for every stack; its step 6 moves
 NativeAndroid. That plan is a draft with L2 next, and it assumes each stack already stands alone
 the way MAUI and Html do. This topic gets NativeAndroid to that point on its own
 `INativeAndroid*` interfaces, as Html did, so core step 6 becomes as mechanical as MAUI's step 4.

@@ -404,14 +404,14 @@ public static class SsmlSupport
     /// <summary>A voice that follows no markup: its lines are <see cref="SpokenLine.Reduced"/>.</summary>
     public static readonly IReadOnlySet<string> None = new HashSet<string>();
 
-    /// <summary>Windows' voices, measured (.my/voice/ssml-results.md): they pause, stress, change rate, say aliases and follow phonemes.</summary>
+    /// <summary>Windows' voices, measured (https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/voice/ssml-results.md): they pause, stress, change rate, say aliases and follow phonemes.</summary>
     public static readonly IReadOnlySet<string> Windows = new HashSet<string>(StringComparer.Ordinal) { "break", "emphasis", "prosody", "sub", "phoneme", "p", "s" };
 
     /// <summary>Azure Speech's neural voices: every element of v1.</summary>
     public static readonly IReadOnlySet<string> AzureSpeech = SpokenLine.Elements;
 
     /// <summary>
-    /// Azure Speech's MAI voices (<c>en-GB-Emily:MAI-Voice-2.1</c>), measured (.my/voice/ssml-results.md): a <c>break</c> is not followed (use
+    /// Azure Speech's MAI voices (<c>en-GB-Emily:MAI-Voice-2.1</c>), measured (https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/voice/ssml-results.md): a <c>break</c> is not followed (use
     /// <c>p</c> or <c>s</c> for a pause) and a <c>phoneme</c> is spoken as text.
     /// </summary>
     public static readonly IReadOnlySet<string> AzureSpeechMai = new HashSet<string>(SpokenLine.Elements.Where(element => element is not ("break" or "phoneme")), StringComparer.Ordinal);

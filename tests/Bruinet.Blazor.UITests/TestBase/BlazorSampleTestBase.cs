@@ -4,7 +4,7 @@ namespace Bruinet.Blazor.UITests.TestBase;
 
 /// <summary>
 /// One browser per test, on the shared Blazor sample (<see cref="BlazorSample"/>); with
-/// <c>BRUINET_HEAD=bunit</c>, the sample's <c>Routes</c> rendered by bUnit instead (.my/bunit/plan.md step 1).
+/// <c>BRUINET_HEAD=bunit</c>, the sample's <c>Routes</c> rendered by bUnit instead (AD-030).
 /// </summary>
 public abstract class BlazorSampleTestBase : IAsyncLifetime
 {

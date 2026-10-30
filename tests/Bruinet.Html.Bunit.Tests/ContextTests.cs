@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Bruinet.Html.Bunit.Tests;
 
-/// <summary>The bUnit head's context (.my/bunit/plan.md step 3): navigation, title, readiness, sign-in, scripts, reset.</summary>
+/// <summary>The bUnit head's context (AD-030): navigation, title, readiness, sign-in, scripts, reset.</summary>
 public sealed class ContextTests
 {
     private const string Base = "http://localhost";

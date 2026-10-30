@@ -1,6 +1,6 @@
 # iOS: the fixes and the runs
 
-Section 6 of [the 2026-10-21 plan](../reviews/2026-10-21-plan.md) (I1, I2), on its own, checked
+Section 6 of [the 2026-10-21 plan](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/2026-10-21-plan.md) (I1, I2), on its own, checked
 against the code at 8df76015. Status: **P1-P5 written**, 2026-10-22, not committed: unit tests green on a Mac (`Bruinet.Maui.Tests` 209 of 211, the one failure the known `FindItem_ReturnsNullWhenNoMatch` timing; `Bruinet.Appium.Tests` 24 of 24); R1-R5 open. The fixes are written on Windows; the
 runs need a Mac. [README.md](README.md) is the run's reference (routes, commands, tree dumps).
 

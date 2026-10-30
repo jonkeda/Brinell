@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Bruinet.Html.Bunit;
 
 /// <summary>
-/// The bUnit head (.my/bunit/plan.md): the suite's root component rendered by bUnit, with the app's
+/// The bUnit head (AD-030): the suite's root component rendered by bUnit, with the app's
 /// services, behind the same <see cref="IHtmlTestContext"/> the browser head has, so page objects and
 /// controls run unchanged. Navigation goes through bUnit's navigation manager; the root's router renders
 /// the page.

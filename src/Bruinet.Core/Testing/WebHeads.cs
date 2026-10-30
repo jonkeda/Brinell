@@ -1,6 +1,6 @@
 namespace Bruinet.Core.Testing;
 
-/// <summary>How a web suite runs its pages (.my/bunit/plan.md): in a browser, or rendered by bUnit.</summary>
+/// <summary>How a web suite runs its pages (AD-030): in a browser, or rendered by bUnit.</summary>
 public enum WebHead
 {
     /// <summary>A real browser through Playwright: the default, and the judge at every gate.</summary>

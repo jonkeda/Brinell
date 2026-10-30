@@ -15,7 +15,7 @@
     <!-- FlaUI for WPF/WinForms -->
     <PackageVersion Include="FlaUI.Core" Version="5.0.0" />
     <PackageVersion Include="FlaUI.UIA3" Version="5.0.0" />
-    <!-- bUnit for the Html driver without a browser (.my/bunit/plan.md) -->
+    <!-- bUnit for the Html driver without a browser (AD-030) -->
     <PackageVersion Include="bunit" Version="2.12.5" />
     <!-- Playwright for Blazor/Html -->
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
