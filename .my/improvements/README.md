@@ -33,11 +33,13 @@ by-hand checks behind. The open items table in `.my/README.md` is now longer tha
 
 ## 3. Ship a first preview release
 
-`Version` is 0.1.0, there are no tags, `release.yml` can push to NuGet but never has, and the
-CHANGELOG's "Unreleased" already holds breaking changes "no release shipped". Without a release
-the README's `dotnet tool install -g Bruinet.Cli` cannot work for an outsider.
+`Version` is 0.1.0, there are no tags, and `release.yml` (on a tag) pushes only to the org's private
+GitHub Packages feed, with the run's own `GITHUB_TOKEN`. The CHANGELOG's "Unreleased" already holds
+breaking changes "no release shipped". So the README's `dotnet tool install -g Bruinet.Cli`, which
+reads nuget.org, cannot work for anyone yet.
 
-- Tag `0.1.0-preview.1` and publish the packages and the CLI.
+- Tag `0.1.0-preview.1`, so the packages and the CLI reach the org's feed.
+- A public nuget.org push is a choice of its own: it needs a `NUGET_API_KEY` secret and a public repo.
 - Mark everything preview, so breaking changes stay cheap.
 - Consumers (Tomorrow, Construction) can then pin a version instead of a submodule commit, when
   they want to.
