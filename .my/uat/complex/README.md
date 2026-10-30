@@ -2,7 +2,7 @@
 
 Status: Guidance / discussion draft. [01](01-multi-user.md) was trimmed 2026-09-27: several apps and named users are built.
 Date: 2026-09-20
-Area: `srcnew/Bruinet.Uat`, `srcnew/Bruinet.Mocking`
+Area: `src/Bruinet.Uat`, `src/Bruinet.Mocking`
 
 Built-in phrases drive one screen and one control at a time — tap, enter,
 assert visible. Real systems are more than that: two users touching the same
@@ -37,10 +37,10 @@ The custom phrases are backed by the infrastructure Bruinet already ships:
 
 | Need | Backing type | Doc |
 | --- | --- | --- |
-| Simulate a second user / seed the backend | [MockApiServer](../../../srcnew/Bruinet.Mocking/MockApiServer.cs) | [01-multi-user.md](01-multi-user.md) |
-| Assert the app called the service correctly | [MockApiServer.WaitForRequest](../../../srcnew/Bruinet.Mocking/MockApiServer.cs), [RecordedRequest](../../../srcnew/Bruinet.Mocking/RecordedRequest.cs) | [02-service-validations.md](02-service-validations.md) |
+| Simulate a second user / seed the backend | [MockApiServer](../../../src/Bruinet.Mocking/MockApiServer.cs) | [01-multi-user.md](01-multi-user.md) |
+| Assert the app called the service correctly | [MockApiServer.WaitForRequest](../../../src/Bruinet.Mocking/MockApiServer.cs), [RecordedRequest](../../../src/Bruinet.Mocking/RecordedRequest.cs) | [02-service-validations.md](02-service-validations.md) |
 | Assert what was actually persisted | the app's `DatabasePath`, a read-only connection | [03-database-checks.md](03-database-checks.md) |
-| Offline, time, concurrency, retries, data-driven, artifacts | [NetworkStateFile](../../../srcnew/Bruinet.Mocking/NetworkStateFile.cs), pinned clock, Scenario Outline | [04-other-complex-tests.md](04-other-complex-tests.md) |
+| Offline, time, concurrency, retries, data-driven, artifacts | [NetworkStateFile](../../../src/Bruinet.Mocking/NetworkStateFile.cs), pinned clock, Scenario Outline | [04-other-complex-tests.md](04-other-complex-tests.md) |
 
 ---
 

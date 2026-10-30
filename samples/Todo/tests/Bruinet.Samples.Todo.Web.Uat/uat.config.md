@@ -22,8 +22,8 @@
 | Kind | Assembly |
 | --- | --- |
 | Pages | bin/Debug/net10.0/Bruinet.Samples.Todo.Web.Uat.dll |
-| Controls | ../../../../srcnew/Bruinet.Html/bin/Debug/net10.0/Bruinet.Html.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Controls | ../../../../src/Bruinet.Html/bin/Debug/net10.0/Bruinet.Html.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 | TestData | ../Bruinet.Samples.Todo.TestSupport/bin/Debug/net10.0/Bruinet.Samples.Todo.TestSupport.dll |
 
 ## Using

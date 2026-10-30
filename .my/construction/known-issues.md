@@ -114,11 +114,11 @@ therefore `[Fact(Skip=…)]`.
    a native `GridView`. A coordinate-independent `Invoke()` would bypass the drag
    region — but the **committed Bruinet binary bundle** (`lib/bruinet/0.1.0-construction.1`)
    exposes **no** `Invoke()`/`Focus()`/keyboard verb on `IMauiElement`; only
-   physical `Click`/`DoubleClick`. (Bruinet `srcnew` *does* have `Invoke()`, but
+   physical `Click`/`DoubleClick`. (Bruinet `src` *does* have `Invoke()`, but
    building `-p:UseBruinetSource=true` fails today because
    `Exact.Core.Construction.UITest/Controls/Collection/PageableCollectionControl.cs`
    was written against the bundle's older `IMauiItemContainer<,>` API, which
-   changed in srcnew — `CS0246` / `CS0311`.)
+   changed in src — `CS0246` / `CS0311`.)
 2. **Menu-list cell tap gesture ignores synthetic input.** `MoreView_List` has no
    `ItemTappedCommand`; each row navigates via the `MenuItemCell` root
    `ClickableContainer Command="{Binding TapCommand}"` (renders as a `Custom`
@@ -133,11 +133,11 @@ is fine — Construction re-registers it in
 would navigate **if** its tap actually fired.
 
 **Options to unblock (need a decision):**
-- **(A)** Refresh the committed Bruinet bundle from `srcnew` so `IMauiElement`
+- **(A)** Refresh the committed Bruinet bundle from `src` so `IMauiElement`
   gains `Invoke()` (UIA InvokePattern — confirmed implemented in
   `Bruinet.Maui.FlaUI/FlaUIMauiElement.cs`, and exactly the route that bypasses
   the drag region). **This is a full-suite migration, not a one-file reconcile.**
-  The committed bundle (commit `aadfbbd`) is many commits behind `srcnew` HEAD
+  The committed bundle (commit `aadfbbd`) is many commits behind `src` HEAD
   (`69b4e20`), and `Invoke()` landed entangled with a large breaking refactor
   ("refactored maui flow", "deleted old controls", "First removal of Support
   properties", "refactor of keyboard/mouse/Focus"). Building
@@ -148,11 +148,11 @@ would navigate **if** its tap actually fired.
   changed; `IMauiScope<>` container-scoping conversion changed; control types
   `RoundButton<>`/`EditableField<>`/`GenericBrowser<>` missing/renamed;
   `IMauiItemContainer<,>` → `IMauiItemObject<,>`. Only the
-  `Exact.Core.Construction.UITest` *library* builds on `srcnew` (after a one-line
+  `Exact.Core.Construction.UITest` *library* builds on `src` (after a one-line
   constraint change in `PageableCollectionControl.cs`); the *host* project does
   not. There is no compatible intermediate commit — `Invoke()` cannot be
   cherry-picked without the refactor. So Option A = port the whole construction
-  UITest suite to the new `srcnew` API, which breaks the currently-green modules
+  UITest suite to the new `src` API, which breaks the currently-green modules
   (Hours 2/2, etc.) until the migration is complete.
 - **(B)** App-side: give the gear an `AutomationId`'d invokable peer that is
   outside the title-bar drag region, or add an `ItemTappedCommand` to
@@ -167,7 +167,7 @@ and ready; only the More→Settings hop is blocked.
 
 ### UPDATE — Option A executed; `Invoke()` does **not** unblock Settings (root cause is app-side)
 
-The full-suite migration to `srcnew` (Option A) was completed on a branch
+The full-suite migration to `src` (Option A) was completed on a branch
 (`uitests/bruinet-srcnew-migration`) and the host now builds and runs in source
 mode (`-p:UseBruinetSource=true`) with the previously-green suites all green
 (Login 2/2, Dashboard 3/3, Hours 2/2). `IMauiElement.Invoke()` (UIA InvokePattern)
@@ -200,7 +200,7 @@ command, or add an `ItemTappedCommand` to `MoreView_List`. The test remains
 `[Fact(Skip=…)]` with this refined reason. `MorePage.OpenSettings` now uses the
 `Invoke → Select → Click` ladder (correct once the app exposes an invokable
 surface), and the nav helper `ConstructionFixture.TrySelectTab` was updated for
-srcnew's Click semantics (raw physical `Click()` throws on Windows; tabs are now
+src's Click semantics (raw physical `Click()` throws on Windows; tabs are now
 activated by matching `TabMenuView_Grid` on its caption and `Invoke()`-ing it).
 
 ---
@@ -228,7 +228,7 @@ Two corrections to the analysis above:
 
 **Binary mode restored.** The committed bundle was rebaked to
 `lib/bruinet/0.1.0-construction.2` (Bruinet commit `919790f`, `dirtySource:false`),
-which carries the srcnew `IMauiElement.Invoke()`/`Swipe()` verbs and the
+which carries the src `IMauiElement.Invoke()`/`Swipe()` verbs and the
 `IMauiItemObject<,>` collection API. `-p:UseBruinetSource=false` (the CI default)
 now builds and runs green (Dashboard 3/3). The Option-A source-mode branch note
 above is superseded — the suite runs on the binary bundle again.

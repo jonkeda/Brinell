@@ -30,7 +30,7 @@ dotnet add package Bruinet.Mocking
 dotnet add package Bruinet.Uat
 ```
 
-For repo-local tests, prefer project references to `srcnew/*` projects.
+For repo-local tests, prefer project references to `src/*` projects.
 
 ## First Page Object
 

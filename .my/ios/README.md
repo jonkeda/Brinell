@@ -23,13 +23,13 @@ Set up as [docs/run/maui-ios.md](../../docs/run/maui-ios.md) says, building both
 at a time, in this order, since each later class leans on the routes before it:
 
 ```bash
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.ButtonTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.PickerTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.DatePickerTests|FullyQualifiedName~.TimePickerTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~AlertReadTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~ShellTabTests|FullyQualifiedName~ShellFlyoutTests|FullyQualifiedName~ShellStackTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.IndicatorViewTests"
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.ButtonTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.PickerTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.DatePickerTests|FullyQualifiedName~.TimePickerTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~AlertReadTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~ShellTabTests|FullyQualifiedName~ShellFlyoutTests|FullyQualifiedName~ShellStackTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile --filter "FullyQualifiedName~.IndicatorViewTests"
+dotnet test tests/Bruinet.Maui.UITests.Mobile
 ```
 
 The first sign that the navigation root is right: `ButtonTests` should not spend about 10 s per

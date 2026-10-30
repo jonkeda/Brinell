@@ -9,7 +9,7 @@ device, the default), read by `MauiTestFixtureBase`, `DeviceFactAttribute` and t
 alike. The head reports `MauiPlatform.Headless` and otherwise answers as Windows' UI Automation does.
 The device heads run every gate.
 
-MauiHeadless itself (`srcnew/MauiHeadless`) is a framework of its own, a bUnit for MAUI, on xUnit, NUnit and
+MauiHeadless itself (`src/MauiHeadless`) is a framework of its own, a bUnit for MAUI, on xUnit, NUnit and
 MSTest: it references MAUI and nothing of Bruinet's. A fixture names its app in `CreateHeadlessOptions`,
 from the app's own plain `net10.0` target beside its device targets (one project, the test
 project's reference pinned to `net10.0`); the app's composition is one method

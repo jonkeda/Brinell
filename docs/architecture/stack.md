@@ -24,13 +24,13 @@ Bruinet uses .NET with central package management.
 | Presenter | WebView2, SQLite, Roslyn, Copilot SDK dependencies |
 
 Package versions live in `Directory.Packages.props` and
-`srcnew/Directory.Packages.props`. Do not pin package versions in individual
+`src/Directory.Packages.props`. Do not pin package versions in individual
 project files unless there is a deliberate exception.
 
 ## Assertion Policy
 
 Use xUnit `Assert`. FluentAssertions is banned in test projects by
-`testsnew/Directory.Build.props`.
+`tests/Directory.Build.props`.
 
 ## Common Environment Variables
 

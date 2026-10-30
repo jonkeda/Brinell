@@ -15,9 +15,9 @@ tools\Scripts\CreateMaui.Bat
 ```
 
 Run from the Bruinet root. It rebuilds the generator CLI, then regenerates every `.tpl.cs`
-under `srcnew\Bruinet.Maui\Controls` and `srcnew\Bruinet.Maui.CommunityToolkit\Controls`,
-recursively. `tools\Scripts\CreateHtml.Bat` does the same for `srcnew\Bruinet.Html\Controls`
-and `srcnew\Bruinet.Blazor\Controls`: the contract below holds for Html controls unchanged, with
+under `src\Bruinet.Maui\Controls` and `src\Bruinet.Maui.CommunityToolkit\Controls`,
+recursively. `tools\Scripts\CreateHtml.Bat` does the same for `src\Bruinet.Html\Controls`
+and `src\Bruinet.Blazor\Controls`: the contract below holds for Html controls unchanged, with
 `IHtmlElement` as the element type. For one file or folder elsewhere, run `bruinet controls generate` directly:
 
 ```

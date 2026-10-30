@@ -83,8 +83,8 @@ $env:BRUINET_APP_PREINSTALLED = "1"
 The mobile head, not the Windows one. Start with one class, then widen.
 
 ```powershell
-dotnet test testsnew\Bruinet.Maui.UITests.Mobile -v:minimal /nr:false --filter "FullyQualifiedName~ButtonTests"
-dotnet test testsnew\Bruinet.Maui.UITests.Mobile -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.UITests.Mobile -v:minimal /nr:false --filter "FullyQualifiedName~ButtonTests"
+dotnet test tests\Bruinet.Maui.UITests.Mobile -v:minimal /nr:false
 ```
 
 Tests about the Windows bridge, menus, and logical row indexes skip here with their reason

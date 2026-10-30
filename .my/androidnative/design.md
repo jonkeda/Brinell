@@ -4,12 +4,12 @@ What to build. The steps and their status are in [plan.md](plan.md). Where this 
 or "as Html", the shape is the one recorded in AD-010, AD-013, the
 [call-model](../../.docs/contracts/call-model.md) and
 [control-object](../../.docs/contracts/control-object.md) contracts, and the code under
-`srcnew/Bruinet.Maui` and `srcnew/Bruinet.Html`; this file records only what NativeAndroid
+`src/Bruinet.Maui` and `src/Bruinet.Html`; this file records only what NativeAndroid
 adds or does differently.
 
 ## 1. Where it stands (2026-10-07)
 
-`srcnew/Bruinet.NativeAndroid`: 74 C# files, about 3,700 lines. `testsnew/Bruinet.NativeAndroid.Tests`:
+`src/Bruinet.NativeAndroid`: 74 C# files, about 3,700 lines. `tests/Bruinet.NativeAndroid.Tests`:
 16 unit tests (locator mapping and options), all passing, and **not in CI's unit test list**.
 No UI tests, no UAT suite, no sample app. Nothing else in the repo references the project.
 
@@ -57,7 +57,7 @@ switches, `IsoPaneView` and anything else that exists because of MAUI.
 **Calls.** NativeAndroid uses `Bruinet.Core.Calls` as it is, with no copy (AD-010: the leaf
 layer has one home). `ScopeGate` and the other internal types need
 `[assembly: InternalsVisibleTo("Bruinet.NativeAndroid")]` and `("Bruinet.NativeAndroid.Tests")`
-in `srcnew/Bruinet.Core/AssemblyInfo.cs`, beside the MAUI and Html lines. That is the only change
+in `src/Bruinet.Core/AssemblyInfo.cs`, beside the MAUI and Html lines. That is the only change
 to `Bruinet.Core`.
 
 **Exceptions.** Appium's errors map once, in the element's `Live` wrapper and the driver:
@@ -199,7 +199,7 @@ There is no native Android app in the repo (**?N2**). The proposal:
   one screen per family in section 5, a login screen with a button that can be made to stay
   disabled (the R0 proof), a long `RecyclerView` with stable ids and one without, a busy state, a
   permission request, and dialogs.
-- **`testsnew/Bruinet.NativeAndroid.UITests`**: one test class per family, through page objects
+- **`tests/Bruinet.NativeAndroid.UITests`**: one test class per family, through page objects
   and controls only (the "Never in tests" list in AGENTS.md applies), an Appium fixture that
   installs and starts the sample on the emulator, and the platform's UAT suite inside it
   (`uat.config.md`, `Features/`, `Uat/`, AD-026). UI tests stay local, like every `*.UITests`

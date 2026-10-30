@@ -4,7 +4,7 @@
 
 The `Shell<TScope>` control object provides a high-level abstraction for interacting with MAUI Shell containers, particularly those using TabBar navigation.
 
-**Location:** `srcnew/Bruinet.Maui/Controls/Navigation/Shell.cs`
+**Location:** `src/Bruinet.Maui/Controls/Navigation/Shell.cs`
 
 ## Features
 

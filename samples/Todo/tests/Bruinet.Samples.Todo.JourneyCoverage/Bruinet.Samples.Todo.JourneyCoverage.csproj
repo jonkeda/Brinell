@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <!-- The scenarios, parsed as tests of the tiers their head tags name (ScenarioCatalog). -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <None Include="..\Bruinet.Samples.Todo.Uat\Features\**\*.feature.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\Bruinet.Samples.Todo.Mixed.Uat\Features\**\*.feature.md" Link="Features\mixed\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

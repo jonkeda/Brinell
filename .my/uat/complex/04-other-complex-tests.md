@@ -10,7 +10,7 @@ phrases. This doc collects the ones that come up most.
 ## Offline and back online
 
 The app cannot be made to lose its network by tapping a control. Bruinet's
-[NetworkStateFile](../../../srcnew/Bruinet.Mocking/NetworkStateFile.cs) is a file
+[NetworkStateFile](../../../src/Bruinet.Mocking/NetworkStateFile.cs) is a file
 holding `online` / `offline` that a test/debug build of the app reads instead of
 the real connectivity. The fixture creates it and tells the app its path; a phrase
 flips it mid-scenario (`TOD.08.8`).

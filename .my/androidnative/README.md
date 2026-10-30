@@ -33,7 +33,7 @@ to the calls layer that already moved down (decision **?N7**).
 
 ## Scope
 
-- **In:** `srcnew/Bruinet.NativeAndroid`, its unit tests, a native Android sample app, a new
+- **In:** `src/Bruinet.NativeAndroid`, its unit tests, a native Android sample app, a new
   `Bruinet.NativeAndroid.UITests` project with its UAT suite, the shared Appium code it needs
   (**?N1**), the UAT target and head wiring, screen recording, docs and skills.
 - **Out:** iOS native; a Scraper source for Android; the Presenter; any change to what a call

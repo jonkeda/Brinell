@@ -6,14 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html\Bruinet.Html.csproj" />
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html.Playwright\Bruinet.Html.Playwright.csproj" />
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Html.Bunit\Bruinet.Html.Bunit.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Html\Bruinet.Html.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Html.Playwright\Bruinet.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Html.Bunit\Bruinet.Html.Bunit.csproj" />
     <!-- The SQL log on the bUnit head (BRUINET_SQL_LOG, .my/sql-replay/plan.md step 1). -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Blazor\Bruinet.Blazor.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Blazor\Bruinet.Blazor.csproj" />
     <!-- Page objects carry UAT names ([UatName], [UatNavigatesTo]). -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport\Bruinet.Samples.Todo.TestSupport.csproj" />
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Api\Bruinet.Samples.Todo.Api.csproj" />
   </ItemGroup>

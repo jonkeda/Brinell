@@ -8,7 +8,7 @@ one change, the same set again.
 ## Bruinet's suites first
 
 The owner's rule from 2026-10-25: what is left is built and measured on Bruinet's own sample apps and test suites first
-(`testsnew/Bruinet.Blazor.UITests`, `testsnew/Bruinet.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
+(`tests/Bruinet.Blazor.UITests`, `tests/Bruinet.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
 step of its own. A change tried on Tomorrow first, the World lane, failed scenarios there that its one green run had not shown.
 
 | Item | Bruinet's proving ground |

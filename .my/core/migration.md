@@ -43,9 +43,9 @@ Sub-steps:
 update their type references from `IMauiElement` to `ICoreElement` where the member is the
 Core one, and keep `IMauiElement` where the member is MAUI-specific.
 
-**Expected diff size:** small. `srcnew/Bruinet.Maui/Interfaces/*.cs`: base-change lines only.
-`srcnew/Bruinet.Maui/Controls/Base/*.cs`: rename `ViewBase` -> `CoreViewBase` (or a shim).
-`srcnew/Bruinet.Maui/Calls/*.cs`: deleted (~1,500 lines). Net removal.
+**Expected diff size:** small. `src/Bruinet.Maui/Interfaces/*.cs`: base-change lines only.
+`src/Bruinet.Maui/Controls/Base/*.cs`: rename `ViewBase` -> `CoreViewBase` (or a shim).
+`src/Bruinet.Maui/Calls/*.cs`: deleted (~1,500 lines). Net removal.
 
 ## Html (plan step 5)
 
@@ -203,7 +203,7 @@ Nothing built; only removed. In order:
 14. `ControlObjectBase<TScope>` (delete file).
 15. `ObjectBase` (delete file).
 
-After each delete, `dotnet build srcnew\Bruinet.sln`; any consumer that fails is a stack that
+After each delete, `dotnet build src\Bruinet.sln`; any consumer that fails is a stack that
 did not fully move, and the delete is reverted until that stack moves.
 
 **Verify.** Full solution build; every stack's `Tests` and `Uat.Tests` project; grep finds no

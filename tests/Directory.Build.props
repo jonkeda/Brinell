@@ -1,0 +1,36 @@
+<Project>
+  <!-- Import root Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  
+  <PropertyGroup>
+    <!-- Test project settings -->
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    
+    <!-- Override multi-targeting for tests - use single framework -->
+    <TargetFrameworks></TargetFrameworks>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- Common test packages -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <!-- Moq is added per-project where needed to avoid duplicates -->
+  </ItemGroup>
+  
+  <!-- BRUINET001: mock response bodies are contract types, not anonymous objects (AD-012). Bruinet.Mocking
+       is a project reference here, so its analyzer is added by hand; the package carries it itself. -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'Bruinet.Mocking.Analyzers.Tests'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/Bruinet.Mocking.Analyzers/Bruinet.Mocking.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Banned packages - Mandates xUnit Assert, not FluentAssertions ( FluentAssertions has the wrong License. Forbidden to use ever. ) -->
+  <Target Name="CheckBannedPackages" BeforeTargets="ResolvePackageAssets">
+    <Error Condition="@(PackageReference->AnyHaveMetadataValue('Identity', 'FluentAssertions'))"
+           Text="FluentAssertions is banned. Use xUnit Assert per SPEC-017b design principles." />
+  </Target>
+</Project>

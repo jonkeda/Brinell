@@ -168,6 +168,6 @@ Null-skip and idempotence still hold for hand-written members: `SetPlaying(null)
 
 ## Examples to read
 
-`srcnew/Bruinet.Maui.CommunityToolkit/Controls/Media/MediaElement.tpl.cs` with `MediaPlayPauseButton.tpl.cs` and
-`MediaTimeLabel.tpl.cs`; `srcnew/Bruinet.Maui.CommunityToolkit/Controls/Views/AvatarView.tpl.cs` with
+`src/Bruinet.Maui.CommunityToolkit/Controls/Media/MediaElement.tpl.cs` with `MediaPlayPauseButton.tpl.cs` and
+`MediaTimeLabel.tpl.cs`; `src/Bruinet.Maui.CommunityToolkit/Controls/Views/AvatarView.tpl.cs` with
 `AvatarInitials.tpl.cs` and `AvatarImage.tpl.cs`.

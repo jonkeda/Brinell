@@ -1,6 +1,6 @@
 ---
 name: android-control
-description: Create or extend a Bruinet native Android ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an Android view (a widget, a Material component, a RecyclerView) in srcnew/Bruinet.NativeAndroid. Use when asked to add, write or extend a native Android control object, container, collection or row, or when a native Android UI test needs a control member that does not exist yet.
+description: Create or extend a Bruinet native Android ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an Android view (a widget, a Material component, a RecyclerView) in src/Bruinet.NativeAndroid. Use when asked to add, write or extend a native Android control object, container, collection or row, or when a native Android UI test needs a control member that does not exist yet.
 ---
 
 # Write a native Android ControlObject
@@ -68,6 +68,6 @@ empty generated partial, or a plain `.cs` for a container.
 
 ## Prove it
 
-Add a unit test in `testsnew/Bruinet.NativeAndroid.Tests` against a mocked `INativeAndroidElement`
+Add a unit test in `tests/Bruinet.NativeAndroid.Tests` against a mocked `INativeAndroidElement`
 (`FakeApp`): a mocked view must show the effect of an action, or a confirming member fails. Then
 add a view to the gallery sample and a UI test with the `android-ui-test` skill.

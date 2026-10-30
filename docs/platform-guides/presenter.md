@@ -6,8 +6,8 @@ placed in the rest.
 
 ## Projects
 
-- `srcnew/Bruinet.Presenter`
-- `testsnew/Bruinet.Presenter.Bdd.Tests`: Presenter's own UAT suite
+- `src/Bruinet.Presenter`
+- `tests/Bruinet.Presenter.Bdd.Tests`: Presenter's own UAT suite
 
 ## A Minimal Run
 
@@ -17,13 +17,13 @@ the page objects. The WPF workspace is the cheapest: no Appium, no MAUI workload
 ```powershell
 # Working directory: Bruinet root
 dotnet build samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj
-dotnet build testsnew\Bruinet.Wpf.UITests\Bruinet.Wpf.UITests.csproj
-dotnet run --project srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -f net10.0-windows10.0.19041.0
+dotnet build tests\Bruinet.Wpf.UITests\Bruinet.Wpf.UITests.csproj
+dotnet run --project src\Bruinet.Presenter\Bruinet.Presenter.csproj -f net10.0-windows10.0.19041.0
 ```
 
 Then, in Presenter (the toolbar is icon-only; hover for tooltips):
 
-1. **Open** `testsnew\Bruinet.Wpf.UITests`.
+1. **Open** `tests\Bruinet.Wpf.UITests`.
 2. **Validate**, and fix anything the Diagnostics tab reports.
 3. Select a scenario in the tree, for example *Home page is visible*.
 4. **Run**, or **Next** to go one step at a time.
@@ -292,6 +292,6 @@ $env:BRUINET_PRESENTER_SETTINGS_PATH = "path\to\user-settings.json"
 
 ```powershell
 # Working directory: Bruinet root
-dotnet build srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Presenter.Bdd.Tests\Bruinet.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
+dotnet build src\Bruinet.Presenter\Bruinet.Presenter.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Presenter.Bdd.Tests\Bruinet.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
 ```

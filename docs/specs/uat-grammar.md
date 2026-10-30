@@ -1,7 +1,7 @@
 # UAT Scenario Grammar
 
 Status: **Implemented**. The parser is
-[BddMarkdownParser.cs](../../srcnew/Bruinet.Bdd/BddMarkdownParser.cs); this page writes down the
+[BddMarkdownParser.cs](../../src/Bruinet.Bdd/BddMarkdownParser.cs); this page writes down the
 format it accepts, so the format is a contract and not whatever the parser happens to do.
 
 Three layers, each owned by one piece of code:
@@ -9,7 +9,7 @@ Three layers, each owned by one piece of code:
 1. **The document grammar**: the shape of a `.feature.md` or `.steps.md` file. Owned by the
    parser, and fixed.
 2. **The phrase language**: the `{placeholder}` templates a step line binds to. Owned by the
-   catalog ([BddCommandCatalog.cs](../../srcnew/Bruinet.Bdd/BddCommandCatalog.cs)); phrases are
+   catalog ([BddCommandCatalog.cs](../../src/Bruinet.Bdd/BddCommandCatalog.cs)); phrases are
    declared by attributes (AD-011) or as callable phrases (AD-017).
 3. **The lexicon**: the page, control, app and user names that fill the placeholders. Owned by
    name resolution (`[UatName]`, `UatNameInference`, the `Apps` table).

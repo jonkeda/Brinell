@@ -6,8 +6,8 @@ Working directory for paths in this document: Bruinet root.
 
 | Path | Purpose |
 | --- | --- |
-| `srcnew/` | Active Bruinet source projects |
-| `testsnew/` | Active unit, UI, and UAT test projects |
+| `src/` | Active Bruinet source projects |
+| `tests/` | Active unit, UI, and UAT test projects |
 | `samples/` | Sample applications used by UI tests and demos |
 | `tools/` | Developer tools: `bruinet`, the command line (`tools/Bruinet.Cli`: the Scraper, test data, control generation, the language and MCP servers), and the IDE extensions |
 | `docs/` | Active curated documentation |
@@ -20,7 +20,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 ## Source Projects
 
-`srcnew/` contains package-producing projects:
+`src/` contains package-producing projects:
 
 - `Bruinet.Appium` - what the Appium stacks share: Appium's error mapping, `AndroidHost`, `AndroidRecorder`
 - `Bruinet.Stride.Automation`
@@ -43,7 +43,7 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 ## Test Projects
 
-`testsnew/` follows naming by capability:
+`tests/` follows naming by capability:
 
 - `Bruinet.*.Tests` for unit and integration-style checks;
 - `Bruinet.*.UITests` for live UI automation: the UI tests, the page objects, and the platform's
@@ -64,13 +64,13 @@ their own `.slnx` with Visual Studio's MSBuild.
 
 ## Adding Code
 
-- Add shared contracts to `srcnew/Bruinet.Core`.
-- Add platform behavior to the matching `srcnew/Bruinet.*` project.
-- Add tests to the matching `testsnew/Bruinet.*.Tests` project.
-- Add UI coverage to `testsnew/Bruinet.*.UITests` only when a live app or
+- Add shared contracts to `src/Bruinet.Core`.
+- Add platform behavior to the matching `src/Bruinet.*` project.
+- Add tests to the matching `tests/Bruinet.*.Tests` project.
+- Add UI coverage to `tests/Bruinet.*.UITests` only when a live app or
   platform driver is required.
 - Add UAT scenario examples under `Features/` of the matching
-  `testsnew/Bruinet.*.UITests` project.
-- Add test settings code under `srcnew/Bruinet.Core/Settings`.
-- Add artifact/reporting code under `srcnew/Bruinet.Core/Artifacts` unless the
+  `tests/Bruinet.*.UITests` project.
+- Add test settings code under `src/Bruinet.Core/Settings`.
+- Add artifact/reporting code under `src/Bruinet.Core/Artifacts` unless the
   behavior is platform-specific.

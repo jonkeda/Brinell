@@ -1,7 +1,7 @@
 # Reporting And Artifacts
 
 Bruinet-owned outputs use the shared artifact provider in
-`srcnew/Bruinet.Core/Artifacts`.
+`src/Bruinet.Core/Artifacts`.
 
 ## Environment
 
@@ -83,8 +83,8 @@ registered as `uat-scenario` artifacts.
 
 ## Source Files
 
-- `srcnew/Bruinet.Core/Artifacts/TestArtifactOptions.cs`
-- `srcnew/Bruinet.Core/Artifacts/DefaultTestArtifactPathProvider.cs`
-- `srcnew/Bruinet.Core/Artifacts/ITestArtifactPathProvider.cs`
-- `srcnew/Bruinet.Core/Artifacts/TestArtifactManifestWriter.cs`
-- `srcnew/Bruinet.Uat/UatScenarioTestBase.cs`
+- `src/Bruinet.Core/Artifacts/TestArtifactOptions.cs`
+- `src/Bruinet.Core/Artifacts/DefaultTestArtifactPathProvider.cs`
+- `src/Bruinet.Core/Artifacts/ITestArtifactPathProvider.cs`
+- `src/Bruinet.Core/Artifacts/TestArtifactManifestWriter.cs`
+- `src/Bruinet.Uat/UatScenarioTestBase.cs`

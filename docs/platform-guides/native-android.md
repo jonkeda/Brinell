@@ -7,12 +7,12 @@ wait for state), scope readiness and collections with item keys.
 
 ## Projects
 
-- `srcnew/Bruinet.NativeAndroid`: interfaces, the Appium adapter, pages, containers, collections,
+- `src/Bruinet.NativeAndroid`: interfaces, the Appium adapter, pages, containers, collections,
   controls.
-- `srcnew/Bruinet.Appium`: what the Appium stacks share (Appium's error mapping, `AndroidHost`,
+- `src/Bruinet.Appium`: what the Appium stacks share (Appium's error mapping, `AndroidHost`,
   `AndroidRecorder`).
-- `testsnew/Bruinet.NativeAndroid.Tests`: unit tests over a mocked app (CI runs them).
-- `testsnew/Bruinet.NativeAndroid.UITests`: UI tests and the UAT suite against the gallery app.
+- `tests/Bruinet.NativeAndroid.Tests`: unit tests over a mocked app (CI runs them).
+- `tests/Bruinet.NativeAndroid.UITests`: UI tests and the UAT suite against the gallery app.
 - `samples/Bruinet.Samples.NativeAndroid.App`: the gallery app (.NET for Android).
 
 ## A session
@@ -106,7 +106,7 @@ press, swipe and typed text is a touch mark on the video (AD-024).
 Unit tests (no device), from the Bruinet root:
 
 ```powershell
-dotnet test testsnew\Bruinet.NativeAndroid.Tests\Bruinet.NativeAndroid.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.NativeAndroid.Tests\Bruinet.NativeAndroid.Tests.csproj -v:minimal /nr:false
 ```
 
 UI tests and UAT need the emulator and Appium: [run/native-android.md](../run/native-android.md).

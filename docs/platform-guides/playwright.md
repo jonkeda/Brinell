@@ -5,12 +5,12 @@ modern browser automation.
 
 ## Projects
 
-- `srcnew/Bruinet.Html`
-- `srcnew/Bruinet.Html.Playwright`
-- `srcnew/Bruinet.Blazor`
-- `testsnew/Bruinet.Blazor.Tests`
-- `testsnew/Bruinet.Html.UITests` (the UI tests and the UAT suite)
-- `testsnew/Bruinet.Blazor.UITests` (the UI tests and the UAT suite)
+- `src/Bruinet.Html`
+- `src/Bruinet.Html.Playwright`
+- `src/Bruinet.Blazor`
+- `tests/Bruinet.Blazor.Tests`
+- `tests/Bruinet.Html.UITests` (the UI tests and the UAT suite)
+- `tests/Bruinet.Blazor.UITests` (the UI tests and the UAT suite)
 - `samples/Todo/tests/Bruinet.Samples.Todo.Web.UITests`, `samples/Todo/tests/Bruinet.Samples.Todo.Web.Uat`
 
 ## Rules

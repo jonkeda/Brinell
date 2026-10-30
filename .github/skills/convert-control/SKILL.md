@@ -1,6 +1,6 @@
 ---
 name: convert-control
-description: Convert a hand-written Bruinet MAUI control object (e.g. ImageButton.cs, Entry.cs, Label.cs) to the generatable .tpl.cs / .gen.cs format used under srcnew/Bruinet.Maui*/Controls. Use when asked to "convert", "migrate", or "update to the new generatable format" a MAUI control object, or to make a control work with Bruinet.Generator.
+description: Convert a hand-written Bruinet MAUI control object (e.g. ImageButton.cs, Entry.cs, Label.cs) to the generatable .tpl.cs / .gen.cs format used under src/Bruinet.Maui*/Controls. Use when asked to "convert", "migrate", or "update to the new generatable format" a MAUI control object, or to make a control work with Bruinet.Generator.
 ---
 
 # Convert a control object to the generatable format
@@ -19,7 +19,7 @@ conversion procedure.
 ## Steps
 
 1. **Read the control and its base class.** Know which members are inherited before deciding
-   what to convert. Base templates live in `srcnew/Bruinet.Maui/Controls/Base/`.
+   what to convert. Base templates live in `src/Bruinet.Maui/Controls/Base/`.
 
 2. **Rename to `.tpl.cs`** (`git mv`, to keep history) and make the class `partial`.
 

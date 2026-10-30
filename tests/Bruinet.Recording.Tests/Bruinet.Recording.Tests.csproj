@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Recording.Tests</RootNamespace>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bruinet.Recording\Bruinet.Recording.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Narrator.Windows\Bruinet.Narrator.Windows.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Html.Playwright\Bruinet.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Appium\Bruinet.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

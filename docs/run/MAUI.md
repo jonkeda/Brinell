@@ -5,14 +5,14 @@ Working directory: Bruinet root.
 ## Unit Tests
 
 ```powershell
-dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
 ```
 
 ## Windows FlaUI Adapter
 
 ```powershell
-dotnet build srcnew\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -f net10.0-windows7.0 -v:minimal /nr:false
+dotnet build src\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -f net10.0-windows7.0 -v:minimal /nr:false
 ```
 
 The Windows run drives the app without mouse, keyboard or foreground, so you can keep
@@ -22,7 +22,7 @@ host the gesture bridge - see the [MAUI platform guide](../platform-guides/maui.
 ## MauiHeadless Head
 
 ```powershell
-$env:BRUINET_HEAD='headless'; dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -v:minimal /nr:false
+$env:BRUINET_HEAD='headless'; dotnet test tests\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj -v:minimal /nr:false
 ```
 
 The same suite renders both sample apps headless with MauiHeadless, from each app's own plain `net10.0`

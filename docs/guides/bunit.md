@@ -17,7 +17,7 @@ style sheet hides, or a handler bound in JavaScript, can pass on bUnit and fail 
 ## Running It
 
 ```bash
-BRUINET_HEAD=bunit dotnet test testsnew/Bruinet.Blazor.UITests
+BRUINET_HEAD=bunit dotnet test tests/Bruinet.Blazor.UITests
 ```
 
 Unset, or any value but `bunit`, is the browser. In PowerShell: `$env:BRUINET_HEAD = 'bunit'`.

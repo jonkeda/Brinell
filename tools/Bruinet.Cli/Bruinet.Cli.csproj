@@ -14,13 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Bruinet.Bdd.Workspace\Bruinet.Bdd.Workspace.csproj" />
-    <ProjectReference Include="..\..\srcnew\Bruinet.Scraper\Bruinet.Scraper.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Bdd.Workspace\Bruinet.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Scraper\Bruinet.Scraper.csproj" />
     <!-- data: Bruinet.TestData is shared with the loaded assemblies, so their definitions are the tool's ITestDataDefinition. -->
-    <ProjectReference Include="..\..\srcnew\Bruinet.TestData\Bruinet.TestData.csproj" />
-    <ProjectReference Include="..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.TestData\Bruinet.TestData.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <!-- sql: the SQL log's schema snapshot, Extended Events and report (.my/sql-replay/plan.md, step 1). -->
-    <ProjectReference Include="..\..\srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,11 +56,11 @@
        which the recording run is pointed at (BRUINET_RECORDERS). -p:BruinetRecorders=false leaves them out, for a
        build that only selects or checks (Tomorrow's tools/Select-Tests.ps1, into its own artifacts folder). -->
   <ItemGroup Condition="'$(OS)' == 'Windows_NT' And '$(BruinetRecorders)' != 'false'">
-    <ProjectReference Include="..\..\srcnew\Bruinet.Narrator.Windows\Bruinet.Narrator.Windows.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows10.0.19041.0" Private="false" />
+    <ProjectReference Include="..\..\src\Bruinet.Narrator.Windows\Bruinet.Narrator.Windows.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows10.0.19041.0" Private="false" />
   </ItemGroup>
 
   <PropertyGroup>
-    <RecordersOutput>..\..\srcnew\Bruinet.Narrator.Windows\bin\$(Configuration)\net10.0-windows10.0.19041.0\</RecordersOutput>
+    <RecordersOutput>..\..\src\Bruinet.Narrator.Windows\bin\$(Configuration)\net10.0-windows10.0.19041.0\</RecordersOutput>
   </PropertyGroup>
 
   <ItemGroup>

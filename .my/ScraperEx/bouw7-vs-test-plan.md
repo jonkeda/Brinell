@@ -14,9 +14,9 @@ log an issue in [issues/](issues/).
 - [x] Bouw7 **acceptance** web app URL known: `<fill in URL>`. Never production. Sign-in goes through `login-acc.bouw7.nl`.
 - [x] A Bouw7 acc test account. You sign in yourself in the Scraper's browser; the Scraper never types credentials.
 - [x] Chromium installed. From the Bruinet root:
-  - [x] `dotnet build testsnew\Bruinet.Html.UITests`
-  - [x] `pwsh testsnew\Bruinet.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`
-- [x] Extension running. Either open `tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio.slnx` and press **Ctrl+F5**, or install the `.vsix`. In the instance, open `srcnew\Bruinet.sln`.
+  - [x] `dotnet build tests\Bruinet.Html.UITests`
+  - [x] `pwsh tests\Bruinet.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`
+- [x] Extension running. Either open `tools\Bruinet.Bdd.VisualStudio\Bruinet.Bdd.VisualStudio.slnx` and press **Ctrl+F5**, or install the `.vsix`. In the instance, open `src\Bruinet.sln`.
 - [x] `.playwright\node\win32_x64\node.exe` exists under the extension's `Server\` folder.
 - [x] Remember: acc holds realistic contacts and projects. Do not commit `Recordings/` or `.scraper-state.json`.
 

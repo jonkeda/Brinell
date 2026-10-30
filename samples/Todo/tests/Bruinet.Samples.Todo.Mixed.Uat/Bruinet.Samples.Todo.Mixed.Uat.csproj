@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <!-- The apps, their page objects and the one backend, shared with the mixed UI tests. -->
     <ProjectReference Include="..\Bruinet.Samples.Todo.TestSupport.Apps\Bruinet.Samples.Todo.TestSupport.Apps.csproj" />
   </ItemGroup>

@@ -30,7 +30,7 @@ can follow once these pass.
 ```text
 Scraper.Sites/                    at the Bruinet root: what the Scraper made of real sites, not tests
   Bruinet.Html.Plain/
-    Bruinet.Html.Plain.csproj     references srcnew/Bruinet.Html (Blazor: srcnew/Bruinet.Blazor)
+    Bruinet.Html.Plain.csproj     references src/Bruinet.Html (Blazor: src/Bruinet.Blazor)
     scraper.config.md             StartUrl, the site's host in Explore hosts, the budget below
     Pages/                        drafted *.scraped.cs
     Recordings/                   Explore's sessions (git-ignored, Q1)

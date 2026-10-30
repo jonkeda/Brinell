@@ -9,7 +9,7 @@
     BRUINET_UIA_BRIDGE some other way. Doing neither gives an app with no bridge, which is
     the right way for a gate to fail.
   -->
-  <Import Project="..\..\srcnew\Bruinet.Uia.Contracts\Bruinet.Uia.Bridge.props" />
+  <Import Project="..\..\src\Bruinet.Uia.Contracts\Bruinet.Uia.Bridge.props" />
 
   <PropertyGroup>
     <!--
@@ -82,12 +82,12 @@
     Linked, because a ProjectReference would break the property the whole project exists to
     have: that an app Bruinet cannot add a dependency to - third-party, legacy, or otherwise
     outside our control - can still carry the bridge by copying source files in. Copying this
-    project means copying srcnew\Bruinet.Uia.Contracts alongside it and adjusting the path
+    project means copying src\Bruinet.Uia.Contracts alongside it and adjusting the path
     below; nothing else.
   -->
   <ItemGroup>
-    <Compile Include="..\..\srcnew\Bruinet.Uia.Contracts\**\*.cs"
-             Exclude="..\..\srcnew\Bruinet.Uia.Contracts\bin\**;..\..\srcnew\Bruinet.Uia.Contracts\obj\**"
+    <Compile Include="..\..\src\Bruinet.Uia.Contracts\**\*.cs"
+             Exclude="..\..\src\Bruinet.Uia.Contracts\bin\**;..\..\src\Bruinet.Uia.Contracts\obj\**"
              Link="Uia\Contract\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
@@ -116,7 +116,7 @@
   -->
   <ItemGroup Condition="'$(BruinetUiaBridge)' != 'true'">
     <Compile Remove="Uia\Contract\Provider\**" />
-    <Compile Remove="..\..\srcnew\Bruinet.Uia.Contracts\Provider\**" />
+    <Compile Remove="..\..\src\Bruinet.Uia.Contracts\Provider\**" />
     <Compile Remove="Uia\ElementBounds.cs" />
     <Compile Remove="Uia\MauiCapabilities.cs" />
     <Compile Remove="Uia\MauiVerbDispatcher.cs" />

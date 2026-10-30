@@ -109,7 +109,7 @@ for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
 - Do not add empty catches. Optional platform probing belongs in named `Try*`
   helpers with clear fallback behavior.
 - Keep platform element types out of `Bruinet.Core`.
-- Match existing project layout under `srcnew/` and `testsnew/`.
+- Match existing project layout under `src/` and `tests/`.
 
 ## Docs Rules
 
@@ -143,17 +143,17 @@ Commands are from the Bruinet root:
 
 ```powershell
 dotnet build Bruinet.sln -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
-dotnet build srcnew\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Html.Tests\Bruinet.Html.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Blazor.Tests\Bruinet.Blazor.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Html.Bunit.Tests\Bruinet.Html.Bunit.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
+dotnet build src\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test tests\Bruinet.Html.Tests\Bruinet.Html.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Blazor.Tests\Bruinet.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Html.Bunit.Tests\Bruinet.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
-The Html and Blazor UI suites (`testsnew\Bruinet.Html.UITests`, `testsnew\Bruinet.Blazor.UITests`)
+The Html and Blazor UI suites (`tests\Bruinet.Html.UITests`, `tests\Bruinet.Blazor.UITests`)
 start the Blazor sample themselves on a free port and need Playwright's Chromium installed
-(`pwsh testsnew\Bruinet.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
+(`pwsh tests\Bruinet.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
 They also run without a browser, on the **bUnit head**: `$env:BRUINET_HEAD = "bunit"` renders the
 sample's components in the test process (about 2 s for the Blazor suite against about 40 s in a
 browser). Tests that need a browser are `[BrowserFact]`, scenarios `@browser`, and are skipped there
@@ -167,7 +167,7 @@ and most of it is irrelevant to any given edit. Run the smallest tier that can
 actually falsify the change, and only widen if that tier fails or the change is
 genuinely broad.
 
-| Tier | Command (filter on `testsnew\Bruinet.Maui.UITests`) | Cost |
+| Tier | Command (filter on `tests\Bruinet.Maui.UITests`) | Cost |
 |---|---|---|
 | 1. One area | `--filter "FullyQualifiedName~AutomationProbeTests"` | ~7 s |
 | 2. Related areas | `--filter "FullyQualifiedName~Tests.Container\|FullyQualifiedName~Tests.Collection"` | ~11 s |
@@ -187,7 +187,7 @@ bUnit alone is not done, because bUnit has no layout, style sheets or script.
 The narrowest filter comes from the change: `pwsh tools/Scripts/select-tests.ps1` (`bruinet tests affected`,
 `docs/run/cli.md`) follows the working tree's changed files through each suite's `touch-map.json` to the tests and
 scenarios they reach, prints each with why and one `--filter`, and runs it with `-Run` (`-Head playwright` for the
-browser). Shared code (`srcnew/`, the test base, the sample's layout and start) runs the suite whole. After a full run,
+browser). Shared code (`src/`, the test base, the sample's layout and start) runs the suite whole. After a full run,
 `-WriteMap` refreshes the maps; commit them.
 
 Notes:

@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <!-- The UAT engine, and the page objects and controls its scenarios drive. -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <ProjectReference Include="..\Bruinet.Samples.Todo.UITests\Bruinet.Samples.Todo.UITests.csproj" />
   </ItemGroup>
 

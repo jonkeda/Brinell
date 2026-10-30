@@ -918,24 +918,24 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 
 ## Source Files
 
-- `srcnew/Bruinet.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
-- `srcnew/Bruinet.Core/Interfaces/*.cs` — the built-in control-verb declarations
-- `srcnew/Bruinet.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
-- `srcnew/Bruinet.Uat/BddMarkdownParser.cs`
-- `srcnew/Bruinet.Uat/BddCommandCatalog.cs`
-- `srcnew/Bruinet.Uat/BddBinder.cs` — binding, subjects, the current app, and expanding calls
-- `srcnew/Bruinet.Uat/UatCallables.cs`, `BddPreparedCallables.cs` — callable phrases, their types and problems
-- `srcnew/Bruinet.Uat/BddScenarioFiles.cs` — loading a scenario file with the phrase files it sees
-- `srcnew/Bruinet.Uat/BddCatalogSet.cs` — the catalogs per head, and what a step can see
-- `srcnew/Bruinet.Uat/BddValues.cs` — how every scenario value is read and written
-- `srcnew/Bruinet.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
-- `srcnew/Bruinet.Uat/BddArguments.cs` — the bind-time check and the run-time read
-- `srcnew/Bruinet.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
-- `srcnew/Bruinet.Uat/UatScenarioCheck.cs` — checking files without running them (`bruinet data`)
-- `srcnew/Bruinet.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
-- `srcnew/Bruinet.Uat/UatExecution.cs`
-- `srcnew/Bruinet.Uat/UatCatalogBuilder.cs`
-- `srcnew/Bruinet.Uat/UatReflectionRuntime.cs`
-- `srcnew/Bruinet.Uat/UatScenarioTestBase.cs`
-- `srcnew/Bruinet.Uat/UatSpecCommandCatalog.cs`
-- `srcnew/Bruinet.Uat/UatAttributes.cs`
+- `src/Bruinet.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
+- `src/Bruinet.Core/Interfaces/*.cs` — the built-in control-verb declarations
+- `src/Bruinet.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
+- `src/Bruinet.Uat/BddMarkdownParser.cs`
+- `src/Bruinet.Uat/BddCommandCatalog.cs`
+- `src/Bruinet.Uat/BddBinder.cs` — binding, subjects, the current app, and expanding calls
+- `src/Bruinet.Uat/UatCallables.cs`, `BddPreparedCallables.cs` — callable phrases, their types and problems
+- `src/Bruinet.Uat/BddScenarioFiles.cs` — loading a scenario file with the phrase files it sees
+- `src/Bruinet.Uat/BddCatalogSet.cs` — the catalogs per head, and what a step can see
+- `src/Bruinet.Uat/BddValues.cs` — how every scenario value is read and written
+- `src/Bruinet.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
+- `src/Bruinet.Uat/BddArguments.cs` — the bind-time check and the run-time read
+- `src/Bruinet.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
+- `src/Bruinet.Uat/UatScenarioCheck.cs` — checking files without running them (`bruinet data`)
+- `src/Bruinet.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
+- `src/Bruinet.Uat/UatExecution.cs`
+- `src/Bruinet.Uat/UatCatalogBuilder.cs`
+- `src/Bruinet.Uat/UatReflectionRuntime.cs`
+- `src/Bruinet.Uat/UatScenarioTestBase.cs`
+- `src/Bruinet.Uat/UatSpecCommandCatalog.cs`
+- `src/Bruinet.Uat/UatAttributes.cs`

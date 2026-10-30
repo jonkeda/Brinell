@@ -4,6 +4,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Bruinet.Html\Bruinet.Html.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Html\Bruinet.Html.csproj" />
   </ItemGroup>
 </Project>

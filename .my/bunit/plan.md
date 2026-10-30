@@ -9,23 +9,23 @@ every head the step touches.
 | What | Value |
 | --- | --- |
 | Contracts implemented | `Bruinet.Html.Interfaces`: `IHtmlDriver`, `IHtmlElement`, `IHtmlTestContext` (with `IHtmlElementScope`, `ITestContext`), `IHtmlPageProbe` |
-| Reference implementation | `srcnew/Bruinet.Html.Playwright` (`PlaywrightHtmlDriver`, `PlaywrightHtmlElement`, `PlaywrightTestContext`, 1,019 lines) |
+| Reference implementation | `src/Bruinet.Html.Playwright` (`PlaywrightHtmlDriver`, `PlaywrightHtmlElement`, `PlaywrightTestContext`, 1,019 lines) |
 | Not changed | Page objects, controls, collections, `Bruinet.Core.Calls` (`Poller`, `ControlCall`, `Confirmer`), UAT phrases, feature files |
-| Package | `bunit`, newest 2.x targeting `net10.0`, in `srcnew/Directory.Packages.props` (and the root one if a root project needs it); not in the NuGet cache yet |
+| Package | `bunit`, newest 2.x targeting `net10.0`, in `src/Directory.Packages.props` (and the root one if a root project needs it); not in the NuGet cache yet |
 | Target framework | `net10.0` (SDK 10.0.401, `global.json`) |
 | Test runner | xUnit 2.9.3, as every suite |
 | First app | `samples/Bruinet.Samples.Blazor.App` (13 pages, `Routes.razor`, services `IAuthService`, `DataService`, `MediaService`, `ToastService`) |
-| First suite | `testsnew/Bruinet.Blazor.UITests`: `Tests/Controls` (ButtonClick, ControlState, TextInput), `Tests/Pages` (Counter, UserForm), `Features/counter-basic`, `login-invalid-credentials`; context made in `TestBase/BlazorSampleTestBase.InitializeAsync` |
+| First suite | `tests/Bruinet.Blazor.UITests`: `Tests/Controls` (ButtonClick, ControlState, TextInput), `Tests/Pages` (Counter, UserForm), `Features/counter-basic`, `login-invalid-credentials`; context made in `TestBase/BlazorSampleTestBase.InitializeAsync` |
 
 ## New and changed projects
 
 | Project | Kind | Holds |
 | --- | --- | --- |
-| `srcnew/Bruinet.Html.Bunit` | new library | `BunitHtmlDriver`, `BunitHtmlElement`, `BunitTestContext`, `BunitTestContextOptions`, `BunitLocators`, `BunitHistory`, `BrowserOnlyException` |
-| `testsnew/Bruinet.Html.Bunit.Tests` | new tests | Per-member tests over small test components in the project (`Probe.razor` and friends) |
-| `srcnew/Bruinet.Html` | changed | `Testing/HtmlHead.cs` (enum `Browser`, `Bunit`), `Testing/HtmlHeads.cs` (the current head: `BRUINET_HEAD`, else `bruinet.html.config.json` `head`, else `Browser`) |
-| `testsnew/Bruinet.Blazor.UITests` | changed | `BlazorSampleTestBase` and `Uat/BlazorUatFixture` make the context by head; references `Bruinet.Html.Bunit` and the sample app project |
-| `srcnew/Bruinet.Bdd` or `Bruinet.Uat` | changed | The `@browser` tag: skipped on a non-browser head, with the reason |
+| `src/Bruinet.Html.Bunit` | new library | `BunitHtmlDriver`, `BunitHtmlElement`, `BunitTestContext`, `BunitTestContextOptions`, `BunitLocators`, `BunitHistory`, `BrowserOnlyException` |
+| `tests/Bruinet.Html.Bunit.Tests` | new tests | Per-member tests over small test components in the project (`Probe.razor` and friends) |
+| `src/Bruinet.Html` | changed | `Testing/HtmlHead.cs` (enum `Browser`, `Bunit`), `Testing/HtmlHeads.cs` (the current head: `BRUINET_HEAD`, else `bruinet.html.config.json` `head`, else `Browser`) |
+| `tests/Bruinet.Blazor.UITests` | changed | `BlazorSampleTestBase` and `Uat/BlazorUatFixture` make the context by head; references `Bruinet.Html.Bunit` and the sample app project |
+| `src/Bruinet.Bdd` or `Bruinet.Uat` | changed | The `@browser` tag: skipped on a non-browser head, with the reason |
 
 `Bruinet.Html` and `Bruinet.Blazor` take no bUnit reference; only `Bruinet.Html.Bunit` does.
 
@@ -158,8 +158,8 @@ fights bench (PLT.35, 16 scenarios) run on both heads and timed.
 | Do the sample's `@rendermode` attributes render? | Yes: the sample's `Routes` rendered `/counter` through its router and layout (3,025 characters of markup); every page the 33 tests open rendered. |
 | What does one call cost? | `Click` + `AssertText`: median 0.23 ms, slowest 2.13 ms, over 100. The browser head's median call is 38 ms (`.my/reviews/baseline.md`, C2), so about 150 times less. |
 
-What the spike built: `srcnew/Bruinet.Html.Bunit` (`BunitTestContext`, `BunitHtmlDriver`, `BunitHtmlElement`,
-`BunitLocators`, `BunitTestContextOptions`, `BrowserOnlyException`), `testsnew/Bruinet.Html.Bunit.Tests`
+What the spike built: `src/Bruinet.Html.Bunit` (`BunitTestContext`, `BunitHtmlDriver`, `BunitHtmlElement`,
+`BunitLocators`, `BunitTestContextOptions`, `BrowserOnlyException`), `tests/Bruinet.Html.Bunit.Tests`
 (`SpikeTests`, the `Probe` component, `ProbePage`), and in `Bruinet.Blazor.UITests` the head switch in
 `TestBase/BlazorSampleTestBase` with `TestBase/BlazorSampleBunit` (the sample's `Routes` and four services);
 the suite now references the sample app's assembly. Most of step 2's member table is already in
@@ -177,7 +177,7 @@ Found, for the next steps:
   through bUnit's `NavigationManager`, a submit button without its own handler submits its form.
 - **`PageTitle` is empty:** the title renders into `App.razor`'s head, which the root does not include.
 - **The UAT scenarios did not run on bUnit:** `Uat/BlazorUatFixture` still makes a browser; step 4.
-- **The two `Directory.Packages.props`** (root, `srcnew`) both carry `bunit`; `Bruinet.Html.Bunit`
+- **The two `Directory.Packages.props`** (root, `src`) both carry `bunit`; `Bruinet.Html.Bunit`
   targets `net10.0` only.
 
 ## Step 2 results

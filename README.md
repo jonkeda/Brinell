@@ -123,14 +123,13 @@ Packages target `net8.0`, `net9.0` and `net10.0`; the SDK is pinned in `global.j
 
 | Path | Purpose |
 | --- | --- |
-| `srcnew/` | The packages above |
-| `testsnew/` | Unit, UI and UAT tests, one project per package and head |
+| `src/` | The packages above |
+| `tests/` | Unit, UI and UAT tests, one project per package and head |
 | `samples/` | Sample apps used by tests and demos, and the Todo sample |
 | `tools/` | The CLI, the Visual Studio and VS Code extensions, and scripts |
 | `docs/` | Guides for using Bruinet; `.docs/` holds the decisions and invariants behind it |
 | `Scraper.Sites/` | What the Scraper makes of public sites, one page per technology |
 | `.my/` | Plans for work in flight, indexed in `.my/README.md` |
-| `docs2/` | The previous documentation tree, kept as an archive |
 
 ## Get started
 

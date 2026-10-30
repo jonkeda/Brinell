@@ -1,8 +1,8 @@
 # Page objects
 
 Page objects own the page's structure: which controls it has, where they are, and page-level
-intent. They live in `testsnew/Bruinet.Maui.UITests/Pages/`; containers and collections they
-use live in `testsnew/Bruinet.Maui.UITests/Containers/`.
+intent. They live in `tests/Bruinet.Maui.UITests/Pages/`; containers and collections they
+use live in `tests/Bruinet.Maui.UITests/Containers/`.
 
 ## Shape
 

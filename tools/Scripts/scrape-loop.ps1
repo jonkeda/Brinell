@@ -126,7 +126,7 @@ function Start-App {
         return @{ Process = $null; Url = $url; Down = ($status -lt 200 -or $status -ge 400); Status = $status }
     }
     if ($Target -eq 'test-site') {
-        $dll = Join-Path $root 'testsnew/Bruinet.Scraper.TestSite/bin/Debug/net10.0/Bruinet.Scraper.TestSite.dll'
+        $dll = Join-Path $root 'tests/Bruinet.Scraper.TestSite/bin/Debug/net10.0/Bruinet.Scraper.TestSite.dll'
         $info = [System.Diagnostics.ProcessStartInfo]::new('dotnet', "`"$dll`"")
         $info.RedirectStandardInput = $true; $info.RedirectStandardOutput = $true; $info.UseShellExecute = $false
         $process = [System.Diagnostics.Process]::Start($info)
@@ -175,15 +175,15 @@ function New-TargetProject([string]$folder, [string]$url) {
     $project = Join-Path $folder 'tests' $spec.Project
     New-Item -ItemType Directory -Force $project | Out-Null
     Copy-Item (Join-Path $root 'nuget.config') (Join-Path $folder 'nuget.config')
-    $references = @("<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinet.Html/Bruinet.Html.csproj')`" />")
+    $references = @("<ProjectReference Include=`"$(Join-Path $root 'src/Bruinet.Html/Bruinet.Html.csproj')`" />")
     if ($spec.Site) {
         # The site's own config, as committed: the loop's copy changes nothing in Scraper.Sites.
-        if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinet.Blazor/Bruinet.Blazor.csproj')`" />" }
+        if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'src/Bruinet.Blazor/Bruinet.Blazor.csproj')`" />" }
         Write-Project $project $references
         Copy-Item (Join-Path $root 'Scraper.Sites' $spec.Project 'scraper.config.md') (Join-Path $project 'scraper.config.md')
         return $project
     }
-    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'srcnew/Bruinet.Blazor/Bruinet.Blazor.csproj')`" />" }
+    if ($spec.Blazor) { $references += "<ProjectReference Include=`"$(Join-Path $root 'src/Bruinet.Blazor/Bruinet.Blazor.csproj')`" />" }
     Write-Project $project $references
 
     $explore = @('| DelayMs | 50 |')
@@ -265,7 +265,7 @@ function Get-Files([string]$folder) {
 
 Write-Host "scrape-loop: $Target, agent $Agent, profile $Profile, $Repeat run(s) into $OutDir"
 Invoke-Build 'tools/Bruinet.Cli/Bruinet.Cli.csproj'
-if ($Target -eq 'test-site') { Invoke-Build 'testsnew/Bruinet.Scraper.TestSite/Bruinet.Scraper.TestSite.csproj' }
+if ($Target -eq 'test-site') { Invoke-Build 'tests/Bruinet.Scraper.TestSite/Bruinet.Scraper.TestSite.csproj' }
 elseif (-not $spec.Site) { Invoke-Build 'samples/Bruinet.Samples.Blazor.App/Bruinet.Samples.Blazor.App.csproj' }
 $server = Join-Path $root 'tools/Bruinet.Cli/bin/Debug/net10.0/bruinet.dll'
 $repoBefore = & git -C $root status --porcelain

@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Mocking\Bruinet.Mocking.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Mocking\Bruinet.Mocking.csproj" />
     <!-- SQL replay of the app's file on the in-process heads (TodoSqlReplay). -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.TestData\Bruinet.TestData.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Mocking.Data\Bruinet.Mocking.Data.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.TestData\Bruinet.TestData.csproj" />
     <!-- The head-neutral steps (Uat/), shared by the UI suites and the service suite: no UI, so Bruinet.Bdd only. -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Bdd\Bruinet.Bdd.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Bdd\Bruinet.Bdd.csproj" />
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Contracts\Bruinet.Samples.Todo.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Bruinet.Samples.Todo.Infrastructure\Bruinet.Samples.Todo.Infrastructure.csproj" />
   </ItemGroup>

@@ -41,7 +41,7 @@ jobs:
         run: dotnet workload restore Bruinet.sln
 
       # Debug on purpose: the UI Automation bridge only compiles in Debug
-      # (srcnew/Bruinet.Uia.Contracts/Bruinet.Uia.Bridge.props), and Debug is what the
+      # (src/Bruinet.Uia.Contracts/Bruinet.Uia.Bridge.props), and Debug is what the
       # test suites are written against.
       # Every project in the repository but the two VSIX projects (see ide-extensions).
       - name: Build
@@ -71,7 +71,7 @@ jobs:
           $failed = @()
           foreach ($p in $projects) {
             # Category=Browser drives Chromium against a local site; not installed here.
-            dotnet test "testsnew/$p/$p.csproj" --no-build -v:minimal --filter "Category!=Browser" `
+            dotnet test "tests/$p/$p.csproj" --no-build -v:minimal --filter "Category!=Browser" `
               --logger "trx;LogFileName=$p.trx" --results-directory TestResults/ci
             if ($LASTEXITCODE -ne 0) { $failed += $p }
           }
@@ -145,7 +145,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore src/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh

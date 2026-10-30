@@ -10,8 +10,8 @@ system can now be measured with four commands, as section 1.7 of the plan descri
 
 | Part | Where |
 | --- | --- |
-| The log, the ADO.NET wrapper, statements, schema snapshot, Extended Events | `srcnew/Bruinet.Mocking.Data` (netstandard2.0, net8.0 to net10.0) |
-| The EF interceptor, `UseSqlLog` | `srcnew/Bruinet.Mocking.Data.EntityFrameworkCore` (net10.0: EF Core 10 runs on .NET 10 only) |
+| The log, the ADO.NET wrapper, statements, schema snapshot, Extended Events | `src/Bruinet.Mocking.Data` (netstandard2.0, net8.0 to net10.0) |
+| The EF interceptor, `UseSqlLog` | `src/Bruinet.Mocking.Data.EntityFrameworkCore` (net10.0: EF Core 10 runs on .NET 10 only) |
 | `bruinet sql schema`, `capture start`, `stop`, `read`, `report` | `tools/Bruinet.Cli/Sql/` |
 | A clock row in every timings file, a `test` span for every test | `Bruinet.Core.Logging.Timing`, `Bruinet.Uat.TestScopeAttribute` |
 | Tests | `Bruinet.Mocking.Data.Tests` (26, SQL Server ones included), `Bruinet.Cli.Tests/Sql` (5), `Bruinet.Mocking.Data.Net48.Tests` (1) |

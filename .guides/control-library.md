@@ -11,7 +11,7 @@ read what it wrote and decide what comes next.
 ## Before You Start
 
 - **One library, one package.** The controls go in their own project,
-  `srcnew/Bruinet.Maui.<Library>`, so a suite that does not use the library does not get it
+  `src/Bruinet.Maui.<Library>`, so a suite that does not use the library does not get it
   ([AD-026](../.docs/decisions/ad-026-a-project-earns-its-place.md)). The project wraps
   automation elements; it does not reference the library itself. Only the sample app does.
 - **A clean working tree.** The agent stops when it finds changes it did not make. It never

@@ -78,7 +78,7 @@ wrap its *content* in a container that is addressable.
 addressability for every layout type. The corresponding test:
 
 ```
-dotnet test testsnew/Bruinet.Maui.UITests --filter "FullyQualifiedName~AutomationProbeTests"
+dotnet test tests/Bruinet.Maui.UITests --filter "FullyQualifiedName~AutomationProbeTests"
 ```
 
 It prints a table and is the regression test for any change to these handlers. Note
@@ -207,7 +207,7 @@ transaction times out - every accessibility client on the desktop, not only the 
 
 ## What it copies
 
-Copying this project into an app means copying `srcnew/Bruinet.Uia.Contracts` alongside it -
+Copying this project into an app means copying `src/Bruinet.Uia.Contracts` alongside it -
 including `Bruinet.Uia.Bridge.props`, which decides whether the bridge is compiled in - and
 adjusting the `Compile Include` and `Import` paths in the csproj. Both ends of the bridge — the app and the
 test assembly — must compile the same GUIDs, verb numbers and method table, or they do not speak

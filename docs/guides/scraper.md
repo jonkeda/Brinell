@@ -106,7 +106,7 @@ controls):
   row), so a draft is drafted again over itself and never over a file you made.
 - `Components` (optional, columns `Match`, `Kind`, `Name`): elements the Scraper cannot tell by itself, named by you. `Match` is `selector: …` or `text: …`; `Kind` is `collection`, `component` or what a test does with it (`text`, `selector`, `toggle`, `range`, `date`, `clickable`, `readable`). They win over its own reading: step 5 offers them by that name, and their brief says so.
 
-`testsnew/Bruinet.Blazor.UITests` is an example: its config, its `Recordings/`, and
+`tests/Bruinet.Blazor.UITests` is an example: its config, its `Recordings/`, and
 `PageObjects/UserFormPage.cs`, made from them.
 
 ## Record
@@ -307,7 +307,7 @@ judge.
 
 | Stage | Does | Fails when |
 | --- | --- | --- |
-| App | starts the target on a free port: the Scraper's test site (`testsnew/Bruinet.Scraper.TestSite`, with a page of dangerous controls that count each hit) or the Blazor sample | it does not answer |
+| App | starts the target on a free port: the Scraper's test site (`tests/Bruinet.Scraper.TestSite`, with a page of dangerous controls that count each hit) or the Blazor sample | it does not answer |
 | Explore | `scrape explore --headless --yes` with the profile's guards | a guard stopped it unexpectedly, or it found fewer pages than the target has |
 | Guards | reads the test site's counters | `careful`: any counter moved. `test-tenant`: anything but delete and update moved, or those were not reached |
 | Draft | `scrape draft` | a draft does not build |

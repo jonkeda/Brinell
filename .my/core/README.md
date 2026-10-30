@@ -47,7 +47,7 @@ stack redefines what an element or a scope *is*.
 
 ## Scope
 
-- **In:** `srcnew/Bruinet.Core` (new namespace `Bruinet.Core.Automation`), the per-stack
+- **In:** `src/Bruinet.Core` (new namespace `Bruinet.Core.Automation`), the per-stack
   interface projects that switch over, and the docs.
 - **Out:** behaviour changes. The new layer is the shape MAUI proved (rules R0-R9 in
   `../stale-readiness/design.md`). Anything that changes what a call *does* belongs in a

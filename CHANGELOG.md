@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Breaking:** `srcnew/` and `testsnew/` are now `src/` and `tests/`: a project that references
+  Bruinet's sources by path changes `srcnew` to `src`. `start-appium.ps1` and `run-android-tests.ps1`
+  moved to `tools/Scripts`; the Stride pipe probes at the root (`test-key*.ps1`, `test-pipe.ps1`) are gone.
 - **Breaking:** `voice.secrets.json` holds each cloud voice in an object of its own: the Azure OpenAI
   voice's fields in `azureFoundry` (they were at the top level) and Azure Speech's in `azureSpeech`
   (it was `speech`). A file in the old shape is not read: move its fields, as
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plain `net10.0` themselves, for the MauiHeadless head, and the `*.App.Headless` projects that linked
   their sources are gone. The UI test projects reference the apps with
   `SetTargetFramework="TargetFramework=net10.0"`; the apps add their Windows target only on Windows.
-- MauiUnit is renamed MauiHeadless (`srcnew/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
+- MauiUnit is renamed MauiHeadless (`src/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
 
 ### Added
 - Narrated recordings pace each action: while a scene records, every control action (a click, a
@@ -83,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `IsNoAnswer`), `AndroidHost` and `AndroidRecorder`, moved out of `Bruinet.Maui.Appium` so the
   MAUI and native Android stacks share them. `Bruinet.Appium.Tests` took their tests.
 - `samples/Bruinet.Samples.NativeAndroid.App`, a .NET for Android control gallery, and
-  `testsnew/Bruinet.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
+  `tests/Bruinet.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
   `docs/run/native-android.md`); the `android-control` and `android-ui-test` skills.
 - UAT finds a control by Core's `IElementObject<>` as well as by its name's suffix, and no longer
   takes a page's `Self` for a control.
@@ -94,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   One set of options (`--solution`, `--project`, `--json`, `--yes`, `--headless`) and exit codes
   (0 fine, 1 problems found, 2 could not run). `tools/Bruinet.Bdd.LanguageServer` is now
   `tools/Bruinet.Cli` (assembly `bruinet`); `tools/Bruinet.DataValidator` and `tools/Bruinet.Generator`
-  are folders of it, and their tests are in `testsnew/Bruinet.Cli.Tests`. The IDE extensions start
+  are folders of it, and their tests are in `tests/Bruinet.Cli.Tests`. The IDE extensions start
   `bruinet.dll lsp`; `bruinet-data`, `--mcp` and `--preview` are gone. `tools/Scripts/bruinet.ps1`
   runs it from source.
 - The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Bruinet.Scraper`
@@ -618,7 +621,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CommunityToolkit.Maui` 9.0.0 -> 15.0.1 and `Microsoft.Maui.Controls` -> 10.0.90 (required by the
   toolkit). Added `CommunityToolkit.Maui.MediaElement` 10.0.0.
 - `Bruinet.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally
-  versioned, and is in `srcnew/Bruinet.sln`. `CreateMaui.Bat` generates its controls too.
+  versioned, and is in `src/Bruinet.sln`. `CreateMaui.Bat` generates its controls too.
 - `MediaElement<TScope>` moved from `Bruinet.Maui.Controls.Media` to
   `Bruinet.Maui.CommunityToolkit.Controls.Media`.
 - `MediaElement` forwards to its parts instead of polling around them: `SetPlaying` returns

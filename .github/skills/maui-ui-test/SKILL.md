@@ -1,6 +1,6 @@
 ---
 name: maui-ui-test
-description: Write or fix Bruinet MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in testsnew/Bruinet.Maui.UITests, or a control unit test in testsnew/Bruinet.Maui.Tests; also when a MAUI test must run on the MauiHeadless head (BRUINET_HEAD=headless) or be marked DeviceFact or @device.
+description: Write or fix Bruinet MAUI UI tests and the page objects, app containers and collections they use, going only through page objects and ControlObjects - never the driver, IMauiElement, or Find* calls. Use when asked to add, write, extend, or fix a UI test, a test page object, or a test for a MAUI or CommunityToolkit control in tests/Bruinet.Maui.UITests, or a control unit test in tests/Bruinet.Maui.Tests; also when a MAUI test must run on the MauiHeadless head (BRUINET_HEAD=headless) or be marked DeviceFact or @device.
 ---
 
 # Write MAUI UI tests
@@ -11,7 +11,7 @@ needs something they do not offer, add it there first; never reach past them.
 
 ## Workflow
 
-1. **Find the page object** in `testsnew/Bruinet.Maui.UITests/Pages/`. If it is missing, create
+1. **Find the page object** in `tests/Bruinet.Maui.UITests/Pages/`. If it is missing, create
    it ([page-objects.md](references/page-objects.md)). If a control, container, or control
    member is missing, stop writing the test and add it with the `maui-control` skill first.
 2. **Write the test** (shape below) using only page-object members.
@@ -20,9 +20,9 @@ needs something they do not offer, add it there first; never reach past them.
    `dotnet build Bruinet.sln -v:minimal /nr:false` builds it, including the Windows exe
    the fixture launches.
 4. **Run the smallest tier that can fail on the MauiHeadless head first**, in seconds and with no app
-   built: `$env:BRUINET_HEAD = "headless"; dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
+   built: `$env:BRUINET_HEAD = "headless"; dotnet test tests\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
    Then the same filter on the device, with the variable removed:
-   `dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
+   `dotnet test tests\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Foo"`.
    One UI test process at a time, and never build while it runs. Tier 2b
    (`--filter "Stage=Background"`) also launches the Shell sample app, which `Bruinet.sln`
    builds too.
@@ -139,7 +139,7 @@ plain `net10.0` (`samples/*.MauiHeadless`). Write every MAUI test so it can run 
   `Platform is MauiPlatform.Windows or MauiPlatform.Headless`; a branch on Android needs nothing.
 - **Never change what a test checks to make it pass on one head.** A test that passes on the device and
   fails on MauiHeadless is a head gap or a device-only test: mark it, or fix the head in
-  `srcnew/Bruinet.Maui.Headless` (or MauiHeadless itself in `srcnew/MauiHeadless`). A page added to the sample
+  `src/Bruinet.Maui.Headless` (or MauiHeadless itself in `src/MauiHeadless`). A page added to the sample
   app is in its MauiHeadless build already, which links its sources; a new fixture names its MauiHeadless app
   in `CreateHeadlessOptions`.
 
@@ -171,7 +171,7 @@ a model; do not copy them.
 ## Control unit tests
 
 Logic the UI cannot reach cheaply (stale-element recovery, idempotence, error messages,
-null-skip) is tested in `testsnew/Bruinet.Maui.Tests` with mocked elements behind the public
+null-skip) is tested in `tests/Bruinet.Maui.Tests` with mocked elements behind the public
 API: [unit-tests.md](references/unit-tests.md).
 
 ## Failures

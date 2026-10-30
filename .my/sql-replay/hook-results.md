@@ -18,12 +18,12 @@ reached by a test-id hook. H1 to H6 pass on 2026-10-25; H6 without IIS.
 
 | Part | Where |
 | --- | --- |
-| `ReplayRegistry`, `ReplayHook`, `HookResponse` | `srcnew/Bruinet.Mocking.Data/Replay/ReplayHook.cs` |
+| `ReplayRegistry`, `ReplayHook`, `HookResponse` | `src/Bruinet.Mocking.Data/Replay/ReplayHook.cs` |
 | `ReplayScope.Fallback` | `Replay/ReplaySession.cs` |
-| `UseSqlReplayHook()` | new `srcnew/Bruinet.Mocking.Data.AspNetCore` |
-| `SqlReplayModule` | new `srcnew/Bruinet.Mocking.Data.SystemWeb` (net48) |
+| `UseSqlReplayHook()` | new `src/Bruinet.Mocking.Data.AspNetCore` |
+| `SqlReplayModule` | new `src/Bruinet.Mocking.Data.SystemWeb` (net48) |
 | The hook sample: minimal API over SQLite through `ReplayingDbProviderFactory` | new `samples/Bruinet.Samples.Sql.Hook` (solution folder Web) |
-| Its tests, `HookApp` starting it as a process | new `testsnew/Bruinet.Mocking.Data.Hook.Tests` |
+| Its tests, `HookApp` starting it as a process | new `tests/Bruinet.Mocking.Data.Hook.Tests` |
 
 ## How a test uses it
 

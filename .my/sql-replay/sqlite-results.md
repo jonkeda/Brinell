@@ -26,7 +26,7 @@ tests pass.
 
 | Part | Where |
 | --- | --- |
-| `SqliteSchema.ReadAsync` (internal): `sqlite_master`, hashes, parsed references, data hashes in C# | `srcnew/Bruinet.Mocking.Data/SqliteSchema.cs` |
+| `SqliteSchema.ReadAsync` (internal): `sqlite_master`, hashes, parsed references, data hashes in C# | `src/Bruinet.Mocking.Data/SqliteSchema.cs` |
 | `SnapshotProvider` (`Auto`, `SqlServer`, `Sqlite`), `SnapshotOptions.Provider`; `ReadAsync` picks the reader by the connection's type | `SchemaSnapshot.cs` |
 | `sqlite_*` names left out of a command's objects | `Statements.cs` |
 | `bruinet sql schema --provider sqlite`; the CLI references `Microsoft.Data.Sqlite` | `tools/Bruinet.Cli` |

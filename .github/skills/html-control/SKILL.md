@@ -1,6 +1,6 @@
 ---
 name: html-control
-description: Create or extend a Bruinet Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in srcnew/Bruinet.Html or srcnew/Bruinet.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet, or a control must work on the bUnit head as well as in a browser.
+description: Create or extend a Bruinet Html ControlObject - a simple control, a container, a component with named parts, or a collection with rows - for an HTML or Blazor element, in src/Bruinet.Html or src/Bruinet.Blazor. Use when asked to add, write or extend an Html or Blazor control object, container, collection or row, or when an Html UI test needs a control member that does not exist yet, or a control must work on the bUnit head as well as in a browser.
 ---
 
 # Write an Html ControlObject
@@ -36,8 +36,8 @@ generate (from the Bruinet root):
 tools\Scripts\CreateHtml.Bat
 ```
 
-It regenerates every `.tpl.cs` under `srcnew\Bruinet.Html\Controls` and
-`srcnew\Bruinet.Blazor\Controls`. A control with no `*Core` methods of its own (only
+It regenerates every `.tpl.cs` under `src\Bruinet.Html\Controls` and
+`src\Bruinet.Blazor\Controls`. A control with no `*Core` methods of its own (only
 constructors) stays a plain `.cs`.
 
 - **`Get*Core` / `Is*Core` give `GetX`/`WaitX`/`AssertX`**, with `[GenerateComparisons]` for
@@ -68,10 +68,10 @@ constructors) stays a plain `.cs`.
 
 ## Prove it
 
-Add a unit test in `testsnew/Bruinet.Html.Tests` against a mocked `IHtmlElement`. A mocked
+Add a unit test in `tests/Bruinet.Html.Tests` against a mocked `IHtmlElement`. A mocked
 element must show the effect of an action (a `Callback` that sets the value), or a confirming
 member fails, and that is the point. Then add a UI test on the Blazor sample with the
 `html-ui-test` skill, and run it on both heads: `$env:BRUINET_HEAD = "bunit"` first, then the
-browser. A control that fails only on bUnit needs a driver member in `srcnew/Bruinet.Html.Bunit`
-(with its test in `testsnew/Bruinet.Html.Bunit.Tests/MemberTests.cs`), or is browser-only and
+browser. A control that fails only on bUnit needs a driver member in `src/Bruinet.Html.Bunit`
+(with its test in `tests/Bruinet.Html.Bunit.Tests/MemberTests.cs`), or is browser-only and
 says so.

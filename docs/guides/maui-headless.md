@@ -18,7 +18,7 @@ layout hides, or a control the platform draws, can pass headless and fail on a d
 ## Running It
 
 ```bash
-BRUINET_HEAD=headless dotnet test testsnew/Bruinet.Maui.UITests
+BRUINET_HEAD=headless dotnet test tests/Bruinet.Maui.UITests
 ./tools/Scripts/test-maui-headless.ps1
 ```
 
@@ -124,7 +124,7 @@ ends its call at once with `DeviceOnlyException` naming the member.
 
 ## MauiHeadless On Its Own
 
-MauiHeadless (`srcnew/MauiHeadless`) is also a component-testing framework for MAUI without Bruinet, on xUnit,
+MauiHeadless (`src/MauiHeadless`) is also a component-testing framework for MAUI without Bruinet, on xUnit,
 NUnit or MSTest:
 
 ```csharp
@@ -143,7 +143,7 @@ page.Find<TestDialog>().Choose("OK");               // a DisplayAlertAsync, answ
 
 `Render` takes a page type, an instance or a Shell; `Services` is fixed after the first render
 (`Replace` swaps a registration for a fake); `Preferences` and `SecureStorage` are in memory;
-`ToSnapshot()` gives the tree as indented text. Its examples are `testsnew/MauiHeadless.Tests`.
+`ToSnapshot()` gives the tree as indented text. Its examples are `tests/MauiHeadless.Tests`.
 
 ## How MAUI Runs Without A Platform
 

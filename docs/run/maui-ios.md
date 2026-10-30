@@ -40,7 +40,7 @@ export APPIUM_UDID=<simulator udid>          # xcrun simctl list devices booted
 Use the mobile head (plain net10.0, Appium driver). Start with one test:
 
 ```bash
-dotnet test testsnew/Bruinet.Maui.UITests.Mobile \
+dotnet test tests/Bruinet.Maui.UITests.Mobile \
   --filter "FullyQualifiedName~ButtonTests.Button_IsExists_ReturnsTrue"
 ```
 

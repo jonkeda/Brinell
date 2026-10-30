@@ -35,7 +35,7 @@
          -p:BruinetWindowsHead=false builds that shape on Windows. -->
     <BruinetWindowsHead Condition="'$(BruinetWindowsHead)' == ''">$([MSBuild]::IsOSPlatform('Windows'))</BruinetWindowsHead>
 
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)testsnew')) and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)samples'))">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)tests')) and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)samples'))">true</ContinuousIntegrationBuild>
   </PropertyGroup>
   
   <ItemGroup>

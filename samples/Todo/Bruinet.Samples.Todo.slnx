@@ -20,15 +20,15 @@
     <Project Path="tests/Bruinet.Samples.Todo.Web.Uat/Bruinet.Samples.Todo.Web.Uat.csproj" />
     <Project Path="tests/Bruinet.Samples.Todo.Web.UITests/Bruinet.Samples.Todo.Web.UITests.csproj" />
   </Folder>
-  <Project Path="../../srcnew/Bruinet.Appium/Bruinet.Appium.csproj" />
-  <Project Path="../../srcnew/Bruinet.Core/Bruinet.Core.csproj" />
-  <Project Path="../../srcnew/Bruinet.Maui.Appium/Bruinet.Maui.Appium.csproj" />
-  <Project Path="../../srcnew/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj" />
-  <Project Path="../../srcnew/Bruinet.Maui.FlaUI/Bruinet.Maui.FlaUI.csproj" />
-  <Project Path="../../srcnew/Bruinet.Maui/Bruinet.Maui.csproj" />
-  <Project Path="../../srcnew/Bruinet.Mocking/Bruinet.Mocking.csproj" />
-  <Project Path="../../srcnew/Bruinet.TestData/Bruinet.TestData.csproj" />
-  <Project Path="../../srcnew/Bruinet.Uia.Contracts/Bruinet.Uia.Contracts.csproj" />
+  <Project Path="../../src/Bruinet.Appium/Bruinet.Appium.csproj" />
+  <Project Path="../../src/Bruinet.Core/Bruinet.Core.csproj" />
+  <Project Path="../../src/Bruinet.Maui.Appium/Bruinet.Maui.Appium.csproj" />
+  <Project Path="../../src/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj" />
+  <Project Path="../../src/Bruinet.Maui.FlaUI/Bruinet.Maui.FlaUI.csproj" />
+  <Project Path="../../src/Bruinet.Maui/Bruinet.Maui.csproj" />
+  <Project Path="../../src/Bruinet.Mocking/Bruinet.Mocking.csproj" />
+  <Project Path="../../src/Bruinet.TestData/Bruinet.TestData.csproj" />
+  <Project Path="../../src/Bruinet.Uia.Contracts/Bruinet.Uia.Contracts.csproj" />
   <Project Path="../Bruinet.Maui.AppSupport/Bruinet.Maui.AppSupport.csproj" />
   <Project Path="../Bruinet.Samples.Shared/Bruinet.Samples.Shared.csproj" />
 </Solution>

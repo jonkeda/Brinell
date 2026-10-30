@@ -30,7 +30,7 @@ see ?C1), and lets each stack switch from its own bespoke interfaces to those.
 Working rules:
 
 - **The old Core interfaces stay in place** until every stack has moved. Nothing in
-  `srcnew/Bruinet.Core/Interfaces/*.cs` is deleted while the migration is in flight
+  `src/Bruinet.Core/Interfaces/*.cs` is deleted while the migration is in flight
   ([coexistence.md](coexistence.md)).
 - **One stack at a time.** A stack's move is its own step; it does not spill into another
   stack.
@@ -45,7 +45,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | --- | --- | --- | --- |
 | **L2. Busy signal** | todo | One Core busy-signal type for both meanings of a missing sentinel: Core's `BusySignalPolicy` (`Disabled`, `Required`; missing is a configuration error) and Html's `BusySignal` (`Ignore`, `Optional`, `Required`; missing means not loaded yet, because a Blazor app sets it when it becomes interactive). A third value, or a flag for what `missing` means. Decide it with the pages | `BusySignalPolicy` and `BusySignal` are one type |
 | **0. Decide the home** | todo | Decide **?C1** (`Bruinet.Core.Automation` namespace vs. a new `Bruinet.Common` project). Decide **?C2** (do the capability interfaces (`IClickable`, `IEditableText`, ...) get `Core` prefixes too, or stay in `Bruinet.Core.Interfaces` because the generator uses them). Write both decisions into `design.md` and this plan | Both decisions written, and neither the plan nor the design has any `?C1`/`?C2` left |
-| **1. Land `ICoreElement` and `ICoreScope`** | todo | Add `ICoreElement`, `ICoreScope`, the extension helpers (`CoreElementExtensions`, `CoreScopeExtensions`), and `Bruinet.Core.Automation` (or the new project). No stack uses them yet. The existing `IElement<T>` and `IElementScope<T>` are **unchanged** | Solution builds. All existing tests still pass. `srcnew/Bruinet.Core/Interfaces/*.cs` is untouched |
+| **1. Land `ICoreElement` and `ICoreScope`** | todo | Add `ICoreElement`, `ICoreScope`, the extension helpers (`CoreElementExtensions`, `CoreScopeExtensions`), and `Bruinet.Core.Automation` (or the new project). No stack uses them yet. The existing `IElement<T>` and `IElementScope<T>` are **unchanged** | Solution builds. All existing tests still pass. `src/Bruinet.Core/Interfaces/*.cs` is untouched |
 | **2. Land `ICoreDriver` and `ICoreTestContext`** | todo | Add the driver and context. Add `ICorePage`, `ICoreContainer`, `ICoreCollection<TItem>` and `ICoreItem<TCollection>`. Add `CoreScopeReadiness` and `CoreScopeReadinessState`. Add the four exceptions (`CoreStaleElementException`, `CoreElementNotReadyException`, `CoreScopeNotReadyException`, `CoreAppUnavailableException`) | Solution builds; MAUI's `IMauiElement` does **not** yet inherit `ICoreElement` |
 | **3. Land the calls layer** | done (L1, 2026-09-26) | `Bruinet.Core.Automation.Calls/`: `ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `Confirmer`, `Confirmation<T>` copied from MAUI's `Bruinet.Maui/Calls/`, retyped on `ICoreTestContext`. `internal` today; opened selectively as MAUI and other stacks reference them | Solution builds; MAUI's `Bruinet.Maui/Calls/` still compiles and its callers still work |
 | **4. MAUI inherits `ICore*`** | todo | `IMauiElement : ICoreElement`, `IMauiDriver : ICoreDriver`, `IMauiElementScope : ICoreScope`, `IMauiPage : ICorePage`, `IMauiTestContext : ICoreTestContext`. Anything on the MAUI interfaces that has a `ICore*` equivalent moves up (kept on `ICore*`, removed from `IMaui*`). The MAUI exceptions become type aliases or subclasses of `Core*` exceptions. MAUI's calls layer becomes a thin using of `Bruinet.Core.Automation.Calls`; the copies in `Bruinet.Maui/Calls/` are deleted | `Bruinet.Maui.Tests`, `Bruinet.Maui.Uat.Tests`, `Bruinet.Maui.UITests` (a chosen subset, then full) green with no behaviour change; grep finds no `Bruinet.Maui.Calls` type outside `Bruinet.Maui` |
@@ -67,7 +67,7 @@ Deferred until step 0 decides them. Kept here so review does not re-ask them.
 
 | # | Question | Default |
 | --- | --- | --- |
-| ?C1 | Where does the new layer live: a new namespace `Bruinet.Core.Automation` under `srcnew/Bruinet.Core`, or a new project `Bruinet.Common` referenced by every stack | `Bruinet.Core.Automation` under the existing project. A new project means every csproj gets a `ProjectReference`, and Core-consumers upstream get a new dependency. A namespace is cheaper and reversible |
+| ?C1 | Where does the new layer live: a new namespace `Bruinet.Core.Automation` under `src/Bruinet.Core`, or a new project `Bruinet.Common` referenced by every stack | `Bruinet.Core.Automation` under the existing project. A new project means every csproj gets a `ProjectReference`, and Core-consumers upstream get a new dependency. A namespace is cheaper and reversible |
 | ?C2 | Do the capability interfaces (`IClickableControlObject<TScope>`, `IEditableTextControlObject<TScope>`, `IToggleControlObject<TScope>`, ...) get `Core` prefixes too, or stay under their existing names | **Prefix them.** They become `ICoreClickable<TScope>`, `ICoreEditableText<TScope>`, `ICoreToggle<TScope>` etc., under `Bruinet.Core.Automation`. The generator's discovery matches by convention, not by exact type name (`../stale-readiness/plan.md` 2.1 step 1 shows UAT discovery goes through `[TestPage]` attribute-based recognition, not name matching). Revisit if the generator turns out to hard-code names |
 | ?C3 | `ICoreElement` as generic (`ICoreElement<TSelf>`) or non-generic | **Non-generic.** MAUI dropped the `TSelf` type parameter when it went to `IMauiElement`, and the calls layer never needed it. The old `IElement<TSelf>` had the parameter for fluent returns only, which the calls layer no longer uses |
 | ?C4 | `ICoreScope` typed on element (`ICoreScope<TElement>`) or not | **Not typed on element.** Every scope returns `ICoreElement`. Per-stack scopes (`IMauiElementScope`, `IHtmlElementScope`) type on their per-stack element type, and the platform-specific member set is *there*, not on `ICoreScope`. This is exactly the split MAUI accepted in `../stale-readiness/design.md` 4.2 |
@@ -98,9 +98,9 @@ written.
 Commands are from the Bruinet root.
 
 ```powershell
-dotnet build srcnew\Bruinet.sln -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
+dotnet build src\Bruinet.sln -v:minimal /nr:false
+dotnet test tests\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
 ```
 
 Per-stack test commands live in the migration playbook for that stack (see

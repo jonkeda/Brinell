@@ -87,8 +87,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-!srcnew/Bruinet.Core/Artifacts/
-!srcnew/Bruinet.Core/Artifacts/**
+!src/Bruinet.Core/Artifacts/
+!src/Bruinet.Core/Artifacts/**
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

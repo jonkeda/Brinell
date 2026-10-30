@@ -41,7 +41,7 @@ All sets run with `BRUINET_HEAD=bunit` while looking, then the change once in th
 
 ## T1: timings that name the test, the step and the time between calls
 
-Bruinet (`srcnew/Bruinet.Core`, `Bruinet.Uat`):
+Bruinet (`src/Bruinet.Core`, `Bruinet.Uat`):
 
 | Piece | Where | What |
 | --- | --- | --- |

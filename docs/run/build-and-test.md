@@ -11,17 +11,17 @@ dotnet build Bruinet.sln -v:minimal /nr:false
 ## Focused Unit Tests
 
 ```powershell
-dotnet test testsnew\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
 ```
 
 ## Windows Platform Build
 
 ```powershell
-dotnet build srcnew\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet build srcnew\Bruinet.Wpf\Bruinet.Wpf.csproj -f net10.0-windows -v:minimal /nr:false
-dotnet build srcnew\Bruinet.WinForms\Bruinet.WinForms.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet build src\Bruinet.Maui.FlaUI\Bruinet.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet build src\Bruinet.Wpf\Bruinet.Wpf.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet build src\Bruinet.WinForms\Bruinet.WinForms.csproj -f net10.0-windows -v:minimal /nr:false
 ```
 
 ## Notes

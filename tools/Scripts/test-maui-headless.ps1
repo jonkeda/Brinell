@@ -4,7 +4,7 @@
     Runs the MAUI UI and UAT suites on the MauiHeadless head: the apps in the test process, no device.
 
 .DESCRIPTION
-    The device suite (testsnew/Bruinet.Maui.UITests) and the Todo sample's UAT and UI tests, each
+    The device suite (tests/Bruinet.Maui.UITests) and the Todo sample's UAT and UI tests, each
     with BRUINET_HEAD=headless (AD-032). Tests that need a device skip with their reason. Runs on
     Windows, where the projects also carry the FlaUI head, and on a Mac or Linux, where they build
     for plain net10.0 (BruinetWindowsHead). CI runs it on both; locally it is one command.
@@ -30,7 +30,7 @@ $root = Resolve-Path (Join-Path $PSScriptRoot '../..')
 $env:BRUINET_HEAD = 'headless'
 
 $projects = @(
-    'testsnew/Bruinet.Maui.UITests/Bruinet.Maui.UITests.csproj',
+    'tests/Bruinet.Maui.UITests/Bruinet.Maui.UITests.csproj',
     'samples/Todo/tests/Bruinet.Samples.Todo.Uat/Bruinet.Samples.Todo.Uat.csproj',
     'samples/Todo/tests/Bruinet.Samples.Todo.UITests/Bruinet.Samples.Todo.UITests.csproj'
 )

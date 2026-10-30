@@ -100,7 +100,7 @@ Type names stay the same as MAUI's; the namespace disambiguates.
 | `Confirmer` | `Confirmer` | `Bruinet.Core.Automation.Calls` |
 | `Confirmation<T>` | `Confirmation<T>` | `Bruinet.Core.Automation.Calls` |
 
-MAUI's copies in `srcnew/Bruinet.Maui/Calls/*.cs` are deleted in step 4 of `plan.md`.
+MAUI's copies in `src/Bruinet.Maui/Calls/*.cs` are deleted in step 4 of `plan.md`.
 
 ## Base classes
 

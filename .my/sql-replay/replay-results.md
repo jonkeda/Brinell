@@ -17,14 +17,14 @@ runs first. R1 to R5 pass on 2026-10-25.
 
 | Part | Where |
 | --- | --- |
-| `Recording`, `Exchange` (with `Outputs`), `Schema`, `Stamp`, `Values` | `srcnew/Bruinet.Mocking.Data/Replay/Recording.cs` |
+| `Recording`, `Exchange` (with `Outputs`), `Schema`, `Stamp`, `Values` | `src/Bruinet.Mocking.Data/Replay/Recording.cs` |
 | `ReplaySession`, `ReplayScope`, `ReplayMissException` | `Replay/ReplaySession.cs` |
 | `ReplayDataReader` | `Replay/ReplayDataReader.cs` |
 | `ProviderRules`: live exchange, `ReadAll`, outputs, `Replay`, errors raised by reflection | `Replay/ProviderRules.cs` |
 | `ReplayingDbConnection`, `ReplayingDbCommand`, `ReplayingDbTransaction`, `ReplayingDbProviderFactory` | `Replay/ReplayingDbConnection.cs` |
 | `SchemaSnapshot.ToSchema(versions)` | `SchemaSnapshot.cs` |
-| `ReplayInterceptor(Func<ReplaySession?>)`, `UseSqlReplay(session)`, `UseSqlReplay()` on `ReplayScope` | `srcnew/Bruinet.Mocking.Data.EntityFrameworkCore/ReplayInterceptor.cs` |
-| `UseSpatialReplay()` | new `srcnew/Bruinet.Mocking.Data.EntityFrameworkCore.SqlServer` (net10.0, EF SqlServer NTS 10.0.12) |
+| `ReplayInterceptor(Func<ReplaySession?>)`, `UseSqlReplay(session)`, `UseSqlReplay()` on `ReplayScope` | `src/Bruinet.Mocking.Data.EntityFrameworkCore/ReplayInterceptor.cs` |
+| `UseSpatialReplay()` | new `src/Bruinet.Mocking.Data.EntityFrameworkCore.SqlServer` (net10.0, EF SqlServer NTS 10.0.12) |
 
 The spike suite uses the package; its `Spike/` copies are deleted (only `DatabaseShare.cs` stays).
 Recordings re-recorded twice per head; their stamp's versions are now a map (`ef`, `sqlclient`).

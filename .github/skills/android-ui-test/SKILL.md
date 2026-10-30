@@ -1,6 +1,6 @@
 ---
 name: android-ui-test
-description: Write or fix Bruinet native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in testsnew/Bruinet.NativeAndroid.UITests, or a control unit test in testsnew/Bruinet.NativeAndroid.Tests.
+description: Write or fix Bruinet native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in tests/Bruinet.NativeAndroid.UITests, or a control unit test in tests/Bruinet.NativeAndroid.Tests.
 ---
 
 # Write native Android UI tests
@@ -21,7 +21,7 @@ needs something they do not offer, add it there first with the `android-control`
    the APK just built.
 4. **Run the smallest filter that can fail**, from the Bruinet root, with the emulator and Appium
    up (`docs/run/native-android.md`):
-   `dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"`.
+   `dotnet test tests\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"`.
    One UI test process at a time; no build while one runs.
 
 ## Test shape

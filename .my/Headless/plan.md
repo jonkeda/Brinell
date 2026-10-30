@@ -15,10 +15,10 @@ MauiUnit reads as a unit-test framework. AD-032 is amended with that line.
 
 | Now | After |
 | --- | --- |
-| `srcnew/MauiUnit/` (PackageId `MauiUnit`, `namespace MauiUnit.*`) | `srcnew/MauiHeadless/`, `MauiHeadless`, `MauiHeadless.*` |
-| `srcnew/Bruinet.Maui.MauiUnit/` (PackageId) | `srcnew/Bruinet.Maui.Headless/`  |
-| `testsnew/MauiUnit.Tests`, `.MSTest`, `.NUnit` | `testsnew/MauiHeadless.Tests`, `.MSTest`, `.NUnit` |
-| `testsnew/Bruinet.Maui.MauiUnit.Tests` | `testsnew/Bruinet.Maui.Headless.Tests` |
+| `src/MauiUnit/` (PackageId `MauiUnit`, `namespace MauiUnit.*`) | `src/MauiHeadless/`, `MauiHeadless`, `MauiHeadless.*` |
+| `src/Bruinet.Maui.MauiUnit/` (PackageId) | `src/Bruinet.Maui.Headless/`  |
+| `tests/MauiUnit.Tests`, `.MSTest`, `.NUnit` | `tests/MauiHeadless.Tests`, `.MSTest`, `.NUnit` |
+| `tests/Bruinet.Maui.MauiUnit.Tests` | `tests/Bruinet.Maui.Headless.Tests` |
 | `samples/MauiUnit.Samples.App` | `samples/MauiHeadless.Samples.App` |
 | `samples/Bruinet.Samples.Maui.App.MauiUnit`, `…Maui.ShellApp.MauiUnit`, `samples/Todo/src/Bruinet.Samples.Todo.App.MauiUnit` | `….Headless` |
 | `MauiUnitDriver`, `MauiUnitElement`, `MauiUnitAppBridge`, `MauiUnitHead`, `MauiUnitAssertionException`, `MauiUnitRefusals`, `MauiUnitState`, `MauiUnitLocators`, `MauiUnitDialog` | `MauiHeadless…` |
@@ -47,10 +47,10 @@ Each step leaves the build green and its tests passing, and is one commit.
 
 | # | Step | Check |
 | --- | --- | --- |
-| 1 | The framework: `srcnew/MauiUnit` → `MauiHeadless` (folder, csproj, PackageId, namespaces, types, `HeadlessPreferences`, `HeadlessSecureStorage`), its three test projects and its sample app; `Bruinet.sln` entries | `dotnet build Bruinet.sln`; `dotnet test testsnew/MauiHeadless.Tests`, `.MSTest`, `.NUnit` |
-| 2 | Bruinet's head: `Bruinet.Maui.MauiUnit` → `Bruinet.Maui.Headless`, its types, `MauiPlatform.Headless`, `IsHeadless`, `CreateHeadlessOptions`; its tests | `dotnet test testsnew/Bruinet.Maui.Headless.Tests` |
+| 1 | The framework: `src/MauiUnit` → `MauiHeadless` (folder, csproj, PackageId, namespaces, types, `HeadlessPreferences`, `HeadlessSecureStorage`), its three test projects and its sample app; `Bruinet.sln` entries | `dotnet build Bruinet.sln`; `dotnet test tests/MauiHeadless.Tests`, `.MSTest`, `.NUnit` |
+| 2 | Bruinet's head: `Bruinet.Maui.MauiUnit` → `Bruinet.Maui.Headless`, its types, `MauiPlatform.Headless`, `IsHeadless`, `CreateHeadlessOptions`; its tests | `dotnet test tests/Bruinet.Maui.Headless.Tests` |
 | 3 | The apps' headless builds: the three `*.App.MauiUnit` samples → `*.App.Headless`, and the UI test projects' references to them | `dotnet build` of the MAUI UI and UAT suites, Todo's included |
-| 4 | Head selection: `BRUINET_HEAD=headless`, the head parser, skip reasons, `DeviceFact` and `@device` texts | `BRUINET_HEAD=headless dotnet test testsnew/Bruinet.Maui.UITests` |
+| 4 | Head selection: `BRUINET_HEAD=headless`, the head parser, skip reasons, `DeviceFact` and `@device` texts | `BRUINET_HEAD=headless dotnet test tests/Bruinet.Maui.UITests` |
 | 5 | Scripts and CI: `test-maui-headless.ps1`, `ci.yml`'s jobs and steps, `pack.ps1` if it lists the projects | the script locally; CI green on Windows and macOS |
 | 6 | Recordings: `Recordings/mauiunit` → `headless` and `reviewed.json`'s keys; `bruinet sql stale` and `reviewed` still pass | Todo's MAUI suite headless with replay (sql-replay step 8's T1 to T5) |
 | 7 | Words: the guide renamed and rewritten, AD-032 amended, the `maui-ui-test` and `maui-control` skills, `AGENTS.md`, `.github/copilot-instructions.md`, `docs/`, a CHANGELOG entry; "in memory" phrases by the rule above | `grep -ri mauiunit` finds only history; links resolve |

@@ -15,7 +15,7 @@ The UAT suite lives in the platform's UI test project, beside the page objects i
 name: a scenario is only as good as those, and a page object changes for both.
 
 ```text
-testsnew/Bruinet.<Platform>.UITests/
+tests/Bruinet.<Platform>.UITests/
   uat.config.md
   Features/
     scenario-name.feature.md
@@ -149,8 +149,8 @@ feature file is the project's own, the case's source is the scenario's line in i
 | Kind | Assembly |
 | --- | --- |
 | Pages | ../…UITests/bin/Debug/net10.0-windows/…UITests.dll |
-| Controls | ../../../../srcnew/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Controls | ../../../../src/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 
 ## Discovery
 
