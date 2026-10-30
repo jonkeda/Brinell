@@ -163,7 +163,7 @@ see one app tested at five tiers.
 
 - [Documentation index](docs/README.md): quick start, framework overview, guides by topic, platform and run guides.
 - Guides for the heads: [MauiHeadless](docs/guides/maui-headless.md), [bUnit](docs/guides/bunit.md), [features below the UI](docs/guides/features-below-the-ui.md).
-- Guides for writing: [test writing](docs/guides/test-writing.md), [UAT scenarios](docs/guides/uat-template-guide.md), [step definitions](docs/guides/uat-step-definitions.md), [control objects](docs/controls/index.md).
+- Guides for writing: [test writing](docs/guides/test-writing.md), [UAT scenarios](docs/guides/uat-template-guide.md), [step definitions](docs/guides/uat-step-definitions.md), [control objects](docs/controls/index.md), [coming from Reqnroll](docs/guides/coming-from-reqnroll.md).
 - Architecture: [overview](docs/architecture/overview.md), [structure](docs/architecture/structure.md), [testing](docs/architecture/testing.md), and [the decisions and invariants](.docs/README.md).
 - Build and run: [build and test](docs/run/build-and-test.md), the [command line](docs/run/cli.md), [troubleshooting](docs/guides/troubleshooting.md).
 

@@ -51,6 +51,8 @@ invariants behind it - what must stay true when *changing* Bruinet - are in
 - [SQL Replay](guides/sql-replay.md) - a UI test without its database: the SQL log, recording and
   replaying, the app's wiring (EF, ADO.NET, an app in its own process), stale recordings and re-records
 - [BDD Glossary](guides/bdd-glossary.md) - Bruinet's words beside Cucumber's and Reqnroll's
+- [Coming From Reqnroll](guides/coming-from-reqnroll.md) - one scenario in both forms, the attributes
+  side by side, what works differently and what is not there, and why
 - [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
   files as readable, bound steps beside the editor; Run, Run as test, Debug and Step through a scenario
 - [Bruinet BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and

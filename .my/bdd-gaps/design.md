@@ -1,6 +1,9 @@
 # Closing the gaps a BDD user looks for
 
-Status: **design**, 2026-10-30; nothing built. Item 6 of [improvements](../improvements/README.md),
+Status: **design**, 2026-10-30. D3 built (`docs/guides/coming-from-reqnroll.md`). **D1 parked**
+(2026-10-30, the owner): worth its week only when someone names the tool that will read the
+output (Construction's team, an Exact dashboard); its spike then tests that tool, not Cucumber's
+HTML formatter. D2 open. Item 6 of [improvements](../improvements/README.md),
 built on [the Reqnroll comparison](../uat/reqnroll-comparison.md) of 2026-09-27, checked against the
 tree at 3ec7549b.
 
@@ -175,11 +178,13 @@ writing guides:
 
 ## Order
 
-1. D3, so a Reqnroll user finds today's answers now.
-2. D1's spike (a day, by hand, no code).
-3. D1's run fields (times, `examplesRow`, `configDirectory`), then the converter, the command, the
-   MCP tool, CI.
-4. D2, which then also shows in the Messages output by block.
+1. D3, so a Reqnroll user finds today's answers now: done 2026-10-30.
+2. D2.
+3. D1, parked: when a reader of its output is named, the spike against that reader, then the run
+   fields (times, `examplesRow`, `configDirectory`), the converter, the command, the MCP tool, CI.
+   Many dashboards (Jenkins' Cucumber reports, Xray) read Cucumber's older JSON rather than
+   Messages, and Azure DevOps reads neither (xUnit's TRX already reaches it): the named reader
+   decides the format.
 
 Each step is its own commit on the working branch, with `docs/` and the CHANGELOG in the same
 commit; an AD at D1's end (reports are Messages, made after the run) and D2's end (the grammar).
