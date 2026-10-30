@@ -3,12 +3,14 @@
 Plans, analyses and reviews for work **in flight**, one row per topic. When a topic is done,
 its decisions go to `.docs/`, what a user needs goes to `docs/`, and the topic and its row are
 deleted in the same commit (the [docs-upkeep](../.github/skills/docs-upkeep/SKILL.md) skill).
-Deleted topics stay in git history; the last full tree is at
-[7162ac7](https://github.com/exact-mobile-apps/test-tooling/tree/7162ac7/.my).
+Deleted topics stay in git history; the last full trees are at
+[7162ac7](https://github.com/exact-mobile-apps/test-tooling/tree/7162ac7/.my) (the topics closed before
+2026-10) and [37f180a7](https://github.com/exact-mobile-apps/test-tooling/tree/37f180a7/.my) (reviews,
+Headless, bunit, core, Projects and voice, closed 2026-10-30).
 
 | Topic | What is open | Status | Updated |
 | --- | --- | --- | --- |
-| [improvements/](improvements/README.md) | What could improve Bruinet, read from the README: say what is proven, pause new surfaces, a first preview release, tidy the root, the call model on every stack, BDD gaps, the browser in CI, a start-here path | proposals; nothing decided | 2026-10-30 |
+| [improvements/](improvements/README.md) | What could improve Bruinet, read from the README: say what is proven, pause new surfaces, a first preview release, tidy the root, the call model on every stack, BDD gaps, the browser in CI, a start-here path | item 4 done but Frainet (2026-10-30: `src/` and `tests/`, the root's scripts, the `docs2` row); item 6 corrected (hooks and outlines exist); the rest proposals | 2026-10-30 |
 | [construction/](construction/plan.md) | Exact.Construction's UI test migration onto Bruinet | infrastructure in place, Todos not started | 2026-09 |
 | [androidnative/](androidnative/README.md) | `Bruinet.NativeAndroid` to the MAUI and Html standard: own `INativeAndroid*` interfaces, the Core calls layer, generated controls with Android's widget names, readiness, collections with item keys, a shared `Bruinet.Appium` layer, a .NET for Android sample app, a UI and UAT suite, recording | built and verified (30/30, 5 of 5 runs); [leftovers-plan.md](androidnative/leftovers-plan.md): commit, readiness cost, controls not built, reports, checks for a person | 2026-10-07 |
 | [ios/](ios/README.md) | The iOS routes written on Windows (navigation root, picker wheels, alerts, Shell's tabs and flyout, IndicatorView, the Shell app's iOS head) to run on a Mac | written, not run on a simulator; [plan.md](ios/plan.md): the fixes (P1-P5) and the Mac runs (R1-R5): plan | 2026-10-22 |

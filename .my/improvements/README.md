@@ -44,7 +44,8 @@ the README's `dotnet tool install -g Bruinet.Cli` cannot work for an outsider.
 
 ## 4. Tidy the repository's front door
 
-The first look at the root contradicts the README's polish.
+Done on 2026-10-30 (37f180a7) except Frainet, which stays for now. The first look at the root
+contradicted the README's polish.
 
 - `docs2/` is in the layout table but no longer exists: drop the row.
 - Six ad-hoc scripts sit at the root (`test-key*.ps1`, `test-pipe.ps1`, `start-appium.ps1`,
