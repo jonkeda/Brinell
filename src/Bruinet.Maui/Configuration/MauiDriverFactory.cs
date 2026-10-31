@@ -101,7 +101,10 @@ public static class MauiDriverFactory
     private static IMauiDriver CreateAppiumDriver(MauiDriverOptions options)
     {
         ValidateAppiumOptions(options);
-        
+
+        // An unchanged build is not installed again (.my/android-performance, P1).
+        var build = AndroidInstalledBuild.Check(options);
+
         var appiumOptionsType = LoadAppiumOptionsType();
         var appiumDriverType = GetAppiumDriverType();
         
@@ -111,7 +114,8 @@ public static class MauiDriverFactory
         
         var ctor = appiumDriverType.GetConstructor([rawDriver.GetType(), typeof(MauiPlatform)])
             ?? appiumDriverType.GetConstructors().First();
-        
+
+        build?.RememberInstalled();
         return (IMauiDriver)ctor.Invoke([rawDriver, options.Platform]);
     }
     

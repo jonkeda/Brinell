@@ -35,6 +35,7 @@ internal static class LocatorExtensions
             // MAUI surfaces AutomationId differently on each mobile platform:
             // - Android: the resource-id attribute, so the id strategy
             // - iOS: the accessibility identifier
+            LocatorStrategy.AutomationId when locator.Value == ShellTitleId => ShellTitleBy(platform),
             LocatorStrategy.AutomationId => platform switch
             {
                 MauiPlatform.Android => AndroidIdBy(locator.Value),
@@ -95,6 +96,30 @@ internal static class LocatorExtensions
     /// A resource id on Android, sent as the W3C <c>id</c> strategy.
     /// </summary>
     private static By AndroidIdBy(string id) => new ResourceIdBy(id);
+
+    /// <summary>
+    /// The id a page object asks for the Shell's title by: WinUI's id for it, which MauiHeadless
+    /// maps too. Android and iOS publish none, so it is the title's place in the navigation bar.
+    /// </summary>
+    internal const string ShellTitleId = "title";
+
+    /// <summary>
+    /// The Shell title: an element of the app's own with that id first, else the text the
+    /// navigation bar shows. Android: the text view directly in the toolbar under Shell's app bar
+    /// (<c>shellcontent.appbar</c>, probed 2026-10-31 on API 36); iOS: the navigation bar's static
+    /// text (not yet run on a device).
+    /// </summary>
+    private static By ShellTitleBy(MauiPlatform platform) => platform switch
+    {
+        MauiPlatform.Android => By.XPath(
+            $"//*[substring-after(@resource-id, ':id/')='{ShellTitleId}']"
+            + " | //*[contains(@resource-id, 'shellcontent.appbar')]/android.view.ViewGroup/android.widget.TextView"),
+        MauiPlatform.iOS => By.XPath(
+            $"//*[@name='{ShellTitleId}'] | //XCUIElementTypeNavigationBar/XCUIElementTypeStaticText"),
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(platform), platform,
+            "Bruinet.Maui.Appium drives Android and iOS. Windows uses Bruinet.Maui.FlaUI."),
+    };
 
     private sealed class ResourceIdBy(string id) : By("id", id);
 

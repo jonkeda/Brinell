@@ -19,7 +19,7 @@ namespace Bruinet.Maui.FlaUI;
 /// No physical input and no fallback to it: an action with no UI Automation pattern and no
 /// bridge verb throws, naming the route the app would have to offer (AD-005).
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement
+public sealed class FlaUIMauiElement : IMauiElement, IDetachable
 {
     private readonly AutomationElement? _wrapped;
     private readonly FlaUIMauiDriver _driver;
@@ -90,6 +90,39 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <c>…4.65</c>). Read live, so it doubles as the "is this element still there" check.
     /// </remarks>
     public string InstanceKey => Live(() => string.Join('.', _element.Properties.RuntimeId.Value));
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Walks the control view up to the app's window. A page Shell navigated away from leaves the
+    /// tree before its element stops answering: for about a second it reads as present, on
+    /// screen and full size, and only its missing way up to the window gives it away.
+    /// </remarks>
+    public bool IsAttached => Live(() =>
+    {
+        var walker = _driver.Automation.TreeWalkerFactory.GetControlViewWalker();
+        var window = _driver.RootElement;
+        var node = _element;
+
+        // Deep MAUI trees are tens of levels, not hundreds; the bound only stops a cycle.
+        for (var depth = 0; depth < MaxAttachedDepth; depth++)
+        {
+            if (node.Equals(window))
+            {
+                return true;
+            }
+
+            if (walker.GetParent(node) is not { } parent)
+            {
+                return false;
+            }
+
+            node = parent;
+        }
+
+        return true;
+    });
+
+    private const int MaxAttachedDepth = 256;
 
     #endregion
 

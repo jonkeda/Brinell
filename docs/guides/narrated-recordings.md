@@ -312,7 +312,7 @@ In the Recordings folder, for a script `how-todo-works.video.md`:
 
 | File | Holds |
 | --- | --- |
-| `how-todo-works-<yyyyMMdd-HHmmss>.mp4` | the scenes joined, the voice laid in, a chapter per scene |
+| `how-todo-works.mp4` | the scenes joined, the voice laid in, a chapter per scene; a new recording replaces it |
 | `.srt` | the captions: a cue per spoken line, and one after a failed step |
 | `.timeline.json` | each scene's steps (start, end, result, message), lines and interactions, on the video's clock |
 

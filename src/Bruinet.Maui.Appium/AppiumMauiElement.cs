@@ -139,7 +139,7 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// placeholder, a control-type item key - silently failed.
     /// </remarks>
     public string? TagName => Live(() => _driver.Platform == MauiPlatform.Android
-        ? GetAttribute("class")
+        ? _driver.ElementFact(_element.Id, "class", () => GetAttribute("class"))
         : _element.TagName);
     
     /// <inheritdoc />
@@ -156,7 +156,9 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     public Size Size => Live(() => _element.Size);
     
     /// <inheritdoc />
-    public Rectangle Rect => new Rectangle(Location, Size);
+    /// <remarks>One request: <c>Location</c> and <c>Size</c> each fetch the element's rect, so building
+    /// it from them cost two, and bounds are read on every readiness check (.my/android-performance, P2).</remarks>
+    public Rectangle Rect => Live(() => _element.Rect);
 
     // A recorded video's touch mark (AD-024): the target as it is, before the action runs.
     private Interactions.Scope Report(InteractionKind kind, string? key = null, TimeSpan duration = default)
@@ -917,7 +919,8 @@ public sealed partial class AppiumMauiElement : IMauiElement, IShownWhenFound
     /// </remarks>
     public string? AutomationId => _driver.Platform switch
     {
-        MauiPlatform.Android => WithoutResourcePackage(Present(GetAttribute("resource-id"))),
+        // The template's id never changes for a native view (D1); iOS's name can follow the label.
+        MauiPlatform.Android => _driver.ElementFact(_element.Id, "resource-id", () => WithoutResourcePackage(Present(GetAttribute("resource-id")))),
         MauiPlatform.iOS => Present(GetAttribute("name")),
         _ => null
     };

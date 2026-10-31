@@ -53,8 +53,15 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     protected override ElementNotFoundException RootNotFound()
         => new($"Page root not found. Locator: {Locator}");
 
+    /// <remarks>
+    /// Attached as well as shown (call model R4, R6). On Windows a page Shell navigated away from
+    /// keeps answering as present, on screen and full size for about a second after it left the
+    /// tree, so a cached root that only had to be shown went on reading the page underneath.
+    /// </remarks>
     protected override bool IsCachedRootValid(IMauiElement root)
-        => root.HasUsableBounds();
+        => root.HasUsableBounds()
+           && (root is not IDetachable detachable
+               || Bruinet.Core.Calls.AttemptMemo.Remember(root, nameof(IDetachable.IsAttached), () => detachable.IsAttached));
 
     protected override TSelf SetResult => Self;
 

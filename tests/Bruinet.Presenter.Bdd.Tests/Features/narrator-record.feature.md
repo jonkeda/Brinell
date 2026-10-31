@@ -23,8 +23,7 @@ When I tap Narrator Mode
 And I check All Scenes
 Then Narrator Summary should contain "2 scenes, 2 checked"
 When I tap Record
-Then Recording Status should contain "Stitched sample-tour-"
-And Recording Status should contain ".mp4"
+Then Recording Status should contain "Stitched sample-tour.mp4"
 And Status Summary should contain "Passed: 2/2 scenarios"
 And Narrator Summary should contain "2 scenes, 0 checked, 2 recorded"
 And Narrator Tree should contain "1 A name is needed  (recorded"
@@ -44,8 +43,8 @@ When I check Scene 1
 Then Narrator Summary should contain "2 scenes, 1 checked"
 When I tap Record
 Then Status Summary should contain "Passed: 1/1 scenarios"
-And Recording Status should contain "Stitched sample-tour-"
+And Recording Status should contain "Stitched sample-tour.mp4"
 And Narrator Summary should contain "2 scenes, 0 checked, 2 recorded"
 When I tap Stitch
-Then Recording Status should contain "Stitched sample-tour-"
+Then Recording Status should contain "Stitched sample-tour.mp4"
 ```

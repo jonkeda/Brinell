@@ -97,12 +97,16 @@ public abstract class ItemObjectBase<TCollection, TSelf>
     /// <summary>
     /// Whether the row's element is still there (the alive rule, R6) and still has a size.
     /// </summary>
+    /// <remarks>
+    /// One read: the bounds of a removed element fail as stale on every head, so a separate
+    /// liveness read (<c>InstanceKey</c>, a round trip of its own on Android) said nothing more
+    /// (.my/android-performance, P2).
+    /// </remarks>
     private static bool IsUsable(IMauiElement element)
     {
         try
         {
-            _ = element.InstanceKey;
-            var rect = element.Rect;
+            var rect = Bruinet.Core.Calls.AttemptMemo.Remember(element, nameof(IMauiElement.Rect), () => element.Rect);
             return rect.Width > 0 && rect.Height > 0;
         }
         catch (StaleElementException)

@@ -231,7 +231,7 @@ a time.
   again replaces that scene only. **Stop** drops the scene being recorded and keeps the finished
   ones.
 - **Stitch** (the link) joins the latest recording of every scene into
-  `<Recordings>\<script>-<stamp>.mp4`, with its captions and timeline. It runs by itself when a
+  `<Recordings>\<script>.mp4`, replacing the last one, with its captions and timeline. It runs by itself when a
   Record leaves every scene recorded; a failed or out-of-date scene is stitched too, and named,
   so a draft can be watched.
 - **Watch** plays the stitched video; the play button on a recorded scene plays that scene alone.

@@ -724,6 +724,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FlaUIMauiDriver.SupportsStateReads`: `ReadState` answers in one bridge walk.
 - `PageReadinessSnapshot` from the MAUI page contract.
 
+### Changed
+- Android sessions skip installing an APK that is already on the device: the APK's hash and the
+  package's update time are recorded there after an install, and an unchanged build only has its
+  data cleared. About 3 s less per session start. `BRUINET_ALWAYS_REINSTALL=1` installs every time.
+- Readiness is asked once per attempt of a call (`AttemptMemo`): a read's scope chain asked the page
+  root for its bounds up to four times. On Android, a row's `resource-id` and class are read once
+  per element, and a read no longer asks `displayed` first where being found means being shown. A
+  list test on the emulator made 2,386 Appium requests and now makes 1,205; Bruinet's MAUI UI suite
+  on Windows ran in under 2 minutes instead of 3.
+
 ### Fixed
 - Two transitive packages pinned past their security advisories, so the solution restores again:
   `System.Security.Cryptography.Pkcs` 9.0.21 in the Stride sample (from Stride's toolkit,
@@ -756,6 +766,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ("Invalid URI"); `BddSourceLocator` gives no location for them, and tests and samples keep real
   paths. A cancel that reached the BDD runner before its step started was lost.
 - N/A (initial release)
+
+### Fixed
+- A page root that left the tree is found again. On Windows a page Shell navigated away from keeps
+  answering as present, on screen and full size for about a second; a cached root went on reading
+  the page underneath. A root is now valid only while it is attached (`IDetachable`, implemented by
+  the Windows element).
+- A grouped list is noticed without `HasLogicalIndexes`: two realized rows with one
+  `PositionInSet` switch the collection to positions and ids. A search had skipped the second
+  group's rows as seen and stopped early.
+- A collection search moves past a row only partly on screen, whose content is off screen
+  (Windows, iOS) or left out of the tree (Android), instead of failing on it. A predicate no row
+  can answer is still reported.
+- A collection search that reaches the end scrolls to the top once and searches down again, so an
+  item above the viewport is found.
+- `ScrollToTop` steps up while the list moves, then aligns the first row. It scrolled the first
+  realized row into view and stopped, mid-list in a virtualized list.
+- `title`, the Shell title's id on Windows and MauiHeadless, finds the navigation bar's title on
+  Android and iOS too.
 
 ## [0.1.0] - TBD
 

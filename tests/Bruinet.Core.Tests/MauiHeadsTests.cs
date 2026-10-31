@@ -6,7 +6,7 @@ public sealed class MauiHeadsTests
 {
     [Theory]
     [InlineData("headless", MauiHead.Headless)]
-    [InlineData(" MauiHeadless ", MauiHead.Headless)]
+    [InlineData(" Headless ", MauiHead.Headless)]
     [InlineData("bunit", MauiHead.Device)]
     [InlineData("", MauiHead.Device)]
     [InlineData(null, MauiHead.Device)]

@@ -71,10 +71,42 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     #region Item keys
 
     /// <summary>False for a grouped list: the platform restarts <c>PositionInSet</c> in each group.</summary>
+    /// <remarks>
+    /// A grouped list is also noticed without it: two realized rows with one index switch this
+    /// collection object to positions and ids for the rest of its life.
+    /// </remarks>
     protected virtual bool HasLogicalIndexes => true;
 
+    // Set when two realized rows reported the same PositionInSet: a grouped list.
+    private bool _positionsRepeat;
+
+    private bool UsesLogicalIndexes => HasLogicalIndexes && !_positionsRepeat;
+
     private int? LogicalIndexOf(IMauiElement itemRoot)
-        => HasLogicalIndexes ? ItemKey.LogicalIndexOf(itemRoot) : null;
+        => UsesLogicalIndexes ? ItemKey.LogicalIndexOf(itemRoot) : null;
+
+    /// <summary>
+    /// Stops using logical indexes once two realized rows share one. A grouped CollectionView on
+    /// Windows restarts <c>PositionInSet</c> in every group, and keys built from it made two rows
+    /// one: a search skipped the second as seen and took the repeat for no scroll progress.
+    /// </summary>
+    private void NoticeRepeatedPositions(IReadOnlyList<IMauiElement> roots)
+    {
+        if (!UsesLogicalIndexes)
+        {
+            return;
+        }
+
+        var indexes = new HashSet<int>();
+        foreach (var root in roots)
+        {
+            if (ItemKey.LogicalIndexOf(root) is { } index && !indexes.Add(index))
+            {
+                _positionsRepeat = true;
+                return;
+            }
+        }
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -119,8 +151,11 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         if (_keyRoots == null || !_keyRoots.Any(root => ReferenceEquals(root, itemRoot)))
         {
-            // Created outside a listing (a row re-found by its own lookup): list the rows once.
-            return TryGetItemRoots().Count(root => root.AutomationId == id) == 1;
+            // Created outside a listing (a row re-found by its own lookup): list the rows once per
+            // attempt, not once per row keyed (.my/android-performance/design-fewer-reads.md, D2).
+            var ids = Bruinet.Core.Calls.AttemptMemo.Remember(
+                Locator.ToString(), "realized row ids", () => TryGetItemRoots().Select(root => root.AutomationId).ToList());
+            return ids.Count(value => value == id) == 1;
         }
 
         _duplicateIds ??= _keyRoots
@@ -211,9 +246,24 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         return index < roots.Count ? roots[index] : _itemStrategy.FindItemElement(collectionRoot, index);
     }
 
+    /// <summary>
+    /// Which rows are realized, as one comparable string: how many, and the first and last by
+    /// instance. Two reads, not one per row: on Android each read is a round trip, and this is
+    /// asked before and after every step up.
+    /// </summary>
+    private string RealizedRows()
+    {
+        var roots = TryGetItemRoots();
+        return roots.Count == 0 ? "0" : $"{roots.Count}:{roots[0].InstanceKey}:{roots[^1].InstanceKey}";
+    }
+
     /// <summary>The logical indexes of the realized rows, in tree order, as one comparable string.</summary>
     private string RealizedLogicalIndexes()
-        => string.Join(",", TryGetItemRoots().Select(root => LogicalIndexOf(root)?.ToString() ?? "-"));
+    {
+        var roots = TryGetItemRoots();
+        NoticeRepeatedPositions(roots);
+        return string.Join(",", roots.Select(root => LogicalIndexOf(root)?.ToString() ?? "-"));
+    }
 
     /// <summary>
     /// Gets the item identified by <paramref name="key"/>: its automation id, or failing
@@ -508,14 +558,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         return Call.Run(nameof(FindItem), null, budget, AnimationMs, context =>
         {
             TItem? match = null;
-            var search = SearchAttempts(predicate, item => match = item);
-
-            if (Poll(context, search, stop: IsEndOfList))
+            if (SearchDownThenFromTop(context, predicate, item => match = item, out var reachedEnd))
             {
                 return match;
             }
 
-            return IsEndOfList(context.Log.Last) ? null : throw Failure(context, nameof(FindItem), budget);
+            return reachedEnd ? null : throw Failure(context, nameof(FindItem), budget);
         });
     }
 
@@ -531,12 +579,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         return Call.Run(nameof(ItemWhere), null, budget, AnimationMs, context =>
         {
             TItem? match = null;
-            if (Poll(context, SearchAttempts(predicate, item => match = item)))
+            if (SearchDownThenFromTop(context, predicate, item => match = item, out var reachedEnd))
             {
                 return match!;
             }
 
-            throw context.Log.Last.Kind is ObservationKind.Missing or ObservationKind.Pending
+            throw reachedEnd || context.Log.Last.Kind is ObservationKind.Missing or ObservationKind.Pending
                 ? new ElementNotFoundException(
                     $"No item matched the predicate in collection within {budget} ms. Locator: {Locator}, " +
                     $"materialized items: {GetItemCount()}. {context.Log.Summary()}.")
@@ -545,15 +593,83 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     }
 
     /// <summary>
+    /// Searches down from where the list is; at its end, searches up to the top, within the same
+    /// budget.
+    /// </summary>
+    /// <remarks>
+    /// A search only ever scrolled down, so an item above the viewport was never found: a grouped
+    /// list scrolled to its last group could not reach the first (Kofflard's lanes, on Android and
+    /// on Windows). Searching on the way up, rather than scrolling to the top first, finds an item
+    /// just above in a step or two: a swipe on Android moves a fraction of the list.
+    /// </remarks>
+    private bool SearchDownThenFromTop(
+        AttemptContext context, Func<TItem, bool> predicate, Action<TItem> found, out bool reachedEnd)
+    {
+        reachedEnd = false;
+        if (Poll(context, SearchAttempts(predicate, found), stop: IsEndOfList))
+        {
+            return true;
+        }
+
+        if (!IsEndOfList(context.Log.Last))
+        {
+            return false;
+        }
+
+        if (Poll(context, SearchUpAttempts(predicate, found), stop: IsEndOfList))
+        {
+            return true;
+        }
+
+        reachedEnd = IsEndOfList(context.Log.Last);
+        return false;
+    }
+
+    /// <summary>
     /// The attempts of a search: each looks at the realized rows not yet seen, then takes one
     /// scroll step.
     /// </summary>
     private Func<AttemptContext, Observation> SearchAttempts(Func<TItem, bool> predicate, Action<TItem> found)
+        => MaterializeAttempts(NextMaterializationIndex, RowCheck(predicate, found));
+
+    /// <summary>
+    /// The attempts of a search upwards: each looks at the realized rows not yet seen, then takes
+    /// one step up; the top, where the rows stop changing, is the end of the list.
+    /// </summary>
+    private Func<AttemptContext, Observation> SearchUpAttempts(Func<TItem, bool> predicate, Action<TItem> found)
+    {
+        var check = RowCheck(predicate, found);
+        var state = new ScrollUp();
+        return _ => RootAttempt(root =>
+        {
+            if (check() is { } done)
+            {
+                return done;
+            }
+
+            state.Rows ??= RealizedRows();
+            if ((ScrollTarget ?? root).ScrollContent(-1) is ScrollStep.Moved or ScrollStep.Unconfirmed
+                && RealizedRows() is var rows
+                && rows != state.Rows)
+            {
+                state.Rows = rows;
+                return Observation.Pending("moved up");
+            }
+
+            return Observation.Missing(EndOfList);
+        });
+    }
+
+    /// <summary>One look at the realized rows not yet seen: Done when one matches, else null.</summary>
+    private Func<Observation?> RowCheck(Func<TItem, bool> predicate, Action<TItem> found)
     {
         var seen = new HashSet<ItemKey>();
-        return MaterializeAttempts(NextMaterializationIndex, () =>
+        return () =>
         {
             var roots = TryGetItemRoots();
+            NoticeRepeatedPositions(roots);
+            ElementNotReadyException? unreadable = null;
+            var read = 0;
             for (var position = 0; position < roots.Count; position++)
             {
                 var root = roots[position];
@@ -570,7 +686,26 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
                     continue;
                 }
 
-                var matches = predicate(item);
+                bool matches;
+                try
+                {
+                    matches = predicate(item);
+                    read++;
+                }
+                catch (ElementNotReadyException partlyShown) when (partlyShown.Reason == NotReadyReason.NotVisible)
+                {
+                    // A row only partly on screen: what the predicate reads is in the tree but off
+                    // screen (Windows, iOS). Not this one yet; a scroll brings it in.
+                    unreadable = partlyShown;
+                    continue;
+                }
+                catch (ElementNotFoundException partlyShown)
+                {
+                    // The same row on Android, where what is off screen is left out of the tree.
+                    unreadable = new ElementNotReadyException(Locator, NotReadyReason.NotVisible, partlyShown.Message);
+                    continue;
+                }
+
                 if (!key.IsHeldBy(root))
                 {
                     continue;
@@ -588,8 +723,15 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
                 }
             }
 
+            // Every row unreadable is a predicate that reads something no row has, not rows on
+            // their way in: that is reported, as before, rather than scrolled past.
+            if (unreadable is not null && read == 0 && roots.Count > 1)
+            {
+                throw unreadable;
+            }
+
             return null;
-        });
+        };
     }
 
     #endregion
@@ -665,7 +807,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     private int? GetLogicalItemCount(IReadOnlyList<IMauiElement>? roots = null)
     {
         roots ??= TryGetItemRoots();
-        var size = HasLogicalIndexes ? roots.Select(item => item.SizeOfSet).FirstOrDefault(value => value is > 0) : null;
+        var size = UsesLogicalIndexes ? roots.Select(item => item.SizeOfSet).FirstOrDefault(value => value is > 0) : null;
         if (size.HasValue)
         {
             return size.Value;
@@ -686,28 +828,17 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Scrolls the collection to the top, returning the collection for chaining.
     /// </summary>
     /// <remarks>
-    /// Uses the first realized row's scroll-into-view where available; otherwise steps back by the
-    /// container's one scroll route until it stops moving, or until the budget runs out.
+    /// Steps back by the container's scroll route until it stops moving, or until the budget runs
+    /// out; a step that cannot confirm it moved (a swipe) counts while the realized rows change. Then
+    /// the first row is scrolled into view. That used to come first, and in a virtualized list the
+    /// first realized row is not the first row: it stopped mid-list and said it was at the top.
     /// </remarks>
     public TSelf ScrollToTop(int? timeoutMs = null)
     {
         var budget = Budget(timeoutMs);
         return Call.Run(nameof(ScrollToTop), null, budget, AnimationMs, context =>
         {
-            if (!Poll(context, _ => RootAttempt(root =>
-                {
-                    if (TryScrollItemIntoView(0))
-                    {
-                        return Observation.Done();
-                    }
-
-                    // Repeated only while the platform confirms movement. A swipe cannot confirm
-                    // it, so where the element swipes one step is taken - repeating a swipe that
-                    // cannot say it arrived would never end.
-                    return (ScrollTarget ?? root).ScrollContent(-1) == ScrollStep.Moved
-                        ? Observation.Pending("moved up")
-                        : Observation.Done();
-                })))
+            if (!Poll(context, ScrollUpAttempt(new ScrollUp())))
             {
                 throw Failure(context, nameof(ScrollToTop), budget);
             }
@@ -715,6 +846,51 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             return Self;
         });
     }
+
+    /// <summary>Whether a scroll to the top moved the list at all, and the rows it last saw.</summary>
+    private sealed class ScrollUp
+    {
+        public bool Moved { get; set; }
+
+        public string? Rows { get; set; }
+    }
+
+    // At the top the first realized row is the first row: brought fully into view.
+    private Observation AtTheTop(ScrollUp state)
+    {
+        state.Moved |= TryScrollItemIntoView(0);
+        return Observation.Done();
+    }
+
+    // One attempt of a scroll to the top: a step up, pending while the platform confirms it moved
+    // and the realized rows changed. A step that says it moved and changed nothing is the top.
+    private Func<AttemptContext, Observation> ScrollUpAttempt(ScrollUp state)
+        => _ => RootAttempt(root =>
+        {
+            state.Rows ??= RealizedRows();
+            switch ((ScrollTarget ?? root).ScrollContent(-1))
+            {
+                // A swipe (Android) cannot confirm it moved; the realized rows changing can.
+                case ScrollStep.Moved:
+                case ScrollStep.Unconfirmed:
+                    var rows = RealizedRows();
+                    if (rows == state.Rows)
+                    {
+                        return AtTheTop(state);
+                    }
+
+                    state.Rows = rows;
+                    state.Moved = true;
+                    return Observation.Pending("moved up");
+
+                case ScrollStep.NotMoved:
+                    return AtTheTop(state);
+
+                default:
+                    state.Moved |= TryScrollItemIntoView(0);
+                    return Observation.Done();
+            }
+        });
 
     /// <summary>
     /// Scrolls the collection to the end, returning the collection for chaining.

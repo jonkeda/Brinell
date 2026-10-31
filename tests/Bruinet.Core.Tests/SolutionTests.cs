@@ -5,6 +5,10 @@ public sealed class SolutionTests
     // Not product code: scratch projects of work in flight, and build output.
     private static readonly string[] SkippedFolders = [".git", ".my", ".vs", "bin", "obj", "node_modules", "TestResults"];
 
+    // Products of their own that live in this repository for now, each with its own solution: Frainet
+    // (Frainet/Frainet.slnx, its own global.json). Skipped at the root only.
+    private static readonly string[] SeparateProducts = ["Frainet"];
+
     [Fact]
     public void EveryProjectInTheRepository_IsInBruinetSln()
     {
@@ -13,6 +17,8 @@ public sealed class SolutionTests
         var solution = File.ReadAllText(Path.Combine(root, "Bruinet.sln")).Replace('\\', '/');
 
         var missing = Projects(root)
+            .Where(path => !SeparateProducts.Any(product =>
+                Path.GetRelativePath(root, path).StartsWith(product + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
             .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
             .Where(path => !solution.Contains($"\"{path}\"", StringComparison.OrdinalIgnoreCase))
             .Order()

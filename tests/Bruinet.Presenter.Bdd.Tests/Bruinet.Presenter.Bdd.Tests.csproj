@@ -18,6 +18,8 @@
     <ProjectReference Include="..\..\src\Bruinet.Presenter\Bruinet.Presenter.csproj" />
     <!-- Built first, not referenced: it is Presenter's default workspace. Private=false keeps its config and feature files out of this project's output, which has its own. -->
     <ProjectReference Include="..\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <!-- Built first, not referenced: the workspace, inspector and evaluator tests read the Todo UAT suite's build output, and failed whenever nothing else had built it yet. -->
+    <ProjectReference Include="..\..\samples\Todo\tests\Bruinet.Samples.Todo.Uat\Bruinet.Samples.Todo.Uat.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

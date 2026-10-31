@@ -107,7 +107,11 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>, IContro
 
     IMauiElement? IControlHost<IMauiElement>.TryFind() => TryFindElement();
 
-    bool? IControlHost<IMauiElement>.IsVisible(IMauiElement element) => IsVisibleCore(element);
+    // The check before a read or an action. Where the driver finds only what is shown (Android), being
+    // found already answers it, without a round trip; IsVisible and AssertVisible still ask
+    // (.my/android-performance/design-fewer-reads.md, D3).
+    bool? IControlHost<IMauiElement>.IsVisible(IMauiElement element)
+        => element is IShownWhenFound { IsShownWhenFound: true } || IsVisibleCore(element) == true;
 
     void IControlHost<IMauiElement>.ScrollIntoView(IMauiElement element, int timeoutMs) => element.ScrollIntoView(timeoutMs);
 

@@ -122,6 +122,21 @@ ends its call at once with `DeviceOnlyException` naming the member.
 - **A file the app polls** (a reset or network-state file) is read in the test's process: write it with a
   short retry, as Windows refuses to replace a file another handle has open.
 
+## Differences Between The Heads
+
+Each difference is fixed in Bruinet or known and pinned by a test. Found with a Kofflard app on
+Windows, Android 16 (emulator) and MauiHeadless; iOS from how XCUITest reports its tree.
+
+| Difference | Windows | Android | iOS | MauiHeadless | Status |
+| --- | --- | --- | --- | --- | --- |
+| A grouped list's `PositionInSet` | restarts per group | none | none | none | Fixed: repeats are noticed (`ListAndPageRootPinTests`) |
+| A row partly on screen | its content is in the tree, not visible | its content is left out | as Windows | all rows visible | Fixed: a search moves past it |
+| An item above the viewport | in the tree only when realized | left out | as Windows | always in the tree | Fixed: a search scrolls to the top once |
+| A page navigated away from | answers for about a second after leaving the tree | leaves at once | leaves after the push animation | leaves at once | Fixed: a page root must be attached |
+| Sticky group headers | cover the rows under them, which stay "on screen" | not pinned | not pinned by default | no layout | Known: turn them off in the app (`ItemsStackPanel.AreStickyGroupHeadersEnabled`) |
+| A button's text with `SemanticProperties.Description` | the description | the text | the description | the text | Known: read both, or assert what the app shows |
+| The Shell title | `title` | `title` (mapped) | `title` (mapped) | `title` (mapped) | Fixed |
+
 ## MauiHeadless On Its Own
 
 MauiHeadless (`src/MauiHeadless`) is also a component-testing framework for MAUI without Bruinet, on xUnit,

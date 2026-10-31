@@ -13,6 +13,10 @@ namespace Bruinet.Maui.Appium;
 public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Bruinet.Core.Recording.IRecordable
 {
     private readonly AppiumDriver _driver;
+
+    // Facts of a native element that never change for its element id, read once per session:
+    // .my/android-performance/design-fewer-reads.md, D1.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Element, string Name), string?> _elementFacts = new();
     private readonly MauiPlatform _platform;
     private bool _disposed;
     
@@ -494,6 +498,20 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Bruinet.Core.Re
     /// Whether an element this session finds is necessarily on screen: Android, where UiAutomator2
     /// leaves invisible elements out of its tree unless <c>allowInvisibleElements</c> is set.
     /// </summary>
+    /// <summary>
+    /// A fact of a native element that never changes for its element id, such as its
+    /// <c>resource-id</c> or widget class on Android: read once, then answered from memory. A read
+    /// that throws (a stale element) is not kept.
+    /// </summary>
+    /// <remarks>
+    /// A RecyclerView that rebinds a view gives it new content, not a new id or class: both come
+    /// from the item template. A view replaced by another has another element id.
+    /// </remarks>
+    internal string? ElementFact(string elementId, string name, Func<string?> read)
+        => _elementFacts.TryGetValue((elementId, name), out var known)
+            ? known
+            : _elementFacts[(elementId, name)] = read();
+
     internal bool FindsOnlyVisibleElements => _findsOnlyVisible ??=
         _platform == MauiPlatform.Android
         && !string.Equals(

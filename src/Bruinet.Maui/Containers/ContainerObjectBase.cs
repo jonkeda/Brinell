@@ -48,9 +48,18 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected virtual bool CacheContainerRoot => true;
 
     /// <summary>Checks whether a cached root still represents this scope.</summary>
+    /// <remarks>
+    /// The alive rule (R6), asked once per attempt: the scope chain re-checks a root as each child
+    /// resolves, and on Android each check is a round trip (AttemptMemo).
+    /// </remarks>
     protected virtual bool IsCachedRootValid(IMauiElement root)
     {
-        _ = root.InstanceKey;
+        // A bounds read of this root in this attempt already proved it alive (design-fewer-reads, D4).
+        if (!Bruinet.Core.Calls.AttemptMemo.Knows(root, nameof(MauiElementExtensions.HasUsableBounds)))
+        {
+            _ = Bruinet.Core.Calls.AttemptMemo.Remember(root, nameof(IMauiElement.InstanceKey), () => root.InstanceKey);
+        }
+
         return true;
     }
 

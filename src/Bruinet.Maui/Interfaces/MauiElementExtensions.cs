@@ -36,6 +36,20 @@ public static class MauiElementExtensions
                 return false;
             }
 
+            // Asked of the same root several times in one attempt by the scope chain: once is enough.
+            return Bruinet.Core.Calls.AttemptMemo.Remember(element, nameof(HasUsableBounds), () => ReadUsableBounds(element));
+        }
+        catch (StaleElementException)
+        {
+            // A removed element is not usable. Any other error is not an answer, and propagates.
+            return false;
+        }
+    }
+
+    private static bool ReadUsableBounds(IMauiElement element)
+    {
+        try
+        {
             // A driver that only finds what is on screen has answered "visible" already.
             var shown = element is IShownWhenFound { IsShownWhenFound: true } || element.Visible;
 

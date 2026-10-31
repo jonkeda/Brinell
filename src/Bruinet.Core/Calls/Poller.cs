@@ -28,7 +28,11 @@ internal static class Poller
             Observation observation;
             try
             {
-                observation = attempt(context);
+                // Readiness answers are kept for this attempt only (AttemptMemo).
+                using (AttemptMemo.Begin())
+                {
+                    observation = attempt(context);
+                }
             }
             catch (TimeoutException) when (context.Deadline.RemainingMs <= 0 && context.Log.Attempts > 0)
             {
