@@ -31,7 +31,8 @@ device, no built app and no window, and the whole suite takes seconds. A test th
 is marked `[DeviceFact("why")]`, or `[WindowsOnlyFact(Device = "why")]`, and a scenario is
 tagged `@device`; they are skipped on this head with the reason. A fixture names its headless
 app in `CreateHeadlessOptions`. The device heads stay the judge at a gate: no layout or pixels
-here. See [The MauiHeadless Head](../guides/maui-headless.md).
+here. Run Windows before every merge, and Android nightly and for changes to lists, navigation,
+gestures or layout: [Which Head When](../guides/maui-headless.md#which-head-when).
 
 On a Mac or Linux the same command works (`export BRUINET_HEAD=headless` there), for this suite and
 the Todo sample's `Bruinet.Samples.Todo.Uat` and `.UITests`, after `dotnet workload install maui`

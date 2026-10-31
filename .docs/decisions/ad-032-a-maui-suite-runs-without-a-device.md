@@ -49,7 +49,32 @@ third driver costs two projects and no change to a page object.
 a device, and Bruinet.Maui does not reference it. A device suite launches the built app and does not
 reference it; building the app project whole builds its `net10.0` target too.
 
+**Which device head, and when (2026-10-31).** The device judging the gate is Windows, at every merge.
+Android and iOS judge less often, but on purpose:
+
+| Head | When | Judges |
+| --- | --- | --- |
+| MauiHeadless | every change while working; the first stage of CI | logic, bindings, navigation, view-model behaviour |
+| Windows (FlaUI) | every merge: the gate | the above, plus layout, virtualization, the platform's automation tree |
+| Android (Appium) | nightly, before a release, and on a change that touches lists, navigation, gestures, layout or Android code | the above, plus real touch and Android's tree, which leaves out what is not drawn |
+| iOS (Appium) | before a release, on a Mac | the above, on iOS |
+
+A head difference that a device run finds is fixed in Bruinet, or written into the guide's table of
+differences with a test that pins it (`[DeviceFact]` with the reason). It is never only remembered.
+
+**Why that split:** a Kofflard app on 2026-10-31. Everything its device runs found that day had passed
+headless:
+- Windows found a grouped list's repeated `PositionInSet`, sticky headers hiding rows, a page object
+  keeping the page underneath after a push, a button's text replaced by its description, and buttons
+  that rendered empty;
+- Android found rows only partly on screen breaking a search, and the Shell title with no locator.
+
+Windows caught most of it, at a cost a gate can carry: Bruinet's MAUI suite in about 2 minutes, a small
+app's suite in under one. The emulator caught what only it can, at minutes per test: a schedule and a
+change's reach (the touch maps) choose its runs.
+
 **Broken when:** a page object, control or phrase needs a change to run on MauiHeadless; `Bruinet.Maui`
 references MauiHeadless, or MauiHeadless references Bruinet; a device-only member waits out its budget on
 MauiHeadless instead of ending the call; a test asks `Platform == Windows` for a reason that holds in
-memory and skips MauiHeadless; or a gate passes on the MauiHeadless head alone.
+memory and skips MauiHeadless; or a gate passes on the MauiHeadless head alone; or a merge gate runs no Windows head; or a head
+difference a device run found is neither fixed nor in the guide's table with a test.

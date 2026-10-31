@@ -6,14 +6,35 @@ its head with `BRUINET_HEAD`; the device heads (FlaUI on Windows, Appium on Andr
 judge at every gate. The decision is
 [AD-032](../../.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md).
 
-## When To Use It
+## Which Head When
 
-During development and in CI, to run a MAUI suite in seconds with no app built, no window and no
-emulator, on Windows, macOS or Linux. Bruinet's device suite runs 328 tests in about 20 s, and the Todo
-sample's 42 scenarios in about 40 s.
+MauiHeadless is the fast loop, not the judge. It runs a MAUI suite in seconds, with no app built, no
+window and no emulator, on Windows, macOS or Linux: Bruinet's device suite runs 328 tests in about
+20 s, and the Todo sample's 42 scenarios in about 40 s. But it has no layout, no pixels, no
+virtualization and no platform input. A button a layout hides, a row scrolled half off screen, or a page
+under a push can pass headless and fail on a device.
 
-At a gate, run a device head. MauiHeadless has no layout, no pixels and no platform input, so a button a
-layout hides, or a control the platform draws, can pass headless and fail on a device.
+| Run | When | Typical time |
+| --- | --- | --- |
+| **MauiHeadless** | every change while you work; the first stage of CI | seconds |
+| **Windows** (FlaUI) | every merge: the gate | about 2 min for Bruinet's MAUI suite, under 1 min for a small app |
+| **Android** (Appium) | nightly, before a release, and when a change touches lists, navigation, gestures, layout or Android code | minutes per test on an emulator |
+| **iOS** (Appium) | before a release, on a Mac | as Android |
+
+- **Run Windows before you merge, every time.** It catches most of what headless cannot: in one app
+  on 2026-10-31 it found grouped-list keys, sticky headers hiding rows, a page object keeping the page
+  under a push, a description read as a button's text, and buttons that rendered empty. Every one of
+  them had passed headless.
+- **Pick Android runs by what a change reaches.** A list, a gesture or a navigation change runs its
+  tests on the emulator; [test selection](test-selection.md) finds them. Everything runs nightly.
+- **When a device run finds a difference between the heads,** fix it in Bruinet, or add it to
+  [Differences Between The Heads](#differences-between-the-heads) with a test that pins it
+  (`[DeviceFact("why")]`). Over time headless can be trusted further, and device runs find less that is
+  new.
+- **A gate never passes on headless alone.**
+
+The decision and its evidence are in
+[AD-032](../../.docs/decisions/ad-032-a-maui-suite-runs-without-a-device.md).
 
 ## Running It
 
