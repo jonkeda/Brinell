@@ -31,9 +31,7 @@ Headless, bunit, core, Projects and voice, closed 2026-10-30).
 | Item | From | Status |
 | --- | --- | --- |
 | `bruinet lsp` (one command line, AD-028) tried in VS Code; Visual Studio runs it | the closed `cli/` topic | to try |
-| Test data for Construction: expose or move the DTOs, a Construction `ITestDataDefinition`, `bruinet-data` pointed at it; test sets per module and a cached seeded DB | step 9.3 of the deleted `uat/implementation-plan.md` | todo, a plan of its own |
-| Narrated recordings, checks not run: M1, M3 to M7, M9, M11 to M15, another voice in M19 (the IDEs' Record, the MCP review page, a failed scene, Blazor headless, an emulator scene past 3 minutes, no ffmpeg) | [the manual test plan](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/manual-test-plan.md) of the deleted `narrator/` topic (AD-024) | to run |
-| Narrator mode, designed and not built: a list of recent scripts, **Open in Narrator** on a `*.video.md` in the Workspace tree, reloading a script when its file changes, a three-state script checkbox, "n scenes newer" since the last stitch | [its design](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/presenter/design.md) | todo |
+| 
 | Recorders not there: the Stride context does not name its window (`IRecordable`), no iOS simulator recorder | [screen-capture.md](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/narrator/screen-capture.md) | todo |
 | Presenter: the gesture bridge's verbs (WP2, WP3 of the proposal) | [gesture-bridge.md](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/present/gesture-bridge.md) of the deleted `present/` topic | partly done: `PresenterPage.xaml` publishes `GetText,SetText,ClearText` on its text fields; check the rest of WP2 and WP3 |
 | Presenter: the same baseline scenarios on every tech, or a reason per gap | [plan.md](https://github.com/exact-mobile-apps/test-tooling/blob/a8b3fc75/.my/present/plan.md), item 4 | todo |
