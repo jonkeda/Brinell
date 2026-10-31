@@ -24,6 +24,18 @@ needs something they do not offer, add it there first with the `android-control`
    `dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"`.
    One UI test process at a time; no build while one runs.
 
+## A UI test or a scenario, not both
+
+A behaviour is checked once: by a UAT scenario (`Features/*.feature.md`) or by a code UI test (`Tests/`), never by both.
+
+- A scenario holds what a user does and sees, step by step, in words a reader checks against what was asked for.
+- A code UI test holds what a scenario says badly: layout at a size, an old link landing on its page, a lockout, a head's
+  own detail.
+- Before writing either, look for the same behaviour in the other: the feature files' steps (MCP `list_steps`,
+  `find_step_usages`) and the test classes.
+- Where both exist, move the code test's extra checks into the scenario as steps and delete the code test. A smoke test
+  that goes is replaced in the smoke filter by its scenario, by name (`DisplayName~<id>`).
+
 ## Test shape
 
 ```csharp

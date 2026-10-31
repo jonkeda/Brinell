@@ -194,6 +194,9 @@ Notes:
 
 - A platform's UAT suite lives in its `*.UITests` project (`uat.config.md`, `Features/`, `Uat/`):
   `--filter "Category=UAT"` runs it alone, `--filter "Category!=UAT"` the UI tests alone.
+- A behaviour is checked by a UAT scenario or by a code UI test, never both: a scenario for what a user does and sees,
+  a code UI test for what a scenario says badly (layout at a size, a redirect, a head's detail). Where both exist, the
+  code test's extra checks move into the scenario and the code test goes (the `*-ui-test` skills).
 - `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
   `|` for OR and `&` for AND inside a single filter string.
 - The full suite is expected to be **green with nothing set**: 0 failed. The only deliberate
