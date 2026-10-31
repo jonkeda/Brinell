@@ -8,7 +8,7 @@
 
 Scenario: Features/TOD.01-see-my-todos.feature.md#TOD.01.1-Opening-the-app-shows-the-list-a-loading-state-shows-first-then-the-content
 
-This is Todo: your list of things to do, on your own device.
+This is Todo: your list of things to do, on your own device.<break time="500ms"/>
 
 | Step | Say |
 | --- | --- |

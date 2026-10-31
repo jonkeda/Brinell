@@ -70,16 +70,16 @@ A **+** button next to the project picker opens a form that makes a scraped UI t
 New scraped project                                                   [x]
 
   Name          [MyApp.UITests                         ]
-  Folder        [testsnew\MyApp.UITests                ]  (relative to the solution)
+  Folder        [tests\MyApp.UITests                ]  (relative to the solution)
   Platform      (o) Html   ( ) Blazor
   Start URL     [https://localhost:5001/               ]
   Test ids      [data-testid, data-test                ]
   Bruinet       (o) Project references (this repository)   ( ) NuGet packages
   Add to solution [x] Bruinet.sln, folder [Scraped        v]
 
-  Writes:  testsnew\MyApp.UITests\MyApp.UITests.csproj
-           testsnew\MyApp.UITests\scraper.config.md
-           testsnew\MyApp.UITests\Pages\
+  Writes:  tests\MyApp.UITests\MyApp.UITests.csproj
+           tests\MyApp.UITests\scraper.config.md
+           tests\MyApp.UITests\Pages\
 
                                              [Cancel]  [Create project]
 ```
@@ -88,7 +88,7 @@ New scraped project                                                   [x]
 | --- | --- |
 | Where | In the Scraper page, as a panel over the right-hand side (as Create config is today), so both IDEs have it; **+** has the label "New scraped project" and the AutomationId `sc-new-project` |
 | What it writes | The `.csproj` (`net10.0`, `IsPackable` false; `Bruinet.Html`, and `Bruinet.Blazor` for Blazor), a `scraper.config.md` (`## App`: Platform, StartUrl, Namespace `<Name>.Pages`, Pages; `## Test ids` from the field; `## Explore` with the careful defaults and the start URL's host in `## Explore hosts` when it is not `localhost`), and an empty `Pages/`. The config is written by `ScraperConfigWriter`, as Create config does |
-| Bruinet references | Inside this repository: project references to `srcnew/`, relative, as `Scraper.Sites` has them. Elsewhere: `PackageReference`s at the version of the running language server. The default is whichever the solution folder shows (a `srcnew/Bruinet.Html` beside it, or not) |
+| Bruinet references | Inside this repository: project references to `src/`, relative, as `Scraper.Sites` has them. Elsewhere: `PackageReference`s at the version of the running language server. The default is whichever the solution folder shows (a `src/Bruinet.Html` beside it, or not) |
 | Added to the solution | The server writes the files; the IDE adds the project: Visual Studio through `DTE.Solution.AddFromFile` into the chosen solution folder, VS Code with `dotnet sln add`. Unticked, the files are written and nothing else |
 | Checks before writing | The name is a valid project name and not taken in the solution; the folder does not exist or is empty; the start URL is an absolute http(s) URL. Each problem shows under its field, and **Create project** stays off until there are none |
 | Afterwards | The picker reloads and selects the new project; the Explore tab opens with its guard summary, so the next step is in view |
@@ -109,8 +109,8 @@ New scraped project                                                   [x]
 
 | # | Question | Proposal |
 | --- | --- | --- |
-| Q1 | The default folder for a new project | `testsnew\<Name>` inside this repository; elsewhere the folder of the solution's other test projects, else beside the solution |
-| Q2 | Should the solution file the language server reads be the root `Bruinet.sln` or `srcnew\Bruinet.sln`? | The one Visual Studio has open; the CLI's `--solution` accepts a file or a folder |
+| Q1 | The default folder for a new project | `tests\<Name>` inside this repository; elsewhere the folder of the solution's other test projects, else beside the solution |
+| Q2 | Should the solution file the language server reads be the root `Bruinet.sln` or `src\Bruinet.sln`? | The one Visual Studio has open; the CLI's `--solution` accepts a file or a folder |
 
 ## 7. As built
 
@@ -127,5 +127,5 @@ copy, duplicate names, the files for Html, Blazor and in this repository, proble
 JSON-RPC methods and the MCP tool asking first); the VS extension builds; the VS Code extension
 type-checks. The page through the stand-in host on this repository: six projects (the five
 `Scraper.Sites` and `Bruinet.Blazor.UITests`, no `TestResults` copies), the labels aligned, the form
-proposing `testsnew/MyApp.UITests` with project references, a missing start URL shown under its
+proposing `tests/MyApp.UITests` with project references, a missing start URL shown under its
 field and **Create project** off until it is given. Not tried inside Visual Studio or VS Code.

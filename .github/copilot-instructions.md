@@ -4,8 +4,8 @@ These instructions apply to the Bruinet submodule.
 
 ## Active Sources
 
-- Active code: `srcnew/`
-- Active tests: `testsnew/`
+- Active code: `src/`
+- Active tests: `tests/`
 - Samples: `samples/`
 - Active docs: `docs/`
 - Previous docs archive: `docs2/`
@@ -27,12 +27,12 @@ Commands are from the Bruinet root.
 
 ```powershell
 dotnet build Bruinet.sln -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Html.Tests\Bruinet.Html.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Blazor.Tests\Bruinet.Blazor.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Html.Bunit.Tests\Bruinet.Html.Bunit.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Html.Tests\Bruinet.Html.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Blazor.Tests\Bruinet.Blazor.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Html.Bunit.Tests\Bruinet.Html.Bunit.Tests.csproj -v:minimal /nr:false
 ```
 
 Use the focused platform run guides under `docs/run/` for UI tests. The Html and Blazor UI
@@ -118,7 +118,7 @@ debug-only pauses.
 
 - Package versions belong in central package files.
 - Do not add per-project version pins unless deliberately required.
-- Keep package names aligned with `PackageId` values in `srcnew/**/*.csproj`.
+- Keep package names aligned with `PackageId` values in `src/**/*.csproj`.
 
 ## Git Safety
 

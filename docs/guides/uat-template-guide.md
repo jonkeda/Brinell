@@ -15,7 +15,7 @@ The UAT suite lives in the platform's UI test project, beside the page objects i
 name: a scenario is only as good as those, and a page object changes for both.
 
 ```text
-testsnew/Bruinet.<Platform>.UITests/
+tests/Bruinet.<Platform>.UITests/
   uat.config.md
   Features/
     scenario-name.feature.md
@@ -149,8 +149,8 @@ feature file is the project's own, the case's source is the scenario's line in i
 | Kind | Assembly |
 | --- | --- |
 | Pages | ../…UITests/bin/Debug/net10.0-windows/…UITests.dll |
-| Controls | ../../../../srcnew/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Controls | ../../../../src/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 
 ## Discovery
 
@@ -357,6 +357,29 @@ Then I should see "<result>"
 | ada@example.com | correct-password | Dashboard |
 | locked@example.com | correct-password | Account locked |
 ````
+
+An outline can have several Examples sections, each with a name and tags of its own. The
+tags join the outline's for that section's rows, so a head tag picks rows for a head:
+
+````markdown
+@maui @web
+### Examples: refused at once
+
+| user | password | result |
+| --- | --- | --- |
+| locked@example.com | correct-password | Account locked |
+
+@web
+### Examples: refused by the server
+
+| user | password | result |
+| --- | --- | --- |
+| expired@example.com | correct-password | Password expired |
+````
+
+Rows are numbered across the sections, `Login result is shown [1]`, `[2]` and on, so splitting a
+section, or moving a row between sections in order, keeps every row's name, filter and recorded
+timings. Two sections of one outline with the same name are `UAT032`.
 
 Table cells are trimmed. To pass a value whose spaces matter, quote it in the
 cell and leave the placeholder unquoted in the step: `When I set Title to <title>`

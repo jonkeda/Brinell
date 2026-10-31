@@ -9,12 +9,14 @@
 
   <ItemGroup>
     <!-- The UAT engine, and the page objects and controls its scenarios drive. -->
-    <ProjectReference Include="..\..\..\..\srcnew\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
     <ProjectReference Include="..\Bruinet.Samples.Todo.UITests\Bruinet.Samples.Todo.UITests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- How the suite's names are said in narrated videos (the narrator reads it beside the config). -->
+    <None Update="pronunciations.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Callable phrases every scenario can use; the gate reads them from the output. -->
     <None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />

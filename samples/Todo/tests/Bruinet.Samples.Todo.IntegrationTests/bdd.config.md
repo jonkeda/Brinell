@@ -17,7 +17,7 @@ UI (`TodoServiceFixture`). The scenario files are the MAUI suite's, linked.
 | Kind | Assembly |
 | --- | --- |
 | Steps | bin/Debug/net10.0/Bruinet.Samples.Todo.IntegrationTests.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 | TestData | ../Bruinet.Samples.Todo.TestSupport/bin/Debug/net10.0/Bruinet.Samples.Todo.TestSupport.dll |
 
 ## Using

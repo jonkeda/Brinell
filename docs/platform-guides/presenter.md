@@ -6,8 +6,8 @@ placed in the rest.
 
 ## Projects
 
-- `srcnew/Bruinet.Presenter`
-- `testsnew/Bruinet.Presenter.Bdd.Tests`: Presenter's own UAT suite
+- `src/Bruinet.Presenter`
+- `tests/Bruinet.Presenter.Bdd.Tests`: Presenter's own UAT suite
 
 ## A Minimal Run
 
@@ -17,13 +17,13 @@ the page objects. The WPF workspace is the cheapest: no Appium, no MAUI workload
 ```powershell
 # Working directory: Bruinet root
 dotnet build samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj
-dotnet build testsnew\Bruinet.Wpf.UITests\Bruinet.Wpf.UITests.csproj
-dotnet run --project srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -f net10.0-windows10.0.19041.0
+dotnet build tests\Bruinet.Wpf.UITests\Bruinet.Wpf.UITests.csproj
+dotnet run --project src\Bruinet.Presenter\Bruinet.Presenter.csproj -f net10.0-windows10.0.19041.0
 ```
 
 Then, in Presenter (the toolbar is icon-only; hover for tooltips):
 
-1. **Open** `testsnew\Bruinet.Wpf.UITests`.
+1. **Open** `tests\Bruinet.Wpf.UITests`.
 2. **Validate**, and fix anything the Diagnostics tab reports.
 3. Select a scenario in the tree, for example *Home page is visible*.
 4. **Run**, or **Next** to go one step at a time.
@@ -193,12 +193,20 @@ Under it, **Cloud voice (Azure OpenAI)** sets up the narrator's cloud voice
 ([Cloud Voice](../guides/narrated-recordings.md#cloud-voice)): it says whether one is set up and
 from where (a file, or the environment), and takes the endpoint, the key, the deployment, the API
 version and the default voice. **Try** speaks a sample line with the fields as they are, before
-anything is saved; **Save** writes `voice.secrets.json` for this machine
+anything is saved; **Save** writes the `azureFoundry` object of `voice.secrets.json` for this machine
 (`%USERPROFILE%\.bruinet`), or beside the open workspace when its repository's `.gitignore`
-ignores the file (**Add the line to .gitignore** adds it); **Remove** deletes the file, after a
-second click. The key is typed into a password field and never shown again: after Save the part
+ignores the file (**Add the line to .gitignore** adds it); **Remove** takes that object out (the
+file goes with the last one), after a second click. The key is typed into a password field and never shown again: after Save the part
 says "key set", and an empty key on Save keeps it. Once a cloud voice is set up, the Voice picker
 lists the `azure:` voices.
+
+**Azure Speech** is the part below it ([Azure Speech](../guides/narrated-recordings.md#azure-speech)): the
+same state line and key rules, an endpoint (a region such as `eastus2`, or the resource's URL), the **Language**
+(the system's to begin with) and the **Voices** of that language from the service's list, the **Default voice**
+(typed, or picked), and the **Sample rate** (24000 or 48000). **Load voices** asks the service and keeps the
+list, so later the picker needs no call; **Try** speaks a sample line before anything is saved; **Save** writes
+the file's `azureSpeech` object, in the place the Cloud voice part shows, keeping `azureFoundry`; **Remove**
+takes only that object out, after a second click. Its voices join the Voice picker as `azure-speech-service:`.
 
 ### Narrator mode
 
@@ -223,7 +231,7 @@ a time.
   again replaces that scene only. **Stop** drops the scene being recorded and keeps the finished
   ones.
 - **Stitch** (the link) joins the latest recording of every scene into
-  `<Recordings>\<script>-<stamp>.mp4`, with its captions and timeline. It runs by itself when a
+  `<Recordings>\<script>.mp4`, replacing the last one, with its captions and timeline. It runs by itself when a
   Record leaves every scene recorded; a failed or out-of-date scene is stitched too, and named,
   so a draft can be watched.
 - **Watch** plays the stitched video; the play button on a recorded scene plays that scene alone.
@@ -284,6 +292,6 @@ $env:BRUINET_PRESENTER_SETTINGS_PATH = "path\to\user-settings.json"
 
 ```powershell
 # Working directory: Bruinet root
-dotnet build srcnew\Bruinet.Presenter\Bruinet.Presenter.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Presenter.Bdd.Tests\Bruinet.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
+dotnet build src\Bruinet.Presenter\Bruinet.Presenter.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Presenter.Bdd.Tests\Bruinet.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
 ```

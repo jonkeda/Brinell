@@ -1,6 +1,6 @@
 ---
 name: android-ui-test
-description: Write or fix Bruinet native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in testsnew/Bruinet.NativeAndroid.UITests, or a control unit test in testsnew/Bruinet.NativeAndroid.Tests.
+description: Write or fix Bruinet native Android UI tests and UAT scenarios and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, INativeAndroidElement, Appium types, adb, or Find* calls. Use when asked to add, write, extend, or fix a native Android UI test, page object or feature file in tests/Bruinet.NativeAndroid.UITests, or a control unit test in tests/Bruinet.NativeAndroid.Tests.
 ---
 
 Read `.github/skills/android-ui-test/SKILL.md` and follow it. Its relative links (`references/`, `../`)

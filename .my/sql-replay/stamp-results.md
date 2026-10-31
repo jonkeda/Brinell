@@ -24,7 +24,7 @@ then replays 3 times per head with no server, no miss.
 
 | Part | Where |
 | --- | --- |
-| Triggers, defaults and checks as lines of their table; a trigger's references its table's; references resolved by `referenced_id`, else the body's schema, else `dbo`; `Dynamic`; data hashes; `DefaultSchema`; `MergeReferences(path)` returning names it doesn't know | `srcnew/Bruinet.Mocking.Data/SchemaSnapshot.cs` (`SnapshotOptions`) |
+| Triggers, defaults and checks as lines of their table; a trigger's references its table's; references resolved by `referenced_id`, else the body's schema, else `dbo`; `Dynamic`; data hashes; `DefaultSchema`; `MergeReferences(path)` returning names it doesn't know | `src/Bruinet.Mocking.Data/SchemaSnapshot.cs` (`SnapshotOptions`) |
 | `Statements.Names` (schema null when not written); `Schema.DefaultSchema`, `Schema.Named(text)`; `ReplaySession.Finish` stamps through it | `Statements.cs`, `Replay/Recording.cs`, `Replay/ReplaySession.cs` |
 | `RecordingCheck.Check(folder, schema)`, `RecordingState` | `Replay/RecordingCheck.cs` |
 | `bruinet sql schema --references --data --default-schema`; `bruinet sql stale --schema --recordings --version name=value` | `tools/Bruinet.Cli/Sql/SqlCommands.cs` |

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- MAUI 10's plain assemblies are net10.0 only. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Bruinet.Maui.Headless</RootNamespace>
+    <Description>MauiHeadless implementation for Bruinet.Maui: the same page objects and controls on a page rendered headless, without a device, emulator or window (docs/guides/maui-headless.md).</Description>
+    <PackageId>Bruinet.Maui.Headless</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bruinet.Maui\Bruinet.Maui.csproj" />
+    <ProjectReference Include="..\MauiHeadless\MauiHeadless.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,18 @@
+@* The spike's probe (AD-030): a handler that awaits, and one that does not. *@
+<h1 data-testid="title">Probe</h1>
+<button data-testid="slow" @onclick="Slow">Slow</button>
+<span data-testid="status">@status</span>
+<button data-testid="inc" @onclick="() => count++">Inc</button>
+<span data-testid="count">Count: @count</span>
+
+@code {
+    private string status = "Idle";
+    private int count;
+
+    private async Task Slow()
+    {
+        status = "Working";
+        await Task.Delay(200);
+        status = "Done";
+    }
+}

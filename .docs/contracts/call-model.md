@@ -52,6 +52,9 @@ and the native Android slice (`.my/androidnative/`, 2026-10). Enforces
   A scope shown over its parent (a popup, a dialog) does not (`AsksParent => false`).
 - **A root is cached for the object's life and checked on every use (R6).** A property declared
   as `=> new` or `{ get; }` differs only in cost. A stale root is re-found once, in one place.
+- **A page root is checked as attached, not only as shown.** An element that can outlive its place
+  in the tree (`IDetachable`) is invalid once it is out of it. On Windows a page navigated away
+  from answers as present, on screen and full size for about a second after it left the tree.
 - **A row stands for its item, as far as its key can tell.** A row records the item's key when
   it is made and reports `ItemChanged` when the element at its place holds another item.
   A `Logical` key (`PositionInSet`) or `AutomationId` key can tell; a `Position` key cannot. A

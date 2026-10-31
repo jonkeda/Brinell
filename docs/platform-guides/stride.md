@@ -5,10 +5,10 @@ Bruinet supports Stride game/UI testing through `Bruinet.Stride` and
 
 ## Projects
 
-- `srcnew/Bruinet.Stride`
-- `srcnew/Bruinet.Stride.Automation`
-- `testsnew/Bruinet.Stride.Automation.Tests`
-- `testsnew/Bruinet.Stride.UITests` (the UI tests and the UAT suite)
+- `src/Bruinet.Stride`
+- `src/Bruinet.Stride.Automation`
+- `tests/Bruinet.Stride.Automation.Tests`
+- `tests/Bruinet.Stride.UITests` (the UI tests and the UAT suite)
 - `samples/Bruinet.Samples.Stride.App`
 
 ## Rules

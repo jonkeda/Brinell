@@ -18,5 +18,5 @@ Why: every lookup and wait inside a control is one call with one budget (the cal
 page at a moment nothing waited for, and turns an app bug into a flaky test.
 
 The one exception is the drivers' own tests, which exist to prove the driver:
-`testsnew/Bruinet.Html.Tests` (`PlaywrightErrorMappingTests` and the pins) and
-`testsnew/Bruinet.Html.Bunit.Tests` (`MemberTests`, `ContextTests`).
+`tests/Bruinet.Html.Tests` (`PlaywrightErrorMappingTests` and the pins) and
+`tests/Bruinet.Html.Bunit.Tests` (`MemberTests`, `ContextTests`).

@@ -8,7 +8,7 @@ drivers.
 
 ## Core Contracts
 
-`srcnew/Bruinet.Core` owns:
+`src/Bruinet.Core` owns:
 
 - locators;
 - control and page interfaces;
@@ -22,7 +22,7 @@ framework-specific element types.
 
 ## Settings
 
-`srcnew/Bruinet.Core/Settings` owns JSON-backed test settings. Settings are
+`src/Bruinet.Core/Settings` owns JSON-backed test settings. Settings are
 loaded from a configurable root, default file, local override file, scenario
 convention file, and explicit files. UAT scenarios attach resolved settings to
 the execution context.
@@ -31,7 +31,7 @@ the execution context.
 
 Platform packages translate core concepts into driver-specific behavior:
 
-- MAUI controls and page objects in `srcnew/Bruinet.Maui`;
+- MAUI controls and page objects in `src/Bruinet.Maui`;
 - WPF and WinForms through FlaUI;
 - HTML and Blazor through Selenium or Playwright;
 - Stride through automation hooks and named-pipe style integration;
@@ -39,7 +39,7 @@ Platform packages translate core concepts into driver-specific behavior:
 
 ## Tests
 
-Tests live under `testsnew/` and follow three broad styles:
+Tests live under `tests/` and follow three broad styles:
 
 - unit tests: no external app or device required;
 - UI tests: require a sample app, browser, Appium server, or desktop UI;

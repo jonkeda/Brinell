@@ -8,7 +8,7 @@
 
 Scenario: Features/TOD.01-see-my-todos.feature.md#TOD.01.1-Opening-the-app-shows-the-list-a-loading-state-shows-first-then-the-content
 
-This is Todo: a small app to keep track of what you have to do. It works on Windows, Android and
+This is Todo: a small app to keep track of what you have to do.<break time="500ms"/> It works on Windows, Android and
 the web, and keeps your todos on your device.
 
 | Step | Say |

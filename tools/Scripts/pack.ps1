@@ -31,7 +31,7 @@ $libraries = @(
 )
 
 foreach ($name in $libraries) {
-    dotnet pack "srcnew/$name/$name.csproj" -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version" -p:GeneratePackageOnBuild=false
+    dotnet pack "src/$name/$name.csproj" -c Release -o $Output -v:minimal /nr:false "-p:Version=$Version" -p:GeneratePackageOnBuild=false
     if ($LASTEXITCODE -ne 0) { throw "Pack failed: $name" }
 }
 

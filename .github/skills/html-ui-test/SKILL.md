@@ -1,6 +1,6 @@
 ---
 name: html-ui-test
-description: Write or fix Bruinet Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in testsnew/Bruinet.Html.UITests, testsnew/Bruinet.Blazor.UITests or samples/Todo/tests/Bruinet.Samples.Todo.Web.UITests, or a control unit test in testsnew/Bruinet.Html.Tests; also when a web test must run on the bUnit head (BRUINET_HEAD=bunit) or be marked BrowserFact or @browser, or when picking which web tests a change reaches (tools/Scripts/select-tests.ps1, bruinet tests affected).
+description: Write or fix Bruinet Html UI tests and the page objects, containers and collections they use, going only through page objects and ControlObjects - never the driver, IHtmlElement, Playwright types, or Find* calls. Use when asked to add, write, extend, or fix an Html or Blazor UI test, a web page object, or a test in tests/Bruinet.Html.UITests, tests/Bruinet.Blazor.UITests or samples/Todo/tests/Bruinet.Samples.Todo.Web.UITests, or a control unit test in tests/Bruinet.Html.Tests; also when a web test must run on the bUnit head (BRUINET_HEAD=bunit) or be marked BrowserFact or @browser, or when picking which web tests a change reaches (tools/Scripts/select-tests.ps1, bruinet tests affected).
 ---
 
 # Write Html UI tests
@@ -19,10 +19,10 @@ something they do not offer, add it there first; never reach past them.
    with `data-testid`s and a visible effect (a status line). The test project references the
    sample's project: the browser head starts it, the bUnit head renders its `Routes`.
 4. **Run the smallest filter that can fail on the bUnit head first**, from the Bruinet root:
-   `$env:BRUINET_HEAD = "bunit"; dotnet test testsnew\Bruinet.Html.UITests --filter "FullyQualifiedName~LoginPageTests"`.
+   `$env:BRUINET_HEAD = "bunit"; dotnet test tests\Bruinet.Html.UITests --filter "FullyQualifiedName~LoginPageTests"`.
    It runs in about a second, without a browser. To get that filter from the change, run
    `pwsh tools/Scripts/select-tests.ps1` (`bruinet tests affected`): it prints the tests and scenarios the working
-   tree's change reaches, each with why, and one `--filter`, and says when shared code (`srcnew/`, the test base, the
+   tree's change reaches, each with why, and one `--filter`, and says when shared code (`src/`, the test base, the
    sample's layout) runs the suite whole. `-Run` runs them, `-Head playwright` in the browser. A new page object or test
    is not in the suite's `touch-map.json` until `-WriteMap` after a full run: name it in the filter yourself.
 5. **Then once in the browser** (`Remove-Item Env:BRUINET_HEAD`, the same filter) before calling
@@ -94,7 +94,7 @@ AD-030); the Todo web suites have no bUnit head yet. Write every web test so it 
   through a style sheet still reads as visible. A test about CSS hiding is a `BrowserFact`.
 - **Never change what a test checks to make it pass on one head.** A test that passes in the
   browser and fails on bUnit is a driver gap or a browser-only test: mark it, or fix the driver
-  in `srcnew/Bruinet.Html.Bunit`.
+  in `src/Bruinet.Html.Bunit`.
 
 ## Never in tests, page objects' public members or test helpers
 

@@ -16,8 +16,8 @@
 | Kind | Assembly |
 | --- | --- |
 | Pages | bin/Debug/net10.0-windows/Bruinet.Samples.Todo.Uat.dll |
-| Controls | ../../../../srcnew/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Controls | ../../../../src/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 | TestData | ../Bruinet.Samples.Todo.TestSupport/bin/Debug/net10.0/Bruinet.Samples.Todo.TestSupport.dll |
 
 ## Using

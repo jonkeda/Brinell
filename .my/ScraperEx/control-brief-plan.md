@@ -16,7 +16,7 @@ Two requirements from the owner:
   of section 3 add their reading as **hints**, never as a filter or a verdict: a model reads a page
   better than a rule engine, and each makes the other better. Nothing the rules find is withheld
   because a rule did not like it.
-- **Controls in a scraped project are generated** as in `srcnew`: a `.tpl.cs` with `*Core` methods,
+- **Controls in a scraped project are generated** as in `src`: a `.tpl.cs` with `*Core` methods,
   and the generator writes the `.gen.cs`.
 
 ## 1. Why the control was empty
@@ -173,8 +173,8 @@ Write:      E:\…\Scraper.Sites\Bruinet.Html.Bouw7\Controls\VSelect.tpl.cs   (n
 Namespace:  Bruinet.Html.Bouw7.Controls
 First line: // <scraped control="…" from="…" page="/department#" node=138 project="Bruinet.Html.Bouw7">
 Read only:  .github/skills/html-control/SKILL.md
-            srcnew/Bruinet.Html/Controls/SelectorControlBase.tpl.cs   (the hinted base: its *Core methods)
-            srcnew/Bruinet.Html/Controls/Selection/SelectControl.tpl.cs   (a control of the hinted kind)
+            src/Bruinet.Html/Controls/SelectorControlBase.tpl.cs   (the hinted base: its *Core methods)
+            src/Bruinet.Html/Controls/Selection/SelectControl.tpl.cs   (a control of the hinted kind)
 Check:      check_code (it runs the generator over Controls, then builds)
 
 ### Facts

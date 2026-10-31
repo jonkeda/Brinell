@@ -14,7 +14,7 @@ budget; `Poller.IsFatal` knows the marker, not the driver's type. A test that ne
 that throws is `AppUnavailableException`, as a browser's circuit ends, so a click is never retried.
 
 **Why:** the browser is most of a UI test's cost. Bruinet's Blazor suite ran 35 tests in 2 s on bUnit
-and 39 s in a browser; a call costs about 0.2 ms against about 40 ms (`.my/bunit/plan.md`, steps 1 to 5).
+and 39 s in a browser; a call costs about 0.2 ms against about 40 ms ([the bUnit plan](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/bunit/plan.md), steps 1 to 5).
 Html already kept its driver behind its own interfaces, so a second driver costs one project and no
 change to a page object. Tomorrow's pyramid paper found about half of its UI scenarios check a rule's
 value or a page's state, which bUnit can show without a browser.

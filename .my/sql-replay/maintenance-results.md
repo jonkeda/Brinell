@@ -24,11 +24,11 @@ pass, and the spike replays twice per head with no server.
 
 | Part | Where |
 | --- | --- |
-| `RecordingDiff.Compare(before, after)` | `srcnew/Bruinet.Mocking.Data/Replay/RecordingDiff.cs` |
+| `RecordingDiff.Compare(before, after)` | `src/Bruinet.Mocking.Data/Replay/RecordingDiff.cs` |
 | `RecordingReview` (`Recordings`, `IsRecording`, `Hash`, `Unreviewed`, `Accept`), `reviewed.json` | `Replay/RecordingReview.cs` |
 | `Recording.Parse`; `MarkVolatile` leaves a command without counterpart unmarked | `Replay/Recording.cs` |
 | `bruinet sql diff --recordings --base --accept`, `bruinet sql reviewed --recordings` | `tools/Bruinet.Cli/Sql/SqlCommands.cs` |
-| The spike's `Recordings/reviewed.json`, `Tests/RecordingReviewTests.cs` | `testsnew/Bruinet.Sql.Spike.Tests` |
+| The spike's `Recordings/reviewed.json`, `Tests/RecordingReviewTests.cs` | `tests/Bruinet.Sql.Spike.Tests` |
 
 ## Found while building
 

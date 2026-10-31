@@ -42,7 +42,7 @@ jobs:
           "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
 
       - name: Restore workloads
-        run: dotnet workload restore srcnew/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj
+        run: dotnet workload restore src/Bruinet.Maui.CommunityToolkit/Bruinet.Maui.CommunityToolkit.csproj
 
       - name: Pack libraries
         shell: pwsh

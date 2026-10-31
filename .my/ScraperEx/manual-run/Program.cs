@@ -155,7 +155,7 @@ await Check("R-8", async () =>
 {
     var session = (await Status()).Split(' ')[1].TrimEnd(':');
     await Stop();
-    var folder = Path.Combine(repo, "testsnew", "Bruinet.Blazor.UITests", "Recordings", session);
+    var folder = Path.Combine(repo, "tests", "Bruinet.Blazor.UITests", "Recordings", session);
     var files = Directory.GetFiles(folder).Select(Path.GetFileName).ToArray();
     Expect(files.Contains("recording.json") && files.Count(f => f!.EndsWith(".nodes.jsonl")) == 4, string.Join(", ", files));
     Expect(!await view.IsDisabledAsync("#sc-start"), "Record enabled");

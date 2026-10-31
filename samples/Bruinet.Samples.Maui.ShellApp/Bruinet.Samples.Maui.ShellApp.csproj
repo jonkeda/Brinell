@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- iOS too: the Shell suite runs on the mobile head against an iOS simulator as well. -->
-    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios</TargetFrameworks>
-    <OutputType>Exe</OutputType>
+    <!--
+      iOS too: the Shell suite runs on the mobile head against an iOS simulator as well. net10.0 is
+      the app for the MauiHeadless head, as in Bruinet.Samples.Maui.App; Windows only on Windows.
+    -->
+    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0;$(TargetFrameworks)</TargetFrameworks>
+    <OutputType Condition="'$(TargetFramework)' != 'net10.0'">Exe</OutputType>
     <RootNamespace>Bruinet.Samples.Maui.ShellApp</RootNamespace>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
@@ -43,7 +47,13 @@
     <ProjectReference Include="..\Bruinet.Maui.AppSupport\Bruinet.Maui.AppSupport.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- The MauiHeadless build: no platform code and no app builder; a test composes the app itself. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Compile Remove="MauiProgram.cs;Platforms\**" />
+    <MauiXaml Remove="Platforms\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0'">
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
   </ItemGroup>

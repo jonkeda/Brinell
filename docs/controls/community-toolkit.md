@@ -145,11 +145,11 @@ own: they are plain layouts, so use `Grid`/`ContentView`-style containers or the
 ## Tests
 
 - Sample pages: `SamplePage.CommunityToolkit`, `CommunityToolkitAlerts`, `CommunityToolkitMedia`.
-- Page objects: `testsnew/Bruinet.Maui.UITests/Pages/CommunityToolkit*TestPage.cs`.
-- Tests: `testsnew/Bruinet.Maui.UITests/Tests/CommunityToolkit`, one class per control, each with
+- Page objects: `tests/Bruinet.Maui.UITests/Pages/CommunityToolkit*TestPage.cs`.
+- Tests: `tests/Bruinet.Maui.UITests/Tests/CommunityToolkit`, one class per control, each with
   `[Trait("Control", "<Name>")]`.
 
 ```powershell
 # Working directory: Bruinet root
-dotnet test testsnew\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Expander|Control=RatingView"
+dotnet test tests\Bruinet.Maui.UITests\Bruinet.Maui.UITests.csproj --filter "Control=Expander|Control=RatingView"
 ```

@@ -49,7 +49,7 @@ element replaced before it can be read - fails the call and returns
 ## Html controls
 
 Html and Blazor control objects are generated the same way, from `.tpl.cs` templates under
-`srcnew/Bruinet.Html/Controls` and `srcnew/Bruinet.Blazor/Controls` (`tools\Scripts\CreateHtml.Bat`).
+`src/Bruinet.Html/Controls` and `src/Bruinet.Blazor/Controls` (`tools\Scripts\CreateHtml.Bat`).
 The element type is `IHtmlElement`, and Html's `ControlBase<TScope>` has MAUI's `Run*` names and
 signatures (R8), so the generator's output compiles on both. The Html capability bases implement
 the same Core interfaces as MAUI's (`IClickableControlObject`, `IEditableTextControlObject`,
@@ -62,7 +62,7 @@ The same rules apply. An action that changes state acts once and confirms its ef
 
 ## Native Android controls
 
-Generated the same way, from `.tpl.cs` templates under `srcnew/Bruinet.NativeAndroid/Controls`
+Generated the same way, from `.tpl.cs` templates under `src/Bruinet.NativeAndroid/Controls`
 (`tools\Scripts\CreateNativeAndroid.Bat`), with `INativeAndroidElement` as the element type.
 `ViewBase<TScope>` has MAUI's `Run*` names and signatures (R8), and the capability bases implement
 the same Core interfaces, so the UAT verbs are the same. Controls carry Android's widget names

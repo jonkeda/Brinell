@@ -2,7 +2,7 @@
 
 A region whose content the app chooses. It scopes the controls inside it, and may read or
 act on its own root. Base: `ContainerObjectBase<TParent, TSelf>` in
-`srcnew/Bruinet.Maui/Containers/ContainerObjectBase.cs`.
+`src/Bruinet.Maui/Containers/ContainerObjectBase.cs`.
 
 ## Shape (framework container)
 
@@ -143,7 +143,7 @@ public class ProductFormContainer : ContainerObjectBase<GridCollectionDemoPage, 
 
 ## Examples to read
 
-`srcnew/Bruinet.Maui/Controls/Container/Border.tpl.cs` (no behaviour, handler note), `ScrollView.tpl.cs`
+`src/Bruinet.Maui/Controls/Container/Border.tpl.cs` (no behaviour, handler note), `ScrollView.tpl.cs`
 (`ScrollingRoot`, Core methods on the root), `RefreshView.tpl.cs` (capability interface),
-`srcnew/Bruinet.Maui.CommunityToolkit/Controls/Views/Popup.tpl.cs` (root outside the page, across-parts member),
-`srcnew/Bruinet.Maui.CommunityToolkit/Controls/Layouts/StateContainer.tpl.cs` (uncached root, parameterised read).
+`src/Bruinet.Maui.CommunityToolkit/Controls/Views/Popup.tpl.cs` (root outside the page, across-parts member),
+`src/Bruinet.Maui.CommunityToolkit/Controls/Layouts/StateContainer.tpl.cs` (uncached root, parameterised read).

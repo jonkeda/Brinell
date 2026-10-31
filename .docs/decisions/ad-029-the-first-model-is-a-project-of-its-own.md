@@ -17,7 +17,7 @@ interface's name (`TestPages.IsFirstModelPage`), so neither references the old p
 
 **Why:** Html, MAUI and native Android derive from none of the first model (AD-010), yet Core's
 public surface was mostly that model, and a reader of `IDriver` learned the opposite of the
-call-model contract (the [review of 2026-10-21](../../.my/reviews/2026-10-21-review.md)). The
+call-model contract (the [review of 2026-10-21](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/2026-10-21-review.md)). The
 project earns its place by AD-026's R4: a layer the old stacks build on and the call-model stacks
 build without.
 

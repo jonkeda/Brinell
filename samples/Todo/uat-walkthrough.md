@@ -213,8 +213,8 @@ produces `Then Todos should have todo "Write the report"`.
 | Kind | Assembly |
 | --- | --- |
 | Pages | ../Bruinet.Samples.Todo.UITests/bin/Debug/net10.0-windows/Bruinet.Samples.Todo.UITests.dll |
-| Controls | ../../../../srcnew/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
-| Commands | ../../../../srcnew/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
+| Controls | ../../../../src/Bruinet.Maui/bin/Debug/net10.0/Bruinet.Maui.dll |
+| Commands | ../../../../src/Bruinet.Uat/bin/Debug/net10.0/Bruinet.Uat.dll |
 
 ## Discovery
 

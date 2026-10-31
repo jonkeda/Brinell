@@ -28,7 +28,7 @@ scenarios by data set. The framework's own suites have none of that.
 
 ## What the suites cost
 
-From the run records in `.my/reviews/baseline.md`, `.my/androidnative/plan.md` and the suites'
+From the run records in [`.my/reviews/baseline.md`](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/baseline.md), `.my/androidnative/plan.md` and the suites'
 `TestResults`, on a busy development machine:
 
 | Suite | Tests | Wall time |

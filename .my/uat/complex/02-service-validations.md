@@ -7,7 +7,7 @@ the **calls themselves**: that the right request was sent, with the right method
 path, headers and body, and that the app handles the server's answers —
 including 500, 401 and timeouts.
 
-All of it runs against the [MockApiServer](../../../srcnew/Bruinet.Mocking/MockApiServer.cs)
+All of it runs against the [MockApiServer](../../../src/Bruinet.Mocking/MockApiServer.cs)
 the fixture starts before the app and hands to the app as its `ApiBaseUrl`
 (see [TodoHost](../../../samples/Todo/tests/Bruinet.Samples.Todo.IntegrationTests/TodoHost.cs)).
 
@@ -44,7 +44,7 @@ public sealed class ServicePhrases : UatPhraseClassBase
 
 ## Rule 2 — assert the request's shape, not just that it happened
 
-[RecordedRequest](../../../srcnew/Bruinet.Mocking/RecordedRequest.cs) exposes the
+[RecordedRequest](../../../src/Bruinet.Mocking/RecordedRequest.cs) exposes the
 method, path, query, headers, and body (`BodyAs<T>`, `BodyMatchesJson`). Assert
 what the contract requires.
 

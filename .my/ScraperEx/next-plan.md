@@ -15,7 +15,7 @@ What that means:
 | --- | --- |
 | Where the driver is | In the language server's output (`.playwright`), and so in both extensions: the VSIX builds it in (`PublishLanguageServer`), the VS Code package gets it from `dotnet publish` in `release.yml`. Nothing to change |
 | Its platform | The release job runs on `windows-latest`, so the driver is win-x64. The VS Code extension on macOS or Linux would have the wrong one; it already needs .NET on Windows for the rest (the narrator's recorders), so this is a known limit, said in the guide |
-| A Playwright update | A version bump of `Microsoft.Playwright` in `srcnew/Directory.Packages.props` and an extension release |
+| A Playwright update | A version bump of `Microsoft.Playwright` in `src/Directory.Packages.props` and an extension release |
 | The browser | Not in the extensions: Chromium is installed per Playwright version into `%LOCALAPPDATA%\ms-playwright`. Today Record fails with "run `playwright.ps1 install chromium`". **Step 3** makes it a button: the server runs Playwright's own installer (`Microsoft.Playwright.Program.Main(["install", "chromium"])`), with progress in the view, and an MCP tool `install_browser` that asks first |
 | Later | The updater designed on 2026-09-30 (the Html source as a process of its own, installed per version under `%LOCALAPPDATA%\Bruinet\scrape-hosts`, with `status`, `install`, `update`, `prune`) is in git at a3763989 (`.my/ScraperEx/next-plan.md`), should the size or the pace start to hurt |
 
@@ -25,9 +25,9 @@ What that means:
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
-| `testsnew/Bruinet.Scraper.Tests` | 78 (13 with `Category=Browser`, headless Chromium) | snapshot file, config, store, masks, page keys, index; capture on the test site (frames, cross-origin, shadow roots, late rendering, transitions, dialogs, typed text, highlight, pick); the service; outline, signatures, patterns, suggestions, diff; code reading, writing and the build gate |
-| `testsnew/Bruinet.Bdd.LanguageServer.Tests` | 4 Scraper tests of 83 | the MCP tools and the `bruinet/scraper/*` methods over a recording made beforehand |
-| `testsnew/Bruinet.Blazor.UITests` | 2 of 35 | a page object made by the Scraper, driven against the Blazor sample |
+| `tests/Bruinet.Scraper.Tests` | 78 (13 with `Category=Browser`, headless Chromium) | snapshot file, config, store, masks, page keys, index; capture on the test site (frames, cross-origin, shadow roots, late rendering, transitions, dialogs, typed text, highlight, pick); the service; outline, signatures, patterns, suggestions, diff; code reading, writing and the build gate |
+| `tests/Bruinet.Bdd.LanguageServer.Tests` | 4 Scraper tests of 83 | the MCP tools and the `bruinet/scraper/*` methods over a recording made beforehand |
+| `tests/Bruinet.Blazor.UITests` | 2 of 35 | a page object made by the Scraper, driven against the Blazor sample |
 
 **What is missing:** nothing has run the Scraper view inside VS Code or Visual Studio; Pick has
 never had a person's click; no headed recording has been checked by a person.

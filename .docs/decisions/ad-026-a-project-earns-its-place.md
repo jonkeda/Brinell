@@ -15,7 +15,7 @@ What follows from it:
 | Decision | What holds |
 | --- | --- |
 | **A platform's UAT suite lives in its UI test project** | `uat.config.md`, `Features/` and `Uat/` (the fixture, the scenario test class) are in `Bruinet.<Platform>.UITests`, beside the page objects the scenarios name. A UAT run is the filter `Category=UAT`. |
-| **One tooling library for the Bdd tools** | `Bruinet.Bdd.Workspace` loads a suite and renders a file (namespace `Bruinet.Bdd.Preview`); the language server and Presenter use it. It is a library, so it is in `srcnew/`; `tools/` holds what runs. |
+| **One tooling library for the Bdd tools** | `Bruinet.Bdd.Workspace` loads a suite and renders a file (namespace `Bruinet.Bdd.Preview`); the language server and Presenter use it. It is a library, so it is in `src/`; `tools/` holds what runs. |
 | **A control source is a package of its own** | `Bruinet.Maui.CommunityToolkit`, `Bruinet.Blazor`: a suite that does not use it does not get it. |
 | **One test project per library**, beside its namesake | A focused run is one project. |
 

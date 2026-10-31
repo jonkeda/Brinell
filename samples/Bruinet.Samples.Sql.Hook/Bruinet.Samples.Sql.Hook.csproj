@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Bruinet.Mocking.Data.AspNetCore\Bruinet.Mocking.Data.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Mocking.Data.AspNetCore\Bruinet.Mocking.Data.AspNetCore.csproj" />
   </ItemGroup>
 
 </Project>

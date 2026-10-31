@@ -4,9 +4,9 @@ Bruinet automates WinForms through FlaUI.
 
 ## Projects
 
-- `srcnew/Bruinet.WinForms`
-- `testsnew/Bruinet.WinForms.Tests`
-- `testsnew/Bruinet.WinForms.UITests` (the UI tests and the UAT suite)
+- `src/Bruinet.WinForms`
+- `tests/Bruinet.WinForms.Tests`
+- `tests/Bruinet.WinForms.UITests` (the UI tests and the UAT suite)
 - `samples/Bruinet.Samples.WinForms.App`
 
 ## Rules

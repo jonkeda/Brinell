@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../srcnew/Bruinet.Core/Bruinet.Core.csproj" />
+        <ProjectReference Include="../../src/Bruinet.Core/Bruinet.Core.csproj" />
     </ItemGroup>
 
 </Project>

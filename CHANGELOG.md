@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking:** `srcnew/` and `testsnew/` are now `src/` and `tests/`: a project that references
+  Bruinet's sources by path changes `srcnew` to `src`. `start-appium.ps1` and `run-android-tests.ps1`
+  moved to `tools/Scripts`; the Stride pipe probes at the root (`test-key*.ps1`, `test-pipe.ps1`) are gone.
+- **Breaking:** `voice.secrets.json` holds each cloud voice in an object of its own: the Azure OpenAI
+  voice's fields in `azureFoundry` (they were at the top level) and Azure Speech's in `azureSpeech`
+  (it was `speech`). A file in the old shape is not read: move its fields, as
+  `voice.secrets.example.json` shows, or save them again in the Presenter.
+- The sample apps (`Bruinet.Samples.Maui.App`, `...ShellApp`, `Bruinet.Samples.Todo.App`) build for
+  plain `net10.0` themselves, for the MauiHeadless head, and the `*.App.Headless` projects that linked
+  their sources are gone. The UI test projects reference the apps with
+  `SetTargetFramework="TargetFramework=net10.0"`; the apps add their Windows target only on Windows.
+- MauiUnit is renamed MauiHeadless (`src/MauiHeadless`, package `MauiHeadless`), and Bruinet's head `Bruinet.Maui.MauiUnit` is `Bruinet.Maui.Headless`: `BRUINET_HEAD=headless`, `MauiPlatform.Headless`, `MauiHeads.IsHeadless`, `CreateHeadlessOptions`, `HeadlessPreferences` and `HeadlessSecureStorage`. No release shipped the old names.
+
 ### Added
+- A scenario outline can have several Examples sections: `### Examples: <name>`, each with a tag
+  line of its own that joins the outline's tags for its rows (a head tag picks rows for a head).
+  Rows are numbered across the sections, so names, filters and timings stay put. `UAT015` names
+  the section; two sections with one name are `UAT032`. The preview shows each section.
+- `docs/guides/coming-from-reqnroll.md`: one scenario in both forms, Reqnroll's attributes beside
+  Bruinet's, what works differently and what is not there.
+- Narrated recordings pace each action: while a scene records, every control action (a click, a
+  choice, text set, a key) takes at least the script's `Pause` (`BRUINET_PAUSE`, 700 ms by
+  default), counted from the call's start, so a list that opens is seen open and a method that does
+  three things shows three. A slower action waits nothing more, an action that runs another pauses
+  once, reads never pause, and a run that does not record never waits (`ActionPacing`, AD-024).
+  The pause is outside the call's logged time, so near-misses are unchanged. Scenes that record at
+  once (scenarios in two collections) each keep their pause until they end, whichever ends first.
+- A step's line now plays while the step runs; a step without a line follows its beat while that
+  line still plays (a loading state checked after a tap is still there), and the next line or the
+  outro waits for it, so lines never overlap. A script's `Say | before` keeps the old order, the
+  step waiting for its line. Scenes kept before
+  this are out of date: their hash now holds the pause and `Say`.
 - `[UiFact]` (`Bruinet.Uat`): a fact that leaves a screenshot when it fails, taken the moment the
   test method failed and before the test object is disposed, from the test object's own context
   (public or not) or a fixture's. xUnit v2 tells a `[Fact]`'s `After` hook nothing of the outcome,
@@ -60,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `IsNoAnswer`), `AndroidHost` and `AndroidRecorder`, moved out of `Bruinet.Maui.Appium` so the
   MAUI and native Android stacks share them. `Bruinet.Appium.Tests` took their tests.
 - `samples/Bruinet.Samples.NativeAndroid.App`, a .NET for Android control gallery, and
-  `testsnew/Bruinet.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
+  `tests/Bruinet.NativeAndroid.UITests` (30 UI tests and UAT scenarios on the emulator,
   `docs/run/native-android.md`); the `android-control` and `android-ui-test` skills.
 - UAT finds a control by Core's `IElementObject<>` as well as by its name's suffix, and no longer
   takes a page's `Self` for a control.
@@ -71,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   One set of options (`--solution`, `--project`, `--json`, `--yes`, `--headless`) and exit codes
   (0 fine, 1 problems found, 2 could not run). `tools/Bruinet.Bdd.LanguageServer` is now
   `tools/Bruinet.Cli` (assembly `bruinet`); `tools/Bruinet.DataValidator` and `tools/Bruinet.Generator`
-  are folders of it, and their tests are in `testsnew/Bruinet.Cli.Tests`. The IDE extensions start
+  are folders of it, and their tests are in `tests/Bruinet.Cli.Tests`. The IDE extensions start
   `bruinet.dll lsp`; `bruinet-data`, `--mcp` and `--preview` are gone. `tools/Scripts/bruinet.ps1`
   runs it from source.
 - The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Bruinet.Scraper`
@@ -595,7 +627,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CommunityToolkit.Maui` 9.0.0 -> 15.0.1 and `Microsoft.Maui.Controls` -> 10.0.90 (required by the
   toolkit). Added `CommunityToolkit.Maui.MediaElement` 10.0.0.
 - `Bruinet.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally
-  versioned, and is in `srcnew/Bruinet.sln`. `CreateMaui.Bat` generates its controls too.
+  versioned, and is in `src/Bruinet.sln`. `CreateMaui.Bat` generates its controls too.
 - `MediaElement<TScope>` moved from `Bruinet.Maui.Controls.Media` to
   `Bruinet.Maui.CommunityToolkit.Controls.Media`.
 - `MediaElement` forwards to its parts instead of polling around them: `SetPlaying` returns
@@ -692,6 +724,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FlaUIMauiDriver.SupportsStateReads`: `ReadState` answers in one bridge walk.
 - `PageReadinessSnapshot` from the MAUI page contract.
 
+### Changed
+- Android sessions skip installing an APK that is already on the device: the APK's hash and the
+  package's update time are recorded there after an install, and an unchanged build only has its
+  data cleared. About 3 s less per session start. `BRUINET_ALWAYS_REINSTALL=1` installs every time.
+- Readiness is asked once per attempt of a call (`AttemptMemo`): a read's scope chain asked the page
+  root for its bounds up to four times. On Android, a row's `resource-id` and class are read once
+  per element, and a read no longer asks `displayed` first where being found means being shown. A
+  list test on the emulator made 2,386 Appium requests and now makes 1,205; Bruinet's MAUI UI suite
+  on Windows ran in under 2 minutes instead of 3.
+
 ### Fixed
 - Two transitive packages pinned past their security advisories, so the solution restores again:
   `System.Security.Cryptography.Pkcs` 9.0.21 in the Stride sample (from Stride's toolkit,
@@ -724,6 +766,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ("Invalid URI"); `BddSourceLocator` gives no location for them, and tests and samples keep real
   paths. A cancel that reached the BDD runner before its step started was lost.
 - N/A (initial release)
+
+### Fixed
+- A page root that left the tree is found again. On Windows a page Shell navigated away from keeps
+  answering as present, on screen and full size for about a second; a cached root went on reading
+  the page underneath. A root is now valid only while it is attached (`IDetachable`, implemented by
+  the Windows element).
+- A grouped list is noticed without `HasLogicalIndexes`: two realized rows with one
+  `PositionInSet` switch the collection to positions and ids. A search had skipped the second
+  group's rows as seen and stopped early.
+- A collection search moves past a row only partly on screen, whose content is off screen
+  (Windows, iOS) or left out of the tree (Android), instead of failing on it. A predicate no row
+  can answer is still reported.
+- A collection search that reaches the end scrolls to the top once and searches down again, so an
+  item above the viewport is found.
+- `ScrollToTop` steps up while the list moves, then aligns the first row. It scrolled the first
+  realized row into view and stopped, mid-list in a virtualized list.
+- `title`, the Shell title's id on Windows and MauiHeadless, finds the navigation bar's title on
+  Android and iOS too.
 
 ## [0.1.0] - TBD
 

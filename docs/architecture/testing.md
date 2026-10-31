@@ -13,9 +13,9 @@ dotnet build Bruinet.sln -v:minimal /nr:false
 Run focused unit tests by project:
 
 ```powershell
-dotnet test testsnew\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
-dotnet test testsnew\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Core.Tests\Bruinet.Core.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Maui.Tests\Bruinet.Maui.Tests.csproj -v:minimal /nr:false
+dotnet test tests\Bruinet.Uat.Tests\Bruinet.Uat.Tests.csproj -v:minimal /nr:false
 ```
 
 ## UI Tests

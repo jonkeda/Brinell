@@ -22,7 +22,7 @@ MauiUnit record and replay the app's SQLite file. T1 to T5 pass on 2026-10-26.
 | Web: the head's `Replay` (bUnit on, browser off), `TodoDatabase.Wrap` through log and replay, `StartTest(output)`, `EndTest()` | `TodoWebHead.cs`, `TodoWebDevice.cs`, `TodoWebFixture.cs`, `Tests/JourneyTests.cs` |
 | MAUI: the fixture's replay (a field, so it is there when the base composes the app), the startup session, `StartTest(output)`, `EndTest()`, the wait for the startup sync | `TodoAppFixtureBase.cs`, the 12 test classes |
 | Recordings, `schema.json`, `reviewed.json` | `Bruinet.Samples.Todo.Web.UITests/Recordings`, `Bruinet.Samples.Todo.UITests/Recordings` |
-| Volatile values shared across a suite: `RecordingReview.VolatileValues`, `Hash(json, shared)`, `RecordingDiff.Compare(..., volatileBefore, volatileAfter)`, used by `bruinet sql diff` | `srcnew/Bruinet.Mocking.Data/Replay`, `tools/Bruinet.Cli/Sql/SqlCommands.cs` |
+| Volatile values shared across a suite: `RecordingReview.VolatileValues`, `Hash(json, shared)`, `RecordingDiff.Compare(..., volatileBefore, volatileAfter)`, used by `bruinet sql diff` | `src/Bruinet.Mocking.Data/Replay`, `tools/Bruinet.Cli/Sql/SqlCommands.cs` |
 
 ## Found while building
 

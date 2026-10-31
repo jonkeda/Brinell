@@ -5,9 +5,9 @@
     (`bruinet tests affected`, .my/test-selection/next-plan.md item 3); -Run runs them.
 
 .DESCRIPTION
-    For each suite with a touch-map.json (testsnew/Bruinet.Blazor.UITests, testsnew/Bruinet.Html.UITests): a sample page
+    For each suite with a touch-map.json (tests/Bruinet.Blazor.UITests, tests/Bruinet.Html.UITests): a sample page
     reaches the tests that used its test ids or open its route, a page object the tests that used it, a feature file its
-    scenarios, a test class its tests. A change to a library the suite references (srcnew/), the suite's test base or
+    scenarios, a test class its tests. A change to a library the suite references (src/), the suite's test base or
     fixture, the sample's layout or start, or the root build files runs the suite whole; anything else runs nothing.
 
     bruinet is built from tools/Bruinet.Cli into a temp folder, without the recorders: the agents' MCP servers keep
@@ -59,7 +59,7 @@ function Test-Suite([string]$project, [string[]]$arguments) {
 }
 
 foreach ($name in $names) {
-    $project = Join-Path $root "testsnew/Bruinet.$name.UITests"
+    $project = Join-Path $root "tests/Bruinet.$name.UITests"
     Write-Host "== $name"
     if ($WriteMap) {
         $timings = Join-Path ([IO.Path]::GetTempPath()) "bruinet-timings-$name-$(Get-Date -Format yyyyMMdd-HHmmss)"

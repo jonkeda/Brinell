@@ -1,7 +1,7 @@
 # UAT Scenario Grammar
 
 Status: **Implemented**. The parser is
-[BddMarkdownParser.cs](../../srcnew/Bruinet.Bdd/BddMarkdownParser.cs); this page writes down the
+[BddMarkdownParser.cs](../../src/Bruinet.Bdd/BddMarkdownParser.cs); this page writes down the
 format it accepts, so the format is a contract and not whatever the parser happens to do.
 
 Three layers, each owned by one piece of code:
@@ -9,7 +9,7 @@ Three layers, each owned by one piece of code:
 1. **The document grammar**: the shape of a `.feature.md` or `.steps.md` file. Owned by the
    parser, and fixed.
 2. **The phrase language**: the `{placeholder}` templates a step line binds to. Owned by the
-   catalog ([BddCommandCatalog.cs](../../srcnew/Bruinet.Bdd/BddCommandCatalog.cs)); phrases are
+   catalog ([BddCommandCatalog.cs](../../src/Bruinet.Bdd/BddCommandCatalog.cs)); phrases are
    declared by attributes (AD-011) or as callable phrases (AD-017).
 3. **The lexicon**: the page, control, app and user names that fill the placeholders. Owned by
    name resolution (`[UatName]`, `UatNameInference`, the `Apps` table).
@@ -45,7 +45,9 @@ parameters-table = table-with-columns("Parameter", "Type" [, "Example"]) ;
 scenario         = [ tag-line ] ,
                    ( "## Scenario:" , name , NEWLINE , steps
                    | "## Scenario Outline:" , name , NEWLINE , steps ,
-                     "### Examples" , NEWLINE , { prose } , table ) ;
+                     examples , { examples } ) ;
+
+examples         = [ tag-line ] , "### Examples" , [ ":" , name ] , NEWLINE , { prose } , table ;
 
 tag-line         = "@" , tag , { WS , "@" , tag } , NEWLINE ;   (* directly above the heading *)
 
@@ -59,7 +61,7 @@ comment          = "#" , text , NEWLINE ;
 prose-section    = "## " , text , NEWLINE , { prose } ;  (* a level-2 heading not named above *)
 prose            = (* any other Markdown block: a paragraph, list, quote, image, link, table,
                       HTML block, rule, code block of another language, or a heading of level 3
-                      or lower but an outline's "### Examples" *) ;
+                      or lower but an outline's "### Examples" or "### Examples: name" *) ;
 
 step             = keyword , WS , step-text , NEWLINE , [ table ] , [ doc-string ] ;
 phrase-step      = step | keyword , WS , step-text , NEWLINE , passed-block ;
@@ -76,9 +78,13 @@ Rules the EBNF does not show:
 
 - **Keywords.** `And` and `But` take the effective keyword of the step before them, so a step
   binds as `Given`, `When` or `Then` only. An `And` with nothing before it is `UAT016`.
-- **Tags** must be on the line directly above a `## Scenario:` or `## Scenario Outline:` heading.
+- **Tags** must be on the line directly above a `## Scenario:` or `## Scenario Outline:` heading,
+  or an outline's `### Examples` heading.
 - **Outlines.** Each `<column>` in an outline step is replaced from one `### Examples` row, and
-  every placeholder needs a column. Row *n* runs as `<name> [n]`.
+  every placeholder needs a column in every Examples section. An outline has one or more Examples
+  sections; `### Examples: <name>` names one, and two names in one outline must differ. A
+  section's tags join the outline's for its rows only. Rows are numbered across the sections:
+  row *n* runs as `<name> [n]`, so a row's name does not depend on its section.
 - **Tables.** Every row has as many cells as the header, and a table has at least one data row.
   Cells are trimmed. In a gherkin block, a table under a step is the step's. Outside the blocks,
   a section's table (Metadata, Data, Examples, Parameters) is the first table of the section;
@@ -158,7 +164,7 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 | `UAT008` | the file has no scenario |
 | `UAT009`, `UAT010` | the Metadata table's columns are not `Field`/`Value`, or a field is empty |
 | `UAT011` | a line in a gherkin block is not a step, a comment, a table or a doc string |
-| `UAT012` - `UAT015` | an outline has no `### Examples`, no name, no steps (with the hint), or a placeholder with no column |
+| `UAT012` - `UAT015` | an outline has no `### Examples`, no name, no steps (with the hint), or a placeholder with no column (naming the Examples section when it has a name) |
 | `UAT016` | `And`/`But` without a step before it |
 | `UAT017` - `UAT019` | a section's table is missing, a row has the wrong width, or a table has no data rows |
 | `UAT020` | a tag line is not directly above a scenario |
@@ -171,6 +177,7 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 | `UAT028` | a steps file with content other than one `# Steps:` heading and step sections |
 | `UAT029` | a heading or file name in the form before feature files (`# UAT:`, `## Phrase:`, `*.uat.md`, `*.phrases.md`); `bruinet data validate --fix` rewrites it |
 | `UAT031` | warning: a heading that looks like a section but is not one, read as prose |
+| `UAT032` | two Examples sections of one outline have the same name |
 
 Binder (`UATB0xx`) and argument (`UATA0xx`) diagnostics are raised in the binder and the value
 reader (`BddBinder`, `BddValues`, `BddPhraseDeclarations`).

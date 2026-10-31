@@ -70,7 +70,7 @@ the bUnit head's speed on its own.
 
 `samples/Bruinet.Samples.Sql.App`: Blazor Interactive Server with prerendering, EF Core 10.0.12 on
 the local SQL Server (`BruinetSqlSpike`), migration `Initial`, the three pages of the plan.
-`testsnew/Bruinet.Sql.Spike.Tests` runs its five scenarios on either head; the bUnit head renders
+`tests/Bruinet.Sql.Spike.Tests` runs its five scenarios on either head; the bUnit head renders
 its `Routes` with its data composition and `CommandLog` as EF interceptors. All five pass on both:
 about 1 s on bUnit, 20 s in the browser. The unique-key error reaches the page as `SqlException`
 2601 and the distance comes from `geography` on both heads.

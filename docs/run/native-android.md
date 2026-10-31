@@ -1,6 +1,6 @@
 # Run The Native Android UI Tests
 
-`testsnew/Bruinet.NativeAndroid.UITests` drives the gallery app
+`tests/Bruinet.NativeAndroid.UITests` drives the gallery app
 (`samples/Bruinet.Samples.NativeAndroid.App`) on an Android emulator through Appium. It holds the
 UI tests and the platform's UAT suite. CI does not run it: it needs a device.
 
@@ -26,9 +26,9 @@ appium --address 127.0.0.1 --port 4723
 dotnet build samples\Bruinet.Samples.NativeAndroid.App -v:minimal
 
 # The tests: one class, the UAT suite, or everything.
-dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"
-dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "Category=UAT"
-dotnet test testsnew\Bruinet.NativeAndroid.UITests
+dotnet test tests\Bruinet.NativeAndroid.UITests --filter "FullyQualifiedName~ControlsTests"
+dotnet test tests\Bruinet.NativeAndroid.UITests --filter "Category=UAT"
+dotnet test tests\Bruinet.NativeAndroid.UITests
 ```
 
 The fixture opens one Appium session for the whole run and installs the APK it finds under the
@@ -44,7 +44,7 @@ restart it when runs slow down.
 
 ```powershell
 $env:BRUINET_RECORD = "1"; $env:BRUINET_RECORD_DIR = "TestResults\recordings"
-dotnet test testsnew\Bruinet.NativeAndroid.UITests --filter "Category=UAT"
+dotnet test tests\Bruinet.NativeAndroid.UITests --filter "Category=UAT"
 ```
 
 Each scenario is recorded with `adb screenrecord`, with its taps and typing in the timeline.

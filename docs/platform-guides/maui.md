@@ -4,12 +4,12 @@ Bruinet supports MAUI through shared MAUI controls plus driver adapters.
 
 ## Projects
 
-- `srcnew/Bruinet.Maui`
-- `srcnew/Bruinet.Maui.Appium`
-- `srcnew/Bruinet.Maui.FlaUI`
-- `srcnew/Bruinet.Maui.CommunityToolkit`
-- `testsnew/Bruinet.Maui.Tests`
-- `testsnew/Bruinet.Maui.UITests` (the UI tests and the UAT suite)
+- `src/Bruinet.Maui`
+- `src/Bruinet.Maui.Appium`
+- `src/Bruinet.Maui.FlaUI`
+- `src/Bruinet.Maui.CommunityToolkit`
+- `tests/Bruinet.Maui.Tests`
+- `tests/Bruinet.Maui.UITests` (the UI tests and the UAT suite)
 
 ## Driver Choices
 
@@ -147,7 +147,7 @@ Besides screenshots and logs, a Windows UI run writes to
 | `accessibility-audit.md` | Instrumented elements and what each offers without a pointer |
 | `test-timings.md` | Every test class with count, total, mean and slowest test, against `timing-baseline.json`; classes that have become markedly slower are marked |
 | `test-timings.csv` | The raw per-test durations, written as the run goes |
-| `test-timings-baseline-candidate.json` | Copy over `testsnew/Bruinet.Maui.UITests/timing-baseline.json` to refresh the baseline from a good run |
+| `test-timings-baseline-candidate.json` | Copy over `tests/Bruinet.Maui.UITests/timing-baseline.json` to refresh the baseline from a good run |
 
 ## Run
 

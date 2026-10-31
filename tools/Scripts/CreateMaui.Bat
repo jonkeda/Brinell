@@ -7,7 +7,7 @@ rem (Bruinet.Maui and Bruinet.Maui.CommunityToolkit) using the Bruinet ControlOb
 set "SCRIPT_DIR=%~dp0"
 set "CLI_PROJECT=%SCRIPT_DIR%..\Bruinet.Cli\Bruinet.Cli.csproj"
 set "CLI_EXE=%SCRIPT_DIR%..\Bruinet.Cli\bin\Release\net10.0\bruinet.exe"
-set "INPUT=%SCRIPT_DIR%..\..\srcnew\Bruinet.Maui\Controls;%SCRIPT_DIR%..\..\srcnew\Bruinet.Maui.CommunityToolkit\Controls"
+set "INPUT=%SCRIPT_DIR%..\..\src\Bruinet.Maui\Controls;%SCRIPT_DIR%..\..\src\Bruinet.Maui.CommunityToolkit\Controls"
 
 echo Building bruinet...
 dotnet build "%CLI_PROJECT%" -c Release -v:minimal /nr:false

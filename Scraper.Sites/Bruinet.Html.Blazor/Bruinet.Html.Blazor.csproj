@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Bruinet.Html\Bruinet.Html.csproj" />
-    <ProjectReference Include="..\..\srcnew\Bruinet.Blazor\Bruinet.Blazor.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Html\Bruinet.Html.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Blazor\Bruinet.Blazor.csproj" />
   </ItemGroup>
 </Project>

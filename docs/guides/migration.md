@@ -11,8 +11,8 @@ Replace old namespaces and project names with current `Bruinet.*` names.
 | --- | --- |
 | `Oravey.UITestFramework.*` | `Bruinet.*` |
 | numbered docs such as `02-framework-overview.md` | docs under named folders |
-| `src/Bruinet.*` | `srcnew/Bruinet.*` |
-| `tests/Bruinet.*` | `testsnew/Bruinet.*` |
+| `src/Bruinet.*` | `src/Bruinet.*` |
+| `tests/Bruinet.*` | `tests/Bruinet.*` |
 
 ## Docs
 

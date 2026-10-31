@@ -59,8 +59,8 @@ Tie-breakers:
 
 ### Placement and naming
 
-- Framework controls: `srcnew/Bruinet.Maui/Controls/<Family>/Foo.tpl.cs`. Third-party sources:
-  `srcnew/Bruinet.Maui.<Source>/Controls/<Family>/Foo.tpl.cs`. The namespace follows the folder.
+- Framework controls: `src/Bruinet.Maui/Controls/<Family>/Foo.tpl.cs`. Third-party sources:
+  `src/Bruinet.Maui.<Source>/Controls/<Family>/Foo.tpl.cs`. The namespace follows the folder.
 - `Foo.gen.cs` is generated. Never edit it; never commit a template change without
   regenerating.
 - A `.tpl.cs` class is `partial` (the generator adds the other half); a plain `.cs` class is not.

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bruinet.Wpf.UITests</RootNamespace>
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bruinet.Core\Bruinet.Core.csproj" />
+    <ProjectReference Include="..\..\src\Bruinet.Wpf\Bruinet.Wpf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- The UAT suite: uat.config.md, Features/ and Uat/ (the fixture and the scenario test class). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bruinet.Uat\Bruinet.Uat.csproj" />
+    <ProjectReference Include="..\..\samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="BuildWpfSampleApp" BeforeTargets="Build">
+    <MSBuild Projects="..\..\samples\Bruinet.Samples.Wpf.App\Bruinet.Samples.Wpf.App.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <ItemGroup>
+    <Using Include="Bruinet.Bdd" />
+  </ItemGroup>
+
+</Project>

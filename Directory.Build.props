@@ -31,11 +31,11 @@
     <!-- Deterministic builds, for what ships. Tests and samples keep real PDB paths: the language
          server tests navigate to their sources, which a deterministic build maps to /_/. -->
     <!-- Whether the MAUI suites build with the Windows head (FlaUI, net10.0-windows): on Windows, yes.
-         Elsewhere (a Mac, Linux) they build for plain net10.0, with the MauiUnit and Appium heads only.
+         Elsewhere (a Mac, Linux) they build for plain net10.0, with the MauiHeadless and Appium heads only.
          -p:BruinetWindowsHead=false builds that shape on Windows. -->
     <BruinetWindowsHead Condition="'$(BruinetWindowsHead)' == ''">$([MSBuild]::IsOSPlatform('Windows'))</BruinetWindowsHead>
 
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)testsnew')) and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)samples'))">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)tests')) and !$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)samples'))">true</ContinuousIntegrationBuild>
   </PropertyGroup>
   
   <ItemGroup>

@@ -4,9 +4,9 @@ Bruinet automates WPF through FlaUI.
 
 ## Projects
 
-- `srcnew/Bruinet.Wpf`
-- `testsnew/Bruinet.Wpf.Tests`
-- `testsnew/Bruinet.Wpf.UITests` (the UI tests and the UAT suite)
+- `src/Bruinet.Wpf`
+- `tests/Bruinet.Wpf.Tests`
+- `tests/Bruinet.Wpf.UITests` (the UI tests and the UAT suite)
 - `samples/Bruinet.Samples.Wpf.App`
 
 ## Rules

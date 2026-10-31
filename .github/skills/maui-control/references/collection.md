@@ -2,7 +2,7 @@
 
 Repeating rows whose children are controls. Two types: the collection,
 `CollectionObjectBase<TParent, TSelf, TItem>`, and its row, `ItemObjectBase<TCollection, TSelf>`,
-both in `srcnew/Bruinet.Maui/Containers/`. A collection is a container, so
+both in `src/Bruinet.Maui/Containers/`. A collection is a container, so
 [container.md](container.md) applies to it too.
 
 Options that are only text (a Picker's items) are not a collection: use `SelectorControlBase`.
@@ -152,6 +152,6 @@ public ProductRow ByName(string name) => ItemWhere(row => row.Name.GetText() == 
 
 ## Examples to read
 
-`srcnew/Bruinet.Maui/Controls/Collection/CollectionView.tpl.cs`,
-`srcnew/Bruinet.Maui/Controls/Navigation/TabItem.tpl.cs`,
-`testsnew/Bruinet.Maui.UITests/Containers/ProductCollection.cs` and `ProductRow.cs`.
+`src/Bruinet.Maui/Controls/Collection/CollectionView.tpl.cs`,
+`src/Bruinet.Maui/Controls/Navigation/TabItem.tpl.cs`,
+`tests/Bruinet.Maui.UITests/Containers/ProductCollection.cs` and `ProductRow.cs`.

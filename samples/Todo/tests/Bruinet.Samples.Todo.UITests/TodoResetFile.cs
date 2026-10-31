@@ -20,7 +20,7 @@ public sealed class TodoResetFile(string path)
     /// <summary>Asks the app to start over and waits for its answer.</summary>
     /// <exception cref="TimeoutException">The app did not answer, or failed: the message says which.</exception>
     /// <param name="whileWaiting">
-    /// Run between looks at the answer. In memory (MauiUnit) the app's main thread is the test's own
+    /// Run between looks at the answer. Headless (MauiHeadless) the app's main thread is the test's own
     /// and runs only when the test lets it, so the wait lets it; on a device the app runs by itself.
     /// </param>
     public void Request(Action? whileWaiting = null)

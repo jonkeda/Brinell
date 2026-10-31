@@ -2,8 +2,8 @@
 
 Record a scenario, or a whole video script of scenarios, on video with a voice-over that says
 what is happening. The scenarios run as the gate runs them (AD-024); the app is recorded while
-they run, and each spoken line is waited for before its step, so the voice and the app stay in
-step. Each tap, swipe and key the test makes is marked on the video ([Touch Marks](#touch-marks)).
+they run, each spoken line plays while its step runs, and each action is held long enough to be
+seen ([Pacing](#pacing)), so the voice and the app stay in step. Each tap, swipe and key the test makes is marked on the video ([Touch Marks](#touch-marks)).
 Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test`.
 
 ## You Need
@@ -28,6 +28,7 @@ Record from Visual Studio, VS Code, Presenter, an AI agent (MCP) or `dotnet test
 | --- | --- |
 | Voice | Microsoft Zira |
 | Beat | 600 |
+| Pause | 700 |
 
 ## Scene: Opening the app
 
@@ -46,20 +47,100 @@ That was the list.
 | Part | Means |
 | --- | --- |
 | `# Video:` | the video's title |
-| `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for a cloud voice), and the wait after each step in ms; the settings when left out |
-| `Instructions` | how a cloud voice says the lines (its tone); the settings when left out |
+| `Voice`, `Beat` | the voice by (part of) its name (`azure:coral` for Azure OpenAI, `azure-speech-service:en-GB-Emily:MAI-Voice-2.1` for Azure Speech), and the wait after each step in ms; the settings when left out |
+| `Pause`, `Say` | the least time an action takes in ms (0 to 5000), and `while` (the default) or `before`: when a step's line is said ([Pacing](#pacing)) |
+| `Instructions` | how a cloud voice says the lines: its tone, or for Azure Speech a style name (`narrator`); the settings when left out |
 | `Touches`, `TouchColor` | the touch marks: `on` (the default), `off` or `outline-only`, and their colour as `#RRGGBB`; the settings, then Exact red `#E8111E`, when left out ([Touch Marks](#touch-marks)) |
 | `## Scene:` | a chapter; one scenario, run and recorded |
 | `Scenario:` | the scenario's address: its file relative to the suite's config, `#`, its name with every run of other characters as one `-` (the `BddScenario` trait) |
 | paragraph before the table | said before the first step |
-| `Step`, `Say` | said before that step; the step as the scenario writes it, keyword included (a `## Step:` call by its call line). A step with no row runs silently |
+| `Step`, `Say` | said as that step runs (or before it, with `Say \| before`); the step as the scenario writes it, keyword included (a `## Step:` call by its call line). A step with no row runs silently |
 | paragraph after the table | said after the last step |
 
 The preview shows the script as it will play: every step of each scene, with its line or
 *silent*. It is checked like a feature file: an address or a `Say` row that finds nothing is an
-error (`VID011`-`VID013`), a row out of step order a warning (`VID014`).
+error (`VID011`-`VID013`), a row out of step order a warning (`VID014`); markup in a line has its own
+codes ([Markup In A Line](#markup-in-a-line)).
 
-Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/tests/Bruinet.Samples.Todo.Uat/Features/how-todo-works.video.md).
+## Pacing
+
+Three waits keep a recording watchable; none of them is in a test run that does not record.
+
+| Wait | When | How long |
+| --- | --- | --- |
+| The line | a step's line starts as the step starts; the next line, or the outro, waits for it | the line's length |
+| The pause | after each control action: a click, a choice, text set or cleared, a key | until the action has taken `Pause` (700 ms by default); a slower action waits nothing more |
+| The beat | after a step and its line | `Beat` (600 ms by default) |
+
+The pause is per action, not per step, so a page-object method that opens a list and picks from it
+shows both. An action that runs another (an Invoke as a Click) pauses once, reads and asserts never
+pause, and the pause is not part of the call's own time in the log. A step without a line of its
+own follows its beat while the line before it still plays, so a state that lasts a moment (a
+loading state after a tap) is still there to check. `Say | before` keeps the older
+order: each line is said, then its step runs in silence. A scene's kept recording is out of date
+when `Pause` or `Say` change.
+
+## Markup In A Line
+
+A `Say` cell, or a scene's intro or outro paragraph, may hold SSML inline: how a line is said, not only what:
+
+```markdown
+| When I tap Save | and save.<break time="400ms"/> Your <emphasis level="strong">todo</emphasis> is on the list. |
+| Given I am on the list | Welcome to <sub alias="Brew-ee-net">Bruinet</sub>, in <say-as interpret-as="cardinal">3</say-as> steps. |
+```
+
+A script with no markup works as before. The narrator writes the SSML document (`speak`, the language, the voice) from the
+script's `Voice`, so a line holds only its inside. A line is markup when it holds a known element; `x < 5` and `Tom & Jerry`
+are plain text, and a tag-like word that is no element (`<brek/>`) is a warning and is never spoken. Captions, the
+timeline, the review page and the preview always show the plain words (a `sub` shows its text, not its alias); the preview
+marks a line that has markup.
+
+| Element | Means |
+| --- | --- |
+| `break` (`time="500ms"`, `"2s"`, up to 20 s; or `strength`) | a pause |
+| `emphasis` (`level`), `prosody` (`rate`, `pitch`, `volume`) | stress; speed, pitch, loudness |
+| `say-as` (`interpret-as`), `sub` (`alias`), `phoneme` (`ph`, IPA) | how a number, a name, a word is read |
+| `p`, `s`, `lang` | a paragraph, a sentence (both pause), a foreign phrase |
+| `mstts:express-as`, `mstts:silence` | Azure Speech's style for the line (it wins over the script's `Instructions`), and a silence |
+
+Not every voice follows every element. The check knows by the voice the script names, and says so before recording:
+
+| Voice | Follows |
+| --- | --- |
+| A Windows voice | `break`, `emphasis`, `prosody`, `sub`, `phoneme`, `p`, `s` (measured; `say-as`, `lang` and the `mstts:` elements are dropped) |
+| Azure Speech, a neural voice | every element above |
+| Azure Speech, a MAI voice | the same except `break` (use `p` or `s` for a pause) and `phoneme` |
+| Azure OpenAI (`azure:`) | none: its line is the plain words, a `sub` said as its alias |
+
+An element a voice does not follow is dropped and its words are kept (`VID023`), never spoken. With no voice named in the script
+the settings decide at record time, and the check says nothing.
+
+| Code | Says |
+| --- | --- |
+| `VID020` | the markup is not well-formed: an element never closed or closing nothing |
+| `VID021` | warning: a tag-like word is no SSML element, so it is not spoken (write `&lt;` to say a `<`) |
+| `VID022` | an attribute value the voices do not know: a break over 20 s, an unknown `prosody` rate, a `sub` with no alias |
+| `VID023` | warning: the script's voice does not follow an element; it is dropped, its words kept |
+| `VID024` | an element where it may not go: inside `say-as`, `sub` or `phoneme` |
+| `VID025` | `pronunciations.md` lists a term twice, or a row has nothing to say |
+
+### Pronunciations
+
+A suite lists how its names are said once, in `pronunciations.md` beside `uat.config.md`, so no script is cluttered with tags:
+
+```markdown
+| Term | Say | IPA |
+| --- | --- | --- |
+| Bruinet | Brew-ee-net | |
+| Todo | | ˈtuːduː |
+```
+
+Before a line is spoken each whole-word, case-sensitive occurrence of a term in its plain text becomes `<sub alias="Say">`, or a
+`<phoneme>` when only an IPA is given; a term inside a tag the author wrote is left alone. The alias reaches every voice, one that
+follows no markup included. A scene kept earlier is out of date when a term changes, and not before: a suite with no
+`pronunciations.md` keeps its scenes' hashes.
+
+Example: [samples/Todo/.../VideoScripts/how-todo-works.video.md](../../samples/Todo/tests/Bruinet.Samples.Todo.Uat/VideoScripts/how-todo-works.video.md).
 
 ## Record
 
@@ -73,7 +154,7 @@ Example: [samples/Todo/.../Features/how-todo-works.video.md](../../samples/Todo/
 
 ```powershell
 # From the suite's project folder
-$env:BRUINET_RECORD = "Features\how-todo-works.video.md"
+$env:BRUINET_RECORD = "VideoScripts\how-todo-works.video.md"
 $env:BRUINET_RECORDERS = "..\..\..\..\tools\Bruinet.Cli\bin\Debug\net10.0\recorders"
 dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01.1"
 ```
@@ -84,10 +165,11 @@ dotnet test --filter "BddScenario~Features/TOD.01-see-my-todos.feature.md#TOD.01
 | `BRUINET_RECORD_DIR` | the Recordings folder; `TestResults\<run>` when not set (the IDEs and Presenter: `TestResults\recordings`) |
 | `BRUINET_RECORD_OUT` | the scenes folder, for a host that names the video |
 | `BRUINET_RECORD_KEEP` | with a script: its scenes are kept in `<Recordings>\<script>.scenes` when the video is made, so a scene can be recorded again on its own, here or in Presenter's Narrator mode, and the video stitched again |
-| `BRUINET_VOICE`, `BRUINET_BEAT` | the voice and the beat (ms), when the script does not say |
+| `BRUINET_VOICE`, `BRUINET_BEAT`, `BRUINET_PAUSE` | the voice, the beat (ms) and the action pause (ms), when the script does not say |
 | `BRUINET_VOICE_INSTRUCTIONS` | a cloud voice's tone, when the script does not say |
 | `BRUINET_TOUCH_COLOR` | the touch marks' colour (`#RRGGBB`), when the script does not say |
-| `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over `voice.secrets.json` ([Cloud Voice](#cloud-voice)) |
+| `BRUINET_VOICE_KEY`, `BRUINET_VOICE_ENDPOINT` | a cloud voice's key and endpoint, over the file's `azureFoundry` object ([Cloud Voice](#cloud-voice)) |
+| `BRUINET_SPEECH_ENDPOINT`, `BRUINET_SPEECH_KEY`, `BRUINET_SPEECH_VOICE`, `BRUINET_SPEECH_SAMPLE_RATE` | Azure Speech's settings, over the file's `azureSpeech` object ([Azure Speech](#azure-speech)) |
 | `BRUINET_RECORDERS` | a folder with `Bruinet.Narrator.Windows` and the window recorder: a `net10.0-windows` suite cannot reference them, so the language server keeps a copy in its `recorders` folder |
 | `BRUINET_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
 
@@ -108,15 +190,17 @@ every platform's runs. A script can set its tone:
 Its endpoint and key go in `voice.secrets.json`, which git ignores. The Presenter writes it for you
 (Settings, Narrator, Cloud voice: [the Presenter](../platform-guides/presenter.md#record)), with
 Try to hear it first; or write it by hand, as `voice.secrets.example.json` at the repository root
-shows:
+shows. Its settings are the file's `azureFoundry` object:
 
 ```json
 {
-  "endpoint": "https://<resource>.openai.azure.com",
-  "deployment": "gpt-4o-mini-tts",
-  "apiVersion": "2025-03-01-preview",
-  "key": "<the resource's key>",
-  "voice": "coral"
+  "azureFoundry": {
+    "endpoint": "https://<resource>.openai.azure.com",
+    "deployment": "gpt-4o-mini-tts",
+    "apiVersion": "2025-03-01-preview",
+    "key": "<the resource's key>",
+    "voice": "coral"
+  }
 }
 ```
 
@@ -148,6 +232,52 @@ their voice, instructions and text, so recording a scene again costs nothing. A 
 names a cloud voice fails when none is set up, or when the service refuses (the message says
 why); it never falls back to another voice. `BRUINET_VOICE_INSTRUCTIONS` gives the tone when the
 script does not.
+
+## Azure Speech
+
+Azure AI Speech, the service with a named neural voice for each language and region, speaks the lines when a
+script, `BRUINET_VOICE` or the IDEs' Voice setting names `azure-speech-service:<voice>`: the voice's name as
+the service gives it, after the prefix. A neural voice (`azure-speech-service:nl-NL-FennaNeural`) and a MAI voice
+(`azure-speech-service:en-GB-Emily:MAI-Voice-2.1`, the model after a colon) are named the same way; the name goes
+to the service whole, and its first two parts are the language. It is the second cloud voice: the same voice
+every time, billed per character with a free tier (the service's pricing page has the current prices).
+`azure:` names stay Azure OpenAI's.
+
+```markdown
+| Field | Value |
+| --- | --- |
+| Voice | azure-speech-service:en-GB-Emily:MAI-Voice-2.1 |
+| Instructions | narrator |
+```
+
+`Instructions` is a **style**, not free text: `narrator`, `educational` or `audiobook` suit a voice-over, and
+Emily and Harry (`en-GB-Harry:MAI-Voice-2.1`) both have them. Once the voices list has been loaded (the
+Presenter's **Load voices**), the script check warns, as VID030, when the voice lacks the style. Use
+`MAI-Voice-2.1`, not `-Flash`, for a video: the long-form model's fidelity matters there, its latency does not.
+The MAI voices are in public preview, with no service-level agreement; a video that is published should use a generally
+available neural voice, named the same way.
+
+The settings are the `azureSpeech` object of the same `voice.secrets.json`, found in the same places, beside the Azure OpenAI
+voice's `azureFoundry`; saving one never changes the other:
+
+```json
+{
+  "azureSpeech": {
+    "endpoint": "eastus2",
+    "key": "<the Speech resource's key>",
+    "voice": "en-GB-Emily:MAI-Voice-2.1",
+    "sampleRate": 24000
+  }
+}
+```
+
+The endpoint is a region (`eastus2`), the resource's URL, or a URL pasted with a path (the path is dropped).
+`sampleRate` is `24000` (the default, the Azure OpenAI voice's rate) or `48000`; anything else is refused.
+`BRUINET_SPEECH_*` override the file. The key goes only into the `Ocp-Apim-Subscription-Key` header. A line is
+asked for once, as for the other voice; the clip's name holds the service, the voice, the style, the sample rate
+and the text. With no voice named, Azure OpenAI is used when it is set up, else Azure Speech, else a Windows
+voice. A named Azure Speech voice fails when it has no settings, and when the service answers 401 (the key is wrong or
+belongs to another region), 400 (check the voice's name) or stays busy after a few asks.
 
 ## Touch Marks
 
@@ -182,7 +312,7 @@ In the Recordings folder, for a script `how-todo-works.video.md`:
 
 | File | Holds |
 | --- | --- |
-| `how-todo-works-<yyyyMMdd-HHmmss>.mp4` | the scenes joined, the voice laid in, a chapter per scene |
+| `how-todo-works.mp4` | the scenes joined, the voice laid in, a chapter per scene; a new recording replaces it |
 | `.srt` | the captions: a cue per spoken line, and one after a failed step |
 | `.timeline.json` | each scene's steps (start, end, result, message), lines and interactions, on the video's clock |
 
@@ -191,7 +321,7 @@ happened and marked in the timeline. A scenario recorded on its own is named aft
 
 Kept scenes (Narrator mode, or `BRUINET_RECORD_KEEP`) stay in `<script>.scenes\scene-NN`: the
 scene's `video.mp4`, its spoken lines and its `timeline.json`, which holds what the scene was
-recorded from. A scene whose lines, steps, voice or beat changed since is out of date.
+recorded from. A scene whose lines, steps, voice, beat, pause or `Say` changed since is out of date.
 
 ## Recorders
 

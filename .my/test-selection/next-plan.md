@@ -8,7 +8,7 @@ one change, the same set again.
 ## Bruinet's suites first
 
 The owner's rule from 2026-10-25: what is left is built and measured on Bruinet's own sample apps and test suites first
-(`testsnew/Bruinet.Blazor.UITests`, `testsnew/Bruinet.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
+(`tests/Bruinet.Blazor.UITests`, `tests/Bruinet.Html.UITests`, `samples/Todo/tests`), then carried to Tomorrow's as a
 step of its own. A change tried on Tomorrow first, the World lane, failed scenarios there that its one green run had not shown.
 
 | Item | Bruinet's proving ground |
@@ -178,7 +178,7 @@ size.
 
 ## 8. Cheaper browser calls
 
-In the browser the calls are 337 s of 393 s of test time. The [2026-10-21 review](../reviews/2026-10-21-review.md)'s plan has
+In the browser the calls are 337 s of 393 s of test time. The [2026-10-21 review](https://github.com/exact-mobile-apps/test-tooling/blob/37f180a7/.my/reviews/2026-10-21-review.md)'s plan has
 Html items left (round trips per call, the readiness probe). Measured per call kind with the timings' rows.
 
 ## 9. Squash the migrations
