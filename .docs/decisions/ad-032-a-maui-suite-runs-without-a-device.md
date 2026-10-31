@@ -62,16 +62,30 @@ Android and iOS judge less often, but on purpose:
 A head difference that a device run finds is fixed in Bruinet, or written into the guide's table of
 differences with a test that pins it (`[DeviceFact]` with the reason). It is never only remembered.
 
-**Why that split:** a Kofflard app on 2026-10-31. Everything its device runs found that day had passed
-headless:
-- Windows found a grouped list's repeated `PositionInSet`, sticky headers hiding rows, a page object
-  keeping the page underneath after a push, a button's text replaced by its description, and buttons
-  that rendered empty;
-- Android found rows only partly on screen breaking a search, and the Shell title with no locator.
+**Why that split:** a Kofflard app on 2026-10-31, run on all three heads. Its device runs found ten
+things that its headless run had passed, and only one was a fault in the app:
+- **In the app:** one. Its adventure buttons (a templated `RadioButton`) rendered empty on Windows.
+  Headless cannot see it: there are no pixels.
+- **In MAUI:** one. A Picker hung when UI Automation opened it (Windows, MAUI 10).
+- **In Bruinet's device drivers:** the rest.
+  - A grouped list's repeated `PositionInSet` broke row keys.
+  - A cached page root kept the page underneath after a push.
+  - A search failed on a row partly on screen, and only scrolled down.
+  - `ScrollToTop` stopped mid-list.
+  - Android had no Shell title locator.
+  - A button's description was read as its text.
+  - A scroll brought a row in under a sticky group header, still hidden. The app turned its sticky
+    headers off on Windows to get past it: a concession to the driver, until scroll-into-view allows
+    for a pinned header.
 
-Windows caught most of it, at a cost a gate can carry: Bruinet's MAUI suite in about 2 minutes, a small
-app's suite in under one. The emulator caught what only it can, at minutes per test: a schedule and a
-change's reach (the touch maps) choose its runs.
+  Headless passed those because it uses another driver, not because the app was right by chance.
+
+So a device run judges two things: **the app on the platform** (rendering, layout, the platform's own
+controls), which headless cannot see, and **Bruinet's driver for that platform**, which a suite depends
+on just as much: a driver fault fails a gate as surely as an app fault. Windows judges both at a cost a
+merge can carry: Bruinet's MAUI suite in about 2 minutes, a small app's suite in under one. The emulator
+judges what only it can, at minutes per test, so a schedule and a change's reach (the touch maps) choose
+its runs.
 
 **Broken when:** a page object, control or phrase needs a change to run on MauiHeadless; `Bruinet.Maui`
 references MauiHeadless, or MauiHeadless references Bruinet; a device-only member waits out its budget on

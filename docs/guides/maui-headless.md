@@ -21,10 +21,13 @@ under a push can pass headless and fail on a device.
 | **Android** (Appium) | nightly, before a release, and when a change touches lists, navigation, gestures, layout or Android code | minutes per test on an emulator |
 | **iOS** (Appium) | before a release, on a Mac | as Android |
 
-- **Run Windows before you merge, every time.** It catches most of what headless cannot: in one app
-  on 2026-10-31 it found grouped-list keys, sticky headers hiding rows, a page object keeping the page
-  under a push, a description read as a button's text, and buttons that rendered empty. Every one of
-  them had passed headless.
+- **Run Windows before you merge, every time.** It judges two things headless cannot:
+  - **the app on the platform:** rendering, layout and the platform's own controls. In one app on
+    2026-10-31 it found buttons that rendered empty, which had passed headless.
+  - **Bruinet's driver for the platform:** in the same app, most of what the device runs found were
+    faults in the Windows and Android drivers (row keys, a page kept after a push, partly visible rows),
+    not in the app. A driver fault fails a gate as surely as an app fault, so the gate runs the driver
+    your tests depend on.
 - **Pick Android runs by what a change reaches.** A list, a gesture or a navigation change runs its
   tests on the emulator; [test selection](test-selection.md) finds them. Everything runs nightly.
 - **When a device run finds a difference between the heads,** fix it in Bruinet, or add it to
